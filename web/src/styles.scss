@@ -440,3 +440,12 @@ app-select { display: block; position: relative; }
 .sel-opt.selected { color: var(--accent); font-weight: 600; }
 .sel-opt app-icon { flex: 0 0 auto; }
 .modal-toggle-row app-select { flex: 0 0 auto; }
+/* 對話框有圓角:捲軸的軌道上下各縮進,不要延伸到圓角外(標準的 scrollbar-* 屬性做不到,Chromium / Safari 改用 -webkit- 版本) */
+@supports selector(::-webkit-scrollbar) {
+  .modal-box { scrollbar-width: auto; scrollbar-color: auto; }
+  .modal-box::-webkit-scrollbar { width: 10px; }
+  .modal-box::-webkit-scrollbar-track { background: transparent; margin: 22px 0; }
+  .modal-box::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.32); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+  .modal-box::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.5); background-clip: padding-box; border: 2px solid transparent; }
+  .modal-box::-webkit-scrollbar-button { display: none; }
+}
