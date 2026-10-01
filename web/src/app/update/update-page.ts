@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DataStore } from '../core/data-store';
 import { Layout } from '../core/layout';
@@ -7,12 +7,13 @@ import { wsMeta } from '../core/overview-vm';
 import { flagText } from '../core/submarine-form';
 import { UpdateVm } from '../core/update-vm';
 import { IconComponent } from '../ui/icon';
+import { SelectField, type SelectValue } from '../ui/select';
 import { SubRowEditor } from './sub-row-editor';
 
 /** 更新潛艇(D-117):選工坊 → 截圖辨識或手動輸入 → 整個工坊一次更新;D-124 每分鐘自動補正 */
 @Component({
   selector: 'app-update-page',
-  imports: [NgTemplateOutlet, RouterLink, IconComponent, SubRowEditor],
+  imports: [NgTemplateOutlet, RouterLink, IconComponent, SelectField, SubRowEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './update-page.html',
   host: { style: 'display: contents' },
@@ -25,6 +26,7 @@ export class UpdatePage implements OnDestroy {
   protected readonly wsMeta = wsMeta;
   protected readonly flagText = flagText;
   protected readonly dragging = signal(false);
+  protected readonly wsOptions = computed(() => this.store.workshops().map((w) => ({ value: w.id, label: w.name })));
 
   constructor() {
     this.layout.pageTitle.set('更新潛水艇');
@@ -41,8 +43,8 @@ export class UpdatePage implements OnDestroy {
     this.vm.close();
   }
 
-  protected onSelect(event: Event): void {
-    this.vm.selectWorkshop((event.target as HTMLSelectElement).value || null);
+  protected onSelect(value: SelectValue): void {
+    this.vm.selectWorkshop(String(value) || null);
   }
 
   protected onFile(event: Event): void {

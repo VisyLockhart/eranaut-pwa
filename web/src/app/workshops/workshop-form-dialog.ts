@@ -18,6 +18,7 @@ import {
   toInput,
 } from '../core/workshop-form';
 import { IconComponent } from '../ui/icon';
+import { SelectField, type SelectOption } from '../ui/select';
 
 type ControlName = 'name' | 'server' | 'captain' | 'district' | 'ward' | 'detail' | 'leadMinutes';
 /** 表單欄位 → API 欄位(伺服器端驗證失敗時把錯誤放回對應欄位) */
@@ -35,7 +36,7 @@ const REQUIRED_TEXT: Partial<Record<ControlName, string>> = { name: '請輸入�
 /** 新增/編輯工坊 Modal(D-103、D-135、D-137):Reactive Forms,欄位分四組 + 預先提醒 */
 @Component({
   selector: 'app-workshop-form',
-  imports: [ReactiveFormsModule, CdkTrapFocus, IconComponent],
+  imports: [ReactiveFormsModule, CdkTrapFocus, IconComponent, SelectField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './workshop-form-dialog.html',
   host: { '(document:keydown.escape)': 'close()' },
@@ -47,8 +48,8 @@ export class WorkshopFormDialog implements OnInit {
 
   private readonly store = inject(DataStore);
 
-  protected readonly servers = SERVERS;
-  protected readonly districts = DISTRICTS;
+  protected readonly serverOptions: SelectOption[] = [{ value: '', label: '請選擇' }, ...SERVERS.map((s) => ({ value: s, label: s }))];
+  protected readonly districtOptions: SelectOption[] = [{ value: '', label: '請選擇' }, ...DISTRICTS.map((d) => ({ value: d, label: d }))];
   protected readonly leadLabel = leadLabel;
 
   protected readonly form = new FormGroup({
@@ -82,6 +83,7 @@ export class WorkshopFormDialog implements OnInit {
   private readonly batched = toSignal(this.form.controls.notifyBatched.valueChanges, { initialValue: false });
   /** 預先提醒可選的選項:整批模式下不列出超過剩餘時間的選項(D-135 ②a);逐艘模式不過濾 */
   protected readonly leadChoices = computed(() => allowedLeadChoices(this.batched(), latestRemainingMs(this.workshop(), this.store.now())));
+  protected readonly leadOptions = computed<SelectOption[]>(() => this.leadChoices().map((m) => ({ value: m, label: leadLabel(m) })));
   protected readonly leadBlocked = computed(() => this.leadChoices().length === 0);
 
   constructor() {

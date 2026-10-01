@@ -57,16 +57,18 @@ describe('UpdatePage', () => {
   }
 
   it('列出所選工坊的潛艇;工坊下拉選單依畫面順序', () => {
-    const { el } = open();
+    const { el, fixture } = open();
     expect([...el.querySelectorAll('.uf-row')].length).toBe(2);
-    expect([...el.querySelectorAll('#uf-ws option')].map((o) => o.textContent!.trim())).toEqual(['貝殼工坊', '鋼鐵之心']);
+    el.querySelector<HTMLButtonElement>('#uf-ws')!.click();
+    fixture.detectChanges();
+    expect([...el.querySelectorAll('.sel-opt')].map((o) => o.textContent!.trim())).toEqual(['貝殼工坊', '鋼鐵之心']);
   });
 
   it('切換工坊:以該工坊的潛艇重建表單', () => {
     const { el, fixture } = open();
-    const select = el.querySelector<HTMLSelectElement>('#uf-ws')!;
-    select.value = 'w2';
-    select.dispatchEvent(new Event('change'));
+    el.querySelector<HTMLButtonElement>('#uf-ws')!.click();
+    fixture.detectChanges();
+    [...el.querySelectorAll<HTMLElement>('.sel-opt')].find((o) => o.textContent?.trim() === '鋼鐵之心')!.click();
     fixture.detectChanges();
     expect(el.querySelectorAll('.uf-row').length).toBe(1);
   });

@@ -39,11 +39,7 @@
     </div>
     <div style="margin-bottom: 16px">
       <label class="field-label" for="uf-ws">更新哪個工坊</label>
-      <select id="uf-ws" class="field-select" [style.width]="layout.isDesktop() ? '260px' : null" [value]="vm.workshopId() ?? ''" (change)="onSelect($event)">
-        @for (w of store.workshops(); track w.id) {
-          <option [value]="w.id" [selected]="w.id === vm.workshopId()">{{ w.name }}</option>
-        }
-      </select>
+      <app-select inputId="uf-ws" [style.width]="layout.isDesktop() ? '260px' : null" [options]="wsOptions()" [value]="vm.workshopId() ?? ''" (valueChange)="onSelect($event)" />
     </div>
 
     @if (vm.mode() === 'ocr' && vm.ocrPhase() !== 'review' && vm.workshop()) {

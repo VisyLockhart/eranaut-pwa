@@ -408,3 +408,35 @@ app-root { display: block; }
 .uf-num:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,212,191,0.22); }
 .uf-name.flagged { border-color: var(--amber); background: rgba(251,191,36,0.08); }
 .dropzone:focus-within { border-color: var(--accent); }
+
+/* ---------- 瀏覽器原生元件的主題化 ---------- */
+:root { color-scheme: dark; }
+/* 捲軸:細、半透明,配合深色主題(Chrome 121+/Firefox/Safari 18.2+ 用標準屬性,舊版 WebKit 用 -webkit- 備援) */
+* { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,0.32) transparent; }
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.32); border-radius: 999px; }
+}
+/* 數字欄位的上下小箭頭(原生 spin button)不顯示,手機本來就沒有 */
+input[type=number] { appearance: textfield; -moz-appearance: textfield; }
+input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* 自製下拉選單(app-select):取代原生 <select> 展開後無法套用主題的清單 */
+app-select { display: block; position: relative; }
+.sel-trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; padding: 11px 14px; border-radius: 9px; background: var(--bg-elevated); border: 1px solid var(--border-strong); color: var(--text); font-size: 13.5px; font-family: inherit; cursor: pointer; }
+.sel-trigger.lg { padding: 12px 14px; font-size: 15px; background: var(--bg); border-width: 1.5px; border-color: var(--accent); border-radius: 10px; }
+.sel-trigger.compact { padding: 8px 10px; }
+.sel-trigger.error-select { border-color: var(--danger); }
+.sel-trigger:disabled { opacity: 0.5; cursor: default; }
+.sel-trigger:focus-visible, .sel-trigger.open { outline: none; box-shadow: 0 0 0 3px rgba(45,212,191,0.22); }
+.sel-trigger app-icon { color: var(--text-dim); transition: transform .15s; }
+.sel-trigger.open app-icon { transform: rotate(180deg); }
+.sel-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-label.placeholder { color: var(--text-dim); }
+.sel-panel { position: fixed; z-index: 90; margin: 0; padding: 4px; list-style: none; overflow-y: auto; background: #0d1220; border: 1px solid var(--border-strong); border-radius: 11px; box-shadow: 0 12px 32px rgba(0,0,0,0.55); }
+.sel-opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; border-radius: 7px; font-size: 13.5px; color: var(--text); cursor: pointer; white-space: nowrap; }
+.sel-opt.active { background: rgba(45,212,191,0.12); }
+.sel-opt.selected { color: var(--accent); font-weight: 600; }
+.sel-opt app-icon { flex: 0 0 auto; }
+.modal-toggle-row app-select { flex: 0 0 auto; }

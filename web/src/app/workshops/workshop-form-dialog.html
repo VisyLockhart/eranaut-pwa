@@ -17,10 +17,7 @@
     <div class="modal-field-row">
       <div style="flex: 1">
         <label class="field-label" for="wsf-server">伺服器<span style="color: var(--danger)">＊</span></label>
-        <select id="wsf-server" class="field-select" [class.error-select]="errorOf('server')" formControlName="server" style="padding: 12px 14px">
-          <option value="">請選擇</option>
-          @for (s of servers; track s) { <option [value]="s">{{ s }}</option> }
-        </select>
+        <app-select inputId="wsf-server" size="lg" [invalid]="!!errorOf('server')" formControlName="server" [options]="serverOptions" />
       </div>
       <div style="flex: 1">
         <label class="field-label" for="wsf-captain">代表角色（收艇，選填）</label>
@@ -37,10 +34,7 @@
     <div class="modal-field-row">
       <div style="flex: 1.4">
         <label class="field-label" for="wsf-district">住宅區</label>
-        <select id="wsf-district" class="field-select" [class.error-select]="errorOf('district')" formControlName="district" style="padding: 12px 14px">
-          <option value="">請選擇</option>
-          @for (d of districts; track d) { <option [value]="d">{{ d }}</option> }
-        </select>
+        <app-select inputId="wsf-district" size="lg" [invalid]="!!errorOf('district')" formControlName="district" [options]="districtOptions" />
       </div>
       <div style="flex: 0.7">
         <label class="field-label" for="wsf-ward">房區</label>
@@ -77,9 +71,7 @@
         </div>
       </div>
       @if (form.controls.leadEnabled.value) {
-        <select class="field-select" formControlName="leadMinutes" style="width: auto; padding: 8px 10px" aria-label="提前多久提醒">
-          @for (m of leadChoices(); track m) { <option [ngValue]="m">{{ leadLabel(m) }}</option> }
-        </select>
+        <app-select size="compact" ariaLabel="提前多久提醒" formControlName="leadMinutes" [options]="leadOptions()" />
       }
     </div>
 

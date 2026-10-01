@@ -51,9 +51,17 @@ describe('WorkshopFormDialog', () => {
     document.body.appendChild(el); // 焦點相關行為(cdkFocusInitial)需要元素在文件裡
     fixture.detectChanges();
     const type = (selector: string, value: string): void => {
-      const input = el.querySelector<HTMLInputElement | HTMLSelectElement>(selector)!;
+      const input = el.querySelector<HTMLInputElement | HTMLButtonElement>(selector)!;
+      if (input instanceof HTMLButtonElement) {
+        // 自製下拉選單:點開,再點對應文字的項目
+        input.click();
+        fixture.detectChanges();
+        [...el.querySelectorAll<HTMLElement>('.sel-opt')].find((o) => o.textContent?.trim() === value)!.click();
+        fixture.detectChanges();
+        return;
+      }
       input.value = value;
-      input.dispatchEvent(new Event(input instanceof HTMLSelectElement ? 'change' : 'input'));
+      input.dispatchEvent(new Event('input'));
     };
     const submit = async (): Promise<void> => {
       el.querySelector('form')!.dispatchEvent(new Event('submit'));
@@ -142,9 +150,11 @@ describe('WorkshopFormDialog', () => {
     store.fetched.set([workshop({ notify_batched: true, notify_lead_minutes: 60 }, [45, 30])]);
     const { el, fixture } = open('w1');
     fixture.detectChanges();
-    const options = [...el.querySelectorAll('.modal-toggle-row select option')].map((o) => o.textContent?.trim());
+    el.querySelector<HTMLButtonElement>('.modal-toggle-row .sel-trigger')!.click();
+    fixture.detectChanges();
+    const options = [...el.querySelectorAll('.modal-toggle-row .sel-opt')].map((o) => o.textContent?.trim());
     expect(options).toEqual(['5 分', '10 分', '15 分', '30 分']);
-    expect(el.querySelector<HTMLSelectElement>('.modal-toggle-row select')!.selectedOptions[0].textContent?.trim()).toBe('30 分');
+    expect(el.querySelector('.modal-toggle-row .sel-label')!.textContent?.trim()).toBe('30 分');
   });
 
   it('預先提醒:剩餘不足 5 分鐘時開關停用', () => {
@@ -160,7 +170,9 @@ describe('WorkshopFormDialog', () => {
     store.fetched.set([workshop({ notify_batched: false, notify_lead_minutes: 120 }, [3])]);
     const { el, fixture } = open('w1');
     fixture.detectChanges();
-    expect(el.querySelectorAll('.modal-toggle-row select option')).toHaveLength(6);
+    el.querySelector<HTMLButtonElement>('.modal-toggle-row .sel-trigger')!.click();
+    fixture.detectChanges();
+    expect(el.querySelectorAll('.modal-toggle-row .sel-opt')).toHaveLength(6);
   });
 
   it('正在編輯的工坊被刪掉時自動關閉', async () => {
