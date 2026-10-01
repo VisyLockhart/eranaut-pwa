@@ -1,0 +1,13 @@
+{
+  "name": "eranaut",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Aequor Eranos - Eranaut (PWA + API) monorepo",
+  "workspaces": ["shared", "api", "web"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build:shared": "npm run build -w shared",
+    "build": "npm run build -w shared && npm run build -w api && npm run build -w web",
+    "test": "npm run build:shared && npm test -w shared && npm test -w api"
+  }
+}

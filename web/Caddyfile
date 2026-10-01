@@ -1,0 +1,14 @@
+# 容器內聽純 HTTP,TLS 由 Cloudflare 處理(D-144)
+{
+	auto_https off
+}
+:80 {
+	handle /api/* {
+		reverse_proxy eranaut-api:3000
+	}
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
