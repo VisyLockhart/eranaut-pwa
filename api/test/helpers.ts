@@ -51,6 +51,11 @@ export class FakeDiscord implements DiscordClient {
     if (this.failMember) throw new Error('member lookup failed');
     return this.members.get(userId) ?? null;
   }
+  failList = false;
+  async listGuildMembers() {
+    if (this.failList) throw new Error('list failed');
+    return [...this.members.values()].filter((m): m is DiscordGuildMember => m !== null);
+  }
 }
 
 export interface TestApp {

@@ -79,3 +79,8 @@ export function deleteSessionByToken(db: Db, token: string): void {
 export function deleteSessionsForUser(db: Db, userId: string): void {
   db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
 }
+
+/** 清掉已過期的 session(每日比對順手做,不另開排程,CLAUDE.md §5) */
+export function deleteExpiredSessions(db: Db, now: Date): number {
+  return db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(now.toISOString()).changes;
+}

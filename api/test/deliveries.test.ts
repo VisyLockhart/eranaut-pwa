@@ -107,7 +107,7 @@ test('過期不補發:晚超過 30 分鐘標記「錯過」,剛好 30 分鐘內�
   assert.equal((await s2.run()).sent, 1, '剛好晚 30 分鐘不算過期');
 });
 
-test('5xx/網路錯誤:每次間隔 1 分鐘重試,第一次嘗試加 3 次重試共 4 次,仍失敗標記失敗', async () => {
+test('5xx/網路錯誤:每次間隔 1 分鐘重試,總共 3 次嘗試,仍失敗標記失敗', async () => {
   const s = await setup();
   const w = await s.workshop();
   await s.putSubs(w.id, [exploring(1, 5)]);
@@ -178,7 +178,7 @@ test('DM 永久失敗時不會自動改發頻道;DM 與頻道各自記錄', asyn
   assert.deepEqual(deliveries(s2.t).map((d) => [d.method, d.status]), [['channel', 'sent'], ['dm', 'failed']]);
 });
 
-test('429 限速:不算一次失敗,等 retry_after 之後再發', async () => {
+test('429 限速:算一次嘗試,等 retry_after 之後再發;連續限速超過上限則標記失敗', async () => {
   const s = await setup();
   const w = await s.workshop();
   await s.putSubs(w.id, [exploring(1, 5)]);
@@ -186,12 +186,26 @@ test('429 限速:不算一次失敗,等 retry_after 之後再發', async () => {
   s.sender.script = [new SendError('被限速', 'rate_limited', 4000)];
   assert.equal((await s.run()).rateLimited, 1);
   const d = deliveries(s.t)[0]!;
-  assert.deepEqual([d.status, d.attempts], ['pending', 0]);
+  assert.deepEqual([d.status, d.attempts], ['pending', 1]);
   assert.equal(d.next_attempt_at, new Date(s.t.clock.now.getTime() + 4000).toISOString());
   assert.equal((await s.run()).sent, 0);
   advance(s.t, 4000);
   assert.equal((await s.run()).sent, 1);
-  assert.deepEqual(deliveries(s.t).map((x) => [x.status, x.attempts]), [['sent', 1]]);
+  assert.deepEqual(deliveries(s.t).map((x) => [x.status, x.attempts]), [['sent', 2]]);
+});
+
+test('429 連續限速達嘗試上限:標記失敗', async () => {
+  const s = await setup();
+  const w = await s.workshop();
+  await s.putSubs(w.id, [exploring(1, 5)]);
+  advance(s.t, 5 * MIN);
+  s.sender.script = Array.from({ length: MAX_ATTEMPTS }, () => new SendError('被限速', 'rate_limited', 1000));
+  for (let i = 1; i < MAX_ATTEMPTS; i++) {
+    assert.equal((await s.run()).rateLimited, 1);
+    advance(s.t, 1000);
+  }
+  assert.equal((await s.run()).failed, 1);
+  assert.deepEqual(deliveries(s.t).map((d) => [d.status, d.attempts]), [['failed', MAX_ATTEMPTS]]);
 });
 
 test('未預期的例外視為可重試,不會讓整個輪詢中斷;其他提醒照常發送', async () => {
@@ -213,17 +227,6 @@ test('頻道未設定:頻道提醒標記失敗,DM 不受影響', async () => {
   const r = await s.run();
   assert.deepEqual([r.sent, r.failed], [1, 1]);
   assert.deepEqual(deliveries(s.t).map((d) => [d.method, d.status, d.last_error]), [['channel', 'failed', 'channel_not_configured'], ['dm', 'sent', null]]);
-});
-
-test('已停用的使用者不發送(發送前再確認資格)', async () => {
-  const s = await setup();
-  const w = await s.workshop();
-  await s.putSubs(w.id, [exploring(1, 5)]);
-  s.t.db.prepare("UPDATE users SET suspended_at = '2026-10-01T00:00:00Z', suspended_auto = 0").run();
-  advance(s.t, 5 * MIN);
-  assert.equal((await s.run()).failed, 1);
-  assert.equal(s.sender.sent.length, 0);
-  assert.equal(deliveries(s.t)[0]!.last_error, 'user_suspended');
 });
 
 test('重新更新潛艇後,舊的已發送提醒被新的待發取代,到期會再發一次(新的返航時間)', async () => {

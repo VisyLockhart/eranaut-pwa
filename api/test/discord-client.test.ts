@@ -61,3 +61,18 @@ test('查成員:用 Bot token;404 → null;其他錯誤丟 DiscordError', async 
   assert.equal(await client.getGuildMember('1'), null);
   await assert.rejects(client.getGuildMember('2'), DiscordError);
 });
+
+test('列出全部成員:每頁 1000 筆,依最後一位的 id 翻頁;任何一頁失敗就丟 DiscordError', async () => {
+  const calls: Call[] = [];
+  const page1 = Array.from({ length: 1000 }, (_, i) => member({ id: String(100000000000000000n + BigInt(i)) }));
+  const page2 = [member({ id: '200000000000000000' })];
+  const client = createDiscordClient(config, fakeFetch([json(page1), json(page2)], calls));
+  const all = await client.listGuildMembers();
+  assert.equal(all.length, 1001);
+  assert.equal(calls[0]!.url, `https://discord.com/api/v10/guilds/${GUILD_ID}/members?limit=1000&after=0`);
+  assert.equal(calls[1]!.url, `https://discord.com/api/v10/guilds/${GUILD_ID}/members?limit=1000&after=${page1[999]!.user.id}`);
+  assert.equal((calls[0]!.init.headers as Record<string, string>).Authorization, 'Bot bot-token');
+
+  const failing = createDiscordClient(config, fakeFetch([json(page1), json({}, 500)], []));
+  await assert.rejects(failing.listGuildMembers(), DiscordError);
+});

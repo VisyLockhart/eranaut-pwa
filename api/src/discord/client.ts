@@ -23,6 +23,8 @@ export interface DiscordClient {
   exchangeCodeForUserId(code: string): Promise<string>;
   /** 用 bot token 查公會成員(身份組、暱稱、頭像)。不在伺服器回 null */
   getGuildMember(userId: string): Promise<DiscordGuildMember | null>;
+  /** 列出公會全部成員(每日資格比對用,D-130)。需要 bot 開啟 Server Members Intent;任何一頁失敗就整個丟錯,不回傳不完整的名單 */
+  listGuildMembers(): Promise<DiscordGuildMember[]>;
 }
 
 export class DiscordError extends Error {
@@ -82,6 +84,19 @@ export function createDiscordClient(config: AppConfig, fetchImpl: typeof fetch =
       if (res.status === 404) return null;
       if (!res.ok) throw new DiscordError(`查詢公會成員失敗:HTTP ${res.status}`);
       return (await res.json()) as DiscordGuildMember;
+    },
+
+    async listGuildMembers() {
+      const all: DiscordGuildMember[] = [];
+      let after = '0';
+      for (;;) {
+        const res = await fetchImpl(`${API}/guilds/${guildId}/members?limit=1000&after=${after}`, { headers: { Authorization: `Bot ${botToken}` } });
+        if (!res.ok) throw new DiscordError(`列出公會成員失敗:HTTP ${res.status}`);
+        const page = (await res.json()) as DiscordGuildMember[];
+        all.push(...page);
+        if (page.length < 1000) return all;
+        after = page[page.length - 1]!.user.id;
+      }
     },
   };
 }

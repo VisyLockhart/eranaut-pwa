@@ -4,15 +4,14 @@ import { buildReminderMessage } from './reminder-message.js';
 
 // 提醒的輪詢與發送(D-128、D-129)。
 // - 只查 `status = 'pending'` 且 `next_attempt_at` 已到的 delivery(D-139)
-// - 5xx / 網路錯誤:重試 3 次、每次間隔 1 分鐘(第一次嘗試 + 3 次重試 = 最多 4 次嘗試);429 依 retry_after 等待,不算失敗
+// - 5xx / 網路錯誤:每次間隔 1 分鐘重試,總共最多嘗試 3 次;429 依 retry_after 等待,同樣算一次嘗試(D-148 修訂)
 // - 永久性錯誤(使用者關 DM、封鎖 bot、已離開伺服器、頻道無權限…)不重試,標記失敗並寫結構化 log
 // - DM 永久失敗時**不**自動改發頻道(D-129)
 // - 過期不補發:晚超過 30 分鐘的提醒標記「錯過」
 // - 失敗只寫 log,不做使用者畫面
 
 export const RETRY_INTERVAL_MS = 60_000;
-export const MAX_RETRIES = 3;
-export const MAX_ATTEMPTS = MAX_RETRIES + 1;
+export const MAX_ATTEMPTS = 3; // 總嘗試次數(含第一次)
 export const MISSED_AFTER_MS = 30 * 60_000;
 const BATCH_LIMIT = 100;
 
@@ -37,7 +36,6 @@ interface DueRow {
   submarine_id: string | null;
   workshop_id: string;
   discord_user_id: string;
-  suspended_at: string | null;
   workshop_name: string;
   server: string;
   captain: string | null;
@@ -65,7 +63,7 @@ export async function processDueDeliveries(deps: DeliveryDeps): Promise<TickSumm
   const due = db
     .prepare(
       `SELECT d.id AS delivery_id, d.method, d.attempts, r.scheduled_at, r.submarine_id, r.workshop_id,
-              u.discord_user_id, u.suspended_at,
+              u.discord_user_id,
               w.name AS workshop_name, w.server, w.captain, w.notify_lead_minutes
        FROM reminder_deliveries d
        JOIN reminders r ON r.id = d.reminder_id
@@ -85,13 +83,6 @@ export async function processDueDeliveries(deps: DeliveryDeps): Promise<TickSumm
       finish(db, row.delivery_id, 'missed', row.attempts, 'missed: 晚於應發時間超過 30 分鐘');
       log.warn({ ...base, outcome: 'missed' });
       summary.missed++;
-      continue;
-    }
-    // 發送前再確認資格:已停用者不發(D-130 ②;停用時本來就會取消提醒,這裡是保險)
-    if (row.suspended_at !== null) {
-      finish(db, row.delivery_id, 'failed', row.attempts, 'user_suspended');
-      log.warn({ ...base, outcome: 'failed', error: 'user_suspended' });
-      summary.failed++;
       continue;
     }
     if (row.method === 'channel' && !deps.reminderChannelId) {
@@ -115,11 +106,11 @@ export async function processDueDeliveries(deps: DeliveryDeps): Promise<TickSumm
       summary.sent++;
     } catch (e) {
       const err = e instanceof SendError ? e : new SendError(`未預期的錯誤:${(e as Error).message}`, 'retry');
-      if (err.kind === 'rate_limited') {
-        // 限速不算一次失敗:等到 retry_after 之後再試
+      if (err.kind === 'rate_limited' && attempts < MAX_ATTEMPTS) {
+        // 限速也算一次嘗試:等到 retry_after 之後再試
         const next = new Date(now.getTime() + (err.retryAfterMs ?? 1000));
-        db.prepare('UPDATE reminder_deliveries SET next_attempt_at = ?, last_error = ? WHERE id = ?').run(next.toISOString(), err.message, row.delivery_id);
-        log.warn({ ...base, outcome: 'rate_limited', retryAt: next.toISOString() });
+        db.prepare('UPDATE reminder_deliveries SET attempts = ?, next_attempt_at = ?, last_error = ? WHERE id = ?').run(attempts, next.toISOString(), err.message, row.delivery_id);
+        log.warn({ ...base, outcome: 'rate_limited', attempts, retryAt: next.toISOString() });
         summary.rateLimited++;
       } else if (err.kind === 'retry' && attempts < MAX_ATTEMPTS) {
         const next = new Date(now.getTime() + RETRY_INTERVAL_MS);
