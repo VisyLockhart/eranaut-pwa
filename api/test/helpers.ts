@@ -4,6 +4,7 @@ import { createPermissions, parseRoleRule } from '../src/auth/permissions.js';
 import type { AppConfig } from '../src/config.js';
 import { migrate, openDatabase, type Db } from '../src/db/index.js';
 import type { DiscordClient, DiscordGuildMember } from '../src/discord/client.js';
+import type { OcrService } from '../src/ocr/service.js';
 import { buildInternalServer, buildPublicServer } from '../src/server.js';
 
 export const ORIGIN = 'https://eranaut.example.com';
@@ -78,13 +79,13 @@ export interface TestApp {
 }
 
 /** member 規則:(A 且 B) 或 C */
-export function makeApp(): TestApp {
+export function makeApp(opts: { ocr?: OcrService } = {}): TestApp {
   const db = openDatabase(':memory:');
   migrate(db);
   const discord = new FakeDiscord();
   const clock = { now: new Date('2026-10-01T00:00:00Z') };
   const permissions = createPermissions({ member: parseRoleRule(`${ROLE_A}+${ROLE_B},${ROLE_C}`) });
-  const deps = { db, config, discord, permissions, now: () => clock.now };
+  const deps = { db, config, discord, permissions, ocr: opts.ocr, now: () => clock.now };
   const app = buildPublicServer(deps, { logger: false });
   const internal = buildInternalServer(deps, { logger: false });
   return { app, db, discord, clock, internal };

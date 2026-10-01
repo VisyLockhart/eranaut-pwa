@@ -105,6 +105,68 @@ export interface SubmarinesUpdateResult {
   reminder_skipped_positions: number[];
 }
 
+// ---- 截圖辨識(D-49、D-61、D-62、D-119、D-125、D-126;SCHEMA §8.1) ----
+// OCR API 只辨識、不寫資料庫、不存圖片;辨識結果交給前端確認後,再走更新潛艇端點(D-49)。
+
+/** 截圖格式:`menu` = 「請選擇潛水艇」選單視窗(有等級、「剩餘時間」字樣);`info` = 「飛空艇探索／潛水艇探索」情報頁(D-61) */
+export type OcrFormat = 'menu' | 'info';
+
+/** 讓欄位被標為「請核對」的原因(D-119) */
+export type OcrSuspectReason =
+  /** 該行文字辨識信心低於門檻 */
+  | 'low_confidence'
+  /** 找不到可用的時間(沒有 天/小時/分 任一單位) */
+  | 'time_unreadable'
+  /** 數字超出範圍(小時 > 23、分 > 59、天 > 99)或總和為 0 */
+  | 'time_out_of_range'
+  /** 時間字串裡有沒對到單位的數字,或單位重複 */
+  | 'time_malformed'
+  /** 讀不到名稱 */
+  | 'name_unreadable'
+  /** 讀到的列數和畫面對不上(少讀了某一列),每一艘的位置都不可信 */
+  | 'order_uncertain';
+
+/** 整份截圖層級的提醒,不屬於某一艘 */
+export type OcrWarning =
+  /** 選單視窗標題的「探索機體數 N/…」與讀到的列數不同 */
+  | 'row_count_mismatch'
+  /** 讀到超過 4 列,只取前 4 列(D-62) */
+  | 'too_many_rows';
+
+export interface OcrSubmarineDto {
+  /** 1~4,依畫面由上到下的順序(D-62),不看名稱裡的數字 */
+  position: number;
+  /** 辨識到的名稱;預設名稱的前綴字形誤認會校正成「潛水艇-N」。讀不到為 null(前端沿用既有名稱) */
+  name: string | null;
+  status: SubmarineStatus;
+  /** `exploring` 才有值;沒出現的單位為 0。`complete` 或讀不出時間時三者皆 null */
+  days: number | null;
+  hours: number | null;
+  minutes: number | null;
+  /** 天/時/分換算成的分鐘,與 `SubmarineInput.remaining_minutes` 同單位;讀不出為 null */
+  remaining_minutes: number | null;
+  /** 需要使用者核對的欄位(D-119):前端標琥珀色「請核對」,使用者修改該欄後消失 */
+  suspect: { name: boolean; time: boolean };
+  reasons: OcrSuspectReason[];
+}
+
+/** `POST /api/ocr` 的回應。不含返航時間:前端以收到結果的時間起算補正(D-124),返航時間由更新端點的後端計算(D-48) */
+export interface OcrResultDto {
+  format: OcrFormat;
+  submarines: OcrSubmarineDto[];
+  warnings: OcrWarning[];
+}
+
+export type OcrErrorCode =
+  | 'no_file'
+  | 'file_too_large'
+  | 'unsupported_image'
+  /** 讀得到字,但找不到潛艇列(不是這兩種截圖,或畫面被擋住),前端請使用者改用手動輸入或重拍 */
+  | 'unrecognized'
+  /** 同時處理的人太多(或你已有一張在處理),稍後重試 */
+  | 'busy'
+  | 'ocr_unavailable';
+
 // ---- 提醒方式設定(D-72、D-133、D-145 ⑦) ----
 // 請求與回應都用 `NotifyPrefs`(`{ dm, channel }`),不暴露位元數字。
 export interface NotifyPrefsValidationErrorBody {

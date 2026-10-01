@@ -3,6 +3,8 @@ import { migrate, openDatabase } from './db/index.js';
 import { loadPermissionsFromEnv } from './auth/permissions.js';
 import { loadConfig } from './config.js';
 import { createDiscordClient } from './discord/client.js';
+import { createPaddleEngine } from './ocr/engine.js';
+import { createOcrService } from './ocr/service.js';
 import { createReminderSender } from './discord/sender.js';
 import { startEligibilitySweep } from './services/eligibility-scheduler.js';
 import { startReminderPoller } from './services/reminder-poller.js';
@@ -18,9 +20,12 @@ const db = openDatabase(process.env.DATABASE_PATH ?? './data/eranaut.db');
 migrate(db);
 
 const discord = createDiscordClient(config);
-const deps = { db, config, discord, permissions, now: () => new Date() };
+// 截圖辨識(D-125):與 API 同一個 process;模型啟動時在背景預先載入,失敗不影響其他功能
+const ocr = createOcrService(createPaddleEngine());
+const deps = { db, config, discord, permissions, ocr, now: () => new Date() };
 const pub = buildPublicServer(deps);
 const internal = buildInternalServer(deps);
+ocr.warmup?.().catch((err: unknown) => pub.log.warn({ event: 'ocr_warmup_failed', err }));
 
 // 提醒輪詢(D-128):隨公開埠的 Fastify 啟停
 await startReminderPoller(pub, {

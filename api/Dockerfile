@@ -1,6 +1,8 @@
 # build context = repo root(要讀 shared/,D-140)
 # glibc 基底:onnxruntime-node 需要(D-127)
 FROM node:22-bookworm-slim AS build
+# onnxruntime-node 的安裝腳本在 linux/x64 會從 nuget 下載 CUDA 檔(我們只用 CPU);arm64 本來就不下載。一律跳過,CPU 二進位已內含在套件裡(D-125)
+ENV ONNXRUNTIME_NODE_INSTALL=skip
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY shared/package.json shared/
@@ -12,7 +14,8 @@ COPY api api
 RUN npm run build -w shared && npm run build -w api
 
 FROM node:22-bookworm-slim
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    ONNXRUNTIME_NODE_INSTALL=skip
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY shared/package.json shared/
