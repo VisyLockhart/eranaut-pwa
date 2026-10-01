@@ -92,3 +92,22 @@ export interface WorkshopWithSubmarines extends WorkshopDto {
 export interface OverviewDto {
   workshops: WorkshopWithSubmarines[];
 }
+
+/**
+ * 更新潛艇的回應(整坊與單艘共用)。
+ * - 整坊更新:`submarines` 為該工坊目前全部潛艇
+ * - 單艘更新:`submarines` 只有被更新的那一艘
+ * `reminder_skipped_positions`:本次請求中,因「預先提醒時間已過」而不會收到提醒的潛艇位置,前端據此提示(D-135 ②b)。
+ * 整批提醒模式下整間工坊只有一則提醒,被略過時列出本次請求中所有探索中的位置。
+ */
+export interface SubmarinesUpdateResult {
+  submarines: SubmarineDto[];
+  reminder_skipped_positions: number[];
+}
+
+// ---- 提醒方式設定(D-72、D-133、D-145 ⑦) ----
+// 請求與回應都用 `NotifyPrefs`(`{ dm, channel }`),不暴露位元數字。
+export interface NotifyPrefsValidationErrorBody {
+  error: 'validation_failed';
+  fields: { dm?: FieldErrorCode; channel?: FieldErrorCode };
+}

@@ -6,6 +6,7 @@ import type { Permissions } from './auth/permissions.js';
 import type { DiscordClient } from './discord/client.js';
 import { registerSessionAuth } from './auth/session-guard.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerNotifyPrefsRoutes } from './routes/notify-prefs.js';
 import { registerSubmarineRoutes } from './routes/submarines.js';
 import { registerWorkshopRoutes } from './routes/workshops.js';
 
@@ -44,6 +45,7 @@ export function buildPublicServer(deps: AppDeps, opts: { logger?: boolean } = {}
   registerAuthRoutes(app, deps, requireSession);
   registerWorkshopRoutes(app, deps, requireSession);
   registerSubmarineRoutes(app, deps, requireSession);
+  registerNotifyPrefsRoutes(app, deps, requireSession);
   return app;
 }
 

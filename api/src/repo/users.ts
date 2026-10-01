@@ -32,3 +32,11 @@ export function createUser(db: Db, discordUserId: string, now: Date): UserRow {
 export function clearSuspension(db: Db, userId: string): void {
   db.prepare('UPDATE users SET suspended_at = NULL, suspended_auto = NULL, suspended_by = NULL WHERE id = ?').run(userId);
 }
+
+export function getNotifyMethods(db: Db, userId: string): number {
+  return (db.prepare('SELECT notify_methods FROM users WHERE id = ?').get(userId) as { notify_methods: number }).notify_methods;
+}
+
+export function setNotifyMethods(db: Db, userId: string, bits: number): void {
+  db.prepare('UPDATE users SET notify_methods = ? WHERE id = ?').run(bits, userId);
+}

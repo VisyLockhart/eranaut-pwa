@@ -1,7 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import type { registerSessionAuth } from '../auth/session-guard.js';
-import { deleteWorkshop, getWorkshop, insertWorkshop, listWorkshops, replaceWorkshop } from '../repo/workshops.js';
+import { deleteWorkshop, getWorkshop, insertWorkshop, listWorkshops } from '../repo/workshops.js';
 import type { AppDeps } from '../server.js';
+import { updateWorkshop } from '../services/updates.js';
 import { validateWorkshopInput } from '../services/workshops.js';
 
 // 路由只處理 HTTP;驗證在 services/,SQL 在 repo/(D-131 ③)。
@@ -29,8 +30,8 @@ export function registerWorkshopRoutes(app: FastifyInstance, deps: AppDeps, requ
   app.put<{ Params: { id: string } }>('/api/workshops/:id', opts, async (req, reply) => {
     const v = validateWorkshopInput(req.body);
     if (!v.ok) return reply.code(400).send({ error: 'validation_failed', fields: v.fields });
-    // TODO(提醒模組):notify_batched / notify_lead_minutes 改變時要重算相關提醒(D-139)
-    const w = replaceWorkshop(db, req.session!.userId, req.params.id, v.value);
+    // 整批/預先提醒設定改變時,同一交易內重算提醒(D-139)
+    const w = updateWorkshop(db, req.session!.userId, req.params.id, v.value, deps.now());
     return w ?? reply.code(404).send(notFound);
   });
 

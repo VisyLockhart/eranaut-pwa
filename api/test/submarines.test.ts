@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LIMITS, type OverviewDto, type SubmarineDto, type WorkshopDto } from '@eranaut/shared';
+import { LIMITS, type OverviewDto, type SubmarineDto, type SubmarinesUpdateResult, type WorkshopDto } from '@eranaut/shared';
 import { loginWith, makeApp, member, ORIGIN, sessionCookie, type TestApp } from './helpers.js';
 
 const ID_A = '555555555555555555';
@@ -37,7 +37,8 @@ test('整坊更新:新增多艘;返航時間 = 收到請求當下 + 剩餘時間
     ],
   });
   assert.equal(res.statusCode, 200);
-  const list = res.json() as SubmarineDto[];
+  const list = (res.json() as SubmarinesUpdateResult).submarines;
+  assert.deepEqual((res.json() as SubmarinesUpdateResult).reminder_skipped_positions, []);
   assert.deepEqual(list.map((s) => s.position), [1, 2, 3], '回傳依位置排序');
   assert.equal(list[0]!.expected_return_at, iso(2141));
   assert.equal(list[0]!.last_synced_at, iso(0));
@@ -54,10 +55,10 @@ test('再次更新以 (workshop_id, position) UPSERT:不新增列、保留 id、
   const wid = await mkWorkshop(api);
   const first = (await api('PUT', `/api/workshops/${wid}/submarines`, {
     submarines: [{ position: 1, name: '舊名', status: 'exploring', remaining_minutes: 60 }, { position: 2, name: 'B', status: 'exploring', remaining_minutes: 90 }],
-  })).json() as SubmarineDto[];
+  })).json().submarines as SubmarineDto[];
 
   t.clock.now = new Date(t.clock.now.getTime() + 10 * 60_000);
-  const second = (await api('PUT', `/api/workshops/${wid}/submarines`, { submarines: [{ position: 1, name: '新名', status: 'complete' }] })).json() as SubmarineDto[];
+  const second = (await api('PUT', `/api/workshops/${wid}/submarines`, { submarines: [{ position: 1, name: '新名', status: 'complete' }] })).json().submarines as SubmarineDto[];
 
   assert.equal(subCount(t), 2);
   assert.equal(second[0]!.id, first[0]!.id);
@@ -145,7 +146,7 @@ test('邊界:剩餘時間 1 與上限都可過;名稱前後空白去除、空白
     ],
   });
   assert.equal(res.statusCode, 200);
-  const l = res.json() as SubmarineDto[];
+  const l = res.json().submarines as SubmarineDto[];
   assert.equal(l[0]!.name, '艇一');
   assert.equal(l[1]!.name, null);
   assert.equal(l[1]!.expected_return_at, iso(LIMITS.maxRemainingMinutes));
@@ -163,7 +164,8 @@ test('單艘快速修改:位置取自網址,只動那一艘,回該艘', async ()
   t.clock.now = new Date(t.clock.now.getTime() + 5 * 60_000);
   const res = await api('PUT', `/api/workshops/${wid}/submarines/2`, { name: 'B2', status: 'exploring', remaining_minutes: 30 });
   assert.equal(res.statusCode, 200);
-  const s = res.json() as SubmarineDto;
+  assert.equal(res.json().submarines.length, 1, '單艘回應只含被更新的那一艘');
+  const s = res.json().submarines[0] as SubmarineDto;
   assert.equal(s.position, 2);
   assert.equal(s.name, 'B2');
   assert.equal(s.expected_return_at, iso(5 + 30));

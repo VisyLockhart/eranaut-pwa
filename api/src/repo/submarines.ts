@@ -46,6 +46,5 @@ export function upsertSubmarines(db: Db, userId: string, workshopId: string, ite
   db.transaction(() => {
     for (const v of items) stmt.run(randomUUID(), workshopId, v.position, v.name, v.status, expectedReturnAt(v, now), now.toISOString());
   })();
-  // TODO(提醒模組):依 D-139 對這些潛艇(整批模式則該工坊)upsert 提醒,並提示預先提醒時間已過者(D-135)
   return listSubmarines(db, userId, workshopId);
 }
