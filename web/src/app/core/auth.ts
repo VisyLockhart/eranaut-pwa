@@ -20,7 +20,7 @@ export class Auth {
   readonly user = signal<MeDto | null>(null);
   readonly loginError = signal<LoginErrorCode | null>(null);
   /** 登入失敗畫面的「XX 伺服器」(D-123),取自後端 `.env` 的 GUILD_DISPLAY_NAME */
-  readonly guildName = signal('伺服器');
+  readonly guildName = signal('');
 
   /** 啟動時呼叫一次(也用於「無法連線」畫面的重試) */
   async init(): Promise<void> {

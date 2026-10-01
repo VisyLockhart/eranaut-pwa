@@ -44,7 +44,7 @@ describe('Auth', () => {
     http.expectOne('/api/public-config').error(new ProgressEvent('error'));
     await p;
     expect(auth.status()).toBe('unreachable');
-    expect(auth.guildName()).toBe('伺服器');
+    expect(auth.guildName()).toBe('');
   });
 
   it('讀取 login_error 並清除網址參數;未知代碼視為 failed', async () => {

@@ -36,15 +36,16 @@ export class AuthScreen {
 
   // 不放「請聯絡伺服器管理員」之類提示(D-123、D-143 ⑥);「XX 伺服器」用後端 .env 的顯示名稱
   protected readonly failCopy = computed<FailCopy>(() => {
-    const g = this.auth.guildName();
+    const name = this.auth.guildName();
+    const g = name ? `${name} 伺服器` : '這個伺服器'; // 取不到名稱時(public-config 失敗)用中性說法
     if (this.auth.status() === 'unreachable') {
       return { title: '無法連線', desc: '暫時連不上伺服器，請檢查網路連線後再試一次。', button: '重新整理', danger: true };
     }
     switch (this.auth.loginError()) {
       case 'not_in_guild':
-        return { title: `你還不是 ${g} 的成員`, desc: `這個工具只提供給 ${g} 伺服器的成員使用，而你的 Discord 帳號目前不在該伺服器內。`, button: '重新嘗試登入', danger: false };
+        return { title: `你還不是${g}的成員`, desc: `這個工具只提供給${g}的成員使用，而你的 Discord 帳號目前不在該伺服器內。`, button: '重新嘗試登入', danger: false };
       case 'no_role':
-        return { title: '尚未具備使用資格', desc: `你已在 ${g} 伺服器內，但帳號目前沒有使用這個工具所需的身份組。`, button: '重新嘗試登入', danger: false };
+        return { title: '尚未具備使用資格', desc: `你已在${g}內，但帳號目前沒有使用這個工具所需的身份組。`, button: '重新嘗試登入', danger: false };
       case 'failed':
         return { title: '登入失敗', desc: '與 Discord 驗證時發生問題，請稍後再試一次。', button: '重新嘗試登入', danger: true };
       default:
