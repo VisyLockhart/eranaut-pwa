@@ -1,0 +1,34 @@
+@if (layout.isDesktop()) {
+  <div class="d-topbar">
+    <div>
+      <div class="d-title">{{ vm.manageMode() ? '工坊管理' : '工坊' }}</div>
+      <div class="d-subtitle">{{ vm.manageMode() ? '拖曳 ⠿ 把手調整順序，或用列尾的 ▲▼ 做精準微調' : '點工坊卡片可跳到總覽並套用該工坊過濾' }}</div>
+    </div>
+    <div style="display: flex; gap: 10px">
+      @if (vm.manageMode()) {
+        <button type="button" class="upload-cta" style="background: transparent; border: 1.5px dashed var(--border-strong); color: var(--accent)" (click)="vm.add()"><app-icon name="plus" [size]="16" />新增工坊</button>
+      }
+      <button type="button" class="upload-cta" (click)="vm.toggleManage()">
+        @if (vm.manageMode()) { 完成 } @else { <app-icon name="settings" [size]="18" />管理工坊 }
+      </button>
+    </div>
+  </div>
+  <app-workshop-list variant="desktop" />
+} @else {
+  <div class="ws-m-bar">
+    <div class="ws-m-hint">{{ vm.manageMode() ? '拖曳 ⠿ 或用 ▲▼ 調整順序' : '點工坊卡片可跳到總覽並套用該工坊過濾' }}</div>
+    @if (vm.manageMode()) {
+      <button type="button" class="ws-done-btn" (click)="vm.toggleManage()">完成</button>
+    } @else {
+      <button type="button" class="ws-icon-btn" style="width: 40px; height: 40px" (click)="vm.toggleManage()" aria-label="管理工坊"><app-icon name="settings" [size]="18" /></button>
+    }
+  </div>
+  <app-workshop-list variant="mobile" />
+}
+
+@if (vm.formDialog(); as d) {
+  <app-workshop-form [workshopId]="d.id" (closed)="vm.closeDialog()" />
+}
+@if (vm.deleteDialog(); as d) {
+  <app-workshop-delete [workshopId]="d.id" (closed)="vm.closeDialog()" />
+}

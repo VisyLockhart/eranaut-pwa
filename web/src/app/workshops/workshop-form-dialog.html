@@ -1,0 +1,93 @@
+<div class="modal-overlay" (pointerdown)="downOnOverlay = $event.target === $event.currentTarget" (click)="overlayClick($event)">
+  <form class="modal-box" role="dialog" aria-modal="true" aria-labelledby="wsf-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px">
+      <div class="modal-title" id="wsf-title">{{ editing ? '編輯工坊' : '新增工坊' }}</div>
+      <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+    </div>
+
+    <label class="field-label" for="wsf-name">公會名稱（可自訂別名）</label>
+    <input id="wsf-name" type="text" class="modal-input" [class.error]="errorOf('name')" formControlName="name" cdkFocusInitial autocomplete="off" [attr.aria-invalid]="errorOf('name') ? true : null" />
+    @if (errorOf('name'); as msg) {
+      <div class="modal-error-text" role="alert">{{ msg }}</div>
+    } @else {
+      <div class="modal-hint">填公會正式名稱，或自己取一個好記的別名——用來在潛艇列表裡辨識這是哪個公會的紀錄</div>
+    }
+
+    <div class="modal-section-label">遊戲身分</div>
+    <div class="modal-field-row">
+      <div style="flex: 1">
+        <label class="field-label" for="wsf-server">伺服器<span style="color: var(--danger)">＊</span></label>
+        <select id="wsf-server" class="field-select" [class.error-select]="errorOf('server')" formControlName="server" style="padding: 12px 14px">
+          <option value="">請選擇</option>
+          @for (s of servers; track s) { <option [value]="s">{{ s }}</option> }
+        </select>
+      </div>
+      <div style="flex: 1">
+        <label class="field-label" for="wsf-captain">代表角色（收艇，選填）</label>
+        <input id="wsf-captain" type="text" class="modal-input" [class.error]="errorOf('captain')" formControlName="captain" placeholder="例如：芙寧娜" autocomplete="off" />
+      </div>
+    </div>
+    @if (errorOf('server') || errorOf('captain'); as msg) {
+      <div class="modal-error-text" role="alert">{{ msg }}</div>
+    } @else {
+      <div class="modal-hint">同一個人的多間公會可能在不同伺服器、由不同角色負責收艇，這裡標記清楚比較不會跑錯</div>
+    }
+
+    <div class="modal-section-label">公會屋地址（選填，僅工坊管理內部使用，不會顯示在總覽）</div>
+    <div class="modal-field-row">
+      <div style="flex: 1.4">
+        <label class="field-label" for="wsf-district">住宅區</label>
+        <select id="wsf-district" class="field-select" [class.error-select]="errorOf('district')" formControlName="district" style="padding: 12px 14px">
+          <option value="">請選擇</option>
+          @for (d of districts; track d) { <option [value]="d">{{ d }}</option> }
+        </select>
+      </div>
+      <div style="flex: 0.7">
+        <label class="field-label" for="wsf-ward">房區</label>
+        <input id="wsf-ward" type="number" min="1" step="1" inputmode="numeric" class="modal-input" [class.error]="errorOf('ward')" formControlName="ward" placeholder="例如：15" />
+      </div>
+    </div>
+    @if (errorOf('district') || errorOf('ward'); as msg) {
+      <div class="modal-error-text" role="alert">{{ msg }}</div>
+    }
+    <label class="field-label" for="wsf-detail" style="margin-top: 6px">詳細地址</label>
+    <input id="wsf-detail" type="text" class="modal-input" [class.error]="errorOf('detail')" formControlName="detail" placeholder="例如：51巷2號" autocomplete="off" />
+    @if (errorOf('detail'); as msg) { <div class="modal-error-text" role="alert">{{ msg }}</div> }
+
+    <div class="modal-toggle-row">
+      <label class="switch"><input type="checkbox" formControlName="notifyBatched" aria-labelledby="wsf-batched-label" /><span class="slider"></span></label>
+      <div>
+        <div id="wsf-batched-label" style="font-size: 13px; font-weight: 600">等全部潛艇返航才一起提醒</div>
+        <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">關閉時，這個工坊底下每艘潛艇返航都會分別提醒</div>
+      </div>
+    </div>
+
+    <div class="modal-toggle-row" [class.is-disabled]="leadBlocked()">
+      <label class="switch"><input type="checkbox" formControlName="leadEnabled" aria-labelledby="wsf-lead-label" (change)="onLeadToggle($any($event.target).checked)" /><span class="slider"></span></label>
+      <div style="flex: 1; min-width: 0">
+        <div id="wsf-lead-label" style="font-size: 13px; font-weight: 600">預先提醒</div>
+        <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">
+          @if (leadBlocked()) {
+            剩餘時間不足 5 分鐘，無法預先提醒
+          } @else if (form.controls.leadEnabled.value) {
+            只在返航前提醒，返航當下不再提醒
+          } @else {
+            開啟後改為在返航前提醒（預設 5 分鐘）
+          }
+        </div>
+      </div>
+      @if (form.controls.leadEnabled.value) {
+        <select class="field-select" formControlName="leadMinutes" style="width: auto; padding: 8px 10px" aria-label="提前多久提醒">
+          @for (m of leadChoices(); track m) { <option [ngValue]="m">{{ leadLabel(m) }}</option> }
+        </select>
+      }
+    </div>
+
+    @if (submitError(); as msg) { <div class="modal-error-text" role="alert" style="margin: 14px 0 0">{{ msg }}</div> }
+
+    <div class="modal-actions sticky">
+      <button type="button" class="btn-secondary" (click)="close()">取消</button>
+      <button type="submit" class="btn-primary-modal" [disabled]="saving()">{{ saving() ? '儲存中…' : editing ? '儲存' : '新增' }}</button>
+    </div>
+  </form>
+</div>

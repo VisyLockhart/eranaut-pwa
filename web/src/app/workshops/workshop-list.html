@@ -1,0 +1,78 @@
+<ng-template #badges let-ws>
+  @if (ws.notify_batched) { <span class="ws-notify-badge">整批提醒</span> }
+  @if (ws.notify_lead_minutes > 0) { <span class="ws-notify-badge">提前 {{ leadLabel(ws.notify_lead_minutes) }}</span> }
+</ng-template>
+
+<ng-template #arrows let-ws let-first="first" let-last="last">
+  <div class="ws-arrows">
+    <button type="button" class="ws-arrow-btn" data-move="up" [disabled]="first" (click)="move(ws, -1)" [attr.aria-label]="'上移 ' + ws.name"><app-icon name="chevronUp" [size]="12" /></button>
+    <button type="button" class="ws-arrow-btn" data-move="down" [disabled]="last" (click)="move(ws, 1)" [attr.aria-label]="'下移 ' + ws.name"><app-icon name="chevronDown" [size]="12" /></button>
+  </div>
+</ng-template>
+
+<ng-template #stats let-row>
+  @if (row.exploring === 0 && row.ready === 0) {
+    <span style="color: var(--text-faint)">目前沒有潛水艇記錄</span>
+  } @else {
+    @if (row.exploring > 0) { {{ row.exploring }} 艘探索中 }
+    @if (row.exploring > 0 && row.ready > 0) { · }
+    @if (row.ready > 0) { <span style="color: var(--amber)">{{ row.ready }} 艘待收</span> }
+  }
+</ng-template>
+
+<div class="ws-wrap" [class.mobile]="variant() === 'mobile'" [class.desktop]="variant() === 'desktop'">
+  @if (store.loadError() && !store.loaded()) {
+    <div class="up-empty">
+      讀取資料失敗。<br />
+      <button class="ghost-btn" style="margin-top: 12px; max-width: 160px" (click)="store.refresh()">重試</button>
+    </div>
+  } @else if (!store.loaded()) {
+    <div class="up-empty">讀取中…</div>
+  } @else {
+    @if (vm.rows().length === 0) {
+      <div style="padding: 30px 8px; text-align: center; color: var(--text-dim); font-size: 13px">尚未建立任何工坊</div>
+    }
+
+    @if (vm.manageMode()) {
+      <div class="ws-list" cdkDropList (cdkDropListDropped)="onDrop($event)">
+        @for (row of vm.rows(); track row.ws.id; let first = $first; let last = $last) {
+          <div class="ws-row" [class.ws-row-desktop]="variant() === 'desktop'" cdkDrag cdkDragLockAxis="y" [attr.data-id]="row.ws.id">
+            <span class="ws-drag-handle" cdkDragHandle role="img" aria-label="拖曳排序"><app-icon name="dragDots" [size]="22" /></span>
+            @if (variant() === 'desktop') {
+              <div class="ws-icon"><app-icon name="workshops" [size]="22" /></div>
+              <div style="flex: 1; min-width: 0">
+                <div style="font-size: 16px; font-weight: 600">{{ row.ws.name }}<ng-container *ngTemplateOutlet="badges; context: { $implicit: row.ws }" /></div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px"><ng-container *ngTemplateOutlet="stats; context: { $implicit: row }" /></div>
+              </div>
+              <ng-container *ngTemplateOutlet="arrows; context: { $implicit: row.ws, first: first, last: last }" />
+            } @else {
+              <ng-container *ngTemplateOutlet="arrows; context: { $implicit: row.ws, first: first, last: last }" />
+              <div style="flex: 1; min-width: 0; font-size: 15px; font-weight: 600">{{ row.ws.name }}<ng-container *ngTemplateOutlet="badges; context: { $implicit: row.ws }" /></div>
+            }
+            <button type="button" class="ws-icon-btn" (click)="vm.edit(row.ws.id)" [attr.aria-label]="'編輯工坊 ' + row.ws.name"><app-icon name="pencil" [size]="16" /></button>
+            <button type="button" class="ws-icon-btn danger" (click)="vm.remove(row.ws.id)" [attr.aria-label]="'刪除工坊 ' + row.ws.name"><app-icon name="trash" [size]="16" /></button>
+          </div>
+        }
+      </div>
+      @if (variant() === 'mobile') {
+        <button type="button" class="ws-add-btn" (click)="vm.add()"><app-icon name="plus" [size]="16" />新增工坊</button>
+      }
+    } @else {
+      <div class="ws-list">
+        @for (row of vm.rows(); track row.ws.id) {
+          <div class="ws-browse-item" [class.ws-tooltip-wrap]="variant() === 'desktop'" role="button" tabindex="0" (click)="open(row.ws.id)" (keydown.enter)="open(row.ws.id)">
+            <div class="ws-icon"><app-icon name="workshops" [size]="22" /></div>
+            <div style="flex: 1; min-width: 0">
+              <div style="font-size: 16px; font-weight: 600">{{ row.ws.name }}<ng-container *ngTemplateOutlet="badges; context: { $implicit: row.ws }" /></div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px"><ng-container *ngTemplateOutlet="stats; context: { $implicit: row }" /></div>
+            </div>
+            <span style="color: var(--text-faint); display: flex"><app-icon name="chevronRight" [size]="18" /></span>
+            @if (variant() === 'desktop') {
+              <div class="ws-tooltip-bubble"><app-icon name="mapPin" [size]="12" /> {{ addressLine(row.ws) }}</div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

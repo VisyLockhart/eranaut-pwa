@@ -84,6 +84,12 @@ export class OverviewVm {
   /** 「最快返航」:排序後第一筆(D-121) */
   readonly fastest = computed(() => this.sortedAll()[0] ?? null);
 
+  /** 從工坊管理點某間工坊:跳到總覽並套用該工坊過濾(D-101) */
+  select(workshopId: string): void {
+    const i = this.store.workshops().findIndex((w) => w.id === workshopId);
+    this.requestedIndex.set(i >= 0 ? i + 1 : 0);
+  }
+
   prev(): void {
     const n = this.pagerLabels().length;
     this.requestedIndex.set((this.index() - 1 + n) % n);

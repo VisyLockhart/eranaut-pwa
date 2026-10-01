@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { MeDto, OverviewDto, PublicConfigDto } from '@eranaut/shared';
+import type { MeDto, OverviewDto, PublicConfigDto, WorkshopDto, WorkshopInput } from '@eranaut/shared';
 import { firstValueFrom } from 'rxjs';
 
 // 對後端公開 API 的薄包裝(同網域,不做 CORS;cookie 由瀏覽器自動帶,D-142)。
@@ -19,5 +19,16 @@ export class Api {
   }
   logout(): Promise<unknown> {
     return firstValueFrom(this.http.post('/api/auth/logout', null));
+  }
+
+  // ---- 工坊 CRUD(SCHEMA §8.3);PUT 是整筆取代 ----
+  createWorkshop(input: WorkshopInput): Promise<WorkshopDto> {
+    return firstValueFrom(this.http.post<WorkshopDto>('/api/workshops', input));
+  }
+  updateWorkshop(id: string, input: WorkshopInput): Promise<WorkshopDto> {
+    return firstValueFrom(this.http.put<WorkshopDto>(`/api/workshops/${encodeURIComponent(id)}`, input));
+  }
+  deleteWorkshop(id: string): Promise<unknown> {
+    return firstValueFrom(this.http.delete(`/api/workshops/${encodeURIComponent(id)}`));
   }
 }

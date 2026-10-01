@@ -22,7 +22,7 @@ describe('OverviewVm', () => {
     store = TestBed.inject(DataStore);
     vm = TestBed.inject(OverviewVm);
     store.now.set(NOW);
-    store.workshops.set([ws('A', [sub('A', 1, 120), sub('A', 2, 30)]), ws('B', [sub('B', 1, -5), sub('B', 2, 30), sub('B', 3, null, 'complete')])]);
+    store.fetched.set([ws('A', [sub('A', 1, 120), sub('A', 2, 30)]), ws('B', [sub('B', 1, -5), sub('B', 2, 30), sub('B', 3, null, 'complete')])]);
   });
 
   it('排序:可收艇在前(穩定),其餘依 ETA,同時間維持工坊與位置順序', () => {
@@ -49,8 +49,21 @@ describe('OverviewVm', () => {
   it('目前工坊被刪除時退回「全部」', () => {
     vm.prev();
     expect(vm.currentWorkshop()?.id).toBe('B');
-    store.workshops.set([ws('A', [])]);
+    store.fetched.set([ws('A', [])]);
     expect(vm.index()).toBe(0);
+  });
+
+  it('select:依工坊 id 套用過濾,找不到退回「全部」', () => {
+    vm.select('B');
+    expect(vm.currentWorkshop()?.id).toBe('B');
+    vm.select('nope');
+    expect(vm.currentWorkshop()).toBeNull();
+  });
+
+  it('工坊自訂順序會反映在切換與排序的同分順序', () => {
+    store.order.set(['B', 'A']);
+    expect(vm.pagerLabels()).toEqual(['全部', 'B', 'A']);
+    expect(vm.sortedAll().map((i) => i.id)).toEqual(['B-1', 'B-3', 'B-2', 'A-2', 'A-1']);
   });
 
   it('wsMeta / addressLine', () => {
