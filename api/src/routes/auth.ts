@@ -55,7 +55,7 @@ export function registerAuthRoutes(
     if (!code || !state || !expectedState || !safeEqual(state, expectedState)) return fail('failed');
 
     const result = await completeLogin(
-      { db, discord: deps.discord, permissions: deps.permissions, guildId: config.discord.guildId, now: deps.now },
+      { db, discord: deps.discord, permissions: deps.permissions, guildId: config.discord.guildId, now: deps.now, log: req.log },
       code,
     );
     if (!result.ok) return fail(result.error);

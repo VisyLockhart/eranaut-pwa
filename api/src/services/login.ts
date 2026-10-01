@@ -15,6 +15,8 @@ export interface LoginDeps {
   permissions: Permissions;
   guildId: string;
   now: () => Date;
+  /** 失敗原因只進 log(給部署者排錯),不回給使用者;不放 token 或 code */
+  log?: { warn(obj: object, msg?: string): void };
 }
 
 /**
@@ -25,19 +27,27 @@ export interface LoginDeps {
  * 4. 建立 session,名稱與頭像暫存於其中(不入 users)
  */
 export async function completeLogin(deps: LoginDeps, code: string): Promise<LoginResult> {
-  const { db, discord, permissions, guildId, now } = deps;
+  const { db, discord, permissions, guildId, now, log } = deps;
 
   let discordUserId: string;
   let member;
   try {
     discordUserId = await discord.exchangeCodeForUserId(code);
     member = await discord.getGuildMember(discordUserId);
-  } catch {
+  } catch (e) {
+    log?.warn({ event: 'login_failed', error: 'failed', cause: e instanceof Error ? e.message : String(e) });
     return { ok: false, error: 'failed' };
   }
 
-  if (!member) return { ok: false, error: 'not_in_guild' };
-  if (!permissions.can('member', member.roles)) return { ok: false, error: 'no_role' };
+  if (!member) {
+    log?.warn({ event: 'login_failed', error: 'not_in_guild', guildId });
+    return { ok: false, error: 'not_in_guild' };
+  }
+  if (!permissions.can('member', member.roles)) {
+    // 身份組 ID 不是機密;列出來方便對照 ELIGIBLE_ROLE_RULE
+    log?.warn({ event: 'login_failed', error: 'no_role', memberRoleIds: member.roles });
+    return { ok: false, error: 'no_role' };
+  }
 
   let user = findUserByDiscordId(db, discordUserId);
   if (!user) {
