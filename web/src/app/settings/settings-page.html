@@ -1,0 +1,50 @@
+@if (layout.isDesktop()) {
+  <div class="d-topbar">
+    <div>
+      <div class="d-title">設定</div>
+      <div class="d-subtitle">帳號與提醒方式</div>
+    </div>
+  </div>
+  <div class="d-upload-wrap" style="width: 100%"><ng-container *ngTemplateOutlet="body" /></div>
+} @else {
+  <div class="m-upload-body"><ng-container *ngTemplateOutlet="body" /></div>
+}
+
+<ng-template #body>
+  <div class="modal-section-label" style="margin-top: 0">帳號</div>
+  <div class="modal-toggle-row" style="margin-top: 0">
+    <app-avatar [name]="auth.user()?.displayName ?? ''" [url]="auth.user()?.avatarUrl ?? null" [size]="38" />
+    <div style="flex: 1; min-width: 0">
+      <div style="font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ auth.user()?.displayName }}</div>
+      <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">已連結 Discord</div>
+    </div>
+    <button type="button" class="ghost-btn" style="width: auto; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px" (click)="auth.logout()"><app-icon name="logout" [size]="15" />登出</button>
+  </div>
+
+  <div class="modal-section-label">提醒方式</div>
+  @if (vm.prefs(); as p) {
+    <div class="modal-toggle-row" style="margin-top: 0">
+      <label class="switch"><input type="checkbox" [checked]="p.dm" [disabled]="vm.saving()" (change)="vm.toggle('dm')" aria-labelledby="set-dm-label" /><span class="slider"></span></label>
+      <div>
+        <div id="set-dm-label" style="font-size: 13px; font-weight: 600">Discord 私訊</div>
+        <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">由 Eranarch 私訊你，只有你看得到</div>
+      </div>
+    </div>
+    <div class="modal-toggle-row">
+      <label class="switch"><input type="checkbox" [checked]="p.channel" [disabled]="vm.saving()" (change)="vm.toggle('channel')" aria-labelledby="set-ch-label" /><span class="slider"></span></label>
+      <div>
+        <div id="set-ch-label" style="font-size: 13px; font-weight: 600">伺服器頻道 @ 提及</div>
+        <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">在伺服器的通知頻道提及你。<span style="color: var(--amber)">這是公開訊息</span>，看得到該頻道的人都看得到</div>
+      </div>
+    </div>
+    @if (!p.dm && !p.channel) {
+      <div class="uf-note" style="margin-top: 12px" role="status">兩種方式都關閉時，不會收到任何潛艇提醒。</div>
+    }
+    <div class="uf-note" style="margin-top: 12px">每間工坊另可設定「整批提醒」與「預先提醒」，到「工坊」→ 管理 → 編輯。</div>
+    @if (vm.saveError(); as message) { <div class="modal-error-text" role="alert">{{ message }}</div> }
+  } @else if (vm.loadError()) {
+    <div class="up-empty">讀取失敗。<br /><button type="button" class="ghost-btn" style="margin-top: 12px; max-width: 160px" (click)="vm.load()">重試</button></div>
+  } @else {
+    <div class="up-empty">讀取中…</div>
+  }
+</ng-template>

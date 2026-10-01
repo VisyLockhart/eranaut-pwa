@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
   MeDto,
+  NotifyPrefs,
   OverviewDto,
   PublicConfigDto,
   SubmarineInput,
@@ -48,5 +49,14 @@ export class Api {
   /** 單艘快速修改:位置取自網址 */
   updateSubmarine(workshopId: string, input: SubmarineInput): Promise<SubmarinesUpdateResult> {
     return firstValueFrom(this.http.put<SubmarinesUpdateResult>(`/api/workshops/${encodeURIComponent(workshopId)}/submarines/${input.position}`, input));
+  }
+
+  // ---- 提醒方式(SCHEMA §8.5;對外用具名布林,D-145 ⑦) ----
+  notifyPrefs(): Promise<NotifyPrefs> {
+    return firstValueFrom(this.http.get<NotifyPrefs>('/api/notify-prefs'));
+  }
+  /** 兩個欄位都必填且為布林;全部取消 = 不收任何提醒(D-133) */
+  setNotifyPrefs(prefs: NotifyPrefs): Promise<NotifyPrefs> {
+    return firstValueFrom(this.http.put<NotifyPrefs>('/api/notify-prefs', prefs));
   }
 }

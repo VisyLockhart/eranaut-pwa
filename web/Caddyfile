@@ -6,9 +6,15 @@
 	handle /api/* {
 		reverse_proxy eranaut-api:3000
 	}
+	# 帶雜湊檔名的 js/css 可長期快取;其餘(index.html、SPA 備援頁、ngsw*.js、manifest)一律 no-cache,
+	# 否則 service worker 與新版本送不出去(D-155)
+	@hashed path_regexp ^/[A-Za-z0-9_.-]+-[A-Za-z0-9_-]{8}\.(js|css)$
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
 	handle {
 		root * /srv
 		try_files {path} /index.html
+		@notHashed not path_regexp ^/[A-Za-z0-9_.-]+-[A-Za-z0-9_-]{8}\.(js|css)$
+		header @notHashed Cache-Control "no-cache"
 		file_server
 	}
 }
