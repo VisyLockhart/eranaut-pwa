@@ -111,3 +111,19 @@ export interface NotifyPrefsValidationErrorBody {
   error: 'validation_failed';
   fields: { dm?: FieldErrorCode; channel?: FieldErrorCode };
 }
+
+// ---- 登入與公開設定(D-123、D-134、D-142) ----
+
+/** `GET /api/me`:名稱與頭像每次載入都由 API 取得(D-134、D-145 ⑥) */
+export interface MeDto {
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+/** `GET /api/public-config`:登入前就要用的公開設定 */
+export interface PublicConfigDto {
+  guildName: string;
+}
+
+/** 登入失敗分類碼,由回呼端點以 `/?login_error=` 帶回(D-142 ③) */
+export type LoginErrorCode = 'denied' | 'failed' | 'not_in_guild' | 'no_role';

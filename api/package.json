@@ -12,8 +12,10 @@
   "dependencies": {
     "@eranaut/shared": "*",
     "@fastify/cookie": "^11.1.2",
+    "@fastify/schedule": "^7.0.0",
     "better-sqlite3": "^13.0.3",
-    "fastify": "^5.0.0"
+    "fastify": "^5.0.0",
+    "toad-scheduler": "^4.2.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",

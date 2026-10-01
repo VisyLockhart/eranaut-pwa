@@ -1,0 +1,51 @@
+@if (!layout.isDesktop()) {
+  <div class="mobile-shell">
+    <div class="m-header">
+      <div class="logo-mark"><app-icon name="logo" [size]="19" /></div>
+      <div style="flex-grow: 1; min-width: 0">
+        <div style="font-size: 14px; font-weight: 700; letter-spacing: 0.06em">AEQUOR ERANOS</div>
+        <div style="font-size: 11px; color: var(--text-dim); margin-top: 1px">{{ layout.pageTitle() }}</div>
+      </div>
+      <app-avatar [name]="auth.user()?.displayName ?? ''" [url]="auth.user()?.avatarUrl ?? null" />
+    </div>
+
+    <router-outlet />
+
+    <div class="m-nav">
+      <a class="nav-item" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>總覽</span></a>
+      <a class="nav-item" routerLink="/workshops" routerLinkActive="active"><app-icon name="workshops" [size]="20" /><span>工坊</span></a>
+      <a class="nav-item nav-upload" routerLink="/update" routerLinkActive="active">
+        <div class="nav-upload-fab"><app-icon name="camera" [size]="20" /></div>
+        <span>更新</span>
+      </a>
+      <a class="nav-item" role="button" tabindex="0" (click)="auth.logout()" (keydown.enter)="auth.logout()"><app-icon name="user" [size]="20" /><span>登出</span></a>
+    </div>
+    <app-copyright variant="bar" />
+  </div>
+} @else {
+  <div class="d-wrap">
+    <div class="d-sidebar">
+      <div class="d-brand">
+        <div class="logo-mark"><app-icon name="logo" [size]="19" /></div>
+        <div>
+          <div class="d-brand-name">AEQUOR ERANOS</div>
+          <div class="d-brand-sub">潛水艇追蹤</div>
+        </div>
+      </div>
+      <a class="d-nav-item" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>總覽</span></a>
+      <a class="d-nav-item" routerLink="/workshops" routerLinkActive="active"><app-icon name="workshops" [size]="20" /><span>工坊管理</span></a>
+      <a class="d-nav-item" routerLink="/update" routerLinkActive="active"><app-icon name="camera" [size]="20" /><span>更新潛艇</span></a>
+      <div style="flex-grow: 1"></div>
+      <div class="d-user">
+        <app-avatar [name]="auth.user()?.displayName ?? ''" [url]="auth.user()?.avatarUrl ?? null" [size]="30" />
+        <div style="min-width: 0; flex-grow: 1">
+          <div class="d-user-name">{{ auth.user()?.displayName }}</div>
+          <div class="d-user-sub">已連結 Discord</div>
+        </div>
+        <button class="ws-icon-btn" style="width: 28px; height: 28px; flex: 0 0 auto" (click)="auth.logout()" aria-label="登出"><app-icon name="logout" [size]="16" /></button>
+      </div>
+      <app-copyright variant="footer" />
+    </div>
+    <div class="d-main"><router-outlet /></div>
+  </div>
+}

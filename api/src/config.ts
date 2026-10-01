@@ -7,6 +7,8 @@ export interface AppConfig {
   cookieSecure: boolean;
   /** 頻道 @ 提醒要發到的頻道 ID(D-72、D-129);未設定時頻道提醒會標記失敗 */
   reminderChannelId: string | null;
+  /** 伺服器顯示名稱:登入失敗畫面的「XX 伺服器」(D-123、D-143 ⑥),不是 Discord 後台的名稱 */
+  guildName: string;
   /** Eranarch 呼叫內部埠用的共用密鑰(D-131 ①),Bearer 驗證 */
   internalSecret: string;
   discord: {
@@ -49,6 +51,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     publicOrigin: origin,
     reminderChannelId: channelId,
     internalSecret,
+    guildName: required(env, 'GUILD_DISPLAY_NAME'),
     cookieSecure: env.COOKIE_SECURE?.trim().toLowerCase() !== 'false',
     discord: {
       clientId: required(env, 'DISCORD_CLIENT_ID'),

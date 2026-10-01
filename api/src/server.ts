@@ -43,6 +43,8 @@ export function buildPublicServer(deps: AppDeps, opts: { logger?: boolean } = {}
   });
 
   app.get('/api/healthz', async () => ({ ok: true }));
+  // 登入前就要用的公開設定(登入失敗畫面的伺服器名稱,D-123);不含任何機密
+  app.get('/api/public-config', async () => ({ guildName: deps.config.guildName }));
   const requireSession = registerSessionAuth(app, deps);
   registerAuthRoutes(app, deps, requireSession);
   registerWorkshopRoutes(app, deps, requireSession);

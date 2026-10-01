@@ -1,0 +1,121 @@
+<ng-template #brand>
+  <div class="auth-logo-row">
+    <div class="logo-mark"><app-icon name="logo" [size]="19" /></div>
+    <div class="d-brand-name">ERANAUT</div>
+  </div>
+</ng-template>
+
+<ng-template #features>
+  <div class="auth-feature-card">
+    <div class="auth-feature-icon" style="background: rgba(45, 212, 191, 0.12)"><app-icon name="clock" [size]="21" /></div>
+    <div class="auth-feature-title">倒數提醒</div>
+    <div class="auth-feature-desc">一次看到所有工坊底下潛艇的返航時間，不用逐一心算</div>
+  </div>
+  <div class="auth-feature-card">
+    <div class="auth-feature-icon" style="background: rgba(45, 212, 191, 0.12)"><app-icon name="cameraFeature" [size]="21" /></div>
+    <div class="auth-feature-title">截圖辨識</div>
+    <div class="auth-feature-desc">上傳潛艇管理畫面截圖，自動辨識收艇時間，不用手動輸入</div>
+  </div>
+  <div class="auth-feature-card">
+    <div class="auth-feature-icon" style="background: rgba(88, 101, 242, 0.14); color: var(--discord)"><app-icon name="discord" [size]="20" /></div>
+    <div class="auth-feature-title">Discord 整合</div>
+    <div class="auth-feature-desc">bot 主動 DM 提醒、隨時用 /eran 指令查詢，不用切換 App</div>
+  </div>
+</ng-template>
+
+<ng-template #failIcon>
+  @if (failCopy().danger) {
+    <app-icon name="warning" [size]="28" />
+  } @else {
+    <app-icon name="cancelNeutral" [size]="28" />
+  }
+</ng-template>
+
+@if (!layout.isDesktop()) {
+  <div class="mobile-shell">
+    @switch (screen()) {
+      @case ('landing') {
+        <div class="auth-page-m">
+          <ng-container *ngTemplateOutlet="brand" />
+          <div class="auth-hero-title-m">潛水艇追蹤，不再錯過收艇時間</div>
+          <div class="auth-hero-sub-m">為 FFXIV 潛水艇公會打造的簡單工具，串接 Discord bot，隨時掌握每一艘潛艇的狀態。</div>
+          <button class="discord-btn" (click)="auth.login()"><app-icon name="discord" [size]="20" />使用 Discord 登入</button>
+          <div class="auth-features-m"><ng-container *ngTemplateOutlet="features" /></div>
+        </div>
+      }
+      @case ('processing') {
+        <div class="auth-page-m centered">
+          <div class="auth-pulse-wrap"><span class="auth-pulse-ring pulse-ring"></span><div class="auth-pulse-core"><app-icon name="logo" [size]="19" /></div></div>
+          <div style="font-size: 17px; font-weight: 700; margin-bottom: 8px">正在驗證你的 Discord 帳號…</div>
+          <div style="font-size: 12.5px; color: var(--text-dim); line-height: 1.6">請稍候，不要關閉這個視窗</div>
+        </div>
+      }
+      @case ('fail') {
+        <div class="auth-page-m centered">
+          <div class="auth-card">
+            <div class="auth-card-icon"><ng-container *ngTemplateOutlet="failIcon" /></div>
+            <div class="auth-card-title">{{ failCopy().title }}</div>
+            <div class="auth-card-desc">{{ failCopy().desc }}</div>
+            <button class="auth-card-btn" (click)="retry()">{{ failCopy().button }}</button>
+          </div>
+        </div>
+      }
+      @case ('expired') {
+        <div class="auth-page-m centered">
+          <div class="auth-expired-banner"><app-icon name="clockAmber" [size]="16" />登入已過期，請重新登入才能繼續查看你的潛艇進度</div>
+          <ng-container *ngTemplateOutlet="brand" />
+          <div style="font-size: 22px; font-weight: 700; margin-bottom: 10px">歡迎回來</div>
+          <div style="font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin-bottom: 26px">
+            你的登入狀態已經過期（通常是太久沒開啟，或在其他裝置變更了授權）。重新登入一次就能繼續。
+          </div>
+          <button class="discord-btn" (click)="auth.login()"><app-icon name="discord" [size]="20" />重新使用 Discord 登入</button>
+        </div>
+      }
+    }
+  </div>
+} @else {
+  @switch (screen()) {
+    @case ('landing') {
+      <div class="auth-page-d">
+        <ng-container *ngTemplateOutlet="brand" />
+        <div class="auth-hero-title-d">潛水艇追蹤，不再錯過收艇時間</div>
+        <div class="auth-hero-sub-d">為 FFXIV 潛水艇公會打造的簡單工具，串接 Discord bot，隨時掌握每一艘潛艇的狀態。</div>
+        <button class="discord-btn" style="width: auto; margin-bottom: 64px" (click)="auth.login()"><app-icon name="discord" [size]="20" />使用 Discord 登入</button>
+        <div class="auth-features-d"><ng-container *ngTemplateOutlet="features" /></div>
+      </div>
+    }
+    @case ('processing') {
+      <div class="auth-page-d" style="justify-content: center">
+        <div class="auth-pulse-wrap" style="width: 104px; height: 104px; margin-bottom: 32px">
+          <span class="auth-pulse-ring pulse-ring" style="width: 84px; height: 84px"></span>
+          <div class="auth-pulse-core" style="width: 84px; height: 84px"><app-icon name="logo" [size]="19" /></div>
+        </div>
+        <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px">正在驗證你的 Discord 帳號…</div>
+        <div style="font-size: 14px; color: var(--text-dim); text-align: center; max-width: 320px; line-height: 1.6">請稍候，不要關閉這個視窗</div>
+      </div>
+    }
+    @case ('fail') {
+      <div class="auth-page-d" style="justify-content: center">
+        <div class="auth-card" style="max-width: 480px; padding: 48px">
+          <div class="auth-card-icon" style="width: 72px; height: 72px; border-radius: 18px; margin-bottom: 26px"><ng-container *ngTemplateOutlet="failIcon" /></div>
+          <div class="auth-card-title" style="font-size: 20px">{{ failCopy().title }}</div>
+          <div class="auth-card-desc" style="font-size: 14px; margin-bottom: 32px">{{ failCopy().desc }}</div>
+          <button class="auth-card-btn" style="padding: 14px; font-size: 14.5px" (click)="retry()">{{ failCopy().button }}</button>
+        </div>
+      </div>
+    }
+    @case ('expired') {
+      <div class="auth-page-d" style="justify-content: center; padding-top: 0">
+        <div class="auth-expired-banner-d"><app-icon name="clockAmber" [size]="16" />登入已過期，請重新登入才能繼續查看你的潛艇進度</div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center">
+          <ng-container *ngTemplateOutlet="brand" />
+          <div style="font-size: 32px; font-weight: 700; margin-bottom: 14px">歡迎回來</div>
+          <div style="font-size: 14px; color: var(--text-muted); text-align: center; line-height: 1.6; margin-bottom: 40px; max-width: 440px">
+            你的登入狀態已經過期（通常是太久沒開啟，或在其他裝置變更了授權）。重新登入一次就能繼續。
+          </div>
+          <button class="discord-btn" style="width: auto; padding: 16px 40px" (click)="auth.login()"><app-icon name="discord" [size]="20" />重新使用 Discord 登入</button>
+        </div>
+      </div>
+    }
+  }
+}

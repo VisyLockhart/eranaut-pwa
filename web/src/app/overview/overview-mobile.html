@@ -1,0 +1,89 @@
+<div class="m-stats">
+  <div class="m-stat"><div class="num mono">{{ vm.stats().workshops }}</div><div class="label">工坊</div></div>
+  <div class="m-stat"><div class="num mono">{{ vm.stats().submarines }}</div><div class="label">潛水艇</div></div>
+  <div class="m-stat ready"><div class="num mono">{{ vm.stats().ready }}</div><div class="label">艘待收艇</div></div>
+</div>
+
+<div class="pager">
+  <div class="pager-row">
+    <button class="pager-btn icon-btn" style="border-radius: 10px" (click)="vm.prev()" aria-label="上一間工坊"><app-icon name="chevronLeft" /></button>
+    <div class="pager-label" [style.color]="vm.index() === 0 ? 'var(--text)' : 'var(--accent)'">{{ vm.pagerLabels()[vm.index()] }}</div>
+    <button class="pager-btn icon-btn" style="border-radius: 10px" (click)="vm.next()" aria-label="下一間工坊"><app-icon name="chevronRight" /></button>
+  </div>
+  <div class="pager-dots">
+    @for (label of vm.pagerLabels(); track $index) {
+      <span class="dot" [class.active]="$index === vm.index()"></span>
+    }
+  </div>
+</div>
+
+@if (vm.currentWorkshop(); as ws) {
+  <div class="ws-context-line">
+    <app-icon name="server" [size]="12" />{{ ws.server || '未設定伺服器' }}<span style="color: var(--text-faint)">·</span>{{ ws.captain || '未設定代表角色' }}
+  </div>
+}
+
+<div class="m-viewswitch">
+  <div class="sort-label">
+    {{ vm.index() === 0 ? '依返航時間排序' : vm.pagerLabels()[vm.index()] + ' · 依返航時間排序' }}
+  </div>
+  <div class="pill-toggle">
+    <button class="icon-btn" [class.active]="store.view() === 'list'" style="width: 30px; height: 30px" (click)="store.setView('list')" aria-label="切換為列表檢視"><app-icon name="list" [size]="15" /></button>
+    <button class="icon-btn" [class.active]="store.view() === 'card'" style="width: 30px; height: 30px" (click)="store.setView('card')" aria-label="切換為卡片檢視"><app-icon name="grid" [size]="15" /></button>
+  </div>
+</div>
+
+@if (store.loadError() && !store.loaded()) {
+  <div class="up-empty" style="margin: 0 18px">
+    讀取資料失敗。<br />
+    <button class="ghost-btn" style="margin-top: 12px; max-width: 160px" (click)="store.refresh()">重試</button>
+  </div>
+} @else if (!store.loaded()) {
+  <div class="up-empty" style="margin: 0 18px">讀取中…</div>
+} @else if (vm.items().length === 0) {
+  <div class="up-empty" style="margin: 0 18px">
+    {{ vm.stats().workshops === 0 ? '還沒有工坊。到「工坊」新增第一間工坊吧。' : '目前沒有潛水艇記錄。到「更新」輸入潛艇的剩餘時間。' }}
+  </div>
+} @else if (store.view() === 'list') {
+  <div class="m-list">
+    @for (item of vm.items(); track item.id) {
+      <div class="row" [class.ready]="item.ready">
+        <div class="row-dot-wrap">
+          @if (!item.ready) { <span class="row-ring pulse-ring" style="border-color: var(--accent)"></span> }
+          <span class="row-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--accent)'"></span>
+        </div>
+        <div class="row-main">
+          <div class="row-sub">{{ item.name }}</div>
+          <div class="row-ws">{{ item.workshop.name }} {{ circled(item.position) }}{{ wsMeta(item.workshop) }}</div>
+        </div>
+        <div class="row-right">
+          <div class="row-time mono" [style.color]="item.ready ? 'var(--amber)' : null">{{ item.display.time }}</div>
+          <div class="row-status" [style.color]="item.ready ? '#d8a94c' : null">{{ item.display.label }}</div>
+        </div>
+      </div>
+    }
+  </div>
+} @else {
+  <div class="m-cards">
+    @for (item of vm.items(); track item.id) {
+      <div class="card" [class.ready]="item.ready">
+        <div class="card-top">
+          <div class="card-ws">{{ item.workshop.name }}</div>
+          <div class="status-pill" [class.ready]="item.ready">
+            <span class="pill-dot-wrap">
+              @if (!item.ready) { <span class="pill-ring pulse-ring" style="border-color: var(--accent)"></span> }
+              <span class="pill-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--accent)'"></span>
+            </span>
+            {{ item.display.label }}
+          </div>
+        </div>
+        <div style="font-size: 10.5px; color: var(--text-faint); margin-bottom: 8px">{{ circled(item.position) }}{{ wsMeta(item.workshop) }}</div>
+        <div class="card-sub">{{ item.name }}</div>
+        <div class="card-bottom">
+          <div class="card-time mono" [style.color]="item.ready ? 'var(--amber)' : null">{{ item.display.shortTime }}</div>
+          <div class="card-hint">{{ item.display.hint }}</div>
+        </div>
+      </div>
+    }
+  </div>
+}

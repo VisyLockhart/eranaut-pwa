@@ -12,6 +12,14 @@ test('公開埠健康檢查回 200、no-store,且不送任何 CORS 標頭', asyn
   await app.close();
 });
 
+test('公開設定:不需登入,只回伺服器顯示名稱(D-123)', async () => {
+  const { app } = makeApp();
+  const res = await app.inject({ method: 'GET', url: '/api/public-config' });
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.json(), { guildName: '貝殼公會' });
+  await app.close();
+});
+
 test('內部埠健康檢查回 200', async () => {
   const { internal: app } = makeApp();
   const res = await app.inject({ method: 'GET', url: '/healthz' });

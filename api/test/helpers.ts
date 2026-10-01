@@ -17,6 +17,7 @@ export const config: AppConfig = {
   cookieSecure: true,
   reminderChannelId: '888888888888888888',
   internalSecret: 'test-internal-secret-0123456789abcdef',
+  guildName: '貝殼公會',
   discord: { clientId: 'client-id', clientSecret: 'client-secret', botToken: 'bot-token', guildId: GUILD_ID },
 };
 
