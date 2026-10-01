@@ -15,7 +15,15 @@ export interface DiscordGuildMember {
     global_name: string | null;
     /** 帳號頭像 hash */
     avatar: string | null;
+    /** 機器人帳號(列表時排除) */
+    bot?: boolean;
   };
+}
+
+/** 公會擁有者與身份組權限位元(判斷 Administrator 用,D-150) */
+export interface GuildAdminInfo {
+  ownerId: string;
+  roles: { id: string; permissions: string }[];
 }
 
 export interface DiscordClient {
@@ -25,6 +33,8 @@ export interface DiscordClient {
   getGuildMember(userId: string): Promise<DiscordGuildMember | null>;
   /** 列出公會全部成員(每日資格比對用,D-130)。需要 bot 開啟 Server Members Intent;任何一頁失敗就整個丟錯,不回傳不完整的名單 */
   listGuildMembers(): Promise<DiscordGuildMember[]>;
+  /** 公會擁有者與全部身份組的權限位元(GET /guilds/{id}) */
+  getGuildAdminInfo(): Promise<GuildAdminInfo>;
 }
 
 export class DiscordError extends Error {
@@ -84,6 +94,14 @@ export function createDiscordClient(config: AppConfig, fetchImpl: typeof fetch =
       if (res.status === 404) return null;
       if (!res.ok) throw new DiscordError(`查詢公會成員失敗:HTTP ${res.status}`);
       return (await res.json()) as DiscordGuildMember;
+    },
+
+    async getGuildAdminInfo() {
+      const res = await fetchImpl(`${API}/guilds/${guildId}`, { headers: { Authorization: `Bot ${botToken}` } });
+      if (!res.ok) throw new DiscordError(`查詢公會資訊失敗:HTTP ${res.status}`);
+      const g = (await res.json()) as { owner_id?: string; roles?: { id: string; permissions: string }[] };
+      if (!g.owner_id || !Array.isArray(g.roles)) throw new DiscordError('公會資訊缺少 owner_id 或 roles');
+      return { ownerId: g.owner_id, roles: g.roles.map((r) => ({ id: r.id, permissions: r.permissions })) };
     },
 
     async listGuildMembers() {

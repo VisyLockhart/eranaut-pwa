@@ -76,3 +76,13 @@ test('列出全部成員:每頁 1000 筆,依最後一位的 id 翻頁;任何一�
   const failing = createDiscordClient(config, fakeFetch([json(page1), json({}, 500)], []));
   await assert.rejects(failing.listGuildMembers(), DiscordError);
 });
+
+test('公會資訊:取擁有者與身份組權限位元;缺欄位或失敗丟 DiscordError', async () => {
+  const calls: Call[] = [];
+  const info = { owner_id: '1', roles: [{ id: '2', permissions: '8', name: 'x' }] };
+  const client = createDiscordClient(config, fakeFetch([json(info), json({}), json({}, 403)], calls));
+  assert.deepEqual(await client.getGuildAdminInfo(), { ownerId: '1', roles: [{ id: '2', permissions: '8' }] });
+  assert.equal(calls[0]!.url, `https://discord.com/api/v10/guilds/${GUILD_ID}`);
+  await assert.rejects(client.getGuildAdminInfo(), DiscordError);
+  await assert.rejects(client.getGuildAdminInfo(), DiscordError);
+});

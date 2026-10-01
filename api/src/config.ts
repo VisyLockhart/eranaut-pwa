@@ -7,6 +7,8 @@ export interface AppConfig {
   cookieSecure: boolean;
   /** 頻道 @ 提醒要發到的頻道 ID(D-72、D-129);未設定時頻道提醒會標記失敗 */
   reminderChannelId: string | null;
+  /** Eranarch 呼叫內部埠用的共用密鑰(D-131 ①),Bearer 驗證 */
+  internalSecret: string;
   discord: {
     clientId: string;
     clientSecret: string;
@@ -41,9 +43,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   if (channelId !== null && !/^\d{17,20}$/.test(channelId)) {
     throw new ConfigError('REMINDER_CHANNEL_ID 格式錯誤(應為 17~20 位數字的頻道 ID)');
   }
+  const internalSecret = required(env, 'INTERNAL_API_SECRET');
+  if (internalSecret.length < 32) throw new ConfigError('INTERNAL_API_SECRET 太短(至少 32 字元的隨機字串)');
   return {
     publicOrigin: origin,
     reminderChannelId: channelId,
+    internalSecret,
     cookieSecure: env.COOKIE_SECURE?.trim().toLowerCase() !== 'false',
     discord: {
       clientId: required(env, 'DISCORD_CLIENT_ID'),

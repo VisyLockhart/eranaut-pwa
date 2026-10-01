@@ -6,6 +6,8 @@ import type { Permissions } from './auth/permissions.js';
 import type { DiscordClient } from './discord/client.js';
 import { registerSessionAuth } from './auth/session-guard.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { createGuildCache } from './services/guild-cache.js';
+import { registerInternalRoutes } from './routes/internal.js';
 import { registerNotifyPrefsRoutes } from './routes/notify-prefs.js';
 import { registerSubmarineRoutes } from './routes/submarines.js';
 import { registerWorkshopRoutes } from './routes/workshops.js';
@@ -49,8 +51,9 @@ export function buildPublicServer(deps: AppDeps, opts: { logger?: boolean } = {}
   return app;
 }
 
-export function buildInternalServer(opts: { logger?: boolean } = {}): FastifyInstance {
+export function buildInternalServer(deps: AppDeps, opts: { logger?: boolean } = {}): FastifyInstance {
   const app = Fastify({ logger: opts.logger ?? true });
   app.get('/healthz', async () => ({ ok: true }));
+  registerInternalRoutes(app, deps, createGuildCache(deps.discord, deps.now));
   return app;
 }

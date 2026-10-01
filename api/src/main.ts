@@ -18,8 +18,9 @@ const db = openDatabase(process.env.DATABASE_PATH ?? './data/eranaut.db');
 migrate(db);
 
 const discord = createDiscordClient(config);
-const pub = buildPublicServer({ db, config, discord, permissions, now: () => new Date() });
-const internal = buildInternalServer();
+const deps = { db, config, discord, permissions, now: () => new Date() };
+const pub = buildPublicServer(deps);
+const internal = buildInternalServer(deps);
 
 // 提醒輪詢(D-128):隨公開埠的 Fastify 啟停
 await startReminderPoller(pub, {

@@ -1,9 +1,9 @@
 import type { Db } from '../db/index.js';
 import type { Permissions } from '../auth/permissions.js';
 import type { DiscordClient } from '../discord/client.js';
-import { deleteExpiredSessions, deleteSessionsForUser } from '../repo/sessions.js';
-import { deleteRemindersForUser } from '../repo/reminders.js';
+import { deleteExpiredSessions } from '../repo/sessions.js';
 import { clearSuspension } from '../repo/users.js';
+import { suspendUser } from './suspension.js';
 
 // 每日資格比對(D-130 ①③④、D-143 ③b)。
 // - 向 Discord 取全部成員與身份組,套用共用的 `member` 規則,與 `users` 比對
@@ -63,15 +63,12 @@ export async function runEligibilitySweep(deps: SweepDeps): Promise<SweepSummary
   for (const m of members) if (permissions.can('member', m.roles)) eligible.add(m.user.id);
 
   const users = db.prepare('SELECT id, discord_user_id, suspended_at, suspended_auto FROM users').all() as UserState[];
-  const nowIso = now.toISOString();
 
   db.transaction(() => {
     for (const u of users) {
       const ok = eligible.has(u.discord_user_id);
       if (u.suspended_at === null && !ok) {
-        db.prepare('UPDATE users SET suspended_at = ?, suspended_auto = 1, suspended_by = NULL WHERE id = ?').run(nowIso, u.id);
-        deleteSessionsForUser(db, u.id);
-        deleteRemindersForUser(db, u.id);
+        suspendUser(db, u.id, { kind: 'auto' }, now);
         log.info({ event: 'eligibility_sweep', action: 'suspend', userId: u.id, discordUserId: u.discord_user_id });
         summary.suspended++;
       } else if (u.suspended_at !== null && u.suspended_auto === 1 && ok) {

@@ -4,7 +4,7 @@ import { createPermissions, parseRoleRule } from '../src/auth/permissions.js';
 import type { AppConfig } from '../src/config.js';
 import { migrate, openDatabase, type Db } from '../src/db/index.js';
 import type { DiscordClient, DiscordGuildMember } from '../src/discord/client.js';
-import { buildPublicServer } from '../src/server.js';
+import { buildInternalServer, buildPublicServer } from '../src/server.js';
 
 export const ORIGIN = 'https://eranaut.example.com';
 export const ROLE_A = '111111111111111111';
@@ -16,6 +16,7 @@ export const config: AppConfig = {
   publicOrigin: ORIGIN,
   cookieSecure: true,
   reminderChannelId: '888888888888888888',
+  internalSecret: 'test-internal-secret-0123456789abcdef',
   discord: { clientId: 'client-id', clientSecret: 'client-secret', botToken: 'bot-token', guildId: GUILD_ID },
 };
 
@@ -52,6 +53,15 @@ export class FakeDiscord implements DiscordClient {
     return this.members.get(userId) ?? null;
   }
   failList = false;
+  guildInfo: { ownerId: string; roles: { id: string; permissions: string }[] } = {
+    ownerId: '100000000000000001',
+    roles: [{ id: '444444444444444444', permissions: '8' }],
+  };
+  failGuildInfo = false;
+  async getGuildAdminInfo() {
+    if (this.failGuildInfo) throw new Error('guild info failed');
+    return this.guildInfo;
+  }
   async listGuildMembers() {
     if (this.failList) throw new Error('list failed');
     return [...this.members.values()].filter((m): m is DiscordGuildMember => m !== null);
@@ -63,6 +73,7 @@ export interface TestApp {
   db: Db;
   discord: FakeDiscord;
   clock: { now: Date };
+  internal: FastifyInstance;
 }
 
 /** member 規則:(A 且 B) 或 C */
@@ -72,8 +83,10 @@ export function makeApp(): TestApp {
   const discord = new FakeDiscord();
   const clock = { now: new Date('2026-10-01T00:00:00Z') };
   const permissions = createPermissions({ member: parseRoleRule(`${ROLE_A}+${ROLE_B},${ROLE_C}`) });
-  const app = buildPublicServer({ db, config, discord, permissions, now: () => clock.now }, { logger: false });
-  return { app, db, discord, clock };
+  const deps = { db, config, discord, permissions, now: () => clock.now };
+  const app = buildPublicServer(deps, { logger: false });
+  const internal = buildInternalServer(deps, { logger: false });
+  return { app, db, discord, clock, internal };
 }
 
 export function addUser(db: Db, discordId: string, over: { suspended_at?: string; suspended_auto?: number; suspended_by?: string } = {}): string {

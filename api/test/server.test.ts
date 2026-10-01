@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SERVERS } from '@eranaut/shared';
-import { buildInternalServer } from '../src/server.js';
 import { makeApp } from './helpers.js';
 
 test('公開埠健康檢查回 200、no-store,且不送任何 CORS 標頭', async () => {
@@ -14,7 +13,7 @@ test('公開埠健康檢查回 200、no-store,且不送任何 CORS 標頭', asyn
 });
 
 test('內部埠健康檢查回 200', async () => {
-  const app = buildInternalServer({ logger: false });
+  const { internal: app } = makeApp();
   const res = await app.inject({ method: 'GET', url: '/healthz' });
   assert.equal(res.statusCode, 200);
   await app.close();
