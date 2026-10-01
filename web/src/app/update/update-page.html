@@ -1,0 +1,71 @@
+@if (layout.isDesktop()) {
+  <div class="d-topbar">
+    <div>
+      <div class="d-title">更新潛艇</div>
+      <div class="d-subtitle">對照遊戲內潛艇畫面，逐艘填入剩餘時間，一次更新整個工坊</div>
+    </div>
+  </div>
+  <div class="d-upload-wrap" style="width: 100%">
+    <ng-container *ngTemplateOutlet="body" />
+    @if (vm.workshop()) {
+      <div class="uf-actions-d">
+        <button type="button" class="ghost-btn" (click)="cancel()">取消</button>
+        <button type="button" class="primary-btn" [disabled]="vm.submitting()" (click)="submit()">{{ vm.submitting() ? '送出中…' : '送出更新' }}</button>
+      </div>
+    }
+  </div>
+} @else {
+  <div class="m-upload-body"><ng-container *ngTemplateOutlet="body" /></div>
+  @if (vm.workshop()) {
+    <div class="uf-actions-m">
+      <button type="button" class="ghost-btn" (click)="cancel()">取消</button>
+      <button type="button" class="primary-btn" [disabled]="vm.submitting()" (click)="submit()">{{ vm.submitting() ? '送出中…' : '送出更新' }}</button>
+    </div>
+  }
+}
+
+<ng-template #body>
+  @if (!store.loaded()) {
+    <div class="up-empty">讀取中…</div>
+  } @else if (store.workshops().length === 0) {
+    <div class="up-empty">
+      還沒有任何工坊，請先建立一個工坊，才能更新潛艇資料。
+      <div style="margin-top: 12px"><a class="primary-btn" style="display: inline-block; width: auto; padding: 10px 20px; text-decoration: none" routerLink="/workshops">前往工坊管理</a></div>
+    </div>
+  } @else {
+    <div style="margin-bottom: 16px">
+      <label class="field-label" for="uf-ws">更新哪個工坊</label>
+      <select id="uf-ws" class="field-select" [style.width]="layout.isDesktop() ? '260px' : null" [value]="vm.workshopId() ?? ''" (change)="onSelect($event)">
+        @for (w of store.workshops(); track w.id) {
+          <option [value]="w.id" [selected]="w.id === vm.workshopId()">{{ w.name }}</option>
+        }
+      </select>
+    </div>
+
+    @if (vm.workshop(); as ws) {
+      <div class="uf-ws"><app-icon name="server" [size]="14" /><b>{{ ws.name }}</b>{{ wsMeta(ws) }}</div>
+      <div class="uf-note">對照遊戲內潛艇畫面，逐艘填入剩餘時間；沒有的單位填 0。</div>
+      @if (vm.compMin() > 0) {
+        <div class="uf-comp" role="status"><span>⏱</span><span>已依等待時間自動補正 {{ vm.compMin() }} 分鐘。如果你正在修改某一艘，那一艘會先暫停補正；你的修改一律優先。</span></div>
+      }
+      @for (row of vm.rows(); track row.key) {
+        <app-sub-row-editor
+          [row]="row"
+          [error]="vm.errors()[row.key] ?? null"
+          [eta]="vm.etaOf(row)"
+          [removable]="row.added"
+          (nameChange)="vm.setName(row.key, $event)"
+          (statusChange)="vm.setStatus(row.key, $event)"
+          (timeChange)="vm.setTime(row.key, $event.field, $event.value)"
+          (timeFocus)="vm.pause(row.key)"
+          (timeLeave)="vm.resume(row.key)"
+          (remove)="vm.removeRow(row.key)"
+        />
+      }
+      @if (vm.canAdd()) {
+        <button type="button" class="uf-add" (click)="vm.addRow()">＋ 加入第 {{ vm.nextPosition() }} 艘</button>
+      }
+      @if (vm.formError(); as message) { <div class="uf-err" role="alert" style="margin-bottom: 10px">{{ message }}</div> }
+    }
+  }
+</ng-template>

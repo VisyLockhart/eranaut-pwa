@@ -3,12 +3,13 @@ import { AuthScreen } from './auth/auth-screen';
 import { Auth } from './core/auth';
 import { DataStore } from './core/data-store';
 import { Shell } from './layout/shell';
+import { ToastHost } from './ui/toast-host';
 
 @Component({
   selector: 'app-root',
-  imports: [AuthScreen, Shell],
+  imports: [AuthScreen, Shell, ToastHost],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `@if (auth.status() === 'authenticated') { <app-shell /> } @else { <app-auth-screen /> }`,
+  template: `@if (auth.status() === 'authenticated') { <app-shell /> } @else { <app-auth-screen /> }<app-toast-host />`,
 })
 export class App {
   protected readonly auth = inject(Auth);

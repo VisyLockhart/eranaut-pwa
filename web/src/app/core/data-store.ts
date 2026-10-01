@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { OverviewDto, WorkshopDto, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
+import type { OverviewDto, SubmarineDto, SubmarineInput, SubmarinesUpdateResult, WorkshopDto, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
 import { Api } from './api';
 import { Auth } from './auth';
 import { isReady } from './format';
@@ -126,6 +126,38 @@ export class DataStore {
     this.fetched.update((list) => list.filter((w) => w.id !== id));
     if (this.order().includes(id)) this.setOrder(this.order().filter((x) => x !== id));
     this.persist();
+  }
+
+  // ---- 更新潛艇(階段 4) ----
+  // 寫入成功才更新畫面;驗證錯誤(400)等原始的 HttpErrorResponse 交給表單顯示。
+  // D-84:送出後先用回應更新畫面(樂觀),再於背景重抓確認。
+
+  /** 整個工坊一次更新(D-117、D-122) */
+  async updateSubmarines(workshopId: string, submarines: SubmarineInput[]): Promise<SubmarinesUpdateResult> {
+    const result = await this.api.updateSubmarines(workshopId, submarines);
+    this.applySubmarines(workshopId, result.submarines);
+    return result;
+  }
+
+  /** 單艘快速修改 */
+  async updateSubmarine(workshopId: string, input: SubmarineInput): Promise<SubmarinesUpdateResult> {
+    const result = await this.api.updateSubmarine(workshopId, input);
+    this.applySubmarines(workshopId, result.submarines);
+    return result;
+  }
+
+  /** 以位置為鍵合併回應裡的潛艇(整坊回應含全部、單艘回應只有一艘,合併後都正確),存快照並在背景重抓確認 */
+  private applySubmarines(workshopId: string, updated: SubmarineDto[]): void {
+    this.fetched.update((list) =>
+      list.map((w) => {
+        if (w.id !== workshopId) return w;
+        const byPosition = new Map(w.submarines.map((s) => [s.position, s]));
+        for (const s of updated) byPosition.set(s.position, s);
+        return { ...w, submarines: [...byPosition.values()].sort((a, b) => a.position - b.position) };
+      }),
+    );
+    this.persist();
+    void this.refresh();
   }
 
   // ---- 排序(只存 localStorage,D-55) ----

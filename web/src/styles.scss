@@ -392,3 +392,17 @@ app-root { display: block; }
 .modal-input:focus, .modal-input:focus-visible, .field-select:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(45,212,191,0.22); }
 .modal-input.error:focus, .modal-input.error:focus-visible { box-shadow: 0 0 0 3px rgba(248,113,113,0.22); }
 .modal-actions.sticky { position: sticky; bottom: -24px; margin: 18px -24px -24px; padding: 14px 24px 24px; background: var(--bg-elevated); border-radius: 0 0 18px 18px; }
+
+/* ---- 階段 4:更新潛艇 ---- */
+.qe { cursor: pointer; }
+.qe:hover { border-color: var(--border-strong); }
+.qe:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.uf-actions-m { padding-right: 18px; }
+.uf-actions-m .primary-btn:disabled, .uf-actions-d .primary-btn:disabled { opacity: 0.6; cursor: default; }
+.uf-name::placeholder { color: var(--text-faint); font-weight: 400; }
+.toast-stack { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; align-items: center; gap: 8px; width: max-content; max-width: calc(100vw - 32px); pointer-events: none; }
+.toast-stack .toast { position: static; transform: none; border-radius: 14px; text-align: center; line-height: 1.5; }
+.toast-stack .toast.warn { border-color: var(--amber); color: #f0c869; }
+.uf-name:focus-visible, .uf-num input:focus-visible { outline: none; }
+.uf-name:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,212,191,0.22); }
+.uf-num:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,212,191,0.22); }

@@ -84,6 +84,16 @@ export class OverviewVm {
   /** 「最快返航」:排序後第一筆(D-121) */
   readonly fastest = computed(() => this.sortedAll()[0] ?? null);
 
+  /** 單艘快速修改的對象(D-117);null = 沒有開啟 */
+  readonly quickEdit = signal<{ workshopId: string; position: number } | null>(null);
+
+  openQuickEdit(item: Pick<OverviewItem, 'workshop' | 'position'>): void {
+    this.quickEdit.set({ workshopId: item.workshop.id, position: item.position });
+  }
+  closeQuickEdit(): void {
+    this.quickEdit.set(null);
+  }
+
   /** 從工坊管理點某間工坊:跳到總覽並套用該工坊過濾(D-101) */
   select(workshopId: string): void {
     const i = this.store.workshops().findIndex((w) => w.id === workshopId);
