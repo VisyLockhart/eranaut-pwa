@@ -94,7 +94,7 @@ describe('QuickEditDialog', () => {
     const { el, save, closed, fixture } = open(1);
     await save();
     fixture.detectChanges();
-    expect(el.textContent).toContain('都要填');
+    expect(el.textContent).toContain('請填寫剩餘時間');
     expect(closed).not.toHaveBeenCalled();
     http.expectNone('/api/workshops/w1/submarines/1');
   });

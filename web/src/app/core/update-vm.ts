@@ -11,6 +11,7 @@ import {
   etaText,
   nextFreePosition,
   newRow,
+  fillBlanks,
   rebase,
   rowError,
   rowFromSubmarine,
@@ -140,9 +141,9 @@ export class UpdateVm {
     this.patch(key, (r) => (r.paused ? r : { ...r, paused: true }));
   }
 
-  /** 離開這一列的時間欄位(焦點沒有移到同一列的其他時間欄位時):以目前的值重新起算 */
+  /** 離開這一列的時間欄位(焦點沒有移到同一列的其他時間欄位時):空白欄位補 0(D-156),再以目前的值重新起算 */
   resume(key: number): void {
-    this.patch(key, (r) => rebase({ ...r, paused: false }, Date.now()));
+    this.patch(key, (r) => rebase(fillBlanks({ ...r, paused: false }), Date.now()));
   }
 
   addRow(): void {

@@ -1,14 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { defaultName, etaText, newRow, nextFreePosition, rebase, rowError, rowMinutes, serverRowMessage, toSubmarineInput, type SubRow } from './submarine-form';
+import { defaultName, etaText, fillBlanks, newRow, nextFreePosition, rebase, rowError, rowMinutes, serverRowMessage, toSubmarineInput, type SubRow } from './submarine-form';
 
 const row = (over: Partial<SubRow> = {}): SubRow => ({ ...newRow(1, 1, '潛水艇-1', 'exploring', false), d: '0', h: '3', m: '41', ...over });
 
 describe('rowMinutes', () => {
-  it('三欄都是數字才換算', () => {
+  it('空白欄位當 0(D-156)', () => {
     expect(rowMinutes(row())).toBe(221);
     expect(rowMinutes(row({ d: '1', h: '0', m: '0' }))).toBe(1440);
-    expect(rowMinutes(row({ m: '' }))).toBeNull();
-    expect(rowMinutes(row({ d: '' }))).toBeNull();
+    expect(rowMinutes(row({ m: '' }))).toBe(180);
+    expect(rowMinutes(row({ d: '', h: '', m: '5' }))).toBe(5);
+    expect(rowMinutes(row({ d: '', h: '', m: '' }))).toBe(0);
+  });
+  it('含非數字回 null', () => expect(rowMinutes(row({ m: '1a' }))).toBeNull());
+});
+
+describe('fillBlanks(D-156)', () => {
+  it('至少填了一欄時,空白補成 0', () => {
+    expect(fillBlanks(row({ d: '', h: '', m: '5' }))).toMatchObject({ d: '0', h: '0', m: '5' });
+    expect(fillBlanks(row({ d: '1', h: '', m: '' }))).toMatchObject({ d: '1', h: '0', m: '0' });
+  });
+  it('全空白、已填滿、或探索完成都不動', () => {
+    const blank = row({ d: '', h: '', m: '' });
+    expect(fillBlanks(blank)).toBe(blank);
+    const full = row();
+    expect(fillBlanks(full)).toBe(full);
+    const done = row({ status: 'complete', d: '', h: '', m: '5' });
+    expect(fillBlanks(done)).toBe(done);
   });
 });
 
@@ -16,8 +33,10 @@ describe('rebase(D-124 起算)', () => {
   it('填完且大於 0 才有基準,起點為傳入的時間', () => {
     expect(rebase(row(), 500)).toMatchObject({ base: 221, startedAt: 500 });
   });
-  it('沒填完、為 0、或探索完成都沒有基準', () => {
-    expect(rebase(row({ m: '' }), 1).base).toBeNull();
+  it('只填一部分也有基準(空白當 0);全空白、合計為 0、或探索完成都沒有基準', () => {
+    expect(rebase(row({ m: '' }), 1).base).toBe(180);
+    expect(rebase(row({ d: '', h: '', m: '5' }), 1).base).toBe(5);
+    expect(rebase(row({ d: '', h: '', m: '' }), 1).base).toBeNull();
     expect(rebase(row({ d: '0', h: '0', m: '0' }), 1).base).toBeNull();
     expect(rebase(row({ status: 'complete' }), 1).base).toBeNull();
   });
@@ -25,7 +44,11 @@ describe('rebase(D-124 起算)', () => {
 
 describe('rowError(D-118)', () => {
   it('合法的資料沒有錯誤', () => expect(rowError(row())).toBeNull());
-  it('探索中時日/時/分都要填', () => expect(rowError(row({ h: '' }))).toContain('都要填'));
+  it('空白欄位當 0,不報錯;三欄全空白要求填寫', () => {
+    expect(rowError(row({ h: '' }))).toBeNull();
+    expect(rowError(row({ d: '', h: '', m: '5' }))).toBeNull();
+    expect(rowError(row({ d: '', h: '', m: '' }))).toContain('請填寫剩餘時間');
+  });
   it('時最多 23、分最多 59', () => {
     expect(rowError(row({ h: '24' }))).toContain('最多 23');
     expect(rowError(row({ m: '60' }))).toContain('最多 59');
@@ -45,7 +68,8 @@ describe('etaText', () => {
     expect(etaText(row({ d: '0', h: '2', m: '5' }), now)).toBe('預計返航 10/01 14:05（以送出當下起算）');
   });
   it('沒填完顯示提示;探索完成顯示可收艇', () => {
-    expect(etaText(row({ m: '' }), now)).toContain('填完');
+    expect(etaText(row({ d: '', h: '', m: '' }), now)).toContain('填入');
+    expect(etaText(row({ m: '' }), now)).toContain('預計返航');
     expect(etaText(row({ status: 'complete' }), now)).toContain('可收艇');
   });
 });
@@ -71,7 +95,7 @@ describe('位置', () => {
 describe('serverRowMessage', () => {
   it('依欄位錯誤碼給文字', () => {
     expect(serverRowMessage({ name: 'too_long' })).toContain('20');
-    expect(serverRowMessage({ remaining_minutes: 'required' })).toContain('都要填');
+    expect(serverRowMessage({ remaining_minutes: 'required' })).toContain('請填寫');
     expect(serverRowMessage({ remaining_minutes: 'invalid_value' })).toContain('不正確');
     expect(serverRowMessage({})).toContain('資料不正確');
   });

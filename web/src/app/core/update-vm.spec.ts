@@ -157,6 +157,38 @@ describe('UpdateVm', () => {
       expect(row(2).m).toBe('');
     });
 
+    it('D-156:只填一部分,離開欄位組時空白自動補 0 並起算;之後照常補正', () => {
+      const key = keyOf(1);
+      vm.setTime(key, 'm', '5');
+      vm.resume(key);
+      expect([row(1).d, row(1).h, row(1).m]).toEqual(['0', '0', '5']);
+      expect(row(1)).toMatchObject({ base: 5, startedAt: T0 });
+      vi.setSystemTime(T0 + 2 * MIN + 1000);
+      vm.tick(Date.now());
+      expect([row(1).d, row(1).h, row(1).m]).toEqual(['0', '0', '3']);
+      expect(vm.compMin()).toBe(2);
+    });
+
+    it('D-156:整列都沒填,離開欄位不補 0、也不起算', () => {
+      const key = keyOf(1);
+      vm.pause(key);
+      vm.resume(key);
+      expect([row(1).d, row(1).h, row(1).m]).toEqual(['', '', '']);
+      expect(row(1).base).toBeNull();
+    });
+
+    it('D-156:沒離開欄位就直接送出,空白欄位也當 0 送出', async () => {
+      vm.setTime(keyOf(1), 'h', '2'); // 只填「時」,沒有離開(沒有 resume)
+      vm.setStatus(keyOf(2), 'complete');
+      const p = vm.submit();
+      const req = http.expectOne('/api/workshops/w1/submarines');
+      expect(req.request.body.submarines[0]).toMatchObject({ position: 1, status: 'exploring', remaining_minutes: 120 });
+      req.flush({ submarines: [], reminder_skipped_positions: [] });
+      await settle();
+      http.expectOne('/api/overview').flush({ workshops: store.fetched() });
+      await p;
+    });
+
     it('跨日/時的進位正確', () => {
       fill(1, '1', '0', '5');
       vi.setSystemTime(T0 + 10 * MIN);
@@ -230,9 +262,9 @@ describe('UpdateVm', () => {
     beforeEach(() => vm.open());
 
     it('驗證失敗:不呼叫 API,錯誤標在對應列', async () => {
-      fill(1, '0', '3', '41'); // 第 2 列沒填
+      fill(1, '0', '3', '41'); // 第 2 列整列沒填
       expect(await vm.submit()).toBe('invalid');
-      expect(vm.errors()[keyOf(2)]).toContain('都要填');
+      expect(vm.errors()[keyOf(2)]).toContain('請填寫剩餘時間');
       expect(vm.errors()[keyOf(1)]).toBeUndefined();
       http.expectNone('/api/workshops/w1/submarines');
     });

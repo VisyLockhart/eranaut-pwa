@@ -14,7 +14,7 @@ export interface SubRow {
   position: number;
   name: string;
   status: SubmarineStatus;
-  /** 日、時、分以字串保存(輸入框內容),全為數字才算填完 */
+  /** 日、時、分以字串保存(輸入框內容);空白視為 0(D-156) */
   d: string;
   h: string;
   m: string;
@@ -32,25 +32,45 @@ export function newRow(key: number, position: number, name: string, status: Subm
   return { key, position, name, status, d: '', h: '', m: '', added, base: null, startedAt: 0, paused: false };
 }
 
-/** 三欄都是數字才換算成分鐘,否則 null */
-export function rowMinutes(row: Pick<SubRow, 'd' | 'h' | 'm'>): number | null {
-  if (!/^\d+$/.test(row.d) || !/^\d+$/.test(row.h) || !/^\d+$/.test(row.m)) return null;
-  return parseInt(row.d, 10) * 1440 + parseInt(row.h, 10) * 60 + parseInt(row.m, 10);
+/** 一欄的數值:空白視為 0(D-156);含非數字回 null */
+function part(text: string): number | null {
+  if (text === '') return 0;
+  return /^\d+$/.test(text) ? parseInt(text, 10) : null;
 }
 
-/** D-124:以目前畫面上的數值重新起算(填完且大於 0 才有基準) */
+/** 日/時/分都空白(還沒填任何東西) */
+export function isTimeBlank(row: Pick<SubRow, 'd' | 'h' | 'm'>): boolean {
+  return row.d === '' && row.h === '' && row.m === '';
+}
+
+/** 換算成分鐘;空白欄位當 0,含非數字回 null */
+export function rowMinutes(row: Pick<SubRow, 'd' | 'h' | 'm'>): number | null {
+  const d = part(row.d);
+  const h = part(row.h);
+  const m = part(row.m);
+  return d === null || h === null || m === null ? null : d * 1440 + h * 60 + m;
+}
+
+/** D-156:至少填了一欄時,把空白欄位明確補成 0(畫面所見即所送);全空白則不動 */
+export function fillBlanks(row: SubRow): SubRow {
+  if (row.status !== 'exploring' || isTimeBlank(row) || (row.d !== '' && row.h !== '' && row.m !== '')) return row;
+  return { ...row, d: row.d === '' ? '0' : row.d, h: row.h === '' ? '0' : row.h, m: row.m === '' ? '0' : row.m };
+}
+
+/** D-124:以目前畫面上的數值重新起算(空白當 0,合計大於 0 才有基準) */
 export function rebase(row: SubRow, now: number): SubRow {
   const minutes = row.status === 'exploring' ? rowMinutes(row) : null;
   return { ...row, base: minutes !== null && minutes > 0 ? minutes : null, startedAt: now };
 }
 
-/** 欄位驗證(D-118):名稱 ≤20 字;探索中時日/時/分都要填、時 ≤23、分 ≤59、總和 > 0 */
+/** 欄位驗證(D-118、D-156):名稱 ≤20 字;探索中時空白欄位當 0,時 ≤23、分 ≤59、總和 > 0 */
 export function rowError(row: SubRow): string | null {
   if (charCount(row.name.trim()) > LIMITS.submarineName) return `潛艇名稱最多 ${LIMITS.submarineName} 字`;
   if (row.status !== 'exploring') return null;
-  if (!/^\d+$/.test(row.d) || !/^\d+$/.test(row.h) || !/^\d+$/.test(row.m)) return '日、時、分都要填，沒有的填 0';
-  if (parseInt(row.h, 10) > 23 || parseInt(row.m, 10) > 59) return '「時」最多 23、「分」最多 59';
-  const minutes = rowMinutes(row)!;
+  if (isTimeBlank(row)) return '請填寫剩餘時間（沒填的欄位會當作 0）';
+  const minutes = rowMinutes(row);
+  if (minutes === null) return '日、時、分只能填數字';
+  if ((part(row.h) ?? 0) > 23 || (part(row.m) ?? 0) > 59) return '「時」最多 23、「分」最多 59';
   if (minutes <= 0) return '剩餘時間不能是 0——已經完成請改選「探索完成」';
   if (minutes > LIMITS.maxRemainingMinutes) return '剩餘時間最多 99 天 23 時 59 分';
   return null;
@@ -60,7 +80,7 @@ export function rowError(row: SubRow): string | null {
 export function etaText(row: SubRow, now: number): string {
   if (row.status === 'complete') return '這艘會顯示為「可收艇」';
   const minutes = rowMinutes(row);
-  if (minutes === null || minutes <= 0) return '填完 日／時／分 後會顯示預計返航時間';
+  if (minutes === null || minutes <= 0) return '填入 日／時／分 後會顯示預計返航時間（沒填的當作 0）';
   return `預計返航 ${displayFor(false, now + minutes * 60_000, now).eta}（以送出當下起算）`;
 }
 
@@ -92,7 +112,7 @@ export function defaultName(position: number): string {
 /** API 單一欄位錯誤碼 → 這一列上顯示的文字 */
 export function serverRowMessage(fields: SubmarineFieldErrors): string {
   if (fields.name) return `潛艇名稱最多 ${LIMITS.submarineName} 字`;
-  if (fields.remaining_minutes) return fields.remaining_minutes === 'required' ? '日、時、分都要填，沒有的填 0' : '剩餘時間不正確（需大於 0，最多 99 天 23 時 59 分）';
+  if (fields.remaining_minutes) return fields.remaining_minutes === 'required' ? '請填寫剩餘時間' : '剩餘時間不正確（需大於 0，最多 99 天 23 時 59 分）';
   if (fields.status) return '狀態不正確';
   return '這一艘的資料不正確';
 }
