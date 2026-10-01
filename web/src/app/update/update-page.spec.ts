@@ -43,6 +43,9 @@ describe('UpdatePage', () => {
     const el = fixture.nativeElement as HTMLElement;
     document.body.appendChild(el);
     fixture.detectChanges();
+    // 預設是「截圖辨識」分頁;既有案例測手動輸入
+    el.querySelectorAll<HTMLButtonElement>('.up-tab')[1]?.click();
+    fixture.detectChanges();
     const input = (position: number, field: string): HTMLInputElement => el.querySelector<HTMLInputElement>(`[data-row="${position}"] [data-field="${field}"]`)!;
     const type = (position: number, field: string, value: string): void => {
       const i = input(position, field);
@@ -130,6 +133,8 @@ describe('UpdatePage', () => {
     fixture.detectChanges();
     await settle();
     fixture.detectChanges();
+    el.querySelectorAll<HTMLButtonElement>('.up-tab')[1].click();
+    fixture.detectChanges();
     expect(el.querySelectorAll('.uf-row').length).toBe(2);
   });
 
@@ -139,5 +144,109 @@ describe('UpdatePage', () => {
     expect(el.textContent).toContain('先建立一個工坊');
     expect(el.querySelector('a[href="/workshops"]')).not.toBeNull();
     expect(el.querySelector('.uf-actions-m')).toBeNull();
+  });
+
+  describe('截圖辨識分頁', () => {
+    const ocrResult = {
+      format: 'menu',
+      warnings: ['row_count_mismatch'],
+      submarines: [
+        { position: 1, name: '潘水艇-1', status: 'exploring', days: 0, hours: 8, minutes: 52, remaining_minutes: 532, suspect: { name: true, time: true }, reasons: ['low_confidence'] },
+        { position: 2, name: '潛水艇-2', status: 'exploring', days: 0, hours: 1, minutes: 1, remaining_minutes: 61, suspect: { name: false, time: false }, reasons: [] },
+      ],
+    };
+    const openOcr = () => {
+      const fixture = TestBed.createComponent(UpdatePage);
+      const el = fixture.nativeElement as HTMLElement;
+      document.body.appendChild(el);
+      fixture.detectChanges();
+      return { fixture, el };
+    };
+    const pick = async (el: HTMLElement, fixture: { detectChanges(): void }, file: File) => {
+      const input = el.querySelector<HTMLInputElement>('[data-field="ocr-file"]')!;
+      Object.defineProperty(input, 'files', { value: [file], configurable: true });
+      input.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    };
+
+    it('預設是截圖辨識:顯示上傳區,還沒有潛艇列也沒有送出鈕', () => {
+      const { el } = openOcr();
+      expect(el.querySelector('.up-tab.active')!.textContent).toContain('截圖辨識');
+      expect(el.querySelector('.dropzone')).not.toBeNull();
+      expect(el.querySelectorAll('.uf-row').length).toBe(0);
+      expect(el.querySelector('.uf-actions-m, .uf-actions-d')).toBeNull();
+    });
+
+    it('上傳 → 辨識中 → 結果帶入:可疑欄位琥珀色加「請核對」,警告顯示,出現送出鈕', async () => {
+      const { el, fixture } = openOcr();
+      await pick(el, fixture, new File(['x'], 'a.png', { type: 'image/png' }));
+      expect(el.querySelector('.ocr-busy')).not.toBeNull();
+      http.expectOne('/api/ocr').flush(ocrResult);
+      await settle();
+      fixture.detectChanges();
+      expect(el.querySelector('.dropzone')).toBeNull();
+      expect(el.querySelectorAll('.uf-row').length).toBe(2);
+      expect(el.querySelector('[data-row="1"] .uf-name')!.classList.contains('flagged')).toBe(true);
+      expect(el.querySelector('[data-row="1"] .uf-num')!.classList.contains('flagged')).toBe(true);
+      expect(el.querySelector('[data-row="1"] .uf-flag-msg')!.textContent).toContain('請核對');
+      expect(el.querySelector('[data-row="2"] .uf-flag-msg')).toBeNull();
+      expect(el.querySelector('.uf-comp')!.textContent).toContain('少讀了某一艘');
+      expect(el.querySelector('.uf-actions-m, .uf-actions-d')).not.toBeNull();
+    });
+
+    it('使用者修改可疑欄位後標示消失', async () => {
+      const { el, fixture } = openOcr();
+      await pick(el, fixture, new File(['x'], 'a.png', { type: 'image/png' }));
+      http.expectOne('/api/ocr').flush(ocrResult);
+      await settle();
+      fixture.detectChanges();
+      const name = el.querySelector<HTMLInputElement>('[data-row="1"] [data-field="name"]')!;
+      name.value = '潛水艇-1';
+      name.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(el.querySelector('[data-row="1"] .uf-name')!.classList.contains('flagged')).toBe(false);
+      expect(el.querySelector('[data-row="1"] .uf-num')!.classList.contains('flagged')).toBe(true);
+      const m = el.querySelector<HTMLInputElement>('[data-row="1"] [data-field="m"]')!;
+      m.value = '53';
+      m.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(el.querySelector('[data-row="1"] .uf-flag-msg')).toBeNull();
+    });
+
+    it('辨識失敗:留在上傳區並顯示說明,可再試', async () => {
+      const { el, fixture } = openOcr();
+      await pick(el, fixture, new File(['x'], 'a.png', { type: 'image/png' }));
+      http.expectOne('/api/ocr').flush({ error: 'unrecognized' }, { status: 422, statusText: 'x' });
+      await settle();
+      fixture.detectChanges();
+      expect(el.querySelector('.dropzone')).not.toBeNull();
+      expect(el.querySelector('.uf-err')!.textContent).toContain('看不出這是潛水艇的畫面');
+    });
+
+    it('拖放檔案到上傳區也會辨識', async () => {
+      const { el, fixture } = openOcr();
+      const drop = new Event('drop', { cancelable: true }) as Event & { dataTransfer?: unknown };
+      drop.dataTransfer = { files: [new File(['x'], 'a.png', { type: 'image/png' })] };
+      el.querySelector('.dropzone')!.dispatchEvent(drop);
+      fixture.detectChanges();
+      expect(drop.defaultPrevented).toBe(true);
+      http.expectOne('/api/ocr').flush(ocrResult);
+    });
+
+    it('「重新上傳截圖」回到上傳區;切到手動輸入顯示以既有潛艇建立的表單', async () => {
+      const { el, fixture } = openOcr();
+      await pick(el, fixture, new File(['x'], 'a.png', { type: 'image/png' }));
+      http.expectOne('/api/ocr').flush(ocrResult);
+      await settle();
+      fixture.detectChanges();
+      el.querySelector<HTMLButtonElement>('[data-action="ocr-restart"]')!.click();
+      fixture.detectChanges();
+      expect(el.querySelector('.dropzone')).not.toBeNull();
+      el.querySelectorAll<HTMLButtonElement>('.up-tab')[1].click();
+      fixture.detectChanges();
+      expect(el.querySelector('.dropzone')).toBeNull();
+      expect(el.querySelectorAll('.uf-row').length).toBe(2);
+      expect(el.querySelector('.uf-flag-msg')).toBeNull();
+    });
   });
 });

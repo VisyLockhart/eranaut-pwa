@@ -1,14 +1,15 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, effect, inject, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, effect, inject, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DataStore } from '../core/data-store';
 import { Layout } from '../core/layout';
 import { wsMeta } from '../core/overview-vm';
+import { flagText } from '../core/submarine-form';
 import { UpdateVm } from '../core/update-vm';
 import { IconComponent } from '../ui/icon';
 import { SubRowEditor } from './sub-row-editor';
 
-/** 更新潛艇(D-117):選工坊 → 整個工坊一次更新(手動輸入);D-124 每分鐘自動補正。截圖辨識待 OCR 完成後接上 */
+/** 更新潛艇(D-117):選工坊 → 截圖辨識或手動輸入 → 整個工坊一次更新;D-124 每分鐘自動補正 */
 @Component({
   selector: 'app-update-page',
   imports: [NgTemplateOutlet, RouterLink, IconComponent, SubRowEditor],
@@ -22,6 +23,8 @@ export class UpdatePage implements OnDestroy {
   protected readonly store = inject(DataStore);
   private readonly router = inject(Router);
   protected readonly wsMeta = wsMeta;
+  protected readonly flagText = flagText;
+  protected readonly dragging = signal(false);
 
   constructor() {
     this.layout.pageTitle.set('更新潛水艇');
@@ -40,6 +43,25 @@ export class UpdatePage implements OnDestroy {
 
   protected onSelect(event: Event): void {
     this.vm.selectWorkshop((event.target as HTMLSelectElement).value || null);
+  }
+
+  protected onFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = ''; // 同一張圖可以再選一次
+    if (file) void this.vm.recognize(file);
+  }
+
+  protected onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.dragging.set(true);
+  }
+
+  protected onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.dragging.set(false);
+    const file = event.dataTransfer?.files?.[0];
+    if (file) void this.vm.recognize(file);
   }
 
   protected async submit(): Promise<void> {

@@ -11,7 +11,7 @@ import type { SubRow, TimeField } from '../core/submarine-form';
     <div class="uf-row" [class.ready]="row().status === 'complete'" [class.has-err]="!!error()" [attr.data-row]="row().position">
       <div class="uf-top">
         <span class="uf-pos">{{ circled(row().position) }}</span>
-        <input type="text" class="uf-name" maxlength="20" data-field="name" [value]="row().name" (input)="nameChange.emit(value($event))" aria-label="潛艇名稱" placeholder="潛艇名稱（選填）" />
+        <input type="text" class="uf-name" [class.flagged]="flagName()" maxlength="20" data-field="name" [value]="row().name" (input)="nameChange.emit(value($event))" aria-label="潛艇名稱" placeholder="潛艇名稱（選填）" />
         @if (removable()) {
           <button type="button" class="uf-rm" (click)="remove.emit()" aria-label="移除這一列">×</button>
         }
@@ -23,7 +23,7 @@ import type { SubRow, TimeField } from '../core/submarine-form';
       @if (row().status === 'exploring') {
         <div class="uf-time">
           @for (f of fields; track f.key) {
-            <label class="uf-num">
+            <label class="uf-num" [class.flagged]="flagTime()">
               <input
                 type="text"
                 inputmode="numeric"
@@ -41,6 +41,7 @@ import type { SubRow, TimeField } from '../core/submarine-form';
         </div>
       }
       <div class="uf-eta mono">{{ eta() }}</div>
+      @if (flagText(); as text) { <div class="uf-flag-msg" role="status">{{ text }}</div> }
       @if (error(); as message) { <div class="uf-err" role="alert">{{ message }}</div> }
     </div>
   `,
@@ -50,6 +51,10 @@ export class SubRowEditor {
   readonly error = input<string | null>(null);
   readonly eta = input('');
   readonly removable = input(false);
+  /** 截圖辨識標出的「請核對」欄位(D-119);使用者修改後由父層拿掉 */
+  readonly flagName = input(false);
+  readonly flagTime = input(false);
+  readonly flagText = input<string | null>(null);
 
   readonly nameChange = output<string>();
   readonly statusChange = output<SubmarineStatus>();

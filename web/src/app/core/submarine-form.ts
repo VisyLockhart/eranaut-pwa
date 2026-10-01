@@ -1,10 +1,26 @@
-import { LIMITS, type FieldErrorCode, type SubmarineFieldErrors, type SubmarineInput, type SubmarineStatus, type SubmarineDto } from '@eranaut/shared';
+import {
+  LIMITS,
+  type FieldErrorCode,
+  type OcrSubmarineDto,
+  type OcrSuspectReason,
+  type SubmarineDto,
+  type SubmarineFieldErrors,
+  type SubmarineInput,
+  type SubmarineStatus,
+} from '@eranaut/shared';
 import { displayFor } from './format';
 import { charCount } from './workshop-form';
 
 // 更新潛艇表單的資料與純函式(D-117、D-118、D-122、D-124)。與元件、計時器分開,方便單元測試。
 
 export type TimeField = 'd' | 'h' | 'm';
+
+/** 截圖辨識標出的「請核對」欄位(D-119);使用者修改該欄後那一欄的標示消失 */
+export interface RowFlag {
+  name: boolean;
+  time: boolean;
+  reasons: OcrSuspectReason[];
+}
 
 /** 表單上的一列(一個船塢位置) */
 export interface SubRow {
@@ -26,6 +42,8 @@ export interface SubRow {
   startedAt: number;
   /** D-124:正在編輯這一列,暫停補正 */
   paused: boolean;
+  /** 截圖辨識的「請核對」標示(D-119);手動輸入的列沒有 */
+  flag?: RowFlag;
 }
 
 export function newRow(key: number, position: number, name: string, status: SubmarineStatus, added: boolean): SubRow {
@@ -119,4 +137,48 @@ export function serverRowMessage(fields: SubmarineFieldErrors): string {
 
 export function batchFieldMessage(code: FieldErrorCode): string {
   return code === 'invalid_value' ? '一個工坊最多 4 艘' : '請至少填寫一艘';
+}
+
+// ---- 截圖辨識結果帶入表單(D-119、D-124、D-154) ----
+
+/**
+ * 辨識到的一艘 → 表單的一列。名稱讀不到(null)就沿用既有名稱,都沒有則用預設名稱(D-154);
+ * 時間以辨識結果回來的時間起算 D-124 補正。探索完成沒有時間欄,也就沒有時間的核對標示。
+ */
+export function rowFromOcr(key: number, dto: OcrSubmarineDto, existing: Pick<SubmarineDto, 'name'> | undefined, now: number): SubRow {
+  const exploring = dto.status === 'exploring';
+  const flag: RowFlag = { name: dto.suspect.name, time: exploring && dto.suspect.time, reasons: dto.reasons };
+  const row: SubRow = {
+    ...newRow(key, dto.position, dto.name ?? existing?.name ?? defaultName(dto.position), dto.status, existing === undefined),
+    ...(exploring && dto.remaining_minutes !== null
+      ? { d: String(dto.days ?? 0), h: String(dto.hours ?? 0), m: String(dto.minutes ?? 0) }
+      : {}),
+    ...(flag.name || flag.time ? { flag } : {}),
+  };
+  return rebase(row, now);
+}
+
+/** 使用者修改了某一欄:清掉那一欄的核對標示;兩欄都清掉就整個移除 */
+export function clearFlag(row: SubRow, field: 'name' | 'time'): SubRow {
+  if (!row.flag || !row.flag[field]) return row;
+  const flag = { ...row.flag, [field]: false };
+  const { flag: _old, ...rest } = row;
+  return flag.name || flag.time ? { ...rest, flag } : rest;
+}
+
+const REASON_TEXT: Record<OcrSuspectReason, string> = {
+  low_confidence: '辨識信心偏低',
+  time_unreadable: '沒讀到時間',
+  time_out_of_range: '數字超出範圍',
+  time_malformed: '時間格式怪怪的',
+  name_unreadable: '名稱沒讀到',
+  order_uncertain: '列數可能對不上、位置可能錯位',
+};
+
+/** 這一列還在核對中時顯示的說明;沒有標示回 null */
+export function flagText(row: Pick<SubRow, 'flag'>): string | null {
+  const flag = row.flag;
+  if (!flag || (!flag.name && !flag.time)) return null;
+  const reasons = [...new Set(flag.reasons.map((r) => REASON_TEXT[r]))];
+  return `請核對：${reasons.length > 0 ? reasons.join('、') : '辨識結果可能不準'}（修改後標示會消失）`;
 }

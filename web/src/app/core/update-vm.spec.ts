@@ -56,6 +56,7 @@ describe('UpdateVm', () => {
     toast = TestBed.inject(Toast);
     vm = TestBed.inject(UpdateVm);
     store.fetched.set([workshop('w1', [1, 2]), workshop('w2', [])]);
+    vm.mode.set('manual'); // 這支測手動輸入;截圖辨識見 update-vm-ocr.spec.ts
   });
   afterEach(() => {
     vm.close();

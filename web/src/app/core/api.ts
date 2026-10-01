@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import type {
   MeDto,
   NotifyPrefs,
+  OcrResultDto,
   OverviewDto,
   PublicConfigDto,
   SubmarineInput,
@@ -49,6 +50,13 @@ export class Api {
   /** 單艘快速修改:位置取自網址 */
   updateSubmarine(workshopId: string, input: SubmarineInput): Promise<SubmarinesUpdateResult> {
     return firstValueFrom(this.http.put<SubmarinesUpdateResult>(`/api/workshops/${encodeURIComponent(workshopId)}/submarines/${input.position}`, input));
+  }
+
+  // ---- 截圖辨識(SCHEMA §8.1):只辨識、不寫資料庫、不存圖片(D-49、D-126) ----
+  ocr(file: File): Promise<OcrResultDto> {
+    const form = new FormData();
+    form.append('image', file, file.name);
+    return firstValueFrom(this.http.post<OcrResultDto>('/api/ocr', form));
   }
 
   // ---- 提醒方式(SCHEMA §8.5;對外用具名布林,D-145 ⑦) ----

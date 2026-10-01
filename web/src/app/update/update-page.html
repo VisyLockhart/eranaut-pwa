@@ -7,7 +7,7 @@
   </div>
   <div class="d-upload-wrap" style="width: 100%">
     <ng-container *ngTemplateOutlet="body" />
-    @if (vm.workshop()) {
+    @if (vm.formVisible()) {
       <div class="uf-actions-d">
         <button type="button" class="ghost-btn" (click)="cancel()">取消</button>
         <button type="button" class="primary-btn" [disabled]="vm.submitting()" (click)="submit()">{{ vm.submitting() ? '送出中…' : '送出更新' }}</button>
@@ -16,7 +16,7 @@
   </div>
 } @else {
   <div class="m-upload-body"><ng-container *ngTemplateOutlet="body" /></div>
-  @if (vm.workshop()) {
+  @if (vm.formVisible()) {
     <div class="uf-actions-m">
       <button type="button" class="ghost-btn" (click)="cancel()">取消</button>
       <button type="button" class="primary-btn" [disabled]="vm.submitting()" (click)="submit()">{{ vm.submitting() ? '送出中…' : '送出更新' }}</button>
@@ -33,6 +33,10 @@
       <div style="margin-top: 12px"><a class="primary-btn" style="display: inline-block; width: auto; padding: 10px 20px; text-decoration: none" routerLink="/workshops">前往工坊管理</a></div>
     </div>
   } @else {
+    <div class="up-tabs" role="tablist" aria-label="輸入方式">
+      <button type="button" role="tab" class="up-tab" [class.active]="vm.mode() === 'ocr'" [attr.aria-selected]="vm.mode() === 'ocr'" (click)="vm.setMode('ocr')">截圖辨識</button>
+      <button type="button" role="tab" class="up-tab" [class.active]="vm.mode() === 'manual'" [attr.aria-selected]="vm.mode() === 'manual'" (click)="vm.setMode('manual')">手動輸入</button>
+    </div>
     <div style="margin-bottom: 16px">
       <label class="field-label" for="uf-ws">更新哪個工坊</label>
       <select id="uf-ws" class="field-select" [style.width]="layout.isDesktop() ? '260px' : null" [value]="vm.workshopId() ?? ''" (change)="onSelect($event)">
@@ -42,9 +46,31 @@
       </select>
     </div>
 
-    @if (vm.workshop(); as ws) {
+    @if (vm.mode() === 'ocr' && vm.ocrPhase() !== 'review' && vm.workshop()) {
+      @if (vm.ocrPhase() === 'busy') {
+        <div class="ocr-busy" role="status"><div class="ocr-spinner"></div><div style="color: var(--text-muted); font-size: 13px">辨識中…</div></div>
+      } @else {
+        <label class="dropzone" [class.drag]="dragging()" style="flex-direction: column; gap: 8px; min-height: 200px; padding: 22px 16px; text-align: center" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
+          <input type="file" accept="image/png,image/jpeg,image/webp" data-field="ocr-file" (change)="onFile($event)" />
+          <app-icon name="camera" [size]="30" />
+          <span style="font-size: 14px; font-weight: 600">{{ layout.isDesktop() ? '點擊選擇截圖，或把截圖拖到這裡' : '點擊選擇截圖或拍照' }}</span>
+          <span class="uf-note" style="margin: 0">支援「請選擇潛水艇」視窗和「飛空艇探索」情報頁，PNG／JPEG／WebP、10 MB 以內。圖片只用來辨識，不會被保存。</span>
+        </label>
+        @if (vm.ocrError(); as message) { <div class="uf-err" role="alert" style="margin-top: 10px">{{ message }}</div> }
+      }
+    }
+
+    @if (vm.formVisible() && vm.workshop(); as ws) {
       <div class="uf-ws"><app-icon name="server" [size]="14" /><b>{{ ws.name }}</b>{{ wsMeta(ws) }}</div>
-      <div class="uf-note">對照遊戲內潛艇畫面，逐艘填入剩餘時間；沒有的單位填 0。</div>
+      @if (vm.mode() === 'ocr') {
+        <div class="uf-note">辨識結果已帶入下方。標「請核對」的欄位請對照遊戲畫面確認，修改後標示會消失；確認沒問題再按「送出更新」。
+          <button type="button" class="uf-add" style="margin: 8px 0 0" data-action="ocr-restart" (click)="vm.restartOcr()">重新上傳截圖</button></div>
+        @for (text of vm.ocrWarnings(); track text) {
+          <div class="uf-comp" role="status"><span>⚠</span><span>{{ text }}</span></div>
+        }
+      } @else {
+        <div class="uf-note">對照遊戲內潛艇畫面，逐艘填入剩餘時間；沒有的單位填 0。</div>
+      }
       @if (vm.compMin() > 0) {
         <div class="uf-comp" role="status"><span>⏱</span><span>已依等待時間自動補正 {{ vm.compMin() }} 分鐘。如果你正在修改某一艘，那一艘會先暫停補正；你的修改一律優先。</span></div>
       }
@@ -53,7 +79,10 @@
           [row]="row"
           [error]="vm.errors()[row.key] ?? null"
           [eta]="vm.etaOf(row)"
-          [removable]="row.added"
+          [removable]="vm.isRemovable(row)"
+          [flagName]="row.flag?.name ?? false"
+          [flagTime]="row.flag?.time ?? false"
+          [flagText]="flagText(row)"
           (nameChange)="vm.setName(row.key, $event)"
           (statusChange)="vm.setStatus(row.key, $event)"
           (timeChange)="vm.setTime(row.key, $event.field, $event.value)"

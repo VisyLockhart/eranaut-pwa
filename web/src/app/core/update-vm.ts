@@ -1,12 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { SubmarinesBatchValidationErrorBody, SubmarinesUpdateResult } from '@eranaut/shared';
+import type { OcrErrorCode, OcrResultDto, OcrWarning, SubmarinesBatchValidationErrorBody, SubmarinesUpdateResult } from '@eranaut/shared';
+import { Api } from './api';
 import { MINUTE_MS, compensated, displayMinutes, submitMinutes, toParts } from './compensation';
 import { DataStore } from './data-store';
 import { circled } from './format';
 import { OverviewVm } from './overview-vm';
 import {
   batchFieldMessage,
+  clearFlag,
   defaultName,
   etaText,
   nextFreePosition,
@@ -14,6 +16,7 @@ import {
   fillBlanks,
   rebase,
   rowError,
+  rowFromOcr,
   rowFromSubmarine,
   rowMinutes,
   serverRowMessage,
@@ -25,6 +28,48 @@ import { Toast } from './toast';
 
 /** 補正計時器的檢查間隔;顯示精度是分鐘,值只在改變時才寫入(D-124 ⑧:以時間戳計算,不累加) */
 const TICK_MS = 1000;
+
+/** 上傳截圖的限制,與 API 一致(SCHEMA §8.1):PNG / JPEG / WebP、10 MB */
+export const OCR_MAX_BYTES = 10 * 1024 * 1024;
+const OCR_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+export type UpdateMode = 'ocr' | 'manual';
+/** 截圖辨識分頁的階段:等上傳 → 辨識中 → 結果確認(帶入表單) */
+export type OcrPhase = 'idle' | 'busy' | 'review';
+
+/** 上傳前的檢查;沒問題回 null */
+export function fileProblem(file: Pick<File, 'type' | 'size'>): string | null {
+  if (!OCR_TYPES.includes(file.type)) return '只支援 PNG、JPEG、WebP 圖片';
+  if (file.size > OCR_MAX_BYTES) return '圖片超過 10 MB，請縮小後再試';
+  if (file.size === 0) return '這個檔案是空的，請重新選擇';
+  return null;
+}
+
+/** API 的辨識錯誤 → 畫面文字 */
+export function ocrErrorMessage(error: unknown): string {
+  const code = error instanceof HttpErrorResponse ? ((error.error as { error?: OcrErrorCode } | null)?.error ?? null) : null;
+  switch (code) {
+    case 'no_file':
+      return '沒有收到圖片，請重新選擇';
+    case 'file_too_large':
+      return '圖片超過 10 MB，請縮小後再試';
+    case 'unsupported_image':
+      return '只支援 PNG、JPEG、WebP 圖片';
+    case 'unrecognized':
+      return '看不出這是潛水艇的畫面，請確認截圖包含潛水艇列表，或改用手動輸入';
+    case 'busy':
+      return '現在辨識的人比較多，請稍後再試';
+    case 'ocr_unavailable':
+      return '截圖辨識暫時不能用，請改用手動輸入';
+    default:
+      return '辨識失敗，請稍後再試或改用手動輸入';
+  }
+}
+
+const WARNING_TEXT: Record<OcrWarning, string> = {
+  row_count_mismatch: '讀到的潛艇數和畫面上的對不上，可能少讀了某一艘，位置可能錯位，請逐艘對照遊戲畫面。',
+  too_many_rows: '截圖裡讀到超過 4 艘，只取了前 4 艘。',
+};
 
 /** 送出結果,給頁面決定要不要離開 */
 export type SubmitOutcome = 'ok' | 'invalid' | 'failed' | 'voided' | 'gone';
@@ -39,6 +84,7 @@ export class UpdateVm {
   private readonly store = inject(DataStore);
   private readonly overview = inject(OverviewVm);
   private readonly toast = inject(Toast);
+  private readonly api = inject(Api);
 
   readonly workshopId = signal<string | null>(null);
   readonly rows = signal<SubRow[]>([]);
@@ -52,12 +98,23 @@ export class UpdateVm {
   /** 預計返航文字用的現在時間;每個 tick 更新 */
   readonly now = signal(Date.now());
 
+  // ---- 截圖辨識(D-117 兩個分頁;D-125 API) ----
+  readonly mode = signal<UpdateMode>('ocr');
+  readonly ocrPhase = signal<OcrPhase>('idle');
+  readonly ocrError = signal<string | null>(null);
+  /** 整份截圖層級的提醒(列數對不上等) */
+  readonly ocrWarnings = signal<string[]>([]);
+  /** 表單(送出鈕與各列)是否顯示:手動輸入,或截圖辨識已有結果 */
+  readonly formVisible = computed(() => this.workshop() !== null && (this.mode() === 'manual' || this.ocrPhase() === 'review'));
+
   readonly workshop = computed(() => this.store.workshops().find((w) => w.id === this.workshopId()) ?? null);
   readonly canAdd = computed(() => nextFreePosition(this.rows()) !== null);
   readonly nextPosition = computed(() => nextFreePosition(this.rows()));
 
   private timer: ReturnType<typeof setInterval> | null = null;
   private nextKey = 1;
+  /** 每次開始辨識、或表單被重建就加一;回來得太晚的結果直接丟掉 */
+  private ocrSeq = 0;
 
   /** 進入頁面:選好工坊、建立表單、開始計時 */
   open(): void {
@@ -91,6 +148,7 @@ export class UpdateVm {
     this.formError.set(null);
     this.compMin.set(0);
     this.submitting.set(false);
+    this.mode.set('ocr');
   }
 
   /** 選工坊:以該工坊目前的潛艇建立表單(沒有潛艇則先給第 1 艘空列);重新建立會丟棄已填的內容 */
@@ -99,6 +157,7 @@ export class UpdateVm {
     this.errors.set({});
     this.formError.set(null);
     this.compMin.set(0);
+    this.resetOcr();
     const ws = this.store.workshops().find((w) => w.id === id);
     if (!ws) {
       this.rows.set([]);
@@ -111,6 +170,67 @@ export class UpdateVm {
     this.rows.set(rows.map((r) => rebase(r, now)));
   }
 
+  /** 切換分頁:丟棄目前的表單與辨識結果,以工坊目前的潛艇重建 */
+  setMode(mode: UpdateMode): void {
+    if (this.mode() === mode) return;
+    this.mode.set(mode);
+    this.selectWorkshop(this.workshopId());
+  }
+
+  private resetOcr(): void {
+    this.ocrSeq++;
+    this.ocrPhase.set('idle');
+    this.ocrError.set(null);
+    this.ocrWarnings.set([]);
+  }
+
+  /** 「重新上傳」:丟掉這次的辨識結果,回到等上傳(使用者的操作優先,D-124 ③) */
+  restartOcr(): void {
+    this.selectWorkshop(this.workshopId());
+  }
+
+  /**
+   * 上傳一張截圖:辨識結果回來的時間就是 D-124 補正的起點(每一艘各自起算,①)。
+   * 名稱讀不到的沿用既有名稱(D-154);辨識只填表單,不送出——使用者核對後再按「送出更新」(D-49)。
+   */
+  async recognize(file: File): Promise<void> {
+    if (this.workshopId() === null || this.ocrPhase() === 'busy') return;
+    const problem = fileProblem(file);
+    if (problem) {
+      this.ocrError.set(problem);
+      return;
+    }
+    const seq = ++this.ocrSeq;
+    this.ocrError.set(null);
+    this.ocrPhase.set('busy');
+    try {
+      const result = await this.api.ocr(file);
+      if (seq !== this.ocrSeq) return; // 期間換了工坊或分頁
+      this.applyOcr(result);
+    } catch (error) {
+      if (seq !== this.ocrSeq) return;
+      this.ocrPhase.set('idle');
+      this.ocrError.set(ocrErrorMessage(error));
+    }
+  }
+
+  private applyOcr(result: OcrResultDto): void {
+    const existing = new Map((this.workshop()?.submarines ?? []).map((s) => [s.position, s]));
+    const now = Date.now();
+    this.now.set(now);
+    this.rows.set(result.submarines.map((dto) => rowFromOcr(this.nextKey++, dto, existing.get(dto.position), now)));
+    this.errors.set({});
+    this.formError.set(null);
+    this.compMin.set(0);
+    this.ocrWarnings.set(result.warnings.map((w) => WARNING_TEXT[w]));
+    this.ocrPhase.set('review');
+  }
+
+  /** 截圖辨識的列可以不送(辨識多出來的);手動輸入只有這次新加入的位置能移除(R-32、D-122) */
+  isRemovable(row: SubRow): boolean {
+    return row.added || (this.mode() === 'ocr' && this.rows().length > 1);
+  }
+
   // ---- 編輯 ----
 
   private patch(key: number, change: (row: SubRow) => SubRow): void {
@@ -121,18 +241,18 @@ export class UpdateVm {
   }
 
   setName(key: number, name: string): void {
-    this.patch(key, (r) => ({ ...r, name }));
+    this.patch(key, (r) => clearFlag({ ...r, name }, 'name'));
     this.clearError(key);
   }
 
   /** 輸入日/時/分:寫入的同時暫停這一列的補正(使用者的修改優先,D-124 ③) */
   setTime(key: number, field: TimeField, value: string): void {
-    this.patch(key, (r) => ({ ...r, [field]: value, paused: true }));
+    this.patch(key, (r) => clearFlag({ ...r, [field]: value, paused: true }, 'time'));
     this.clearError(key);
   }
 
   setStatus(key: number, status: SubRow['status']): void {
-    this.patch(key, (r) => rebase({ ...r, status }, Date.now()));
+    this.patch(key, (r) => rebase(clearFlag({ ...r, status }, 'time'), Date.now()));
     this.clearError(key);
   }
 
@@ -156,7 +276,7 @@ export class UpdateVm {
 
   /** 只有這次表單新加入的位置可以移除(既有位置不提供刪除,R-32) */
   removeRow(key: number): void {
-    this.rows.update((rows) => rows.filter((r) => !(r.key === key && r.added)));
+    this.rows.update((rows) => rows.filter((r) => !(r.key === key && this.isRemovable(r))));
     this.errors.set({});
     this.formError.set(null);
   }
@@ -201,7 +321,8 @@ export class UpdateVm {
   /** D-124 ⑥:剩餘時間被扣到 0,代表使用者已離開電腦,這次資料作廢,表單回到全新狀態 */
   private voidForTimeout(): void {
     this.selectWorkshop(this.workshopId());
-    this.toast.show('等待時間過久，剩餘時間已扣到 0，這次的資料已作廢，請重新輸入', { tone: 'warn', ms: 6000 });
+    const again = this.mode() === 'ocr' ? '請重新上傳截圖' : '請重新輸入';
+    this.toast.show(`等待時間過久，剩餘時間已扣到 0，這次的資料已作廢，${again}`, { tone: 'warn', ms: 6000 });
   }
 
   // ---- 送出 ----
