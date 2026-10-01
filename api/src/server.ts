@@ -6,6 +6,7 @@ import type { Permissions } from './auth/permissions.js';
 import type { DiscordClient } from './discord/client.js';
 import { registerSessionAuth } from './auth/session-guard.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerSubmarineRoutes } from './routes/submarines.js';
 import { registerWorkshopRoutes } from './routes/workshops.js';
 
 // 公開埠與內部埠是兩個薄入口,共用 service/repository 層(D-131)。
@@ -42,6 +43,7 @@ export function buildPublicServer(deps: AppDeps, opts: { logger?: boolean } = {}
   const requireSession = registerSessionAuth(app, deps);
   registerAuthRoutes(app, deps, requireSession);
   registerWorkshopRoutes(app, deps, requireSession);
+  registerSubmarineRoutes(app, deps, requireSession);
   return app;
 }
 

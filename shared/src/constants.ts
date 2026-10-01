@@ -32,4 +32,6 @@ export const LIMITS = {
   addressDetail: 30,
   submarineName: 20,
   maxSubmarinesPerWorkshop: 4,
+  /** 剩餘時間上限:99 天 23 小時 59 分(D-118 的天≤99、時≤23、分≤59),單位分鐘 */
+  maxRemainingMinutes: 99 * 24 * 60 + 23 * 60 + 59,
 } as const;
