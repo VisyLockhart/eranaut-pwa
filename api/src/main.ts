@@ -1,8 +1,12 @@
 import { buildInternalServer, buildPublicServer } from './server.js';
 import { migrate, openDatabase } from './db/index.js';
+import { loadPermissionsFromEnv } from './auth/permissions.js';
 
 const publicPort = Number(process.env.PUBLIC_PORT ?? 3000);
 const internalPort = Number(process.env.INTERNAL_PORT ?? 3001);
+
+// 身份組規則錯誤時在此丟錯,服務直接啟動失敗(D-143 ①)
+const permissions = loadPermissionsFromEnv();
 
 const db = openDatabase(process.env.DATABASE_PATH ?? './data/eranaut.db');
 migrate(db);
