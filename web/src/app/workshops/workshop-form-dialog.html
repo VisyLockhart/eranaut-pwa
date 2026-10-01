@@ -1,4 +1,4 @@
-<div class="modal-overlay" (pointerdown)="downOnOverlay = $event.target === $event.currentTarget" (click)="overlayClick($event)">
+<div class="modal-overlay" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
   <form class="modal-box" role="dialog" aria-modal="true" aria-labelledby="wsf-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true" [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px">
       <div class="modal-title" id="wsf-title">{{ editing ? '編輯工坊' : '新增工坊' }}</div>

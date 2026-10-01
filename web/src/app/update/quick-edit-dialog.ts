@@ -21,7 +21,7 @@ import { SubRowEditor } from './sub-row-editor';
   template: `
     @if (workshop(); as ws) {
       @if (row(); as r) {
-        <div class="modal-overlay" (pointerdown)="downOnOverlay = $event.target === $event.currentTarget" (click)="downOnOverlay && $event.target === $event.currentTarget && close()">
+        <div class="modal-overlay" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
           <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="qe-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px">
               <div class="modal-title" id="qe-title">快速修改</div>
@@ -65,6 +65,16 @@ export class QuickEditDialog {
     return r === null ? '' : etaText(r, this.store.now());
   });
   protected downOnOverlay = false;
+
+  // 注意:模板事件處理式若回傳 false,Angular 會對該事件呼叫 preventDefault(),
+  // 把指派或 && 運算式直接寫在模板會讓對話框內的點擊(輸入框取得焦點、勾選、按鈕)全部失效,所以用回傳 void 的方法。
+  protected overlayDown(event: Event): void {
+    this.downOnOverlay = event.target === event.currentTarget;
+  }
+
+  protected overlayClick(event: Event): void {
+    if (this.downOnOverlay && event.target === event.currentTarget) this.close();
+  }
 
   constructor() {
     // 開啟時以目前資料建立一列(只建一次,之後的重抓不會蓋掉使用者正在填的內容);潛艇或工坊不存在就關閉

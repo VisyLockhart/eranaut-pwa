@@ -11,7 +11,7 @@ import { IconComponent } from '../ui/icon';
   host: { '(document:keydown.escape)': 'close()' },
   template: `
     @if (workshop(); as ws) {
-      <div class="modal-overlay" (pointerdown)="downOnOverlay = $event.target === $event.currentTarget" (click)="downOnOverlay && $event.target === $event.currentTarget && close()">
+      <div class="modal-overlay" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
         <div class="modal-box danger" role="alertdialog" aria-modal="true" aria-labelledby="wsd-title" aria-describedby="wsd-desc" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
           @if (count() > 0) {
             <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(248, 113, 113, 0.12); display: flex; align-items: center; justify-content: center; margin-bottom: 16px">
@@ -46,6 +46,16 @@ export class WorkshopDeleteDialog {
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
   protected downOnOverlay = false;
+
+  // 注意:模板事件處理式若回傳 false,Angular 會對該事件呼叫 preventDefault(),
+  // 把指派或 && 運算式直接寫在模板會讓對話框內的點擊(輸入框取得焦點、勾選、按鈕)全部失效,所以用回傳 void 的方法。
+  protected overlayDown(event: Event): void {
+    this.downOnOverlay = event.target === event.currentTarget;
+  }
+
+  protected overlayClick(event: Event): void {
+    if (this.downOnOverlay && event.target === event.currentTarget) this.close();
+  }
 
   constructor() {
     // 要刪除的工坊已經不在了(例如在別的裝置刪掉後重新整理)→ 直接關閉

@@ -69,6 +69,11 @@ export class WorkshopFormDialog implements OnInit {
   protected readonly serverErrors = signal<Partial<Record<keyof WorkshopInput, FieldErrorCode>>>({});
   protected downOnOverlay = false;
 
+  // 模板事件處理式不能回傳 false(Angular 會 preventDefault,讓輸入框點不進去),所以用回傳 void 的方法
+  protected overlayDown(event: Event): void {
+    this.downOnOverlay = event.target === event.currentTarget;
+  }
+
   protected readonly workshop = computed(() => {
     const id = this.workshopId();
     return id === null ? null : (this.store.workshops().find((w) => w.id === id) ?? null);
