@@ -1,0 +1,41 @@
+// 提醒文案(D-147)。繁體中文,四種情境:逐艘/整批 × 返航/預先提醒。
+// 時間用 Discord 官方的 `<t:unix:style>`:絕對時間 `t`、相對時間 `R`,依收訊者的時區與語言顯示。
+
+export interface ReminderMessageInput {
+  /** 逐艘(潛艇資料)或整批(艘數) */
+  scope: { kind: 'submarine'; position: number; name: string | null } | { kind: 'batch'; count: number };
+  workshopName: string;
+  server: string;
+  captain: string | null;
+  /** 預先提醒(工坊 `notify_lead_minutes` > 0)。為 true 時顯示預計返航時間 */
+  lead: boolean;
+  /** 預先提醒顯示用:逐艘 = 該艇返航時間,整批 = 最晚返航時間 */
+  returnAt: Date | null;
+  /** 頻道版:第一行最前面加 `<@id>`;DM 為 null */
+  mentionDiscordUserId: string | null;
+}
+
+const CIRCLED = ['①', '②', '③', '④'];
+export const circled = (position: number): string => CIRCLED[position - 1] ?? String(position);
+
+export function buildReminderMessage(m: ReminderMessageInput): string {
+  const place = `${m.workshopName}(${m.captain ? `${m.server}・${m.captain}` : m.server})`;
+
+  let title: string;
+  let detail: string;
+  if (m.scope.kind === 'submarine') {
+    title = m.lead ? '⏳ 潛水艇即將返航' : '⚓ 潛水艇已返航';
+    const sub = m.scope.name ? `${circled(m.scope.position)}「${m.scope.name}」` : circled(m.scope.position);
+    detail = `${sub}・${place}`;
+  } else {
+    title = m.lead ? '⏳ 工坊的潛水艇即將全部返航' : '⚓ 工坊的潛水艇已全部返航';
+    detail = `${place}・共 ${m.scope.count} 艘`;
+  }
+
+  const lines = [m.mentionDiscordUserId ? `<@${m.mentionDiscordUserId}> ${title}` : title, detail];
+  if (m.lead && m.returnAt) {
+    const unix = Math.floor(m.returnAt.getTime() / 1000);
+    lines.push(`預計 <t:${unix}:t> 返航(<t:${unix}:R>)`);
+  }
+  return lines.join('\n');
+}

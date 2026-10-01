@@ -5,6 +5,8 @@ export interface AppConfig {
   publicOrigin: string;
   /** session / state cookie 的 Secure 旗標;正式環境 true,本機 http 開發設 COOKIE_SECURE=false(D-142 ②) */
   cookieSecure: boolean;
+  /** 頻道 @ 提醒要發到的頻道 ID(D-72、D-129);未設定時頻道提醒會標記失敗 */
+  reminderChannelId: string | null;
   discord: {
     clientId: string;
     clientSecret: string;
@@ -35,8 +37,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     if (e instanceof ConfigError) throw e;
     throw new ConfigError('PUBLIC_ORIGIN 不是有效的網址(例:https://eranaut.example.com)');
   }
+  const channelId = env.REMINDER_CHANNEL_ID?.trim() || null;
+  if (channelId !== null && !/^\d{17,20}$/.test(channelId)) {
+    throw new ConfigError('REMINDER_CHANNEL_ID 格式錯誤(應為 17~20 位數字的頻道 ID)');
+  }
   return {
     publicOrigin: origin,
+    reminderChannelId: channelId,
     cookieSecure: env.COOKIE_SECURE?.trim().toLowerCase() !== 'false',
     discord: {
       clientId: required(env, 'DISCORD_CLIENT_ID'),

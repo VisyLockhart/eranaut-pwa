@@ -3,6 +3,8 @@ import { migrate, openDatabase } from './db/index.js';
 import { loadPermissionsFromEnv } from './auth/permissions.js';
 import { loadConfig } from './config.js';
 import { createDiscordClient } from './discord/client.js';
+import { createReminderSender } from './discord/sender.js';
+import { startReminderPoller } from './services/reminder-poller.js';
 
 const publicPort = Number(process.env.PUBLIC_PORT ?? 3000);
 const internalPort = Number(process.env.INTERNAL_PORT ?? 3001);
@@ -16,6 +18,15 @@ migrate(db);
 
 const pub = buildPublicServer({ db, config, discord: createDiscordClient(config), permissions, now: () => new Date() });
 const internal = buildInternalServer();
+
+// 提醒輪詢(D-128):隨公開埠的 Fastify 啟停
+await startReminderPoller(pub, {
+  db,
+  sender: createReminderSender(config),
+  reminderChannelId: config.reminderChannelId,
+  now: () => new Date(),
+  log: pub.log,
+});
 
 await pub.listen({ port: publicPort, host: '0.0.0.0' });
 await internal.listen({ port: internalPort, host: '0.0.0.0' });

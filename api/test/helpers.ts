@@ -15,6 +15,7 @@ export const GUILD_ID = '999999999999999999';
 export const config: AppConfig = {
   publicOrigin: ORIGIN,
   cookieSecure: true,
+  reminderChannelId: '888888888888888888',
   discord: { clientId: 'client-id', clientSecret: 'client-secret', botToken: 'bot-token', guildId: GUILD_ID },
 };
 
