@@ -33,6 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 make g+
     && rm -rf /var/lib/apt/lists/* /root/.npm
 COPY --from=build /app/shared/dist shared/dist
 COPY --from=build /app/api/dist api/dist
+# SQLite 資料檔放這裡(compose 掛具名 volume);先建好並交給 node,否則非 root 的 node 無法寫入
+RUN mkdir -p /app/data && chown node:node /app/data
 USER node
 # 公開埠 3000(經 Caddy 轉發)、內部埠 3001(只給 Eranarch,不發佈、不轉發,D-131)
 CMD ["node", "api/dist/api/src/main.js"]
