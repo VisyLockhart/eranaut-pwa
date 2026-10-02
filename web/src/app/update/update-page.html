@@ -50,7 +50,7 @@
           <input type="file" accept="image/png,image/jpeg,image/webp" data-field="ocr-file" (change)="onFile($event)" />
           <app-icon name="camera" [size]="30" />
           <span style="font-size: 14px; font-weight: 600">{{ layout.isDesktop() ? '點擊選擇截圖，或把截圖拖到這裡' : '點擊選擇截圖或拍照' }}</span>
-          <span class="uf-note" style="margin: 0">支援「請選擇潛水艇」視窗和「飛空艇探索」情報頁，PNG／JPEG／WebP、10 MB 以內。圖片只用來辨識，不會被保存。</span>
+          <span class="uf-note" style="margin: 0">支援「航行管制視窗→管理潛水艇」視窗或「任務情報→遠航探索」視窗，PNG／JPEG／WebP、10 MB 以內。圖片只用來辨識，不會被保存。</span>
         </label>
         @if (vm.ocrError(); as message) { <div class="uf-err" role="alert" style="margin-top: 10px">{{ message }}</div> }
       }
