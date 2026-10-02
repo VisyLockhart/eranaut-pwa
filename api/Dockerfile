@@ -8,7 +8,12 @@ COPY package.json package-lock.json ./
 COPY shared/package.json shared/
 COPY api/package.json api/
 COPY web/package.json web/
-RUN npm ci --workspace=shared --workspace=api --include-workspace-root
+# better-sqlite3 在 linux/arm64 沒有可用的預編譯檔時會退回 node-gyp 現場編譯,slim 映像沒有工具鏈,
+# 所以要裝 python3 / make / g++(2026-10-02 在 Mac mini arm64 實測發現)。裝完同一層清掉,不留在映像裡
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+    && npm ci --workspace=shared --workspace=api --include-workspace-root \
+    && apt-get purge -y --auto-remove python3 make g++ \
+    && rm -rf /var/lib/apt/lists/* /root/.npm
 COPY shared shared
 COPY api api
 RUN npm run build -w shared && npm run build -w api
@@ -21,7 +26,11 @@ COPY package.json package-lock.json ./
 COPY shared/package.json shared/
 COPY api/package.json api/
 COPY web/package.json web/
-RUN npm ci --omit=dev --workspace=shared --workspace=api --include-workspace-root
+# 同上:編譯 better-sqlite3 需要工具鏈,同一層裝完即清掉
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+    && npm ci --omit=dev --workspace=shared --workspace=api --include-workspace-root \
+    && apt-get purge -y --auto-remove python3 make g++ \
+    && rm -rf /var/lib/apt/lists/* /root/.npm
 COPY --from=build /app/shared/dist shared/dist
 COPY --from=build /app/api/dist api/dist
 USER node
