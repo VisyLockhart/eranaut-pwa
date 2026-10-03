@@ -20,6 +20,29 @@ function isUiSize(v: unknown): v is UiSize {
 type CoordMode = 'visual' | 'local';
 
 /**
+ * zoom 下 100vh 是否會被乘上倍率:Chrome 會(要除以倍率抵銷),Safari 不會(不能除)。
+ * 用 zoom:2 的探針比較「100vh 方塊」與「100px 方塊」的回報高度比,兩種座標回報方式比值相同:
+ * 會乘 → 比值 ≈ 視窗高 / 100;不會乘 → 比值 ≈ 視窗高 / (200 × 倍率)。index.html 的開機前小腳本有同一段判斷,兩處要一起改。
+ */
+function viewportUnitDivisor(factor: number): number {
+  if (typeof document === 'undefined' || !(window.innerHeight > 0)) return factor;
+  const mk = (h: string) => {
+    const d = document.createElement('div');
+    d.style.cssText = `position:fixed;left:0;top:0;width:1px;height:${h};zoom:2;visibility:hidden;pointer-events:none`;
+    document.body.appendChild(d);
+    return d;
+  };
+  const a = mk('100vh');
+  const b = mk('100px');
+  const ha = a.getBoundingClientRect().height;
+  const hb = b.getBoundingClientRect().height;
+  a.remove();
+  b.remove();
+  if (!(ha > 0 && hb > 0)) return factor;
+  return (ha / hb) * 100 / window.innerHeight > 0.75 ? factor : 1;
+}
+
+/**
  * 介面大小的狀態與套用(D-164):`--ui-scale` 寫在根元素,樣式表的 `html { zoom: var(--ui-scale) }` 負責放大,
  * 切換時立即生效、不需重新整理。偏好只存這台裝置的 localStorage(D-55、D-56 同一作法),讀不到或值不合法一律當「小」。
  */
@@ -29,7 +52,7 @@ export class UiScale {
   /** 設定的倍率(1 / 1.15 / 1.3);瀏覽器不支援 zoom 時實際不會放大,見 effective() */
   readonly factor = computed(() => UI_SIZES.find((s) => s.value === this.size())!.factor);
 
-  private probed: { factor: number; zoom: number; mode: CoordMode } | null = null;
+  private probed: { factor: number; zoom: number; mode: CoordMode; vuDiv: number } | null = null;
 
   constructor() {
     this.apply();
@@ -68,14 +91,18 @@ export class UiScale {
   private apply(): void {
     this.probed = null;
     if (typeof document === 'undefined') return;
-    document.documentElement.style.setProperty('--ui-scale', String(this.factor()));
+    const root = document.documentElement.style;
+    root.setProperty('--ui-scale', String(this.factor()));
+    // vh / vw / env(safe-area-*) 在 zoom 下各瀏覽器不一致(Chrome 會乘上倍率,Safari 不會),樣式表統一除以這個值
+    root.setProperty('--vu-div', String(this.measure().vuDiv));
   }
 
-  private measure(): { zoom: number; mode: CoordMode } {
+  private measure(): { zoom: number; mode: CoordMode; vuDiv: number } {
     const factor = this.factor();
     if (this.probed?.factor === factor) return this.probed;
     let zoom = 1;
     let mode: CoordMode = 'visual';
+    let vuDiv = 1;
     if (factor !== 1 && typeof document !== 'undefined' && typeof CSS !== 'undefined' && CSS.supports?.('zoom', String(factor))) {
       zoom = factor;
       // 探針:固定定位的 100px 方塊;回報約 100 × 倍率 = 螢幕像素,回報約 100 = 元素本地座標
@@ -85,8 +112,9 @@ export class UiScale {
       const width = probe.getBoundingClientRect().width;
       probe.remove();
       if (width > 0 && Math.abs(width - 100) < Math.abs(width - 100 * factor)) mode = 'local';
+      vuDiv = viewportUnitDivisor(factor);
     }
-    this.probed = { factor, zoom, mode };
+    this.probed = { factor, zoom, mode, vuDiv };
     return this.probed;
   }
 

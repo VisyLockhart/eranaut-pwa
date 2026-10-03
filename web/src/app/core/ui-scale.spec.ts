@@ -22,6 +22,13 @@ describe('UiScale(D-164)', () => {
     expect(cssVar()).toBe('1');
   });
 
+  it('同時寫出 --vu-div(vh / safe-area 的除數);小一定是 1', () => {
+    const s = TestBed.inject(UiScale);
+    expect(document.documentElement.style.getPropertyValue('--vu-div')).toBe('1');
+    s.set('large');
+    expect(['1', '1.3']).toContain(document.documentElement.style.getPropertyValue('--vu-div'));
+  });
+
   it('讀取儲存的偏好;值不合法或讀不到一律當小', () => {
     localStorage.setItem(UI_SCALE_KEY, JSON.stringify('large'));
     expect(TestBed.inject(UiScale).size()).toBe('large');
@@ -60,7 +67,7 @@ describe('UiScale(D-164)', () => {
       const original = Element.prototype.getBoundingClientRect;
       vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
         // 探針是 100px 的方塊;其餘元素交給測試用的固定值
-        if ((this as HTMLElement).style?.cssText.includes('width:100px')) return { width: probeWidth, height: probeWidth, left: 0, top: 0, right: probeWidth, bottom: probeWidth } as DOMRect;
+        if ((this as HTMLElement).style?.width === '100px') return { width: probeWidth, height: probeWidth, left: 0, top: 0, right: probeWidth, bottom: probeWidth } as DOMRect;
         return original.call(this);
       });
       const s = TestBed.inject(UiScale);

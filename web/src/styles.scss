@@ -18,6 +18,7 @@
     --text-faint: #4a5273;
     /* 介面大小(D-164):由 UiScale 服務寫在根元素;1 = 小(現行外觀)。vh / vw 長度也會被 zoom 放大,凡是要貼齊視窗的都除以它 */
     --ui-scale: 1;
+    --vu-div: 1; /* vh/vw/safe-area 的除數:Chrome = --ui-scale,Safari = 1(見 ui-scale.ts) */
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: var(--bg); }
@@ -26,7 +27,7 @@
     font-family: 'Sora', sans-serif;
     color: var(--text);
     background: radial-gradient(120% 70% at 15% -10%, #10213a 0%, #070a14 55%), #070a14;
-    min-height: calc(100vh / var(--ui-scale));
+    min-height: calc(100vh / var(--vu-div));
   }
   button, select, input { font-family: inherit; }
   .mono { font-family: 'JetBrains Mono', monospace; }
@@ -82,10 +83,10 @@
   .mobile-shell, .mobile-shell * { touch-action: manipulation; }
   .mobile-shell {
     display: flex; flex-direction: column; max-width: 480px; margin: 0 auto;
-    height: calc(100vh / var(--ui-scale));
+    height: calc(100vh / var(--vu-div));
   }
   .m-header {
-    flex: 0 0 auto; padding: calc(20px + env(safe-area-inset-top) / var(--ui-scale)) 18px 14px; display: flex; align-items: center; gap: 10px;
+    flex: 0 0 auto; padding: calc(20px + env(safe-area-inset-top) / var(--vu-div)) 18px 14px; display: flex; align-items: center; gap: 10px;
     border-bottom: 1px solid var(--border);
   }
   .m-stats { flex: 0 0 auto; padding: 12px 18px; display: flex; gap: 10px; }
@@ -141,7 +142,7 @@
   /* Author name: a deliberately understated contrasting tint (dim teal) so it reads as a signature, not a highlight. */
   .copyright-name { color: rgba(45,212,191,0.6); font-weight: 500; }
   .copyright-bar {
-    flex: 0 0 auto; padding: 5px 18px calc(6px + env(safe-area-inset-bottom) / var(--ui-scale)); text-align: center; color: var(--text-faint); font-size: 9px;
+    flex: 0 0 auto; padding: 5px 18px calc(6px + env(safe-area-inset-bottom) / var(--vu-div)); text-align: center; color: var(--text-faint); font-size: 9px;
     background: #0a0e1c; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .copyright-overlay {
@@ -174,7 +175,7 @@
   .ghost-btn { padding: 11px; border-radius: 10px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; }
 
   /* ---------- Desktop shell ---------- */
-  .d-wrap { max-width: 1280px; margin: 0 auto; display: flex; min-height: calc(100vh / var(--ui-scale)); }
+  .d-wrap { max-width: 1280px; margin: 0 auto; display: flex; min-height: calc(100vh / var(--vu-div)); }
   .d-sidebar { width: 232px; flex: 0 0 auto; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 22px 14px; }
   .d-brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 22px; }
   .d-brand-name { font-size: 13.5px; font-weight: 700; letter-spacing: 0.05em; }
@@ -267,7 +268,7 @@
 
   /* ---------- Modal ---------- */
   .modal-overlay { position: fixed; inset: 0; background: rgba(3,6,14,0.72); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
-  .modal-box { width: 100%; max-width: 420px; max-height: calc(88vh / var(--ui-scale)); overflow-y: auto; background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .modal-box { width: 100%; max-width: 420px; max-height: calc(88vh / var(--vu-div)); overflow-y: auto; background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
   .modal-section-label { font-size: 11px; color: var(--text-faint); font-weight: 600; letter-spacing: 0.04em; margin: 18px 0 8px; }
   .modal-field-row { display: flex; gap: 8px; margin-bottom: 6px; }
   .modal-field-row .modal-input { margin-bottom: 0; }
@@ -297,7 +298,7 @@
 
   /* ---------- Auth flow ---------- */
   .auth-page-m { flex-grow: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 44px 24px 32px; overflow-y: auto; }
-  .auth-page-d { min-height: calc(100vh / var(--ui-scale)); box-sizing: border-box; display: flex; flex-direction: column; align-items: center; padding: 56px 40px; background: radial-gradient(circle at 50% -10%, #10213a 0%, var(--bg) 55%); }
+  .auth-page-d { min-height: calc(100vh / var(--vu-div)); box-sizing: border-box; display: flex; flex-direction: column; align-items: center; padding: 56px 40px; background: radial-gradient(circle at 50% -10%, #10213a 0%, var(--bg) 55%); }
   .auth-logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
   .auth-logo-row .d-brand-name { font-size: 16px; }
   .auth-hero-title-m { font-size: 25px; font-weight: 700; line-height: 1.3; margin-bottom: 12px; }
@@ -423,7 +424,7 @@ app-root { display: block; }
 .uf-actions-m { padding-right: 18px; }
 .uf-actions-m .primary-btn:disabled, .uf-actions-d .primary-btn:disabled { opacity: 0.6; cursor: default; }
 .uf-name::placeholder { color: var(--text-faint); font-weight: 400; }
-.toast-stack { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; align-items: center; gap: 8px; width: max-content; max-width: calc(100vw / var(--ui-scale) - 32px); pointer-events: none; }
+.toast-stack { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; align-items: center; gap: 8px; width: max-content; max-width: calc(100vw / var(--vu-div) - 32px); pointer-events: none; }
 .toast-stack .toast { position: static; transform: none; border-radius: 14px; text-align: center; line-height: 1.5; }
 .toast-stack .toast.warn { border-color: var(--amber); color: #f0c869; }
 .uf-name:focus-visible, .uf-num input:focus-visible { outline: none; }
