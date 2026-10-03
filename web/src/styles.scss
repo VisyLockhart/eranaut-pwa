@@ -286,6 +286,10 @@
   .field-select.error-select { border-color: var(--danger); }
   .modal-hint { font-size: 12px; color: var(--text-dim); }
   .modal-error-text { font-size: 12px; color: var(--danger); margin-bottom: 14px; }
+  /* 提示與錯誤訊息疊在同一格,高度取較大者,錯誤出現/消失時版面不跳動 */
+  .modal-note { display: grid; }
+  .modal-note > * { grid-area: 1 / 1; margin: 0; }
+  .modal-note > .modal-hint.is-off { visibility: hidden; }
   .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
   .btn-secondary { flex: 1; padding: 12px; border-radius: 10px; background: var(--bg-elevated-2); border: 1px solid var(--border-strong); color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; }
   .btn-primary-modal { flex: 1; padding: 12px; border-radius: 10px; background: var(--accent); border: none; color: #06251f; font-size: 14px; font-weight: 700; cursor: pointer; }

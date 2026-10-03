@@ -7,11 +7,10 @@
 
     <label class="field-label" for="wsf-name">公會名稱（可自訂別名）</label>
     <input id="wsf-name" type="text" class="modal-input" [class.error]="errorOf('name')" formControlName="name" cdkFocusInitial autocomplete="off" [attr.aria-invalid]="errorOf('name') ? true : null" />
-    @if (errorOf('name'); as msg) {
-      <div class="modal-error-text" role="alert">{{ msg }}</div>
-    } @else {
-      <div class="modal-hint">填公會正式名稱，或自己取一個好記的別名——用來在潛艇列表裡辨識這是哪個公會的紀錄</div>
-    }
+    <div class="modal-note">
+      <div class="modal-hint" [class.is-off]="errorOf('name')" [attr.aria-hidden]="errorOf('name') ? true : null">填公會正式名稱，或自己取一個好記的別名——用來在潛艇列表裡辨識這是哪個公會的紀錄</div>
+      @if (errorOf('name'); as msg) { <div class="modal-error-text" role="alert">{{ msg }}</div> }
+    </div>
 
     <div class="modal-section-label">遊戲身分</div>
     <div class="modal-field-row">
@@ -24,11 +23,10 @@
         <input id="wsf-captain" type="text" class="modal-input" [class.error]="errorOf('captain')" formControlName="captain" placeholder="例如：芙寧娜" autocomplete="off" />
       </div>
     </div>
-    @if (errorOf('server') || errorOf('captain'); as msg) {
-      <div class="modal-error-text" role="alert">{{ msg }}</div>
-    } @else {
-      <div class="modal-hint">同一個人的多間公會可能在不同伺服器、由不同角色負責收艇，這裡標記清楚比較不會跑錯</div>
-    }
+    <div class="modal-note">
+      <div class="modal-hint" [class.is-off]="errorOf('server') || errorOf('captain')" [attr.aria-hidden]="errorOf('server') || errorOf('captain') ? true : null">同一個人的多間公會可能在不同伺服器、由不同角色負責收艇，這裡標記清楚比較不會跑錯</div>
+      @if (errorOf('server') || errorOf('captain'); as msg) { <div class="modal-error-text" role="alert">{{ msg }}</div> }
+    </div>
 
     <div class="modal-section-label">公會屋地址（選填，僅工坊管理內部使用，不會顯示在總覽）</div>
     <div class="modal-field-row">
