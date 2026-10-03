@@ -46,12 +46,21 @@
       @if (vm.ocrPhase() === 'busy') {
         <div class="ocr-busy" role="status"><div class="ocr-spinner"></div><div style="color: var(--text-muted); font-size: 13px">辨識中…</div></div>
       } @else {
-        <label class="dropzone" [class.drag]="dragging()" style="flex-direction: column; gap: 8px; min-height: 200px; padding: 22px 16px; text-align: center" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
+        <label class="dropzone" [class.drag]="dragging()" [class.pasted]="pasted()" style="flex-direction: column; gap: 8px; min-height: 200px; padding: 22px 16px; text-align: center" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
           <input type="file" accept="image/png,image/jpeg,image/webp" data-field="ocr-file" (change)="onFile($event)" />
           <app-icon name="camera" [size]="30" />
           <span style="font-size: 14px; font-weight: 600">{{ layout.isDesktop() ? '點擊選擇截圖，或把截圖拖到這裡' : '點擊選擇截圖或拍照' }}</span>
+          @if (layout.isDesktop()) {
+            <span class="uf-note" style="margin: 0; color: var(--text-muted)" data-field="paste-hint">也可以先截圖，再直接按 {{ pasteKey }} 貼上</span>
+          }
           <span class="uf-note" style="margin: 0">支援「航行管制視窗→管理潛水艇」視窗或「任務情報→遠航探索」視窗，PNG／JPEG／WebP、10 MB 以內。圖片只用來辨識，不會被保存。</span>
         </label>
+        @if (layout.isDesktop() && captureSupported) {
+          <div class="up-capture">
+            <button type="button" class="ghost-btn" data-action="capture" [disabled]="capturing()" (click)="capture()">{{ capturing() ? '等待選擇畫面…' : '擷取畫面' }}</button>
+            <span class="uf-note" style="margin: 0">選擇遊戲視窗或整個螢幕，會直接擷取當下畫面來辨識。</span>
+          </div>
+        }
         @if (vm.ocrError(); as message) { <div class="uf-err" role="alert" style="margin-top: 10px">{{ message }}</div> }
       }
     }

@@ -69,6 +69,9 @@
     background: var(--bg-elevated-2); cursor: pointer; transition: border-color .15s, background .15s;
   }
   .dropzone.drag { border-color: var(--accent); background: rgba(45,212,191,0.06); }
+  .dropzone.pasted { border-color: var(--accent); background: rgba(45,212,191,0.14); transition: background 0.2s, border-color 0.2s; }
+  .up-capture { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .up-capture .ghost-btn { width: auto; padding: 10px 20px; }
   .dropzone.has-file { border-color: rgba(45,212,191,0.45); background: rgba(45,212,191,0.05); }
   .dropzone input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
 

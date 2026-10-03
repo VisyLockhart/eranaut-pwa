@@ -2,10 +2,11 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DataStore } from '../core/data-store';
+import { ImageTools, clipboardImage, isCaptureCancelled, isTextTarget, pasteShortcut } from '../core/image-input';
 import { Layout } from '../core/layout';
 import { wsMeta } from '../core/overview-vm';
 import { flagText } from '../core/submarine-form';
-import { UpdateVm } from '../core/update-vm';
+import { OCR_MAX_BYTES, UpdateVm } from '../core/update-vm';
 import { IconComponent } from '../ui/icon';
 import { SelectField, type SelectValue } from '../ui/select';
 import { SubRowEditor } from './sub-row-editor';
@@ -16,7 +17,7 @@ import { SubRowEditor } from './sub-row-editor';
   imports: [NgTemplateOutlet, RouterLink, IconComponent, SelectField, SubRowEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './update-page.html',
-  host: { style: 'display: contents' },
+  host: { style: 'display: contents', '(document:paste)': 'onPaste($event)' },
 })
 export class UpdatePage implements OnDestroy {
   protected readonly layout = inject(Layout);
@@ -26,6 +27,13 @@ export class UpdatePage implements OnDestroy {
   protected readonly wsMeta = wsMeta;
   protected readonly flagText = flagText;
   protected readonly dragging = signal(false);
+  /** 剛貼上圖片時讓上傳區閃一下,表示有收到(D-162) */
+  protected readonly pasted = signal(false);
+  protected readonly capturing = signal(false);
+  protected readonly pasteKey = pasteShortcut();
+  private readonly tools = inject(ImageTools);
+  protected readonly captureSupported = this.tools.canCapture();
+  private pasteTimer: ReturnType<typeof setTimeout> | undefined;
   protected readonly wsOptions = computed(() => this.store.workshops().map((w) => ({ value: w.id, label: w.name })));
 
   constructor() {
@@ -40,6 +48,7 @@ export class UpdatePage implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.pasteTimer);
     this.vm.close();
   }
 
@@ -64,6 +73,36 @@ export class UpdatePage implements OnDestroy {
     this.dragging.set(false);
     const file = event.dataTransfer?.files?.[0];
     if (file) void this.vm.recognize(file);
+  }
+
+  /**
+   * Ctrl/⌘+V 貼上截圖(D-162):整頁監聽,不需要輸入框。只在「截圖辨識」分頁、等待上傳時處理;
+   * 游標在文字輸入框內、或剪貼簿裡沒有圖片(貼的是文字)就不攔截。
+   */
+  protected onPaste(event: ClipboardEvent): void {
+    if (this.vm.mode() !== 'ocr' || this.vm.ocrPhase() !== 'idle' || !this.vm.workshop()) return;
+    if (isTextTarget(event.target)) return;
+    const file = clipboardImage(event.clipboardData);
+    if (!file) return;
+    event.preventDefault();
+    this.pasted.set(true);
+    clearTimeout(this.pasteTimer);
+    this.pasteTimer = setTimeout(() => this.pasted.set(false), 700);
+    void this.vm.recognize(file);
+  }
+
+  /** 「擷取畫面」按鈕(D-162):請瀏覽器讓使用者選視窗或螢幕,取一幀直接辨識 */
+  protected async capture(): Promise<void> {
+    if (this.capturing() || this.vm.ocrPhase() !== 'idle') return;
+    this.capturing.set(true);
+    try {
+      const file = await this.tools.capture(OCR_MAX_BYTES);
+      await this.vm.recognize(file);
+    } catch (error) {
+      if (!isCaptureCancelled(error)) this.vm.reportOcrError('擷取畫面失敗，請改用截圖上傳或貼上截圖');
+    } finally {
+      this.capturing.set(false);
+    }
   }
 
   protected async submit(): Promise<void> {

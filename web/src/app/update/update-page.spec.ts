@@ -3,10 +3,17 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import type { WorkshopWithSubmarines } from '@eranaut/shared';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Auth } from '../core/auth';
 import { DataStore } from '../core/data-store';
+import { ImageTools } from '../core/image-input';
+import { Layout } from '../core/layout';
 import { UpdatePage } from './update-page';
+
+// 縮圖與擷取畫面在 jsdom 做不了,換成可控的替身(D-162)
+const captureFrame = vi.fn<(limit: number) => Promise<File>>();
+let captureSupported = false;
+const fakeTools = { shrink: () => Promise.resolve(null), capture: (limit: number) => captureFrame(limit), canCapture: () => captureSupported };
 
 const settle = (): Promise<void> => new Promise((r) => setTimeout(r));
 const workshop = (id: string, name: string, n: number): WorkshopWithSubmarines => ({
@@ -30,7 +37,7 @@ describe('UpdatePage', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: ImageTools, useValue: fakeTools }] });
     http = TestBed.inject(HttpTestingController);
     TestBed.inject(Auth).status.set('authenticated');
     store = TestBed.inject(DataStore);
@@ -249,6 +256,167 @@ describe('UpdatePage', () => {
       expect(el.querySelector('.dropzone')).toBeNull();
       expect(el.querySelectorAll('.uf-row').length).toBe(2);
       expect(el.querySelector('.uf-flag-msg')).toBeNull();
+    });
+  });
+
+  describe('貼上與擷取畫面(D-162)', () => {
+    const png = () => new File(['x'], 'image.png', { type: 'image/png' });
+    const ocrResult = { format: 'menu', warnings: [], submarines: [{ position: 1, name: '潛水艇-1', status: 'exploring', days: 0, hours: 1, minutes: 0, remaining_minutes: 60, suspect: { name: false, time: false }, reasons: [] }] };
+    const openOcr = (desktop = true) => {
+      TestBed.inject(Layout).isDesktop.set(desktop);
+      const fixture = TestBed.createComponent(UpdatePage);
+      const el = fixture.nativeElement as HTMLElement;
+      document.body.appendChild(el);
+      fixture.detectChanges();
+      return { fixture, el };
+    };
+    /** 模擬貼上:`file` 為 null 時剪貼簿裡只有文字 */
+    const paste = (target: EventTarget, file: File | null): Event => {
+      const event = new Event('paste', { bubbles: true, cancelable: true });
+      const items = file ? [{ kind: 'file', type: file.type, getAsFile: () => file }] : [{ kind: 'string', type: 'text/plain', getAsFile: () => null }];
+      Object.defineProperty(event, 'clipboardData', { value: { items } });
+      target.dispatchEvent(event);
+      return event;
+    };
+
+    beforeEach(() => {
+      captureFrame.mockReset();
+      captureSupported = false;
+    });
+    afterEach(() => {
+      document.body.innerHTML = '';
+    });
+
+    it('貼上圖片:直接辨識,不需要點上傳區;上傳區閃一下表示收到', async () => {
+      const { el, fixture } = openOcr();
+      const event = paste(document.body, png());
+      fixture.detectChanges();
+      expect(event.defaultPrevented).toBe(true);
+      expect(el.querySelector('.ocr-busy')).not.toBeNull();
+      const req = http.expectOne('/api/ocr');
+      expect((req.request.body as FormData).get('image')).toBeInstanceOf(File);
+      req.flush(ocrResult);
+      await settle();
+      fixture.detectChanges();
+      expect(el.querySelectorAll('.uf-row').length).toBe(1);
+    });
+
+    it('貼上後上傳區套用 pasted 樣式,一下子就恢復', async () => {
+      const { el, fixture } = openOcr();
+      paste(document.body, png());
+      // 辨識中上傳區不顯示;失敗回到上傳區時應仍在閃爍時間內
+      http.expectOne('/api/ocr').flush({ error: 'unrecognized' }, { status: 422, statusText: 'x' });
+      await settle();
+      fixture.detectChanges();
+      expect(el.querySelector('.dropzone')!.classList.contains('pasted')).toBe(true);
+      await new Promise((r) => setTimeout(r, 800));
+      fixture.detectChanges();
+      expect(el.querySelector('.dropzone')!.classList.contains('pasted')).toBe(false);
+    });
+
+    it('剪貼簿只有文字:不攔截、不辨識', () => {
+      const { fixture } = openOcr();
+      const event = paste(document.body, null);
+      fixture.detectChanges();
+      expect(event.defaultPrevented).toBe(false);
+      http.expectNone('/api/ocr');
+    });
+
+    it('游標在文字輸入框內:不攔截(一般的貼上照常)', () => {
+      const { fixture } = openOcr();
+      const input = document.createElement('input');
+      document.body.appendChild(input);
+      const event = paste(input, png());
+      fixture.detectChanges();
+      expect(event.defaultPrevented).toBe(false);
+      http.expectNone('/api/ocr');
+    });
+
+    it('手動輸入分頁、辨識結果確認階段:貼上不處理', async () => {
+      const { el, fixture } = openOcr();
+      el.querySelectorAll<HTMLButtonElement>('.up-tab')[1].click();
+      fixture.detectChanges();
+      expect(paste(document.body, png()).defaultPrevented).toBe(false);
+      el.querySelectorAll<HTMLButtonElement>('.up-tab')[0].click();
+      fixture.detectChanges();
+      paste(document.body, png());
+      http.expectOne('/api/ocr').flush(ocrResult);
+      await settle();
+      fixture.detectChanges();
+      expect(paste(document.body, png()).defaultPrevented).toBe(false);
+      http.expectNone('/api/ocr');
+    });
+
+    it('辨識中再貼上:忽略,不會送出第二個請求', () => {
+      const { fixture } = openOcr();
+      paste(document.body, png());
+      fixture.detectChanges();
+      expect(paste(document.body, png()).defaultPrevented).toBe(false);
+      http.expectOne('/api/ocr');
+    });
+
+    it('頁面關閉後不再處理貼上', () => {
+      const { fixture } = openOcr();
+      fixture.destroy();
+      paste(document.body, png());
+      http.expectNone('/api/ocr');
+    });
+
+    it('桌機顯示貼上提示;手機不顯示', () => {
+      expect(openOcr(true).el.querySelector('[data-field="paste-hint"]')!.textContent).toMatch(/(Ctrl\+V|⌘V)/);
+      document.body.innerHTML = '';
+      expect(openOcr(false).el.querySelector('[data-field="paste-hint"]')).toBeNull();
+    });
+
+    describe('擷取畫面按鈕', () => {
+      const supportCapture = () => {
+        captureSupported = true;
+      };
+
+      it('瀏覽器不支援(例如手機)或手機版面:不顯示', () => {
+        expect(openOcr(true).el.querySelector('[data-action="capture"]')).toBeNull();
+        document.body.innerHTML = '';
+        supportCapture();
+        expect(openOcr(false).el.querySelector('[data-action="capture"]')).toBeNull();
+      });
+
+      it('桌機且支援:按下後取得畫面並辨識', async () => {
+        supportCapture();
+        captureFrame.mockResolvedValue(png());
+        const { el, fixture } = openOcr();
+        el.querySelector<HTMLButtonElement>('[data-action="capture"]')!.click();
+        fixture.detectChanges();
+        expect(captureFrame).toHaveBeenCalledWith(10 * 1024 * 1024);
+        expect(el.querySelector<HTMLButtonElement>('[data-action="capture"]')!.disabled).toBe(true);
+        await settle();
+        http.expectOne('/api/ocr').flush(ocrResult);
+        await settle();
+        fixture.detectChanges();
+        expect(el.querySelectorAll('.uf-row').length).toBe(1);
+      });
+
+      it('使用者取消選擇:不顯示錯誤、不送出請求,按鈕恢復', async () => {
+        supportCapture();
+        captureFrame.mockRejectedValue(Object.assign(new Error('denied'), { name: 'NotAllowedError' }));
+        const { el, fixture } = openOcr();
+        el.querySelector<HTMLButtonElement>('[data-action="capture"]')!.click();
+        await settle();
+        fixture.detectChanges();
+        expect(el.querySelector('.uf-err')).toBeNull();
+        expect(el.querySelector<HTMLButtonElement>('[data-action="capture"]')!.disabled).toBe(false);
+        http.expectNone('/api/ocr');
+      });
+
+      it('擷取失敗(不是取消):顯示說明', async () => {
+        supportCapture();
+        captureFrame.mockRejectedValue(new Error('empty_frame'));
+        const { el, fixture } = openOcr();
+        el.querySelector<HTMLButtonElement>('[data-action="capture"]')!.click();
+        await settle();
+        fixture.detectChanges();
+        expect(el.querySelector('.uf-err')!.textContent).toContain('擷取畫面失敗');
+        http.expectNone('/api/ocr');
+      });
     });
   });
 });

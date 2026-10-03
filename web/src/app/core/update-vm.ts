@@ -5,6 +5,7 @@ import { Api } from './api';
 import { MINUTE_MS, compensated, displayMinutes, submitMinutes, toParts } from './compensation';
 import { DataStore } from './data-store';
 import { circled } from './format';
+import { ImageTools, isImageFile } from './image-input';
 import { OverviewVm } from './overview-vm';
 import {
   batchFieldMessage,
@@ -85,6 +86,7 @@ export class UpdateVm {
   private readonly overview = inject(OverviewVm);
   private readonly toast = inject(Toast);
   private readonly api = inject(Api);
+  private readonly tools = inject(ImageTools);
 
   readonly workshopId = signal<string | null>(null);
   readonly rows = signal<SubRow[]>([]);
@@ -195,16 +197,25 @@ export class UpdateVm {
    */
   async recognize(file: File): Promise<void> {
     if (this.workshopId() === null || this.ocrPhase() === 'busy') return;
-    const problem = fileProblem(file);
+    const seq = ++this.ocrSeq;
+    let upload = file;
+    // 超過上限的圖(例如貼上的 4K 全螢幕 PNG)先在瀏覽器端縮圖重新編碼(D-162);縮不了就沿用原檔,下面照舊提示超過上限
+    if (file.size > OCR_MAX_BYTES && isImageFile(file)) {
+      this.ocrError.set(null);
+      this.ocrPhase.set('busy');
+      upload = (await this.tools.shrink(file, OCR_MAX_BYTES)) ?? file;
+      if (seq !== this.ocrSeq) return; // 縮圖期間換了工坊或分頁
+      this.ocrPhase.set('idle');
+    }
+    const problem = fileProblem(upload);
     if (problem) {
       this.ocrError.set(problem);
       return;
     }
-    const seq = ++this.ocrSeq;
     this.ocrError.set(null);
     this.ocrPhase.set('busy');
     try {
-      const result = await this.api.ocr(file);
+      const result = await this.api.ocr(upload);
       if (seq !== this.ocrSeq) return; // 期間換了工坊或分頁
       this.applyOcr(result);
     } catch (error) {
@@ -212,6 +223,12 @@ export class UpdateVm {
       this.ocrPhase.set('idle');
       this.ocrError.set(ocrErrorMessage(error));
     }
+  }
+
+  /** 取得圖片這一步就失敗(例如擷取畫面出錯)時,在上傳區顯示說明 */
+  reportOcrError(message: string): void {
+    if (this.ocrPhase() === 'busy') return;
+    this.ocrError.set(message);
   }
 
   private applyOcr(result: OcrResultDto): void {

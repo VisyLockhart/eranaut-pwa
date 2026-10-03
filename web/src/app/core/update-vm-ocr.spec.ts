@@ -5,9 +5,13 @@ import type { OcrResultDto, OcrSubmarineDto, SubmarineDto, WorkshopWithSubmarine
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Auth } from './auth';
 import { DataStore } from './data-store';
+import { ImageTools } from './image-input';
 import { flagText } from './submarine-form';
 import { Toast } from './toast';
 import { UpdateVm, fileProblem } from './update-vm';
+
+// 超過上限的圖會先走前端縮圖(D-162);jsdom 沒有 canvas,縮圖在這裡換成可控的替身
+const shrink = vi.fn<(file: File, limit: number) => Promise<File | null>>();
 
 // 截圖辨識接進更新表單(D-117、D-119、D-124、D-154)。手動輸入的案例在 update-vm.spec.ts
 
@@ -59,11 +63,13 @@ describe('UpdateVm 截圖辨識', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
+    shrink.mockReset();
+    shrink.mockResolvedValue(null);
     localStorage.clear();
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(T0);
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ImageTools, useValue: { shrink } }] });
     http = TestBed.inject(HttpTestingController);
     TestBed.inject(Auth).status.set('authenticated');
     store = TestBed.inject(DataStore);
@@ -245,6 +251,54 @@ describe('UpdateVm 截圖辨識', () => {
       await again;
       expect(vm.ocrPhase()).toBe('review');
       expect(vm.ocrError()).toBeNull();
+    });
+
+    it('超過 10 MB 的圖:先在瀏覽器端縮圖再送出辨識(D-162),送出的是縮圖後的 JPEG', async () => {
+      const small = new File([new Uint8Array(1000)], 'big.jpg', { type: 'image/jpeg' });
+      shrink.mockResolvedValue(small);
+      const big = new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'big.png', { type: 'image/png' });
+      const pending = vm.recognize(big);
+      await settle();
+      const req = http.expectOne('/api/ocr');
+      const sent = (req.request.body as FormData).get('image') as File;
+      expect([sent.name, sent.size, sent.type]).toEqual(['big.jpg', 1000, 'image/jpeg']);
+      req.flush(result([dto(1, 10)]));
+      await pending;
+      expect(shrink).toHaveBeenCalledWith(big, 10 * 1024 * 1024);
+      expect(vm.ocrPhase()).toBe('review');
+    });
+
+    it('縮圖期間顯示辨識中;縮圖失敗就沿用「超過 10 MB」提示、不送出請求', async () => {
+      let finish!: (f: File | null) => void;
+      shrink.mockReturnValue(new Promise<File | null>((r) => (finish = r)));
+      const pending = vm.recognize(new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'big.png', { type: 'image/png' }));
+      expect(vm.ocrPhase()).toBe('busy');
+      finish(null);
+      await pending;
+      expect(vm.ocrPhase()).toBe('idle');
+      expect(vm.ocrError()).toContain('10 MB');
+      http.expectNone('/api/ocr');
+    });
+
+    it('縮圖期間換了工坊:舊的縮圖結果直接丟棄', async () => {
+      let finish!: (f: File | null) => void;
+      shrink.mockReturnValue(new Promise<File | null>((r) => (finish = r)));
+      const pending = vm.recognize(new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'big.png', { type: 'image/png' }));
+      vm.setMode('manual');
+      finish(new File([new Uint8Array(10)], 'x.jpg', { type: 'image/jpeg' }));
+      await pending;
+      http.expectNone('/api/ocr');
+    });
+
+    it('不是支援的圖片格式即使很大也不縮圖', async () => {
+      await vm.recognize(new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'big.gif', { type: 'image/gif' }));
+      expect(shrink).not.toHaveBeenCalled();
+      expect(vm.ocrError()).toContain('PNG');
+    });
+
+    it('reportOcrError:顯示說明;辨識中不覆蓋', () => {
+      vm.reportOcrError('擷取畫面失敗');
+      expect(vm.ocrError()).toBe('擷取畫面失敗');
     });
 
     it('檔案不合(不是支援的圖片、太大、空檔):不送出請求', async () => {
