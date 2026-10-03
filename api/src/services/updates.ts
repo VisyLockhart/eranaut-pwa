@@ -1,9 +1,9 @@
-import type { NotifyPrefs, SubmarineDto, SubmarinesUpdateResult, WorkshopDto } from '@eranaut/shared';
-import { prefsToNotifyMethods } from '@eranaut/shared';
+import type { NotifyPrefsUpdate, SubmarineDto, SubmarinesUpdateResult, WorkshopDto } from '@eranaut/shared';
+import { applyNotifyPrefsUpdate } from '@eranaut/shared';
 import type { Db } from '../db/index.js';
 import { upsertSubmarines } from '../repo/submarines.js';
 import { replaceWorkshop } from '../repo/workshops.js';
-import { setNotifyMethods } from '../repo/users.js';
+import { getNotifyMethods, setNotifyMethods } from '../repo/users.js';
 import { syncUserReminders, syncWorkshopReminders } from './reminders.js';
 import type { ValidSubmarine } from './submarines.js';
 import type { ValidWorkshop } from './workshops.js';
@@ -36,10 +36,13 @@ export function updateWorkshop(db: Db, userId: string, id: string, v: ValidWorks
   })();
 }
 
-export function setNotifyPrefs(db: Db, userId: string, prefs: NotifyPrefs, now: Date): void {
-  db.transaction(() => {
-    setNotifyMethods(db, userId, prefsToNotifyMethods(prefs));
+/** 只改 DM 與頻道;推播位元原樣保留(推播由訂閱端點管理,D-165)。回傳新的位元值 */
+export function setNotifyPrefs(db: Db, userId: string, update: NotifyPrefsUpdate, now: Date): number {
+  return db.transaction(() => {
+    const bits = applyNotifyPrefsUpdate(getNotifyMethods(db, userId), update);
+    setNotifyMethods(db, userId, bits);
     syncUserReminders(db, userId, now);
+    return bits;
   })();
 }
 

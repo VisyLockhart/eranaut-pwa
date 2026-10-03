@@ -1,4 +1,6 @@
 import type { Db } from '../db/index.js';
+import { NotifyMethod } from '@eranaut/shared';
+import { deletePushSubscriptionsForUser } from '../repo/push.js';
 import { deleteRemindersForUser } from '../repo/reminders.js';
 import { deleteSessionsForUser } from '../repo/sessions.js';
 
@@ -16,4 +18,7 @@ export function suspendUser(db: Db, userId: string, s: Suspension, now: Date): v
   );
   deleteSessionsForUser(db, userId);
   deleteRemindersForUser(db, userId);
+  // 推播訂閱一併撤銷(D-165):停用者的裝置不再收到任何通知;推播位元也清掉,恢復後要重新在裝置上開啟
+  deletePushSubscriptionsForUser(db, userId);
+  db.prepare('UPDATE users SET notify_methods = notify_methods & ? WHERE id = ?').run(~NotifyMethod.Push, userId);
 }

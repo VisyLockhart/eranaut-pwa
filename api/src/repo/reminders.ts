@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Db } from '../db/index.js';
 
-export type DeliveryMethod = 'dm' | 'channel';
+export type DeliveryMethod = 'dm' | 'channel' | 'push';
 
 export interface ReminderRow {
   id: string;

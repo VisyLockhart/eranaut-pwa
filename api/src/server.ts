@@ -10,6 +10,8 @@ import { createGuildCache } from './services/guild-cache.js';
 import { registerInternalRoutes } from './routes/internal.js';
 import { registerNotifyPrefsRoutes } from './routes/notify-prefs.js';
 import { registerOcrRoutes } from './routes/ocr.js';
+import { registerPushRoutes } from './routes/push.js';
+import type { PushSender } from './push/sender.js';
 import type { OcrService } from './ocr/service.js';
 import { registerSubmarineRoutes } from './routes/submarines.js';
 import { registerWorkshopRoutes } from './routes/workshops.js';
@@ -24,6 +26,8 @@ export interface AppDeps {
   permissions: Permissions;
   /** 截圖辨識(D-125);沒給時 POST /api/ocr 回 503 ocr_unavailable */
   ocr?: OcrService;
+  /** 瀏覽器推播發送端(D-165);沒設定 VAPID 時為 undefined */
+  push?: PushSender;
   /** 注入時鐘,測試用 */
   now: () => Date;
 }
@@ -54,6 +58,7 @@ export function buildPublicServer(deps: AppDeps, opts: { logger?: boolean } = {}
   registerWorkshopRoutes(app, deps, requireSession);
   registerSubmarineRoutes(app, deps, requireSession);
   registerNotifyPrefsRoutes(app, deps, requireSession);
+  registerPushRoutes(app, deps, requireSession);
   registerOcrRoutes(app, deps, requireSession);
   return app;
 }

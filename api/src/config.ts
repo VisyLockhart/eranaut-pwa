@@ -11,6 +11,8 @@ export interface AppConfig {
   guildName: string;
   /** Eranarch 呼叫內部埠用的共用密鑰(D-131 ①),Bearer 驗證 */
   internalSecret: string;
+  /** 瀏覽器推播的 VAPID 設定(D-165);null = 沒設定,推播功能整個關閉(設定頁不顯示開關) */
+  push: PushConfig | null;
   discord: {
     clientId: string;
     clientSecret: string;
@@ -18,6 +20,14 @@ export interface AppConfig {
     botToken: string;
     guildId: string;
   };
+}
+
+export interface PushConfig {
+  /** VAPID 公鑰(base64url):給瀏覽器訂閱用,不是機密 */
+  publicKey: string;
+  privateKey: string;
+  /** `mailto:` 或 `https:` 網址,推播服務出問題時用來聯絡(Web Push 規定) */
+  subject: string;
 }
 
 export class ConfigError extends Error {
@@ -47,8 +57,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   }
   const internalSecret = required(env, 'INTERNAL_API_SECRET');
   if (internalSecret.length < 32) throw new ConfigError('INTERNAL_API_SECRET 太短(至少 32 字元的隨機字串)');
+  const push = loadPushConfig(env, origin);
   return {
     publicOrigin: origin,
+    push,
     reminderChannelId: channelId,
     internalSecret,
     guildName: required(env, 'GUILD_DISPLAY_NAME'),
@@ -60,6 +72,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       guildId: required(env, 'DISCORD_GUILD_ID'),
     },
   };
+}
+
+/** VAPID 金鑰兩個都沒設 = 不啟用推播;只設一個或格式錯誤 = 啟動失敗,不默默關掉 */
+function loadPushConfig(env: NodeJS.ProcessEnv, origin: string): PushConfig | null {
+  const publicKey = env.VAPID_PUBLIC_KEY?.trim() || null;
+  const privateKey = env.VAPID_PRIVATE_KEY?.trim() || null;
+  if (publicKey === null && privateKey === null) return null;
+  if (publicKey === null || privateKey === null) throw new ConfigError('VAPID_PUBLIC_KEY 與 VAPID_PRIVATE_KEY 必須一起設定');
+  if (!/^[A-Za-z0-9_-]{80,100}$/.test(publicKey)) throw new ConfigError('VAPID_PUBLIC_KEY 格式錯誤(用 npx web-push generate-vapid-keys 產生)');
+  if (!/^[A-Za-z0-9_-]{40,50}$/.test(privateKey)) throw new ConfigError('VAPID_PRIVATE_KEY 格式錯誤(用 npx web-push generate-vapid-keys 產生)');
+  const subject = env.VAPID_SUBJECT?.trim() || origin;
+  if (!/^(mailto:[^\s@]+@[^\s@]+|https:\/\/\S+)$/.test(subject)) {
+    throw new ConfigError('VAPID_SUBJECT 必須是 mailto: 信箱或 https:// 網址(PUBLIC_ORIGIN 不是 https 時需要另外設定)');
+  }
+  return { publicKey, privateKey, subject };
 }
 
 export function redirectUri(config: AppConfig): string {

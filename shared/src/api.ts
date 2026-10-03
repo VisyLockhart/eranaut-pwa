@@ -167,11 +167,35 @@ export type OcrErrorCode =
   | 'busy'
   | 'ocr_unavailable';
 
-// ---- 提醒方式設定(D-72、D-133、D-145 ⑦) ----
-// 請求與回應都用 `NotifyPrefs`(`{ dm, channel }`),不暴露位元數字。
+// ---- 提醒方式設定(D-72、D-133、D-145 ⑦、D-165) ----
+// 回應用 `NotifyPrefs`(`{ dm, channel, push }`),請求用 `NotifyPrefsUpdate`(`{ dm, channel }`),不暴露位元數字。
 export interface NotifyPrefsValidationErrorBody {
   error: 'validation_failed';
   fields: { dm?: FieldErrorCode; channel?: FieldErrorCode };
+}
+
+// ---- 瀏覽器推播(D-165) ----
+/** `GET /api/push/config`:`publicKey` 為 null = 伺服器沒有設定推播(`.env` 沒有 VAPID 金鑰) */
+export interface PushConfigDto {
+  publicKey: string | null;
+}
+/** `PUT /api/push/subscription` 的請求:就是瀏覽器 `PushSubscription.toJSON()` 的內容 */
+export interface PushSubscriptionInput {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+/** `GET /api/push/subscriptions`:這位使用者已登記的裝置端點(用來判斷「這台裝置」是否已開啟) */
+export interface PushSubscriptionsDto {
+  endpoints: string[];
+}
+/** `POST /api/push/test` 的結果 */
+export interface PushTestResult {
+  /** 成功送出的裝置數 */
+  sent: number;
+}
+export interface PushValidationErrorBody {
+  error: 'validation_failed';
+  fields: { endpoint?: FieldErrorCode; keys?: FieldErrorCode };
 }
 
 // ---- 登入與公開設定(D-123、D-134、D-142) ----

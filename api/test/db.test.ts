@@ -33,10 +33,10 @@ test('連線啟用外鍵', () => {
 
 test('migrate 建立全部資料表,且可重複執行', () => {
   const db = openDatabase(':memory:');
-  assert.equal(migrate(db), 1);
-  assert.equal(migrate(db), 1);
+  assert.equal(migrate(db), 2);
+  assert.equal(migrate(db), 2);
   const names = (db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all() as { name: string }[]).map((r) => r.name);
-  assert.deepEqual(names, ['reminder_deliveries', 'reminders', 'sessions', 'submarines', 'users', 'workshops']);
+  assert.deepEqual(names, ['push_subscriptions', 'reminder_deliveries', 'reminders', 'sessions', 'submarines', 'users', 'workshops']);
 });
 
 test('預設值:notify_methods = 1(只 DM)、停用欄位為 NULL、工坊預設不提醒', () => {

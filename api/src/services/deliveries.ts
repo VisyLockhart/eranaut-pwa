@@ -1,6 +1,9 @@
 import type { Db } from '../db/index.js';
 import { SendError, type ReminderSender } from '../discord/sender.js';
-import { buildReminderMessage } from './reminder-message.js';
+import { PushSendError, type PushSender } from '../push/sender.js';
+import { deletePushSubscriptionById, listPushSubscriptions } from '../repo/push.js';
+import { buildPushMessage, buildReminderMessage, type PushMessageInput } from './reminder-message.js';
+import { clearPushIfNoSubscriptions } from './push-subscriptions.js';
 
 // 提醒的輪詢與發送(D-128、D-129)。
 // - 只查 `status = 'pending'` 且 `next_attempt_at` 已到的 delivery(D-139)
@@ -9,6 +12,8 @@ import { buildReminderMessage } from './reminder-message.js';
 // - DM 永久失敗時**不**自動改發頻道(D-129)
 // - 過期不補發:晚超過 30 分鐘的提醒標記「錯過」
 // - 失敗只寫 log,不做使用者畫面
+// - 瀏覽器推播(D-165):同一筆 delivery 發給該使用者所有已登記的裝置,只要有一台成功就算已發送(重試時不會對已成功的裝置重複發);
+//   推播服務回報訂閱已失效(404/410)就刪掉那筆訂閱,最後一台也失效時關閉推播位元
 
 export const RETRY_INTERVAL_MS = 60_000;
 export const MAX_ATTEMPTS = 3; // 總嘗試次數(含第一次)
@@ -23,6 +28,8 @@ export interface DeliveryLogger {
 export interface DeliveryDeps {
   db: Db;
   sender: ReminderSender;
+  /** 瀏覽器推播發送端(D-165);沒給(`.env` 沒設定 VAPID)時 push delivery 標記失敗 `push_not_configured` */
+  push?: PushSender | null;
   reminderChannelId: string | null;
   now: () => Date;
   log: DeliveryLogger;
@@ -30,11 +37,12 @@ export interface DeliveryDeps {
 
 interface DueRow {
   delivery_id: string;
-  method: 'dm' | 'channel';
+  method: 'dm' | 'channel' | 'push';
   attempts: number;
   scheduled_at: string;
   submarine_id: string | null;
   workshop_id: string;
+  user_id: string;
   discord_user_id: string;
   workshop_name: string;
   server: string;
@@ -63,7 +71,7 @@ export async function processDueDeliveries(deps: DeliveryDeps): Promise<TickSumm
   const due = db
     .prepare(
       `SELECT d.id AS delivery_id, d.method, d.attempts, r.scheduled_at, r.submarine_id, r.workshop_id,
-              u.discord_user_id,
+              u.id AS user_id, u.discord_user_id,
               w.name AS workshop_name, w.server, w.captain, w.notify_lead_minutes
        FROM reminder_deliveries d
        JOIN reminders r ON r.id = d.reminder_id
@@ -92,15 +100,18 @@ export async function processDueDeliveries(deps: DeliveryDeps): Promise<TickSumm
       continue;
     }
 
-    const content = composeContent(db, row);
     const attempts = row.attempts + 1;
     try {
-      await sender.send(
-        row.method === 'dm'
-          ? { method: 'dm', discordUserId: row.discord_user_id }
-          : { method: 'channel', discordUserId: row.discord_user_id, channelId: deps.reminderChannelId! },
-        content,
-      );
+      if (row.method === 'push') {
+        await sendPush(deps, row, now);
+      } else {
+        await sender.send(
+          row.method === 'dm'
+            ? { method: 'dm', discordUserId: row.discord_user_id }
+            : { method: 'channel', discordUserId: row.discord_user_id, channelId: deps.reminderChannelId! },
+          composeContent(db, row),
+        );
+      }
       finish(db, row.delivery_id, 'sent', attempts, null);
       log.info({ ...base, outcome: 'sent', attempts });
       summary.sent++;
@@ -127,27 +138,65 @@ export async function processDueDeliveries(deps: DeliveryDeps): Promise<TickSumm
   return summary;
 }
 
+/** 發給該使用者所有已登記的裝置;至少一台成功就算成功,否則依錯誤種類丟出讓外層決定重試或失敗 */
+async function sendPush(deps: DeliveryDeps, row: DueRow, now: Date): Promise<void> {
+  if (!deps.push) throw new SendError('push_not_configured', 'permanent');
+  const subs = listPushSubscriptions(deps.db, row.user_id);
+  if (subs.length === 0) throw new SendError('no_subscription', 'permanent');
+  const message = buildPushMessage({ ...composeFacts(deps.db, row), now, tag: row.submarine_id ? `sub-${row.submarine_id}` : `ws-${row.workshop_id}` });
+
+  let ok = 0;
+  let rateLimitedMs: number | null = null;
+  let retryable: string | null = null;
+  let permanent: string | null = null;
+  let removed = false;
+  for (const s of subs) {
+    try {
+      await deps.push.send({ endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth }, message);
+      ok++;
+    } catch (e) {
+      const err = e instanceof SendError ? e : new SendError(`未預期的錯誤:${(e as Error).message}`, 'retry');
+      if (err instanceof PushSendError && err.gone) {
+        deletePushSubscriptionById(deps.db, s.id);
+        removed = true;
+        deps.log.info({ event: 'push_subscription_gone', userId: row.user_id, subscriptionId: s.id, error: err.message });
+      } else if (err.kind === 'rate_limited') rateLimitedMs = Math.max(rateLimitedMs ?? 0, err.retryAfterMs ?? 1000);
+      else if (err.kind === 'retry') retryable = err.message;
+      else permanent = err.message;
+    }
+  }
+  if (removed) clearPushIfNoSubscriptions(deps.db, row.user_id, now);
+  if (ok > 0) return;
+  if (rateLimitedMs !== null) throw new SendError('被推播服務限速(429)', 'rate_limited', rateLimitedMs);
+  if (retryable !== null) throw new SendError(retryable, 'retry');
+  throw new SendError(permanent ?? 'no_subscription', 'permanent');
+}
+
 /** 發送當下重新讀取名稱、艘數、返航時間,內容永遠是最新的(D-147) */
-function composeContent(db: Db, row: DueRow): string {
+function composeFacts(db: Db, row: DueRow): Omit<PushMessageInput, 'now' | 'tag'> {
   const lead = row.notify_lead_minutes > 0;
-  const mention = row.method === 'channel' ? row.discord_user_id : null;
-  const common = { workshopName: row.workshop_name, server: row.server, captain: row.captain, lead, mentionDiscordUserId: mention };
+  const common = { workshopName: row.workshop_name, server: row.server, captain: row.captain, lead };
 
   if (row.submarine_id !== null) {
     const s = db.prepare('SELECT position, name, expected_return_at FROM submarines WHERE id = ?').get(row.submarine_id) as
       | { position: number; name: string | null; expected_return_at: string | null }
       | undefined;
-    return buildReminderMessage({
+    return {
       ...common,
       scope: { kind: 'submarine', position: s?.position ?? 1, name: s?.name ?? null },
       returnAt: s?.expected_return_at ? new Date(s.expected_return_at) : null,
-    });
+    };
   }
   const exploring = db.prepare("SELECT expected_return_at FROM submarines WHERE workshop_id = ? AND status = 'exploring'").all(row.workshop_id) as { expected_return_at: string | null }[];
   const times = exploring.map((s) => (s.expected_return_at ? new Date(s.expected_return_at).getTime() : 0)).filter((t) => t > 0);
-  return buildReminderMessage({
+  return {
     ...common,
     scope: { kind: 'batch', count: exploring.length },
     returnAt: times.length ? new Date(Math.max(...times)) : null,
-  });
+  };
+}
+
+/** DM / 頻道的文案(D-147):在共用事實上加提及 */
+function composeContent(db: Db, row: DueRow): string {
+  return buildReminderMessage({ ...composeFacts(db, row), mentionDiscordUserId: row.method === 'channel' ? row.discord_user_id : null });
 }

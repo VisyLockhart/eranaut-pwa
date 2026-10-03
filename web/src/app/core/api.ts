@@ -3,9 +3,14 @@ import { Injectable, inject } from '@angular/core';
 import type {
   MeDto,
   NotifyPrefs,
+  NotifyPrefsUpdate,
   OcrResultDto,
   OverviewDto,
   PublicConfigDto,
+  PushConfigDto,
+  PushSubscriptionInput,
+  PushSubscriptionsDto,
+  PushTestResult,
   SubmarineInput,
   SubmarinesUpdateResult,
   WorkshopDto,
@@ -63,8 +68,25 @@ export class Api {
   notifyPrefs(): Promise<NotifyPrefs> {
     return firstValueFrom(this.http.get<NotifyPrefs>('/api/notify-prefs'));
   }
-  /** 兩個欄位都必填且為布林;全部取消 = 不收任何提醒(D-133) */
-  setNotifyPrefs(prefs: NotifyPrefs): Promise<NotifyPrefs> {
+  /** DM 與頻道兩個欄位都必填且為布林;全部取消 = 不收任何提醒(D-133)。推播由下面的訂閱端點管理(D-165) */
+  setNotifyPrefs(prefs: NotifyPrefsUpdate): Promise<NotifyPrefs> {
     return firstValueFrom(this.http.put<NotifyPrefs>('/api/notify-prefs', prefs));
+  }
+
+  // ---- 瀏覽器推播(D-165) ----
+  pushConfig(): Promise<PushConfigDto> {
+    return firstValueFrom(this.http.get<PushConfigDto>('/api/push/config'));
+  }
+  pushSubscriptions(): Promise<PushSubscriptionsDto> {
+    return firstValueFrom(this.http.get<PushSubscriptionsDto>('/api/push/subscriptions'));
+  }
+  registerPush(sub: PushSubscriptionInput): Promise<unknown> {
+    return firstValueFrom(this.http.put('/api/push/subscription', sub));
+  }
+  unregisterPush(endpoint: string): Promise<unknown> {
+    return firstValueFrom(this.http.delete('/api/push/subscription', { body: { endpoint } }));
+  }
+  testPush(): Promise<PushTestResult> {
+    return firstValueFrom(this.http.post<PushTestResult>('/api/push/test', null));
   }
 }

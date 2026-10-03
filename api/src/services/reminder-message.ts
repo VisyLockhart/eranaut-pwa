@@ -39,3 +39,27 @@ export function buildReminderMessage(m: ReminderMessageInput): string {
   }
   return lines.join('\n');
 }
+
+const TAIPEI_TIME = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+
+export interface PushMessageInput extends Omit<ReminderMessageInput, 'mentionDiscordUserId'> {
+  /** 發送當下,用來算「約 N 分鐘後」 */
+  now: Date;
+  /** 同一艘或同一間工坊的新通知取代舊的 */
+  tag: string;
+}
+
+/**
+ * 瀏覽器推播文案(D-165):標題與內容用和 DM / 頻道相同的措辭,但不能用 Discord 的 `<t:…>` 時間戳(推播只能是純文字),
+ * 預先提醒的返航時間改在伺服器算好:台北時間的時刻加「約 N 分鐘後」(相對時間不受時區影響)。
+ * DM / 頻道的文案(`buildReminderMessage`)完全不變。
+ */
+export function buildPushMessage(m: PushMessageInput): { title: string; body: string; tag: string } {
+  const [title, ...rest] = buildReminderMessage({ ...m, mentionDiscordUserId: null, returnAt: null }).split('\n');
+  const lines = rest;
+  if (m.lead && m.returnAt) {
+    const minutes = Math.max(1, Math.ceil((m.returnAt.getTime() - m.now.getTime()) / 60_000));
+    lines.push(`預計台北時間 ${TAIPEI_TIME.format(m.returnAt)} 返航(約 ${minutes} 分鐘後)`);
+  }
+  return { title: title!, body: lines.join('\n'), tag: m.tag };
+}

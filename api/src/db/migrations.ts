@@ -1,6 +1,6 @@
 // 依序執行的 migration。只能新增、不可修改已發布的項目。
 // 建立順序 users → workshops → submarines → reminders → reminder_deliveries;sessions 只依賴 users。
-// 規格來源:docs/SCHEMA.md(D-132、D-133、D-135、D-136、D-137、D-138、D-139)。
+// 規格來源:docs/SCHEMA.md(D-132、D-133、D-135、D-136、D-137、D-138、D-139、D-165)。
 // 時間一律存 UTC 的 ISO 8601 字串;主鍵為 UUID v4(TEXT,由應用層以 crypto.randomUUID() 產生)。
 // 停用三欄(suspended_*)不加 CHECK,一致性由應用層維持(D-132)。
 
@@ -84,6 +84,23 @@ CREATE TABLE reminder_deliveries (
   UNIQUE(reminder_id, method)
 );
 CREATE INDEX ix_deliveries_due ON reminder_deliveries(status, next_attempt_at);
+`,
+  },
+  {
+    version: 2,
+    name: 'push_subscriptions',
+    // 瀏覽器推播訂閱(D-165):一個人可有多台裝置;endpoint 全域唯一(同一個瀏覽器換人登入時改掛到新使用者)
+    sql: `
+CREATE TABLE push_subscriptions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  user_agent TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX ix_push_subscriptions_user ON push_subscriptions(user_id);
 `,
   },
 ];

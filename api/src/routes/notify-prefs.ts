@@ -7,7 +7,7 @@ import type { AppDeps } from '../server.js';
 import { setNotifyPrefs } from '../services/updates.js';
 
 // 提醒方式設定(D-72):對外用具名布林 `{ dm, channel }`,位元只在 service 層轉換(D-145 ⑦)。
-// 全部取消 = 不收任何提醒(D-133 允許)。
+// 全部取消 = 不收任何提醒(D-133 允許)。回應含 push(D-165),請求只收 dm 與 channel。
 
 export function registerNotifyPrefsRoutes(app: FastifyInstance, deps: AppDeps, requireSession: ReturnType<typeof registerSessionAuth>): void {
   const { db } = deps;
@@ -23,8 +23,8 @@ export function registerNotifyPrefsRoutes(app: FastifyInstance, deps: AppDeps, r
       else if (typeof b[k] !== 'boolean') fields[k] = 'invalid_type';
     }
     if (Object.keys(fields).length > 0) return reply.code(400).send({ error: 'validation_failed', fields });
-    const prefs = { dm: b.dm as boolean, channel: b.channel as boolean };
-    setNotifyPrefs(db, req.session!.userId, prefs, deps.now());
-    return prefs;
+    // 推播(push)不在這裡改:body 裡有 push 也忽略,由 /api/push/subscription 管理(D-165)
+    const bits = setNotifyPrefs(db, req.session!.userId, { dm: b.dm as boolean, channel: b.channel as boolean }, deps.now());
+    return notifyMethodsToPrefs(bits);
   });
 }

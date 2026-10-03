@@ -3,6 +3,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import type { LoginErrorCode, MeDto } from '@eranaut/shared';
 import { catchError, throwError } from 'rxjs';
 import { Api } from './api';
+import { PushVm } from './push-vm';
 
 // 登入狀態(D-142):
 // - `anonymous`:沒有有效 session(全新造訪或剛登出)→ 迎賓頁;帶 `login_error` 則顯示對應的失敗畫面
@@ -15,6 +16,7 @@ const LOGIN_ERRORS: readonly LoginErrorCode[] = ['denied', 'failed', 'not_in_gui
 @Injectable({ providedIn: 'root' })
 export class Auth {
   private readonly api = inject(Api);
+  private readonly push = inject(PushVm);
 
   readonly status = signal<AuthStatus>('loading');
   readonly user = signal<MeDto | null>(null);
@@ -44,6 +46,7 @@ export class Auth {
   }
 
   async logout(): Promise<void> {
+    await this.push.releaseThisDevice(); // 先移除這台裝置的推播訂閱(要趁 session 還在),失敗不影響登出(D-165)
     try {
       await this.api.logout();
     } catch {

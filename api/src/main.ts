@@ -6,6 +6,7 @@ import { createDiscordClient } from './discord/client.js';
 import { createPaddleEngine } from './ocr/engine.js';
 import { createOcrService } from './ocr/service.js';
 import { createReminderSender } from './discord/sender.js';
+import { createPushSender } from './push/sender.js';
 import { startEligibilitySweep } from './services/eligibility-scheduler.js';
 import { startReminderPoller } from './services/reminder-poller.js';
 
@@ -22,7 +23,9 @@ migrate(db);
 const discord = createDiscordClient(config);
 // 截圖辨識(D-125):與 API 同一個 process;模型啟動時在背景預先載入,失敗不影響其他功能
 const ocr = createOcrService(createPaddleEngine());
-const deps = { db, config, discord, permissions, ocr, now: () => new Date() };
+// 瀏覽器推播(D-165):`.env` 有 VAPID 金鑰才啟用
+const push = config.push ? createPushSender(config.push) : undefined;
+const deps = { db, config, discord, permissions, ocr, push, now: () => new Date() };
 const pub = buildPublicServer(deps);
 const internal = buildInternalServer(deps);
 ocr.warmup?.().catch((err: unknown) => pub.log.warn({ event: 'ocr_warmup_failed', err }));
@@ -31,6 +34,7 @@ ocr.warmup?.().catch((err: unknown) => pub.log.warn({ event: 'ocr_warmup_failed'
 await startReminderPoller(pub, {
   db,
   sender: createReminderSender(config),
+  push,
   reminderChannelId: config.reminderChannelId,
   now: () => new Date(),
   log: pub.log,

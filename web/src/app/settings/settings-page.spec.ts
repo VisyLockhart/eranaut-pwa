@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Auth } from '../core/auth';
 import { Layout } from '../core/layout';
+import { PushVm } from '../core/push-vm';
 import { UiScale } from '../core/ui-scale';
 import { SettingsPage } from './settings-page';
 
@@ -88,5 +89,46 @@ describe('SettingsPage', () => {
     await settle();
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('讀取失敗');
+  });
+
+  describe('推播(D-165)', () => {
+    async function withPush(state: 'ready' | 'blocked' | 'ios-install' | 'unsupported' | 'unavailable' | 'error', enabled = false, prefs: object = { dm: true, channel: false, push: false }) {
+      const fixture = await render();
+      http.expectOne('/api/notify-prefs').flush(prefs);
+      const push = TestBed.inject(PushVm);
+      push.state.set(state);
+      push.enabled.set(enabled);
+      await settle();
+      fixture.detectChanges();
+      return { el: fixture.nativeElement as HTMLElement, push, fixture };
+    }
+
+    it('可用:多一個「這台裝置的推播通知」開關,開著時才有測試按鈕', async () => {
+      let { el } = await withPush('ready', false);
+      expect(el.querySelectorAll('.switch input').length).toBe(3);
+      expect(el.textContent).toContain('這台裝置的推播通知');
+      expect(el.textContent).not.toContain('傳送測試通知');
+      ({ el } = await withPush('ready', true, { dm: true, channel: false, push: true }));
+      expect(el.textContent).toContain('傳送測試通知');
+    });
+
+    it('其他狀態各有說明、沒有推播開關;伺服器沒設定時整項不顯示', async () => {
+      let { el } = await withPush('ios-install');
+      expect(el.querySelectorAll('.switch input').length).toBe(2);
+      expect(el.textContent).toContain('加入主畫面');
+      ({ el } = await withPush('blocked'));
+      expect(el.textContent).toContain('被封鎖');
+      ({ el } = await withPush('unsupported'));
+      expect(el.textContent).toContain('不支援推播通知');
+      ({ el } = await withPush('unavailable'));
+      expect(el.textContent).not.toContain('推播');
+    });
+
+    it('只有推播開著(DM 與頻道都關)時,不顯示「不會收到任何提醒」', async () => {
+      let { el } = await withPush('unavailable', false, { dm: false, channel: false, push: false });
+      expect(el.textContent).toContain('不會收到任何潛艇提醒');
+      ({ el } = await withPush('unavailable', false, { dm: false, channel: false, push: true }));
+      expect(el.textContent).not.toContain('不會收到任何潛艇提醒');
+    });
   });
 });

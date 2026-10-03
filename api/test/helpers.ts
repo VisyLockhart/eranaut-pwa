@@ -5,6 +5,7 @@ import type { AppConfig } from '../src/config.js';
 import { migrate, openDatabase, type Db } from '../src/db/index.js';
 import type { DiscordClient, DiscordGuildMember } from '../src/discord/client.js';
 import type { OcrService } from '../src/ocr/service.js';
+import { PushSendError, type PushNotification, type PushSender, type PushTarget } from '../src/push/sender.js';
 import { buildInternalServer, buildPublicServer } from '../src/server.js';
 
 export const ORIGIN = 'https://eranaut.example.com';
@@ -18,6 +19,7 @@ export const config: AppConfig = {
   cookieSecure: true,
   reminderChannelId: '888888888888888888',
   internalSecret: 'test-internal-secret-0123456789abcdef',
+  push: null,
   guildName: '貝殼公會',
   discord: { clientId: 'client-id', clientSecret: 'client-secret', botToken: 'bot-token', guildId: GUILD_ID },
 };
@@ -79,13 +81,28 @@ export interface TestApp {
 }
 
 /** member 規則:(A 且 B) 或 C */
-export function makeApp(opts: { ocr?: OcrService } = {}): TestApp {
+/** 假推播:記錄送出的內容;`script` 依序消耗結果('ok' 或要丟的錯誤),沒有就成功 */
+export class FakePush implements PushSender {
+  sent: { target: PushTarget; n: PushNotification }[] = [];
+  script: (Error | 'ok')[] = [];
+  async send(target: PushTarget, n: PushNotification) {
+    const next = this.script.shift() ?? 'ok';
+    if (next !== 'ok') throw next;
+    this.sent.push({ target, n });
+  }
+}
+export const goneError = () => new PushSendError('訂閱已失效(HTTP 410)', 'permanent', true);
+
+export const VAPID_PUBLIC = 'B'.repeat(87);
+
+export function makeApp(opts: { ocr?: OcrService; push?: PushSender } = {}): TestApp {
   const db = openDatabase(':memory:');
   migrate(db);
   const discord = new FakeDiscord();
   const clock = { now: new Date('2026-10-01T00:00:00Z') };
   const permissions = createPermissions({ member: parseRoleRule(`${ROLE_A}+${ROLE_B},${ROLE_C}`) });
-  const deps = { db, config, discord, permissions, ocr: opts.ocr, now: () => clock.now };
+  const cfg = opts.push ? { ...config, push: { publicKey: VAPID_PUBLIC, privateKey: 'x'.repeat(43), subject: ORIGIN } } : config;
+  const deps = { db, config: cfg, discord, permissions, ocr: opts.ocr, push: opts.push, now: () => clock.now };
   const app = buildPublicServer(deps, { logger: false });
   const internal = buildInternalServer(deps, { logger: false });
   return { app, db, discord, clock, internal };

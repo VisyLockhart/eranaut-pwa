@@ -50,8 +50,37 @@
         <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">在伺服器的通知頻道提及你。<span style="color: var(--amber)">這是公開訊息</span>，看得到該頻道的人都看得到</div>
       </div>
     </div>
-    @if (!p.dm && !p.channel) {
-      <div class="uf-note" style="margin-top: 12px" role="status">兩種方式都關閉時，不會收到任何潛艇提醒。</div>
+    @switch (push.state()) {
+      @case ('ready') {
+        <div class="modal-toggle-row">
+          <label class="switch"><input type="checkbox" [checked]="push.enabled()" [disabled]="push.busy()" (change)="push.enabled() ? push.disable() : push.enable()" aria-labelledby="set-push-label" /><span class="slider"></span></label>
+          <div style="flex: 1; min-width: 0">
+            <div id="set-push-label" style="font-size: 13px; font-weight: 600">這台裝置的推播通知</div>
+            <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">關掉視窗也收得到，點通知會開啟 Eranaut。每台裝置要分別開啟</div>
+          </div>
+        </div>
+        @if (push.enabled()) {
+          <button type="button" class="ghost-btn" style="margin-top: 10px; width: auto; padding: 8px 14px" [disabled]="push.busy()" (click)="push.test()">傳送測試通知</button>
+        }
+      }
+      @case ('blocked') {
+        <div class="uf-note" style="margin-top: 12px" role="status">這個網站的通知被封鎖了，無法開啟推播。請到瀏覽器或系統的網站設定，把通知改成「允許」後，重新整理頁面。</div>
+      }
+      @case ('ios-install') {
+        <div class="uf-note" style="margin-top: 12px" role="status">想在 iPhone / iPad 收推播通知：先在 Safari 按分享鈕，選「加入主畫面」，再從主畫面的圖示開啟 Eranaut，回到這裡就能開啟。</div>
+      }
+      @case ('unsupported') {
+        <div class="uf-note" style="margin-top: 12px" role="status">這個瀏覽器不支援推播通知（iPhone / iPad 需要 iOS 16.4 以上）。</div>
+      }
+      @case ('error') {
+        <div class="uf-note" style="margin-top: 12px" role="status">推播狀態讀取失敗。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" (click)="push.load()">重試</button></div>
+      }
+    }
+    @if (push.message(); as m) {
+      <div [class]="m.kind === 'error' ? 'modal-error-text' : 'uf-note'" style="margin-top: 10px" [attr.role]="m.kind === 'error' ? 'alert' : 'status'">{{ m.text }}</div>
+    }
+    @if (!p.dm && !p.channel && !p.push) {
+      <div class="uf-note" style="margin-top: 12px" role="status">所有方式都關閉時，不會收到任何潛艇提醒。</div>
     }
     <div class="uf-note" style="margin-top: 12px">每間工坊另可設定「整批提醒」與「預先提醒」，到「工坊」→ 管理 → 編輯。</div>
     @if (vm.saveError(); as message) { <div class="modal-error-text" role="alert">{{ message }}</div> }

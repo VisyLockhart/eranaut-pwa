@@ -57,6 +57,7 @@ export function methodsFromBits(bits: number): DeliveryMethod[] {
   const out: DeliveryMethod[] = [];
   if (bits & NotifyMethod.Dm) out.push('dm');
   if (bits & NotifyMethod.Channel) out.push('channel');
+  if (bits & NotifyMethod.Push) out.push('push');
   return out;
 }
 

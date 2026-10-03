@@ -69,7 +69,9 @@ test('methodsFromBits:位元對應 delivery 方式', () => {
   assert.deepEqual(methodsFromBits(1), ['dm']);
   assert.deepEqual(methodsFromBits(2), ['channel']);
   assert.deepEqual(methodsFromBits(3), ['dm', 'channel']);
-  assert.deepEqual(methodsFromBits(4), [], '預留位元不產生 delivery');
+  assert.deepEqual(methodsFromBits(4), ['push']);
+  assert.deepEqual(methodsFromBits(7), ['dm', 'channel', 'push']);
+  assert.deepEqual(methodsFromBits(8), [], '未指定的位元不產生 delivery');
 });
 
 // ---- 逐艘模式 ----
@@ -257,10 +259,10 @@ test('應發時間已到但還沒被輪詢發出的提醒,重算時不會被丟�
 test('提醒方式:預設 DM;GET/PUT 用具名布林', async () => {
   const t = makeApp();
   const api = await asUser(t);
-  assert.deepEqual((await api('GET', '/api/notify-prefs')).json(), { dm: true, channel: false });
+  assert.deepEqual((await api('GET', '/api/notify-prefs')).json(), { dm: true, channel: false, push: false });
   const res = await api('PUT', '/api/notify-prefs', { dm: false, channel: true });
-  assert.deepEqual(res.json(), { dm: false, channel: true });
-  assert.deepEqual((await api('GET', '/api/notify-prefs')).json(), { dm: false, channel: true });
+  assert.deepEqual(res.json(), { dm: false, channel: true, push: false });
+  assert.deepEqual((await api('GET', '/api/notify-prefs')).json(), { dm: false, channel: true, push: false });
   assert.equal((t.db.prepare('SELECT notify_methods FROM users').get() as { notify_methods: number }).notify_methods, 2, 'DB 內是位元');
 });
 
@@ -272,7 +274,7 @@ test('提醒方式驗證:缺欄位 / 非布林 → 400;未登入 401;別的來�
   assert.equal((await api('PUT', '/api/notify-prefs')).statusCode, 400);
   assert.equal((await t.app.inject({ method: 'GET', url: '/api/notify-prefs' })).statusCode, 401);
   assert.equal((await t.app.inject({ method: 'PUT', url: '/api/notify-prefs', payload: { dm: true, channel: true }, headers: { origin: 'https://evil.example' } })).statusCode, 403);
-  assert.deepEqual((await api('GET', '/api/notify-prefs')).json(), { dm: true, channel: false }, '失敗時不改');
+  assert.deepEqual((await api('GET', '/api/notify-prefs')).json(), { dm: true, channel: false, push: false }, '失敗時不改');
 });
 
 test('改提醒方式:未到期的提醒增刪 delivery;全取消 = 不留提醒;再開回來會重建', async () => {
@@ -324,7 +326,7 @@ test('提醒方式只影響自己的提醒', async () => {
   await putSubs(b, wb.id, [exploring(1, 60)]);
   await b('PUT', '/api/notify-prefs', { dm: false, channel: false });
   assert.equal(snap(t).length, 1);
-  assert.deepEqual((await a('GET', '/api/notify-prefs')).json(), { dm: true, channel: false });
+  assert.deepEqual((await a('GET', '/api/notify-prefs')).json(), { dm: true, channel: false, push: false });
 });
 
 // ---- 刪除與停用 ----

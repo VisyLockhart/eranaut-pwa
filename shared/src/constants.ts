@@ -18,10 +18,11 @@ export type NotifyLeadMinutes = (typeof NOTIFY_LEAD_MINUTES)[number];
 /** 開啟預先提醒時的預設值(D-135 ③) */
 export const DEFAULT_NOTIFY_LEAD_MINUTES = 5;
 
-/** users.notify_methods 位元旗標(D-133)。程式碼不直接寫 1/2/4。bit2(4)預留未指定。 */
+/** users.notify_methods 位元旗標(D-133)。程式碼不直接寫 1/2/4。bit2(4)= 瀏覽器推播(D-165)。 */
 export const NotifyMethod = {
   Dm: 1,
   Channel: 2,
+  Push: 4,
 } as const;
 export const DEFAULT_NOTIFY_METHODS = NotifyMethod.Dm;
 
