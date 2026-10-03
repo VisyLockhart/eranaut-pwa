@@ -70,6 +70,24 @@ describe('WorkshopList', () => {
     TestBed.resetTestingModule();
   });
 
+  it('只有可拖曳的管理清單帶 ws-cdk(介面大小放大時靠它抵銷 zoom,D-164)', () => {
+    expect(render().el.querySelector('.ws-list.ws-cdk')).toBeNull();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
+    TestBed.inject(Auth).status.set('authenticated');
+    const store2 = TestBed.inject(DataStore);
+    store2.now.set(NOW);
+    store2.loaded.set(true);
+    store2.fetched.set([ws('a'), ws('b')]);
+    TestBed.inject(WorkshopsVm).manageMode.set(true);
+    const fixture = TestBed.createComponent(WorkshopList);
+    fixture.componentRef.setInput('variant', 'mobile');
+    fixture.detectChanges();
+    const list = (fixture.nativeElement as HTMLElement).querySelector('.ws-list');
+    expect(list?.classList.contains('ws-cdk')).toBe(true);
+    expect(list?.querySelectorAll('.ws-row')).toHaveLength(2);
+  });
+
   it('沒有任何工坊時顯示空狀態', () => {
     store.fetched.set([]);
     expect(render().el.textContent).toContain('尚未建立任何工坊');

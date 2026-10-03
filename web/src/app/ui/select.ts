@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, forwardRef, inject, input, model, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, forwardRef, inject, input, model, signal, untracked } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
+import { UiScale } from '../core/ui-scale';
 import { IconComponent } from './icon';
 
 export type SelectValue = string | number;
@@ -83,12 +84,18 @@ export class SelectField implements ControlValueAccessor {
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
+  private readonly scale = inject(UiScale);
   private onChange: (value: SelectValue) => void = () => undefined;
   private onTouched: () => void = () => undefined;
   private typed = '';
   private typedAt = 0;
 
   constructor() {
+    // 介面大小改變(D-164)時清單位置作廢:直接收起
+    effect(() => {
+      this.scale.factor();
+      untracked(() => this.close());
+    });
     const stop = (event: Event): void => {
       if (this.open() && !(event.target instanceof Node && this.host.nativeElement.contains(event.target))) this.close();
     };
@@ -131,16 +138,18 @@ export class SelectField implements ControlValueAccessor {
 
   private show(): void {
     const trigger = this.host.nativeElement.querySelector('button')!;
-    const rect = trigger.getBoundingClientRect();
-    const below = window.innerHeight - rect.bottom - 8;
+    // 介面大小放大時(D-164),固定定位的座標單位是 zoom 後的 CSS 像素,用 UiScale 換算
+    const rect = this.scale.localRect(trigger);
+    const viewport = this.scale.localViewport();
+    const below = viewport.height - rect.bottom - 8;
     const above = rect.top - 8;
     const wanted = Math.min(260, this.options().length * 38 + 8);
     const up = below < Math.min(wanted, 160) && above > below;
     const width = Math.max(rect.width, 120);
     this.pos.set({
-      left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+      left: Math.max(8, Math.min(rect.left, viewport.width - width - 8)),
       top: up ? null : rect.bottom + 4,
-      bottom: up ? window.innerHeight - rect.top + 4 : null,
+      bottom: up ? viewport.height - rect.top + 4 : null,
       width,
       maxHeight: Math.max(96, Math.min(260, up ? above - 4 : below - 4)),
     });

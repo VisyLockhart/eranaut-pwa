@@ -34,7 +34,7 @@
     }
 
     @if (vm.manageMode()) {
-      <div class="ws-list" cdkDropList (cdkDropListDropped)="onDrop($event)">
+      <div class="ws-list ws-cdk" cdkDropList (cdkDropListDropped)="onDrop($event)">
         @for (row of vm.rows(); track row.ws.id; let first = $first; let last = $last) {
           <div class="ws-row" [class.ws-row-desktop]="variant() === 'desktop'" cdkDrag cdkDragLockAxis="y" [attr.data-id]="row.ws.id">
             <span class="ws-drag-handle" cdkDragHandle role="img" aria-label="拖曳排序"><app-icon name="dragDots" [size]="22" /></span>

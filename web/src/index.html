@@ -16,6 +16,13 @@
   <meta name="apple-mobile-web-app-title" content="Eranaut">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <script>
+    /* 介面大小(D-164):在畫面出現前先套用,避免第一幀閃一下小字。鍵與倍率要和 core/ui-scale.ts 一致 */
+    try {
+      var f = { medium: 1.15, large: 1.3 }[JSON.parse(localStorage.getItem('eranaut.ui-scale'))];
+      if (f) document.documentElement.style.setProperty('--ui-scale', f);
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <app-root></app-root>

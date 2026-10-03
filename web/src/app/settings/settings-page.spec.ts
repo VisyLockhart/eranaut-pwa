@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Auth } from '../core/auth';
 import { Layout } from '../core/layout';
+import { UiScale } from '../core/ui-scale';
 import { SettingsPage } from './settings-page';
 
 const settle = (): Promise<void> => new Promise((r) => setTimeout(r));
@@ -38,6 +39,26 @@ describe('SettingsPage', () => {
     expect(boxes[0].checked).toBe(true);
     expect(boxes[1].checked).toBe(false);
     expect(el.textContent).toContain('這是公開訊息');
+  });
+
+  it('介面大小:三個選項,目前的為選取,點了立即切換、不需要網路', async () => {
+    localStorage.clear();
+    const fixture = await render();
+    http.expectOne('/api/notify-prefs').flush({ dm: true, channel: false });
+    await settle();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const opts = Array.from(el.querySelectorAll<HTMLButtonElement>('.size-opt'));
+    expect(opts.map((b) => b.textContent?.replace('Aa', '').trim())).toEqual(['小', '中', '大']);
+    expect(opts.map((b) => b.getAttribute('aria-checked'))).toEqual(['true', 'false', 'false']);
+
+    opts[2].click();
+    fixture.detectChanges();
+    expect(TestBed.inject(UiScale).size()).toBe('large');
+    expect(opts.map((b) => b.getAttribute('aria-checked'))).toEqual(['false', 'false', 'true']);
+    expect(opts[2].classList.contains('active')).toBe(true);
+    http.expectNone('/api/notify-prefs');
+    expect(JSON.parse(localStorage.getItem('eranaut.ui-scale') ?? '""')).toBe('large');
   });
 
   it('全部關閉時顯示說明', async () => {

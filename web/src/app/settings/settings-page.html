@@ -2,7 +2,7 @@
   <div class="d-topbar">
     <div>
       <div class="d-title">設定</div>
-      <div class="d-subtitle">帳號與提醒方式</div>
+      <div class="d-subtitle">帳號、顯示與提醒方式</div>
     </div>
   </div>
   <div class="d-upload-wrap" style="width: 100%"><ng-container *ngTemplateOutlet="body" /></div>
@@ -19,6 +19,19 @@
       <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">已連結 Discord</div>
     </div>
     <button type="button" class="ghost-btn" style="width: auto; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px" (click)="auth.logout()"><app-icon name="logout" [size]="15" />登出</button>
+  </div>
+
+  <div class="modal-section-label">顯示</div>
+  <div class="modal-toggle-row" style="display: block; margin-top: 0">
+    <div id="set-size-label" style="font-size: 13px; font-weight: 600">介面大小</div>
+    <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">放大文字與按鈕，立即套用；只影響這台裝置</div>
+    <div class="up-tabs" role="radiogroup" aria-labelledby="set-size-label" style="margin: 10px 0 0">
+      @for (s of sizes; track s.value; let i = $index) {
+        <button type="button" class="up-tab size-opt" role="radio" [class.active]="scale.size() === s.value" [attr.aria-checked]="scale.size() === s.value" (click)="scale.set(s.value)">
+          <span class="size-aa" [style.font-size.px]="13 + i * 2">Aa</span>{{ s.label }}
+        </button>
+      }
+    </div>
   </div>
 
   <div class="modal-section-label">提醒方式</div>
