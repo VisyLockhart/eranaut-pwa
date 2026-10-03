@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import type { WorkshopWithSubmarines } from '@eranaut/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Auth } from '../core/auth';
 import { DataStore } from '../core/data-store';
 import { OverviewVm } from '../core/overview-vm';
 import { WorkshopsVm } from '../core/workshops-vm';
@@ -36,6 +37,7 @@ describe('WorkshopList', () => {
     localStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
+    TestBed.inject(Auth).status.set('authenticated');
     store = TestBed.inject(DataStore);
     vm = TestBed.inject(WorkshopsVm);
     store.now.set(NOW);

@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import type { OcrErrorCode, OcrResultDto, OcrWarning, SubmarinesBatchValidationErrorBody, SubmarinesUpdateResult } from '@eranaut/shared';
 import { Api } from './api';
+import { Auth } from './auth';
 import { MINUTE_MS, compensated, displayMinutes, submitMinutes, toParts } from './compensation';
 import { DataStore } from './data-store';
 import { circled } from './format';
@@ -84,6 +85,7 @@ export type SubmitOutcome = 'ok' | 'invalid' | 'failed' | 'voided' | 'gone';
 export class UpdateVm {
   private readonly store = inject(DataStore);
   private readonly overview = inject(OverviewVm);
+  private readonly auth = inject(Auth);
   private readonly toast = inject(Toast);
   private readonly api = inject(Api);
   private readonly tools = inject(ImageTools);
@@ -117,6 +119,13 @@ export class UpdateVm {
   private nextKey = 1;
   /** 每次開始辨識、或表單被重建就加一;回來得太晚的結果直接丟掉 */
   private ocrSeq = 0;
+
+  constructor() {
+    // 登出或 session 失效:丟棄填到一半的表單與辨識結果(頁面元件因版面切換重建時不會經過這裡,D-163)
+    effect(() => {
+      if (this.auth.status() !== 'authenticated') untracked(() => this.close());
+    });
+  }
 
   /** 進入頁面:選好工坊、建立表單、開始計時(已在進行中則沿用目前的表單) */
   open(): void {

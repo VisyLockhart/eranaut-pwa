@@ -1,8 +1,10 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
-import type { WorkshopWithSubmarines } from '@eranaut/shared';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import type { FieldErrorCode, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
+import { Auth } from './auth';
 import { DataStore } from './data-store';
 import { isReady } from './format';
 import { OverviewVm } from './overview-vm';
+import type { WorkshopFormValue } from './workshop-form';
 
 export type WorkshopDialog = { type: 'form'; id: string | null } | { type: 'delete'; id: string };
 
@@ -21,6 +23,7 @@ export interface WorkshopRow {
 export class WorkshopsVm {
   private readonly store = inject(DataStore);
   private readonly overview = inject(OverviewVm);
+  private readonly auth = inject(Auth);
 
   readonly manageMode = signal(false);
   readonly dialog = signal<WorkshopDialog | null>(null);
@@ -46,26 +49,60 @@ export class WorkshopsVm {
     });
   });
 
-  /** 進入頁面時呼叫:一律從瀏覽模式開始 */
+  /**
+   * 對話框的填寫與送出狀態也放在這裡,不放在對話框元件:視窗換螢幕等造成寬度跨過 768px 時,
+   * 手機/桌機版面會整個重建,元件內的狀態會消失(D-163)
+   */
+  readonly formDraft = signal<WorkshopFormValue | null>(null);
+  readonly formSubmitted = signal(false);
+  readonly serverErrors = signal<Partial<Record<keyof WorkshopInput, FieldErrorCode>>>({});
+  readonly submitError = signal<string | null>(null);
+  readonly busy = signal(false);
+
+  /** 頁面目前是否「在使用中」:版面切換重建頁面時為 true,不重置模式與對話框 */
+  active = false;
+
+  constructor() {
+    // 登出或 session 失效:一律回到初始狀態
+    effect(() => {
+      if (this.auth.status() !== 'authenticated') untracked(() => this.reset());
+    });
+  }
+
+  /** 離開工坊頁、或登出時呼叫:回到瀏覽模式、關掉對話框並丟棄草稿 */
   reset(): void {
+    this.active = false;
     this.manageMode.set(false);
     this.dialog.set(null);
+    this.clearDialogState();
+  }
+
+  private clearDialogState(): void {
+    this.formDraft.set(null);
+    this.formSubmitted.set(false);
+    this.serverErrors.set({});
+    this.submitError.set(null);
+    this.busy.set(false);
   }
 
   toggleManage(): void {
     this.manageMode.update((v) => !v);
   }
   add(): void {
+    this.clearDialogState();
     this.dialog.set({ type: 'form', id: null });
   }
   edit(id: string): void {
+    this.clearDialogState();
     this.dialog.set({ type: 'form', id });
   }
   remove(id: string): void {
+    this.clearDialogState();
     this.dialog.set({ type: 'delete', id });
   }
   closeDialog(): void {
     this.dialog.set(null);
+    this.clearDialogState();
   }
 
   /** 瀏覽模式點工坊:總覽套用該工坊的過濾(實際導頁由元件做) */

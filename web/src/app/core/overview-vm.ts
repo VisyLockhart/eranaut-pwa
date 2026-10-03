@@ -1,6 +1,8 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import type { WorkshopDto, WorkshopWithSubmarines } from '@eranaut/shared';
+import { Auth } from './auth';
 import { DataStore } from './data-store';
+import type { SubRow } from './submarine-form';
 import { circled, displayFor, isReady, type SubDisplay } from './format';
 
 /** 總覽上的一艘潛艇(已算好顯示用的字串與排序鍵) */
@@ -39,6 +41,7 @@ export function addressLine(w: Pick<WorkshopDto, 'address_district' | 'address_w
 @Injectable({ providedIn: 'root' })
 export class OverviewVm {
   private readonly store = inject(DataStore);
+  private readonly auth = inject(Auth);
 
   private readonly requestedIndex = signal(0);
 
@@ -87,11 +90,35 @@ export class OverviewVm {
   /** 單艘快速修改的對象(D-117);null = 沒有開啟 */
   readonly quickEdit = signal<{ workshopId: string; position: number } | null>(null);
 
+  /**
+   * 快速修改對話框的填寫狀態也放在這裡,不放在對話框元件:視窗換螢幕等造成寬度跨過 768px 時,
+   * 手機/桌機版面會整個重建,元件內的狀態會消失(D-163)
+   */
+  readonly quickRow = signal<SubRow | null>(null);
+  readonly quickError = signal<string | null>(null);
+  readonly quickFormError = signal<string | null>(null);
+  readonly quickSaving = signal(false);
+
+  constructor() {
+    // 登出或 session 失效:關掉對話框、丟棄填到一半的內容
+    effect(() => {
+      if (this.auth.status() !== 'authenticated') untracked(() => this.closeQuickEdit());
+    });
+  }
+
   openQuickEdit(item: Pick<OverviewItem, 'workshop' | 'position'>): void {
+    this.resetQuick();
     this.quickEdit.set({ workshopId: item.workshop.id, position: item.position });
   }
   closeQuickEdit(): void {
     this.quickEdit.set(null);
+    this.resetQuick();
+  }
+  private resetQuick(): void {
+    this.quickRow.set(null);
+    this.quickError.set(null);
+    this.quickFormError.set(null);
+    this.quickSaving.set(false);
   }
 
   /** 從工坊管理點某間工坊:跳到總覽並套用該工坊過濾(D-101) */

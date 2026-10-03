@@ -3,7 +3,9 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import type { WorkshopWithSubmarines } from '@eranaut/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Auth } from '../core/auth';
 import { DataStore } from '../core/data-store';
+import { WorkshopsVm } from '../core/workshops-vm';
 import { WorkshopFormDialog } from './workshop-form-dialog';
 
 const NOW = Date.parse('2026-10-01T00:00:00Z');
@@ -183,5 +185,55 @@ describe('WorkshopFormDialog', () => {
     await settle();
     fixture.detectChanges();
     expect(closed).toHaveBeenCalled();
+  });
+
+  describe('版面切換重建對話框(D-163)', () => {
+    it('填到一半的內容在對話框被銷毀、重建後保留', () => {
+      TestBed.inject(Auth).status.set('authenticated');
+      TestBed.inject(WorkshopsVm).add();
+      const first = open(null);
+      first.type('#wsf-name', '新工坊');
+      first.type('#wsf-server', '迦樓羅');
+      first.type('#wsf-ward', '8');
+      first.fixture.destroy();
+      document.body.innerHTML = '';
+      const second = open(null);
+      expect(second.el.querySelector<HTMLInputElement>('#wsf-name')!.value).toBe('新工坊');
+      expect(second.el.querySelector<HTMLInputElement>('#wsf-ward')!.value).toBe('8');
+      expect(second.el.querySelector('#wsf-server')!.textContent).toContain('迦樓羅');
+    });
+
+    it('關閉對話框後再開:草稿已清掉,從空白開始', () => {
+      TestBed.inject(Auth).status.set('authenticated');
+      const vm = TestBed.inject(WorkshopsVm);
+      vm.add();
+      const first = open(null);
+      first.type('#wsf-name', '新工坊');
+      vm.closeDialog();
+      first.fixture.destroy();
+      document.body.innerHTML = '';
+      vm.add();
+      const second = open(null);
+      expect(second.el.querySelector<HTMLInputElement>('#wsf-name')!.value).toBe('');
+    });
+
+    it('送出途中元件被銷毀:請求完成後由 service 關掉對話框,不會出錯', async () => {
+      TestBed.inject(Auth).status.set('authenticated');
+      const vm = TestBed.inject(WorkshopsVm);
+      vm.add();
+      const first = open(null);
+      first.type('#wsf-name', '新工坊');
+      first.type('#wsf-server', '迦樓羅');
+      await first.submit();
+      const req = http.expectOne('/api/workshops');
+      first.fixture.destroy();
+      document.body.innerHTML = '';
+      open(null); // 版面切換後重建的對話框,仍在送出中
+      expect(vm.busy()).toBe(true);
+      req.flush({ ...workshop({ id: 'new', name: '新工坊' }), submarines: undefined }, { status: 201, statusText: 'Created' });
+      await settle();
+      expect(vm.dialog()).toBeNull();
+      expect(vm.busy()).toBe(false);
+    });
   });
 });

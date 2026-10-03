@@ -1,6 +1,7 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, untracked } from '@angular/core';
 import { DataStore } from '../core/data-store';
+import { WorkshopsVm } from '../core/workshops-vm';
 import { IconComponent } from '../ui/icon';
 
 /** 刪除確認(D-104):依工坊底下有無潛艇記錄分兩種文案,有記錄時用危險色強調會一併刪除 */
@@ -43,8 +44,11 @@ export class WorkshopDeleteDialog {
   private readonly store = inject(DataStore);
   protected readonly workshop = computed(() => this.store.workshops().find((w) => w.id === this.workshopId()) ?? null);
   protected readonly count = computed(() => this.workshop()?.submarines.length ?? 0);
-  protected readonly saving = signal(false);
-  protected readonly error = signal<string | null>(null);
+  private readonly vm = inject(WorkshopsVm);
+  private destroyed = false;
+  // 送出狀態放在 WorkshopsVm(版面切換重建對話框時要保留,D-163)
+  protected readonly saving = this.vm.busy;
+  protected readonly error = this.vm.submitError;
   protected downOnOverlay = false;
 
   // 注意:模板事件處理式若回傳 false,Angular 會對該事件呼叫 preventDefault(),
@@ -57,7 +61,14 @@ export class WorkshopDeleteDialog {
     if (this.downOnOverlay && event.target === event.currentTarget) this.close();
   }
 
+  /** 結束對話框;若送出期間元件已因版面切換被銷毀(output 不能再 emit),改直接通知 service 關閉 */
+  private finish(): void {
+    if (this.destroyed) this.vm.closeDialog();
+    else this.closed.emit();
+  }
+
   constructor() {
+    inject(DestroyRef).onDestroy(() => (this.destroyed = true));
     // 要刪除的工坊已經不在了(例如在別的裝置刪掉後重新整理)→ 直接關閉
     effect(() => {
       if (this.workshop() === null) untracked(() => this.closed.emit());
@@ -74,7 +85,7 @@ export class WorkshopDeleteDialog {
     this.error.set(null);
     try {
       await this.store.deleteWorkshop(this.workshopId());
-      this.closed.emit();
+      this.finish();
     } catch {
       // 401 由 interceptor 轉成 session 過期畫面;其他錯誤留在對話框讓使用者重試
       this.error.set('刪除失敗，請稍後再試。');

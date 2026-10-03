@@ -1,10 +1,11 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, input, output, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DISTRICTS, LIMITS, SERVERS, type FieldErrorCode, type ValidationErrorBody, type WorkshopInput } from '@eranaut/shared';
+import { DISTRICTS, LIMITS, SERVERS, type ValidationErrorBody, type WorkshopInput } from '@eranaut/shared';
 import { DataStore } from '../core/data-store';
+import { WorkshopsVm } from '../core/workshops-vm';
 import {
   DEFAULT_LEAD,
   allowedLeadChoices,
@@ -47,6 +48,8 @@ export class WorkshopFormDialog implements OnInit {
   readonly closed = output<void>();
 
   private readonly store = inject(DataStore);
+  private readonly vm = inject(WorkshopsVm);
+  private destroyed = false;
 
   protected readonly serverOptions: SelectOption[] = [{ value: '', label: '請選擇' }, ...SERVERS.map((s) => ({ value: s, label: s }))];
   protected readonly districtOptions: SelectOption[] = [{ value: '', label: '請選擇' }, ...DISTRICTS.map((d) => ({ value: d, label: d }))];
@@ -64,10 +67,11 @@ export class WorkshopFormDialog implements OnInit {
     leadMinutes: new FormControl<number>(DEFAULT_LEAD, { nonNullable: true }),
   });
 
-  protected readonly submitted = signal(false);
-  protected readonly saving = signal(false);
-  protected readonly submitError = signal<string | null>(null);
-  protected readonly serverErrors = signal<Partial<Record<keyof WorkshopInput, FieldErrorCode>>>({});
+  // 填寫與送出狀態放在 WorkshopsVm(版面切換重建對話框時要保留,D-163)
+  protected readonly submitted = this.vm.formSubmitted;
+  protected readonly saving = this.vm.busy;
+  protected readonly submitError = this.vm.submitError;
+  protected readonly serverErrors = this.vm.serverErrors;
   protected downOnOverlay = false;
 
   // 模板事件處理式不能回傳 false(Angular 會 preventDefault,讓輸入框點不進去),所以用回傳 void 的方法
@@ -86,8 +90,16 @@ export class WorkshopFormDialog implements OnInit {
   protected readonly leadOptions = computed<SelectOption[]>(() => this.leadChoices().map((m) => ({ value: m, label: leadLabel(m) })));
   protected readonly leadBlocked = computed(() => this.leadChoices().length === 0);
 
+  /** 結束對話框;若送出期間元件已因版面切換被銷毀(output 不能再 emit),改直接通知 service 關閉 */
+  private finish(): void {
+    if (this.destroyed) this.vm.closeDialog();
+    else this.closed.emit();
+  }
+
   constructor() {
+    inject(DestroyRef).onDestroy(() => (this.destroyed = true));
     this.form.valueChanges.subscribe(() => {
+      this.vm.formDraft.set(this.form.getRawValue());
       if (Object.keys(this.serverErrors()).length > 0) this.serverErrors.set({});
     });
 
@@ -116,7 +128,14 @@ export class WorkshopFormDialog implements OnInit {
   }
 
   ngOnInit(): void {
-    this.form.reset(toFormValue(this.workshop()));
+    // 對話框因版面切換被重建時,接回使用者填到一半的內容
+    const draft = this.vm.formDraft();
+    if (draft !== null) {
+      this.form.reset(draft);
+      this.form.markAsDirty();
+    } else {
+      this.form.reset(toFormValue(this.workshop()));
+    }
   }
 
   protected get editing(): boolean {
@@ -162,7 +181,7 @@ export class WorkshopFormDialog implements OnInit {
       const id = this.workshopId();
       if (id === null) await this.store.createWorkshop(input);
       else await this.store.updateWorkshop(id, input);
-      this.closed.emit();
+      this.finish();
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 400 && (error.error as ValidationErrorBody | null)?.error === 'validation_failed') {
         this.serverErrors.set((error.error as ValidationErrorBody).fields ?? {});

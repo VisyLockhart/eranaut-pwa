@@ -5,6 +5,7 @@ import type { WorkshopWithSubmarines } from '@eranaut/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Auth } from '../core/auth';
 import { DataStore } from '../core/data-store';
+import { OverviewVm } from '../core/overview-vm';
 import { Toast } from '../core/toast';
 import { QuickEditDialog } from './quick-edit-dialog';
 
@@ -132,5 +133,50 @@ describe('QuickEditDialog', () => {
     fixture.detectChanges();
     await settle();
     expect(closed).toHaveBeenCalled();
+  });
+
+  describe('版面切換重建對話框(D-163)', () => {
+    it('填到一半的內容在對話框被銷毀、重建後保留', () => {
+      const vm = TestBed.inject(OverviewVm);
+      vm.openQuickEdit({ workshop: workshop(), position: 1 });
+      const first = open(1);
+      first.type('h', '2');
+      first.type('m', '5');
+      first.fixture.destroy();
+      document.body.innerHTML = '';
+      const second = open(1);
+      expect(second.el.querySelector<HTMLInputElement>('[data-field="h"]')!.value).toBe('2');
+      expect(second.el.querySelector<HTMLInputElement>('[data-field="m"]')!.value).toBe('5');
+    });
+
+    it('送出途中元件被銷毀:請求完成後由 service 關掉對話框,不會出錯', async () => {
+      const vm = TestBed.inject(OverviewVm);
+      vm.openQuickEdit({ workshop: workshop(), position: 1 });
+      const first = open(1);
+      first.type('h', '1');
+      first.type('m', '0');
+      await first.save();
+      const req = http.expectOne('/api/workshops/w1/submarines/1');
+      first.fixture.destroy();
+      document.body.innerHTML = '';
+      const second = open(1);
+      expect(second.fixture.nativeElement.querySelector('.btn-primary-modal').disabled).toBe(true); // 仍在送出中,不能重複送
+      req.flush({ submarines: [{ ...workshop().submarines[0] }], reminder_skipped_positions: [] });
+      await settle();
+      expect(vm.quickEdit()).toBeNull();
+      http.expectOne('/api/overview').flush({ workshops: [workshop()] });
+      await settle();
+    });
+
+    it('登出:丟棄填到一半的內容並關閉', () => {
+      const vm = TestBed.inject(OverviewVm);
+      vm.openQuickEdit({ workshop: workshop(), position: 1 });
+      const first = open(1);
+      first.type('h', '2');
+      TestBed.inject(Auth).status.set('anonymous');
+      TestBed.tick();
+      expect(vm.quickEdit()).toBeNull();
+      expect(vm.quickRow()).toBeNull();
+    });
   });
 });

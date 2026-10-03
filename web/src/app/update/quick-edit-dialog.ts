@@ -1,8 +1,9 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, untracked } from '@angular/core';
 import type { SubmarineValidationErrorBody } from '@eranaut/shared';
 import { DataStore } from '../core/data-store';
+import { OverviewVm } from '../core/overview-vm';
 import { etaText, rowError, rowFromSubmarine, rowMinutes, serverRowMessage, toSubmarineInput, type SubRow, type TimeField } from '../core/submarine-form';
 import { Toast } from '../core/toast';
 import { announceSkippedReminders } from '../core/update-vm';
@@ -54,12 +55,15 @@ export class QuickEditDialog {
 
   private readonly store = inject(DataStore);
   private readonly toast = inject(Toast);
+  private readonly overview = inject(OverviewVm);
+  private destroyed = false;
 
   protected readonly workshop = computed(() => this.store.workshops().find((w) => w.id === this.workshopId()) ?? null);
-  protected readonly row = signal<SubRow | null>(null);
-  protected readonly error = signal<string | null>(null);
-  protected readonly formError = signal<string | null>(null);
-  protected readonly saving = signal(false);
+  // 填寫狀態放在 OverviewVm(版面切換重建對話框時要保留,D-163)
+  protected readonly row = this.overview.quickRow;
+  protected readonly error = this.overview.quickError;
+  protected readonly formError = this.overview.quickFormError;
+  protected readonly saving = this.overview.quickSaving;
   protected readonly eta = computed(() => {
     const r = this.row();
     return r === null ? '' : etaText(r, this.store.now());
@@ -76,7 +80,14 @@ export class QuickEditDialog {
     if (this.downOnOverlay && event.target === event.currentTarget) this.close();
   }
 
+  /** 結束對話框;若送出期間元件已因版面切換被銷毀(output 不能再 emit),改直接通知 service 關閉 */
+  private finish(): void {
+    if (this.destroyed) this.overview.closeQuickEdit();
+    else this.closed.emit();
+  }
+
   constructor() {
+    inject(DestroyRef).onDestroy(() => (this.destroyed = true));
     // 開啟時以目前資料建立一列(只建一次,之後的重抓不會蓋掉使用者正在填的內容);潛艇或工坊不存在就關閉
     effect(() => {
       const ws = this.workshop();
@@ -116,12 +127,12 @@ export class QuickEditDialog {
       const result = await this.store.updateSubmarine(ws.id, toSubmarineInput(r, rowMinutes(r)));
       this.toast.show(`已更新「${ws.name}」${r.name.trim() || `潛水艇 ${r.position}`}`);
       announceSkippedReminders(this.toast, ws.notify_batched, result.reminder_skipped_positions);
-      this.closed.emit();
+      this.finish();
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 404) {
         this.toast.show('這艘潛水艇所在的工坊已經不存在了', { tone: 'warn' });
         void this.store.refresh();
-        this.closed.emit();
+        this.finish();
       } else if (error instanceof HttpErrorResponse && error.status === 400) {
         const body = error.error as SubmarineValidationErrorBody | null;
         this.error.set(serverRowMessage(body?.fields ?? {}));
