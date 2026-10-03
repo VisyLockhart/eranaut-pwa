@@ -109,9 +109,9 @@ describe('UpdatePage', () => {
   });
 
   it('送出成功:跳回總覽', async () => {
-    const { el, fixture, type } = open();
     const router = TestBed.inject(Router);
-    await router.navigateByUrl('/'); // 先在總覽路徑上,才能看出導頁
+    await router.navigateByUrl('/'); // 先在總覽路徑上(導頁離開 /update 會丟棄表單,所以要在開頁之前)
+    const { el, fixture, type } = open();
     for (const p of [1, 2]) {
       type(p, 'd', '0');
       type(p, 'h', '2');
@@ -360,6 +360,39 @@ describe('UpdatePage', () => {
       fixture.destroy();
       paste(document.body, png());
       http.expectNone('/api/ocr');
+    });
+
+    it('版面切換(換螢幕使寬度跨過斷點)造成頁面重建:辨識結果與表單保留', async () => {
+      const { fixture, el } = openOcr();
+      paste(document.body, png());
+      fixture.detectChanges();
+      http.expectOne('/api/ocr').flush(ocrResult);
+      await settle();
+      fixture.detectChanges();
+      const rowsBefore = el.querySelectorAll('.uf-row').length;
+      expect(rowsBefore).toBeGreaterThan(0);
+      expect(el.querySelector('.dropzone')).toBeNull();
+      // 元件被銷毀、在另一種版面重新建立
+      fixture.destroy();
+      document.body.innerHTML = '';
+      const next = openOcr(false);
+      expect(next.el.querySelector('.dropzone')).toBeNull();
+      expect(next.el.querySelectorAll('.uf-row').length).toBe(rowsBefore);
+    });
+
+    it('導到別的頁面再回來:表單丟棄、回到等上傳', async () => {
+      const { fixture, el } = openOcr();
+      paste(document.body, png());
+      fixture.detectChanges();
+      http.expectOne('/api/ocr').flush(ocrResult);
+      await settle();
+      fixture.detectChanges();
+      await TestBed.inject(Router).navigateByUrl('/');
+      fixture.destroy();
+      document.body.innerHTML = '';
+      expect(el.isConnected).toBe(false);
+      const next = openOcr();
+      expect(next.el.querySelector('.dropzone')).not.toBeNull();
     });
 
     it('桌機顯示貼上提示;手機不顯示', () => {

@@ -1,6 +1,8 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationStart, Router, RouterLink } from '@angular/router';
+import { filter } from 'rxjs';
 import { DataStore } from '../core/data-store';
 import { ImageTools, clipboardImage, isCaptureCancelled, isTextTarget, pasteShortcut } from '../core/image-input';
 import { Layout } from '../core/layout';
@@ -39,6 +41,16 @@ export class UpdatePage implements OnDestroy {
   constructor() {
     this.layout.pageTitle.set('更新潛水艇');
     this.vm.open();
+    // 只有真的導到別的頁面才丟棄表單。換螢幕(DPI 不同)等造成寬度跨過 768px 時,外殼會在手機/桌機版之間切換、
+    // 頁面元件被銷毀重建,這時表單與辨識結果要留著(狀態在 UpdateVm,不在元件裡)
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationStart => e instanceof NavigationStart),
+        takeUntilDestroyed(),
+      )
+      .subscribe((e) => {
+        if (!e.url.startsWith('/update')) this.vm.close();
+      });
     // 資料晚到(直接開此頁、尚無快照)或選的工坊被刪掉時,補選一間
     effect(() => {
       this.store.workshops();
@@ -49,7 +61,6 @@ export class UpdatePage implements OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.pasteTimer);
-    this.vm.close();
   }
 
   protected onSelect(value: SelectValue): void {

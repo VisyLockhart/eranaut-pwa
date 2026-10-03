@@ -118,8 +118,11 @@ export class UpdateVm {
   /** 每次開始辨識、或表單被重建就加一;回來得太晚的結果直接丟掉 */
   private ocrSeq = 0;
 
-  /** 進入頁面:選好工坊、建立表單、開始計時 */
+  /** 進入頁面:選好工坊、建立表單、開始計時(已在進行中則沿用目前的表單) */
   open(): void {
+    // 頁面元件因版面切換被重建時(狀態還在),不重建表單
+    const kept = this.workshopId();
+    if (this.timer !== null && kept !== null && this.store.workshops().some((w) => w.id === kept)) return;
     const preferred = this.overview.currentWorkshop()?.id ?? this.store.workshops()[0]?.id ?? null;
     this.selectWorkshop(preferred);
     if (this.timer === null) this.timer = setInterval(() => this.tick(Date.now()), TICK_MS);
