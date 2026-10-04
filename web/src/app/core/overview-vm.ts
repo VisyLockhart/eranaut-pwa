@@ -50,7 +50,7 @@ export class OverviewVm {
   private readonly requestedIndex = signal(0);
 
   /** 手機版統計區展開與否;預設展開 */
-  readonly statsOpen = signal(readJson<boolean>(STATS_OPEN_KEY) !== false);
+  readonly statsOpen = signal(readJson<boolean>(STATS_OPEN_KEY) === true);
 
   toggleStats(): void {
     const next = !this.statsOpen();

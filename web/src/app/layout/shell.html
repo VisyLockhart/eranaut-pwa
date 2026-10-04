@@ -25,9 +25,6 @@
 } @else {
   <div class="d-wrap">
     <div class="d-sidebar" [class.collapsed]="layout.sidebarCollapsed()">
-      <button type="button" class="d-collapse-handle" (click)="layout.toggleSidebar()" [attr.aria-expanded]="!layout.sidebarCollapsed()" [attr.aria-label]="layout.sidebarCollapsed() ? '展開側欄' : '收合側欄'" [attr.title]="layout.sidebarCollapsed() ? '展開側欄' : '收合側欄'">
-        <app-icon [name]="layout.sidebarCollapsed() ? 'chevronRight' : 'chevronLeft'" [size]="14" />
-      </button>
       <div class="d-brand">
         <div class="logo-mark"><app-icon name="logo" [size]="19" /></div>
         <div class="d-brand-text">
@@ -40,6 +37,9 @@
       <a class="d-nav-item" routerLink="/update" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '更新潛艇' : null"><app-icon name="camera" [size]="20" /><span>更新潛艇</span></a>
       <a class="d-nav-item" routerLink="/settings" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '設定' : null"><app-icon name="settings" [size]="20" /><span>設定</span></a>
       <div style="flex-grow: 1"></div>
+      <button type="button" class="d-collapse-btn" (click)="layout.toggleSidebar()" [attr.aria-expanded]="!layout.sidebarCollapsed()" [attr.aria-label]="layout.sidebarCollapsed() ? '展開側欄' : '收合側欄'" [attr.title]="layout.sidebarCollapsed() ? '展開側欄' : '收合側欄'">
+        <app-icon [name]="layout.sidebarCollapsed() ? 'chevronRight' : 'chevronLeft'" [size]="14" />
+      </button>
       <div class="d-user">
         <app-avatar [name]="auth.user()?.displayName ?? ''" [url]="auth.user()?.avatarUrl ?? null" [size]="30" />
         <div class="d-user-text" style="min-width: 0; flex-grow: 1">

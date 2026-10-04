@@ -80,18 +80,18 @@ describe('OverviewVm 統計區收合(D-166)', () => {
     localStorage.clear();
   });
 
-  it('預設展開;切換後存 localStorage,重建 service 後保留', () => {
+  it('預設收起;切換後存 localStorage,重建 service 後保留', () => {
     const vm = TestBed.inject(OverviewVm);
-    expect(vm.statsOpen()).toBe(true);
-    vm.toggleStats();
     expect(vm.statsOpen()).toBe(false);
-    expect(localStorage.getItem(STATS_OPEN_KEY)).toBe('false');
+    vm.toggleStats();
+    expect(vm.statsOpen()).toBe(true);
+    expect(localStorage.getItem(STATS_OPEN_KEY)).toBe('true');
     TestBed.resetTestingModule();
-    expect(TestBed.inject(OverviewVm).statsOpen()).toBe(false);
+    expect(TestBed.inject(OverviewVm).statsOpen()).toBe(true);
   });
 
-  it('儲存的值不合法時視為展開', () => {
+  it('儲存的值不合法時視為收起', () => {
     localStorage.setItem(STATS_OPEN_KEY, 'oops');
-    expect(TestBed.inject(OverviewVm).statsOpen()).toBe(true);
+    expect(TestBed.inject(OverviewVm).statsOpen()).toBe(false);
   });
 });
