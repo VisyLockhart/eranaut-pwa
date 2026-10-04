@@ -1,5 +1,9 @@
 import { Injectable, effect, inject, signal, untracked } from '@angular/core';
+import { readJson, writeJson } from './storage';
 import { UiScale } from './ui-scale';
+
+/** 桌機側欄是否收合(各裝置獨立,只存 localStorage,D-166) */
+export const SIDEBAR_KEY = 'eranaut.sidebar-collapsed';
 
 /** 版面斷點(CSS 像素):內容的有效寬度達到這個值才用桌機版(D-95、D-164) */
 export const DESKTOP_MIN_WIDTH = 768;
@@ -14,6 +18,8 @@ export class Layout {
   readonly isDesktop = signal(false);
   /** 手機版標頭的副標題,由各頁面設定 */
   readonly pageTitle = signal('');
+  /** 桌機側欄收合成窄欄(只剩圖示) */
+  readonly sidebarCollapsed = signal(readJson<boolean>(SIDEBAR_KEY) === true);
 
   private readonly scale = inject(UiScale);
   private mq: MediaQueryList | null = null;
@@ -28,6 +34,12 @@ export class Layout {
       this.scale.factor();
       untracked(() => this.bind(this.scale.effective()));
     });
+  }
+
+  toggleSidebar(): void {
+    const next = !this.sidebarCollapsed();
+    this.sidebarCollapsed.set(next);
+    writeJson(SIDEBAR_KEY, next);
   }
 
   private bind(zoom: number): void {

@@ -4,6 +4,10 @@ import { Auth } from './auth';
 import { DataStore } from './data-store';
 import type { SubRow } from './submarine-form';
 import { circled, displayFor, isReady, type SubDisplay } from './format';
+import { readJson, writeJson } from './storage';
+
+/** 手機總覽統計區是否展開(各裝置獨立,只存 localStorage,D-166) */
+export const STATS_OPEN_KEY = 'eranaut.stats-open';
 
 /** 總覽上的一艘潛艇(已算好顯示用的字串與排序鍵) */
 export interface OverviewItem {
@@ -44,6 +48,15 @@ export class OverviewVm {
   private readonly auth = inject(Auth);
 
   private readonly requestedIndex = signal(0);
+
+  /** 手機版統計區展開與否;預設展開 */
+  readonly statsOpen = signal(readJson<boolean>(STATS_OPEN_KEY) !== false);
+
+  toggleStats(): void {
+    const next = !this.statsOpen();
+    this.statsOpen.set(next);
+    writeJson(STATS_OPEN_KEY, next);
+  }
 
   readonly pagerLabels = computed(() => ['全部', ...this.store.workshops().map((w) => w.name)]);
   /** 0 = 全部;工坊被刪除導致超出範圍時退回「全部」 */

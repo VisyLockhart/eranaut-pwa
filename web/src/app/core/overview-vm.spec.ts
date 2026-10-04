@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import type { SubmarineDto, WorkshopWithSubmarines } from '@eranaut/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DataStore } from './data-store';
-import { OverviewVm, addressLine, wsMeta } from './overview-vm';
+import { OverviewVm, STATS_OPEN_KEY, addressLine, wsMeta } from './overview-vm';
 
 const NOW = Date.parse('2026-09-28T02:00:00Z');
 const iso = (min: number): string => new Date(NOW + min * 60_000).toISOString();
@@ -71,5 +71,27 @@ describe('OverviewVm', () => {
     expect(wsMeta({ server: 'Garuda' as never, captain: 'X Y' })).toBe(' · Garuda · X Y');
     expect(addressLine({ address_district: null, address_ward: null, address_detail: null })).toBe('尚未設定地址');
     expect(addressLine({ address_district: '海霧村' as never, address_ward: 3, address_detail: '12 號' })).toBe('海霧村 · 3 區 · 12 號');
+  });
+});
+
+describe('OverviewVm 統計區收合(D-166)', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
+
+  it('預設展開;切換後存 localStorage,重建 service 後保留', () => {
+    const vm = TestBed.inject(OverviewVm);
+    expect(vm.statsOpen()).toBe(true);
+    vm.toggleStats();
+    expect(vm.statsOpen()).toBe(false);
+    expect(localStorage.getItem(STATS_OPEN_KEY)).toBe('false');
+    TestBed.resetTestingModule();
+    expect(TestBed.inject(OverviewVm).statsOpen()).toBe(false);
+  });
+
+  it('儲存的值不合法時視為展開', () => {
+    localStorage.setItem(STATS_OPEN_KEY, 'oops');
+    expect(TestBed.inject(OverviewVm).statsOpen()).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DESKTOP_MIN_WIDTH, Layout } from './layout';
+import { DESKTOP_MIN_WIDTH, Layout, SIDEBAR_KEY } from './layout';
 import { UiScale } from './ui-scale';
 
 interface FakeMq {
@@ -86,5 +86,26 @@ describe('Layout 斷點(D-95、D-164)', () => {
     expect(layout.isDesktop()).toBe(false);
     mq.listeners.forEach((fn) => fn({ matches: true }));
     expect(layout.isDesktop()).toBe(true);
+  });
+});
+
+describe('Layout 側欄收合(D-166)', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+  });
+
+  it('預設展開;切換後存 localStorage,重建後保留,再切換回展開', () => {
+    const layout = TestBed.inject(Layout);
+    expect(layout.sidebarCollapsed()).toBe(false);
+    layout.toggleSidebar();
+    expect(layout.sidebarCollapsed()).toBe(true);
+    expect(localStorage.getItem(SIDEBAR_KEY)).toBe('true');
+    TestBed.resetTestingModule();
+    const again = TestBed.inject(Layout);
+    expect(again.sidebarCollapsed()).toBe(true);
+    again.toggleSidebar();
+    expect(again.sidebarCollapsed()).toBe(false);
+    expect(localStorage.getItem(SIDEBAR_KEY)).toBe('false');
   });
 });

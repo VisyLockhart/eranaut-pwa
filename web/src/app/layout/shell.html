@@ -24,22 +24,25 @@
   </div>
 } @else {
   <div class="d-wrap">
-    <div class="d-sidebar">
+    <div class="d-sidebar" [class.collapsed]="layout.sidebarCollapsed()">
       <div class="d-brand">
         <div class="logo-mark"><app-icon name="logo" [size]="19" /></div>
-        <div>
+        <div class="d-brand-text">
           <div class="d-brand-name">AEQUOR ERANOS</div>
           <div class="d-brand-sub">潛水艇追蹤</div>
         </div>
       </div>
-      <a class="d-nav-item" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>總覽</span></a>
-      <a class="d-nav-item" routerLink="/workshops" routerLinkActive="active"><app-icon name="workshops" [size]="20" /><span>工坊管理</span></a>
-      <a class="d-nav-item" routerLink="/update" routerLinkActive="active"><app-icon name="camera" [size]="20" /><span>更新潛艇</span></a>
-      <a class="d-nav-item" routerLink="/settings" routerLinkActive="active"><app-icon name="settings" [size]="20" /><span>設定</span></a>
+      <a class="d-nav-item" routerLink="/" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '總覽' : null" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>總覽</span></a>
+      <a class="d-nav-item" routerLink="/workshops" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '工坊管理' : null"><app-icon name="workshops" [size]="20" /><span>工坊管理</span></a>
+      <a class="d-nav-item" routerLink="/update" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '更新潛艇' : null"><app-icon name="camera" [size]="20" /><span>更新潛艇</span></a>
+      <a class="d-nav-item" routerLink="/settings" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '設定' : null"><app-icon name="settings" [size]="20" /><span>設定</span></a>
+      <button type="button" class="d-collapse-btn" (click)="layout.toggleSidebar()" [attr.aria-expanded]="!layout.sidebarCollapsed()" [attr.aria-label]="layout.sidebarCollapsed() ? '展開側欄' : '收合側欄'" [attr.title]="layout.sidebarCollapsed() ? '展開側欄' : null">
+        <app-icon [name]="layout.sidebarCollapsed() ? 'chevronRight' : 'chevronLeft'" [size]="18" /><span>收合側欄</span>
+      </button>
       <div style="flex-grow: 1"></div>
       <div class="d-user">
         <app-avatar [name]="auth.user()?.displayName ?? ''" [url]="auth.user()?.avatarUrl ?? null" [size]="30" />
-        <div style="min-width: 0; flex-grow: 1">
+        <div class="d-user-text" style="min-width: 0; flex-grow: 1">
           <div class="d-user-name">{{ auth.user()?.displayName }}</div>
           <div class="d-user-sub">已連結 Discord</div>
         </div>

@@ -1,8 +1,18 @@
-<div class="m-stats">
-  <div class="m-stat"><div class="num mono">{{ vm.stats().workshops }}</div><div class="label">工坊</div></div>
-  <div class="m-stat"><div class="num mono">{{ vm.stats().submarines }}</div><div class="label">潛水艇</div></div>
-  <div class="m-stat ready"><div class="num mono">{{ vm.stats().ready }}</div><div class="label">艘待收艇</div></div>
-</div>
+<button type="button" class="m-stats-toggle" [class.open]="vm.statsOpen()" (click)="vm.toggleStats()" [attr.aria-expanded]="vm.statsOpen()" [attr.aria-label]="vm.statsOpen() ? '收合統計' : '展開統計'">
+  @if (vm.statsOpen()) {
+    <span class="summary">統計</span>
+  } @else {
+    <span class="summary"><b class="mono">{{ vm.stats().workshops }}</b>工坊<span>·</span><b class="mono">{{ vm.stats().submarines }}</b>潛水艇<span>·</span><b class="mono amber">{{ vm.stats().ready }}</b>艘待收艇</span>
+  }
+  <span class="chev"><app-icon name="chevronRight" [size]="14" /></span>
+</button>
+@if (vm.statsOpen()) {
+  <div class="m-stats">
+    <div class="m-stat"><div class="num mono">{{ vm.stats().workshops }}</div><div class="label">工坊</div></div>
+    <div class="m-stat"><div class="num mono">{{ vm.stats().submarines }}</div><div class="label">潛水艇</div></div>
+    <div class="m-stat ready"><div class="num mono">{{ vm.stats().ready }}</div><div class="label">艘待收艇</div></div>
+  </div>
+}
 
 <div class="pager">
   <div class="pager-row">
@@ -33,6 +43,10 @@
   </div>
 </div>
 
+@if (ptrHeight() > 0) {
+  <div class="ptr" [style.height.px]="ptrHeight()" aria-live="polite"><span>{{ ptrLabel() }}</span></div>
+}
+
 @if (store.loadError() && !store.loaded()) {
   <div class="up-empty" style="margin: 0 18px">
     讀取資料失敗。<br />
@@ -45,7 +59,7 @@
     {{ vm.stats().workshops === 0 ? '還沒有工坊。到「工坊」新增第一間工坊吧。' : '目前沒有潛水艇記錄。到「更新」輸入潛艇的剩餘時間。' }}
   </div>
 } @else if (store.view() === 'list') {
-  <div class="m-list">
+  <div class="m-list" appPullRefresh (pullChange)="onPull($event)" (refreshRequested)="onRefresh()">
     @for (item of vm.items(); track item.id) {
       <div class="qe row" [class.ready]="item.ready" role="button" tabindex="0" [attr.aria-label]="'快速修改 ' + item.name" (click)="vm.openQuickEdit(item)" (keydown.enter)="vm.openQuickEdit(item)">
         <div class="row-dot-wrap">
@@ -64,7 +78,7 @@
     }
   </div>
 } @else {
-  <div class="m-cards">
+  <div class="m-cards" appPullRefresh (pullChange)="onPull($event)" (refreshRequested)="onRefresh()">
     @for (item of vm.items(); track item.id) {
       <div class="qe card" [class.ready]="item.ready" role="button" tabindex="0" [attr.aria-label]="'快速修改 ' + item.name" (click)="vm.openQuickEdit(item)" (keydown.enter)="vm.openQuickEdit(item)">
         <div class="card-top">

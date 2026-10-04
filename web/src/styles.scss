@@ -21,7 +21,7 @@
     --vu-div: 1; /* vh/vw/safe-area 的除數:Chrome = --ui-scale,Safari = 1(見 ui-scale.ts) */
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: var(--bg); }
+  html, body { margin: 0; padding: 0; background: var(--bg); overscroll-behavior: none; }
   html { zoom: var(--ui-scale); }
   body {
     font-family: 'Sora', sans-serif;
@@ -86,10 +86,19 @@
     height: calc(100vh / var(--vu-div));
   }
   .m-header {
-    flex: 0 0 auto; padding: calc(20px + env(safe-area-inset-top) / var(--vu-div)) 18px 14px; display: flex; align-items: center; gap: 10px;
+    flex: 0 0 auto; padding: calc(4px + env(safe-area-inset-top) / var(--vu-div)) 18px 10px; display: flex; align-items: center; gap: 10px;
     border-bottom: 1px solid var(--border);
   }
-  .m-stats { flex: 0 0 auto; padding: 12px 18px; display: flex; gap: 10px; }
+  .m-stats { flex: 0 0 auto; padding: 4px 18px 10px; display: flex; gap: 10px; }
+  .m-stats-toggle {
+    flex: 0 0 auto; width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 18px 6px;
+    background: transparent; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; text-align: left;
+  }
+  .m-stats-toggle .summary { flex-grow: 1; display: flex; gap: 6px; align-items: baseline; min-width: 0; white-space: nowrap; overflow: hidden; }
+  .m-stats-toggle .summary b { color: var(--text); font-size: 12.5px; }
+  .m-stats-toggle .summary b.amber { color: var(--amber); }
+  .m-stats-toggle .chev { display: inline-flex; transition: transform 0.18s; transform: rotate(-90deg); }
+  .m-stats-toggle.open .chev { transform: rotate(90deg); }
   .m-stat { flex: 1; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
   .m-stat.ready { flex: 1.3; background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.30); }
   .m-stat .num { font-size: 17px; font-weight: 700; }
@@ -109,7 +118,8 @@
   .m-viewswitch { flex: 0 0 auto; padding: 0 18px 10px; display: flex; align-items: center; justify-content: space-between; }
   .sort-label { font-size: 10.5px; color: var(--text-faint); }
 
-  .m-list { flex-grow: 1; overflow-y: auto; padding: 0 12px; }
+  .ptr { flex: 0 0 auto; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; box-sizing: border-box; color: var(--text-dim); font-size: 11px; }
+  .m-list { flex-grow: 1; overflow-y: auto; overscroll-behavior-y: contain; padding: 0 12px; }
   .row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; margin-bottom: 1px; border-radius: 10px; border: 1px solid rgba(148,163,184,0.08); }
   .row.ready { background: rgba(251,191,36,0.06); border-color: rgba(251,191,36,0.22); }
   .row-dot-wrap { width: 9px; height: 9px; flex: 0 0 auto; position: relative; display: flex; align-items: center; justify-content: center; }
@@ -122,7 +132,7 @@
   .row-time { font-size: 14.5px; font-weight: 600; line-height: 1.25; }
   .row-status { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
 
-  .m-cards { flex-grow: 1; overflow-y: auto; padding: 0 18px; }
+  .m-cards { flex-grow: 1; overflow-y: auto; overscroll-behavior-y: contain; padding: 0 18px; }
   .card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
   .card.ready { background: rgba(251,191,36,0.07); border-color: rgba(251,191,36,0.30); }
   .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -142,7 +152,7 @@
   /* Author name: a deliberately understated contrasting tint (dim teal) so it reads as a signature, not a highlight. */
   .copyright-name { color: rgba(45,212,191,0.6); font-weight: 500; }
   .copyright-bar {
-    flex: 0 0 auto; padding: 5px 18px calc(6px + env(safe-area-inset-bottom) / var(--vu-div)); text-align: center; color: var(--text-faint); font-size: 9px;
+    flex: 0 0 auto; padding: 4px 18px calc(2px + env(safe-area-inset-bottom) * 0.4 / var(--vu-div)); text-align: center; color: var(--text-faint); font-size: 9px;
     background: #0a0e1c; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .copyright-overlay {
@@ -177,6 +187,18 @@
   /* ---------- Desktop shell ---------- */
   .d-wrap { max-width: 1280px; margin: 0 auto; display: flex; min-height: calc(100vh / var(--vu-div)); }
   .d-sidebar { width: 232px; flex: 0 0 auto; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 22px 14px; }
+  .d-sidebar { transition: width 0.18s; }
+  .d-sidebar.collapsed { width: 64px; padding: 22px 8px; }
+  .d-sidebar.collapsed .d-brand { padding: 0 0 14px; justify-content: center; }
+  .d-sidebar.collapsed .d-brand-text, .d-sidebar.collapsed .d-nav-item span, .d-sidebar.collapsed .d-collapse-btn span,
+  .d-sidebar.collapsed .d-user-text, .d-sidebar.collapsed app-copyright { display: none; }
+  .d-sidebar.collapsed .d-nav-item, .d-sidebar.collapsed .d-collapse-btn { justify-content: center; padding: 9px 0; }
+  .d-sidebar.collapsed .d-user { flex-direction: column; padding: 8px 0; gap: 8px; }
+  .d-collapse-btn {
+    display: flex; align-items: center; gap: 11px; padding: 9px 10px; margin-top: 4px; border-radius: 8px; border: none; background: transparent;
+    color: var(--text-dim); cursor: pointer; font-size: 12px; font-weight: 500; font-family: inherit; width: 100%; text-align: left;
+  }
+  .d-collapse-btn:hover { color: var(--text-muted); background: rgba(148,163,184,0.06); }
   .d-brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 22px; }
   .d-brand-name { font-size: 13.5px; font-weight: 700; letter-spacing: 0.05em; }
   .d-brand-sub { font-size: 10.5px; color: var(--text-dim); margin-top: 1px; }
