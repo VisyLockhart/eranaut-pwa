@@ -69,5 +69,6 @@ export class DemoStore {
     // 前端自己的快取(總覽快照、工坊排序)也要清,否則重設後會先閃一下舊畫面
     removeKey('eranaut.snapshot');
     removeKey(ORDER_KEY);
+    removeKey('eranaut.demo.push');
   }
 }

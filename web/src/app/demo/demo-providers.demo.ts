@@ -2,6 +2,8 @@ import { HttpBackend } from '@angular/common/http';
 import { ApplicationRef, EnvironmentInjector, createComponent, inject, provideAppInitializer, type EnvironmentProviders, type Provider } from '@angular/core';
 import { DemoBackend } from './demo-backend';
 import { DemoBar } from './demo-bar';
+import { DemoPushVm } from './demo-push';
+import { PushVm } from '../core/push-vm';
 import { DemoStore } from './demo-store';
 
 // 展示模式(D-168):以假的 HTTP 後端取代 `/api/*`,資料只存在這個瀏覽器。畫面與其餘程式碼完全沿用正式版。
@@ -10,6 +12,8 @@ export const DEMO_LOGIN_URL: string | null = '/?demo_login=1';
 export const demoProviders: (Provider | EnvironmentProviders)[] = [
   DemoStore,
   { provide: HttpBackend, useClass: DemoBackend },
+  // 推播:沒有推播伺服器,改由本機 service worker 顯示測試通知
+  { provide: PushVm, useClass: DemoPushVm },
   // 必須在 Auth.init() 之前跑(app.config 的順序):先依網址參數決定登入狀態
   provideAppInitializer(() => {
     const store = inject(DemoStore);
