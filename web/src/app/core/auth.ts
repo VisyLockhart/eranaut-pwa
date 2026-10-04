@@ -3,6 +3,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import type { LoginErrorCode, MeDto } from '@eranaut/shared';
 import { catchError, throwError } from 'rxjs';
 import { Api } from './api';
+import { DEMO_LOGIN_URL } from '../demo/demo-providers';
 import { PushVm } from './push-vm';
 
 // 登入狀態(D-142):
@@ -42,7 +43,7 @@ export class Auth {
 
   /** 去 Discord 授權(整頁導向,回呼由後端處理後 302 回 `/`) */
   login(): void {
-    window.location.assign('/api/auth/login');
+    window.location.assign(DEMO_LOGIN_URL ?? '/api/auth/login');
   }
 
   async logout(): Promise<void> {

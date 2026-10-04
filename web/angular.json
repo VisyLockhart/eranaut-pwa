@@ -54,6 +54,29 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "demo": {
+              "serviceWorker": "ngsw-config.json",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "outputPath": "dist/demo",
+              "fileReplacements": [
+                {
+                  "replace": "src/app/demo/demo-providers.ts",
+                  "with": "src/app/demo/demo-providers.demo.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
