@@ -7,7 +7,7 @@ import { createOcrService } from '../src/ocr/service.js';
 
 // 真實引擎 + 真實截圖的整合測試(PP-OCRv4 模型,約 1 秒一張)。
 // 截圖與「標準答案.txt」不放在 repo(隱私),所以預設跳過;指定資料夾才會跑:
-//   Windows:  set OCR_TEST_DIR=K:\Code\Aequor Eranos\ocr-test  然後  npm test -w api
+//   Windows:  set OCR_TEST_DIR=C:\path\to\ocr-test  然後  npm test -w api
 //   macOS/Linux:  OCR_TEST_DIR=/path/to/ocr-test npm test -w api
 // 也用來在新平台(Windows x64、Docker linux/arm64)確認 onnxruntime-node 與 sharp 載得起來、結果一致。
 // 「標準答案.txt」每行:  01.png: 8小時52分 | 8小時51分 | ...
