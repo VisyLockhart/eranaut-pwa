@@ -1,3 +1,4 @@
+import { newId } from './demo-id';
 import type { SubmarineDto, WorkshopWithSubmarines } from '@eranaut/shared';
 
 // 展示用的假資料。時間以「載入當下」為基準,所以每次重設都像剛更新過。
@@ -6,7 +7,7 @@ const MIN = 60_000;
 function sub(workshopId: string, position: number, name: string | null, minutesLeft: number | null, now: number): SubmarineDto {
   const exploring = minutesLeft !== null;
   return {
-    id: crypto.randomUUID(),
+    id: newId(),
     workshop_id: workshopId,
     position,
     name,
@@ -17,9 +18,9 @@ function sub(workshopId: string, position: number, name: string | null, minutesL
 }
 
 export function seedWorkshops(now: number): WorkshopWithSubmarines[] {
-  const a = crypto.randomUUID();
-  const b = crypto.randomUUID();
-  const c = crypto.randomUUID();
+  const a = newId();
+  const b = newId();
+  const c = newId();
   return [
     {
       id: a,

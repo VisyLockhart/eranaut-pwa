@@ -1,3 +1,4 @@
+import { newId } from './demo-id';
 import { HttpBackend, HttpErrorResponse, HttpResponse, type HttpEvent, type HttpRequest } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
@@ -201,7 +202,7 @@ export class DemoBackend extends HttpBackend {
     if (path === '/api/workshops' && method === 'POST') {
       const { fields, value } = validateWorkshop(b);
       if (!value) return fail(400, { error: 'validation_failed', fields });
-      const created: WorkshopWithSubmarines = { ...value, id: crypto.randomUUID(), created_at: new Date().toISOString(), submarines: [] };
+      const created: WorkshopWithSubmarines = { ...value, id: newId(), created_at: new Date().toISOString(), submarines: [] };
       this.store.workshops.push(created);
       this.store.commit();
       const { submarines: _omit, ...dto } = created;
@@ -263,7 +264,7 @@ export class DemoBackend extends HttpBackend {
     for (const input of inputs) {
       const existing = workshop.submarines.find((s) => s.position === input.position);
       const dto: SubmarineDto = {
-        id: existing?.id ?? crypto.randomUUID(),
+        id: existing?.id ?? newId(),
         workshop_id: workshop.id,
         position: input.position,
         name: input.name ?? null,
