@@ -8,6 +8,8 @@
 
 這些原始文件沒有隨 repo 公開(其中夾雜社群內部的細節)。這裡只摘要與程式碼最相關的決策,方便讀者理解註解的出處。型別層面的 API 契約都在 [`shared/src/api.ts`](../shared/src/api.ts)。
 
+更完整的設計脈絡(試過什麼、為什麼放棄、取捨)請看 [`ARCHITECTURE.md`](ARCHITECTURE.md)([English](ARCHITECTURE.en.md))。
+
 ## 架構與資料
 
 | 編號 | 決策 |
