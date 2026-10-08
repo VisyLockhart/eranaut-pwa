@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DemoStore } from './demo-store';
 
-const REPO_URL = 'https://github.com/VisyLockhart/eranaut-pwa';
-
 const LOGIN_ERRORS = [
   { code: 'denied', label: '取消授權' },
   { code: 'not_in_guild', label: '不在伺服器' },
@@ -29,7 +27,6 @@ const LOGIN_ERRORS = [
             <button type="button" (click)="showLoginError(e.code)">{{ e.label }}</button>
           }
         </div>
-        <a class="demo-link" [href]="repo" target="_blank" rel="noopener">GitHub 原始碼 ↗</a>
       </div>
     }
   `,
@@ -45,14 +42,12 @@ const LOGIN_ERRORS = [
     .demo-actions { display: flex; flex-wrap: wrap; gap: 6px; }
     .demo-actions button { font: 500 12px/1 inherit; color: #e8ecf8; background: #1d2742; border: 1px solid #34406a; border-radius: 8px; padding: 8px 10px; cursor: pointer; }
     .demo-actions button:hover { background: #26335a; }
-    .demo-link { display: inline-block; margin-top: 12px; font-size: 12px; color: #7fb4ff; text-decoration: none; }
   `,
 })
 export class DemoBar {
   private readonly store = inject(DemoStore);
   readonly open = signal(false);
   readonly errors = LOGIN_ERRORS;
-  readonly repo = REPO_URL;
 
   reset(): void {
     this.store.reset();
