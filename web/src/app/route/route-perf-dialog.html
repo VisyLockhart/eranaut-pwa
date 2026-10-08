@@ -1,0 +1,19 @@
+@if (vm.perfOpen()) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
+    <div class="modal-box rt-dlg rt-perf" [class.wide]="layout.isDesktop()" role="dialog" aria-modal="true" aria-labelledby="rt-perf-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <div class="rt-dlg-head">
+        <div class="modal-title" id="rt-perf-title">性能與達標判定</div>
+        <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+      </div>
+      @if (summary()) {
+        <div class="rt-perf-route">{{ summary() }}</div>
+        <div class="rt-perf-route">{{ need() }}</div>
+      } @else {
+        <div class="rt-perf-route">尚未選航點,選好之後這裡會顯示每一組配置的達標與可不可以跑</div>
+      }
+      <div class="rt-dlg-body">
+        <app-route-subs actions="pick" (used)="close()" />
+      </div>
+    </div>
+  </div>
+}

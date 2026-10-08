@@ -6,6 +6,7 @@ export const routes: Routes = [
   { path: '', component: OverviewPage, pathMatch: 'full' },
   { path: 'workshops', loadComponent: () => import('./workshops/workshops-page').then((m) => m.WorkshopsPage) },
   { path: 'update', loadComponent: () => import('./update/update-page').then((m) => m.UpdatePage) },
+  { path: 'route', loadComponent: () => import('./route/route-page').then((m) => m.RoutePage) },
   { path: 'settings', loadComponent: () => import('./settings/settings-page').then((m) => m.SettingsPage) },
   { path: '**', redirectTo: '' },
 ];

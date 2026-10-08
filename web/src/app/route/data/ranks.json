@@ -1,0 +1,1308 @@
+{
+ "_license": "CC BY-NC-SA 3.0",
+ "_notice": "見同資料夾 NOTICE.md;本檔不適用 MIT 授權",
+ "_generatedBy": "tools/route-data/build.mjs",
+ "_maxRank": 130,
+ "ranks": [
+  {
+   "rank": 1,
+   "exp": 6180,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 20
+  },
+  {
+   "rank": 2,
+   "exp": 12504,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 21
+  },
+  {
+   "rank": 3,
+   "exp": 18972,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 22
+  },
+  {
+   "rank": 4,
+   "exp": 25581,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 23
+  },
+  {
+   "rank": 5,
+   "exp": 32331,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 24
+  },
+  {
+   "rank": 6,
+   "exp": 39221,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 25
+  },
+  {
+   "rank": 7,
+   "exp": 46251,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 26
+  },
+  {
+   "rank": 8,
+   "exp": 53418,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 27
+  },
+  {
+   "rank": 9,
+   "exp": 60721,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 28
+  },
+  {
+   "rank": 10,
+   "exp": 68161,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 29
+  },
+  {
+   "rank": 11,
+   "exp": 75735,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 30
+  },
+  {
+   "rank": 12,
+   "exp": 83443,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 31
+  },
+  {
+   "rank": 13,
+   "exp": 91283,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 32
+  },
+  {
+   "rank": 14,
+   "exp": 99256,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 33
+  },
+  {
+   "rank": 15,
+   "exp": 107359,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 34
+  },
+  {
+   "rank": 16,
+   "exp": 115591,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 35
+  },
+  {
+   "rank": 17,
+   "exp": 123953,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 36
+  },
+  {
+   "rank": 18,
+   "exp": 132442,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 37
+  },
+  {
+   "rank": 19,
+   "exp": 141058,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 38
+  },
+  {
+   "rank": 20,
+   "exp": 149799,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 39
+  },
+  {
+   "rank": 21,
+   "exp": 158666,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 40
+  },
+  {
+   "rank": 22,
+   "exp": 167656,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 41
+  },
+  {
+   "rank": 23,
+   "exp": 176770,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 42
+  },
+  {
+   "rank": 24,
+   "exp": 186005,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 43
+  },
+  {
+   "rank": 25,
+   "exp": 195361,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 44
+  },
+  {
+   "rank": 26,
+   "exp": 204838,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 45
+  },
+  {
+   "rank": 27,
+   "exp": 214434,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 46
+  },
+  {
+   "rank": 28,
+   "exp": 224148,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 47
+  },
+  {
+   "rank": 29,
+   "exp": 233979,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 48
+  },
+  {
+   "rank": 30,
+   "exp": 243927,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 49
+  },
+  {
+   "rank": 31,
+   "exp": 253991,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 50
+  },
+  {
+   "rank": 32,
+   "exp": 264169,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 51
+  },
+  {
+   "rank": 33,
+   "exp": 274462,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 52
+  },
+  {
+   "rank": 34,
+   "exp": 284867,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 53
+  },
+  {
+   "rank": 35,
+   "exp": 295384,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 54
+  },
+  {
+   "rank": 36,
+   "exp": 306012,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 55
+  },
+  {
+   "rank": 37,
+   "exp": 316751,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 56
+  },
+  {
+   "rank": 38,
+   "exp": 327599,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 57
+  },
+  {
+   "rank": 39,
+   "exp": 338556,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 58
+  },
+  {
+   "rank": 40,
+   "exp": 349621,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 59
+  },
+  {
+   "rank": 41,
+   "exp": 360793,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 60
+  },
+  {
+   "rank": 42,
+   "exp": 372071,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 61
+  },
+  {
+   "rank": 43,
+   "exp": 383454,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 62
+  },
+  {
+   "rank": 44,
+   "exp": 394941,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 63
+  },
+  {
+   "rank": 45,
+   "exp": 406533,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 64
+  },
+  {
+   "rank": 46,
+   "exp": 418227,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 65
+  },
+  {
+   "rank": 47,
+   "exp": 430023,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 66
+  },
+  {
+   "rank": 48,
+   "exp": 441921,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 67
+  },
+  {
+   "rank": 49,
+   "exp": 453919,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 68
+  },
+  {
+   "rank": 50,
+   "exp": 466016,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 0,
+   "retrieval": 0,
+   "favor": 0,
+   "weightCap": 80
+  },
+  {
+   "rank": 51,
+   "exp": 551237,
+   "speed": 0,
+   "range": 0,
+   "surveillance": 2,
+   "retrieval": 1,
+   "favor": 0,
+   "weightCap": 80
+  },
+  {
+   "rank": 52,
+   "exp": 566099,
+   "speed": 0,
+   "range": 1,
+   "surveillance": 2,
+   "retrieval": 3,
+   "favor": 0,
+   "weightCap": 80
+  },
+  {
+   "rank": 53,
+   "exp": 582554,
+   "speed": 1,
+   "range": 2,
+   "surveillance": 2,
+   "retrieval": 3,
+   "favor": 1,
+   "weightCap": 80
+  },
+  {
+   "rank": 54,
+   "exp": 1497759,
+   "speed": 1,
+   "range": 3,
+   "surveillance": 3,
+   "retrieval": 4,
+   "favor": 1,
+   "weightCap": 80
+  },
+  {
+   "rank": 55,
+   "exp": 600864,
+   "speed": 3,
+   "range": 3,
+   "surveillance": 3,
+   "retrieval": 7,
+   "favor": 1,
+   "weightCap": 80
+  },
+  {
+   "rank": 56,
+   "exp": 621107,
+   "speed": 3,
+   "range": 5,
+   "surveillance": 4,
+   "retrieval": 7,
+   "favor": 1,
+   "weightCap": 80
+  },
+  {
+   "rank": 57,
+   "exp": 643477,
+   "speed": 3,
+   "range": 7,
+   "surveillance": 4,
+   "retrieval": 7,
+   "favor": 2,
+   "weightCap": 80
+  },
+  {
+   "rank": 58,
+   "exp": 668186,
+   "speed": 3,
+   "range": 8,
+   "surveillance": 4,
+   "retrieval": 8,
+   "favor": 3,
+   "weightCap": 80
+  },
+  {
+   "rank": 59,
+   "exp": 2078961,
+   "speed": 4,
+   "range": 9,
+   "surveillance": 5,
+   "retrieval": 8,
+   "favor": 3,
+   "weightCap": 80
+  },
+  {
+   "rank": 60,
+   "exp": 695566,
+   "speed": 5,
+   "range": 10,
+   "surveillance": 5,
+   "retrieval": 10,
+   "favor": 5,
+   "weightCap": 80
+  },
+  {
+   "rank": 61,
+   "exp": 725781,
+   "speed": 6,
+   "range": 10,
+   "surveillance": 7,
+   "retrieval": 10,
+   "favor": 6,
+   "weightCap": 80
+  },
+  {
+   "rank": 62,
+   "exp": 759114,
+   "speed": 8,
+   "range": 12,
+   "surveillance": 7,
+   "retrieval": 10,
+   "favor": 7,
+   "weightCap": 80
+  },
+  {
+   "rank": 63,
+   "exp": 795877,
+   "speed": 8,
+   "range": 12,
+   "surveillance": 8,
+   "retrieval": 11,
+   "favor": 9,
+   "weightCap": 80
+  },
+  {
+   "rank": 64,
+   "exp": 2509232,
+   "speed": 10,
+   "range": 14,
+   "surveillance": 8,
+   "retrieval": 12,
+   "favor": 9,
+   "weightCap": 80
+  },
+  {
+   "rank": 65,
+   "exp": 840559,
+   "speed": 10,
+   "range": 15,
+   "surveillance": 10,
+   "retrieval": 15,
+   "favor": 10,
+   "weightCap": 80
+  },
+  {
+   "rank": 66,
+   "exp": 889710,
+   "speed": 11,
+   "range": 15,
+   "surveillance": 13,
+   "retrieval": 17,
+   "favor": 10,
+   "weightCap": 80
+  },
+  {
+   "rank": 67,
+   "exp": 943775,
+   "speed": 13,
+   "range": 17,
+   "surveillance": 13,
+   "retrieval": 19,
+   "favor": 10,
+   "weightCap": 80
+  },
+  {
+   "rank": 68,
+   "exp": 1003248,
+   "speed": 15,
+   "range": 17,
+   "surveillance": 16,
+   "retrieval": 19,
+   "favor": 12,
+   "weightCap": 80
+  },
+  {
+   "rank": 69,
+   "exp": 3009743,
+   "speed": 15,
+   "range": 19,
+   "surveillance": 16,
+   "retrieval": 23,
+   "favor": 13,
+   "weightCap": 80
+  },
+  {
+   "rank": 70,
+   "exp": 1075209,
+   "speed": 15,
+   "range": 20,
+   "surveillance": 20,
+   "retrieval": 25,
+   "favor": 15,
+   "weightCap": 80
+  },
+  {
+   "rank": 71,
+   "exp": 1154367,
+   "speed": 15,
+   "range": 20,
+   "surveillance": 23,
+   "retrieval": 29,
+   "favor": 15,
+   "weightCap": 80
+  },
+  {
+   "rank": 72,
+   "exp": 1241440,
+   "speed": 17,
+   "range": 22,
+   "surveillance": 26,
+   "retrieval": 29,
+   "favor": 15,
+   "weightCap": 80
+  },
+  {
+   "rank": 73,
+   "exp": 1337221,
+   "speed": 18,
+   "range": 22,
+   "surveillance": 26,
+   "retrieval": 33,
+   "favor": 17,
+   "weightCap": 80
+  },
+  {
+   "rank": 74,
+   "exp": 4011663,
+   "speed": 20,
+   "range": 23,
+   "surveillance": 26,
+   "retrieval": 35,
+   "favor": 19,
+   "weightCap": 80
+  },
+  {
+   "rank": 75,
+   "exp": 1453116,
+   "speed": 20,
+   "range": 23,
+   "surveillance": 30,
+   "retrieval": 40,
+   "favor": 20,
+   "weightCap": 80
+  },
+  {
+   "rank": 76,
+   "exp": 1580600,
+   "speed": 20,
+   "range": 23,
+   "surveillance": 30,
+   "retrieval": 45,
+   "favor": 24,
+   "weightCap": 80
+  },
+  {
+   "rank": 77,
+   "exp": 1720833,
+   "speed": 21,
+   "range": 26,
+   "surveillance": 34,
+   "retrieval": 45,
+   "favor": 25,
+   "weightCap": 80
+  },
+  {
+   "rank": 78,
+   "exp": 1875089,
+   "speed": 23,
+   "range": 29,
+   "surveillance": 36,
+   "retrieval": 45,
+   "favor": 27,
+   "weightCap": 80
+  },
+  {
+   "rank": 79,
+   "exp": 5625266,
+   "speed": 25,
+   "range": 33,
+   "surveillance": 38,
+   "retrieval": 45,
+   "favor": 28,
+   "weightCap": 80
+  },
+  {
+   "rank": 80,
+   "exp": 2061738,
+   "speed": 25,
+   "range": 35,
+   "surveillance": 40,
+   "retrieval": 50,
+   "favor": 30,
+   "weightCap": 80
+  },
+  {
+   "rank": 81,
+   "exp": 2267053,
+   "speed": 30,
+   "range": 37,
+   "surveillance": 40,
+   "retrieval": 50,
+   "favor": 32,
+   "weightCap": 80
+  },
+  {
+   "rank": 82,
+   "exp": 2492899,
+   "speed": 32,
+   "range": 40,
+   "surveillance": 42,
+   "retrieval": 50,
+   "favor": 34,
+   "weightCap": 80
+  },
+  {
+   "rank": 83,
+   "exp": 2741330,
+   "speed": 32,
+   "range": 44,
+   "surveillance": 43,
+   "retrieval": 53,
+   "favor": 35,
+   "weightCap": 80
+  },
+  {
+   "rank": 84,
+   "exp": 8223989,
+   "speed": 32,
+   "range": 49,
+   "surveillance": 44,
+   "retrieval": 53,
+   "favor": 38,
+   "weightCap": 80
+  },
+  {
+   "rank": 85,
+   "exp": 3041931,
+   "speed": 33,
+   "range": 49,
+   "surveillance": 48,
+   "retrieval": 58,
+   "favor": 39,
+   "weightCap": 80
+  },
+  {
+   "rank": 86,
+   "exp": 3372592,
+   "speed": 36,
+   "range": 49,
+   "surveillance": 50,
+   "retrieval": 58,
+   "favor": 43,
+   "weightCap": 80
+  },
+  {
+   "rank": 87,
+   "exp": 3736319,
+   "speed": 36,
+   "range": 53,
+   "surveillance": 50,
+   "retrieval": 60,
+   "favor": 46,
+   "weightCap": 80
+  },
+  {
+   "rank": 88,
+   "exp": 4136419,
+   "speed": 36,
+   "range": 56,
+   "surveillance": 50,
+   "retrieval": 64,
+   "favor": 48,
+   "weightCap": 80
+  },
+  {
+   "rank": 89,
+   "exp": 12409258,
+   "speed": 40,
+   "range": 60,
+   "surveillance": 50,
+   "retrieval": 64,
+   "favor": 49,
+   "weightCap": 80
+  },
+  {
+   "rank": 90,
+   "exp": 4620540,
+   "speed": 40,
+   "range": 60,
+   "surveillance": 55,
+   "retrieval": 70,
+   "favor": 50,
+   "weightCap": 80
+  },
+  {
+   "rank": 91,
+   "exp": 5153074,
+   "speed": 41,
+   "range": 62,
+   "surveillance": 57,
+   "retrieval": 70,
+   "favor": 51,
+   "weightCap": 80
+  },
+  {
+   "rank": 92,
+   "exp": 5738860,
+   "speed": 43,
+   "range": 64,
+   "surveillance": 57,
+   "retrieval": 70,
+   "favor": 52,
+   "weightCap": 80
+  },
+  {
+   "rank": 93,
+   "exp": 6383225,
+   "speed": 43,
+   "range": 66,
+   "surveillance": 58,
+   "retrieval": 72,
+   "favor": 54,
+   "weightCap": 80
+  },
+  {
+   "rank": 94,
+   "exp": 19149676,
+   "speed": 45,
+   "range": 68,
+   "surveillance": 58,
+   "retrieval": 74,
+   "favor": 54,
+   "weightCap": 80
+  },
+  {
+   "rank": 95,
+   "exp": 7162907,
+   "speed": 45,
+   "range": 70,
+   "surveillance": 60,
+   "retrieval": 80,
+   "favor": 55,
+   "weightCap": 80
+  },
+  {
+   "rank": 96,
+   "exp": 8020557,
+   "speed": 46,
+   "range": 72,
+   "surveillance": 61,
+   "retrieval": 82,
+   "favor": 55,
+   "weightCap": 80
+  },
+  {
+   "rank": 97,
+   "exp": 8963972,
+   "speed": 46,
+   "range": 74,
+   "surveillance": 61,
+   "retrieval": 84,
+   "favor": 55,
+   "weightCap": 80
+  },
+  {
+   "rank": 98,
+   "exp": 10001729,
+   "speed": 48,
+   "range": 76,
+   "surveillance": 63,
+   "retrieval": 84,
+   "favor": 57,
+   "weightCap": 80
+  },
+  {
+   "rank": 99,
+   "exp": 30005186,
+   "speed": 48,
+   "range": 78,
+   "surveillance": 63,
+   "retrieval": 88,
+   "favor": 58,
+   "weightCap": 80
+  },
+  {
+   "rank": 100,
+   "exp": 11257414,
+   "speed": 50,
+   "range": 80,
+   "surveillance": 65,
+   "retrieval": 90,
+   "favor": 60,
+   "weightCap": 80
+  },
+  {
+   "rank": 101,
+   "exp": 12638668,
+   "speed": 52,
+   "range": 82,
+   "surveillance": 66,
+   "retrieval": 92,
+   "favor": 60,
+   "weightCap": 80
+  },
+  {
+   "rank": 102,
+   "exp": 14158047,
+   "speed": 54,
+   "range": 84,
+   "surveillance": 67,
+   "retrieval": 92,
+   "favor": 60,
+   "weightCap": 80
+  },
+  {
+   "rank": 103,
+   "exp": 15829365,
+   "speed": 56,
+   "range": 86,
+   "surveillance": 68,
+   "retrieval": 94,
+   "favor": 62,
+   "weightCap": 80
+  },
+  {
+   "rank": 104,
+   "exp": 47488094,
+   "speed": 58,
+   "range": 88,
+   "surveillance": 68,
+   "retrieval": 96,
+   "favor": 64,
+   "weightCap": 80
+  },
+  {
+   "rank": 105,
+   "exp": 17851658,
+   "speed": 60,
+   "range": 90,
+   "surveillance": 70,
+   "retrieval": 100,
+   "favor": 65,
+   "weightCap": 80
+  },
+  {
+   "rank": 106,
+   "exp": 17649406,
+   "speed": 61,
+   "range": 91,
+   "surveillance": 72,
+   "retrieval": 100,
+   "favor": 66,
+   "weightCap": 80
+  },
+  {
+   "rank": 107,
+   "exp": 18090643,
+   "speed": 63,
+   "range": 92,
+   "surveillance": 72,
+   "retrieval": 100,
+   "favor": 67,
+   "weightCap": 80
+  },
+  {
+   "rank": 108,
+   "exp": 18542909,
+   "speed": 63,
+   "range": 93,
+   "surveillance": 73,
+   "retrieval": 101,
+   "favor": 69,
+   "weightCap": 80
+  },
+  {
+   "rank": 109,
+   "exp": 47516207,
+   "speed": 65,
+   "range": 94,
+   "surveillance": 73,
+   "retrieval": 102,
+   "favor": 69,
+   "weightCap": 80
+  },
+  {
+   "rank": 110,
+   "exp": 19481645,
+   "speed": 65,
+   "range": 95,
+   "surveillance": 75,
+   "retrieval": 105,
+   "favor": 70,
+   "weightCap": 80
+  },
+  {
+   "rank": 111,
+   "exp": 19968687,
+   "speed": 66,
+   "range": 96,
+   "surveillance": 76,
+   "retrieval": 106,
+   "favor": 70,
+   "weightCap": 80
+  },
+  {
+   "rank": 112,
+   "exp": 20467907,
+   "speed": 66,
+   "range": 97,
+   "surveillance": 76,
+   "retrieval": 107,
+   "favor": 70,
+   "weightCap": 80
+  },
+  {
+   "rank": 113,
+   "exp": 20979605,
+   "speed": 68,
+   "range": 98,
+   "surveillance": 78,
+   "retrieval": 107,
+   "favor": 72,
+   "weightCap": 80
+  },
+  {
+   "rank": 114,
+   "exp": 53760240,
+   "speed": 68,
+   "range": 99,
+   "surveillance": 78,
+   "retrieval": 109,
+   "favor": 73,
+   "weightCap": 80
+  },
+  {
+   "rank": 115,
+   "exp": 22041699,
+   "speed": 70,
+   "range": 100,
+   "surveillance": 80,
+   "retrieval": 110,
+   "favor": 75,
+   "weightCap": 80
+  },
+  {
+   "rank": 116,
+   "exp": 22592742,
+   "speed": 71,
+   "range": 101,
+   "surveillance": 81,
+   "retrieval": 111,
+   "favor": 75,
+   "weightCap": 80
+  },
+  {
+   "rank": 117,
+   "exp": 23157563,
+   "speed": 72,
+   "range": 102,
+   "surveillance": 82,
+   "retrieval": 111,
+   "favor": 75,
+   "weightCap": 80
+  },
+  {
+   "rank": 118,
+   "exp": 23736502,
+   "speed": 73,
+   "range": 103,
+   "surveillance": 83,
+   "retrieval": 112,
+   "favor": 77,
+   "weightCap": 80
+  },
+  {
+   "rank": 119,
+   "exp": 60824790,
+   "speed": 74,
+   "range": 104,
+   "surveillance": 83,
+   "retrieval": 113,
+   "favor": 79,
+   "weightCap": 80
+  },
+  {
+   "rank": 120,
+   "exp": 24938164,
+   "speed": 75,
+   "range": 105,
+   "surveillance": 85,
+   "retrieval": 115,
+   "favor": 80,
+   "weightCap": 80
+  },
+  {
+   "rank": 121,
+   "exp": 25561619,
+   "speed": 76,
+   "range": 106,
+   "surveillance": 87,
+   "retrieval": 115,
+   "favor": 81,
+   "weightCap": 80
+  },
+  {
+   "rank": 122,
+   "exp": 26200660,
+   "speed": 78,
+   "range": 107,
+   "surveillance": 87,
+   "retrieval": 115,
+   "favor": 82,
+   "weightCap": 80
+  },
+  {
+   "rank": 123,
+   "exp": 26855677,
+   "speed": 78,
+   "range": 108,
+   "surveillance": 88,
+   "retrieval": 116,
+   "favor": 84,
+   "weightCap": 80
+  },
+  {
+   "rank": 124,
+   "exp": 68817675,
+   "speed": 80,
+   "range": 109,
+   "surveillance": 88,
+   "retrieval": 117,
+   "favor": 84,
+   "weightCap": 80
+  },
+  {
+   "rank": 125,
+   "exp": 28215249,
+   "speed": 80,
+   "range": 110,
+   "surveillance": 90,
+   "retrieval": 120,
+   "favor": 85,
+   "weightCap": 80
+  },
+  {
+   "rank": 126,
+   "exp": 28920632,
+   "speed": 81,
+   "range": 111,
+   "surveillance": 91,
+   "retrieval": 121,
+   "favor": 85,
+   "weightCap": 80
+  },
+  {
+   "rank": 127,
+   "exp": 29643649,
+   "speed": 81,
+   "range": 112,
+   "surveillance": 91,
+   "retrieval": 122,
+   "favor": 85,
+   "weightCap": 80
+  },
+  {
+   "rank": 128,
+   "exp": 30384742,
+   "speed": 83,
+   "range": 113,
+   "surveillance": 93,
+   "retrieval": 122,
+   "favor": 87,
+   "weightCap": 80
+  },
+  {
+   "rank": 129,
+   "exp": 77860906,
+   "speed": 83,
+   "range": 114,
+   "surveillance": 93,
+   "retrieval": 124,
+   "favor": 88,
+   "weightCap": 80
+  },
+  {
+   "rank": 130,
+   "exp": 31922973,
+   "speed": 85,
+   "range": 115,
+   "surveillance": 95,
+   "retrieval": 125,
+   "favor": 90,
+   "weightCap": 80
+  }
+ ]
+}

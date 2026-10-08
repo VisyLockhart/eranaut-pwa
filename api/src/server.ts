@@ -13,6 +13,7 @@ import { registerOcrRoutes } from './routes/ocr.js';
 import { registerPushRoutes } from './routes/push.js';
 import type { PushSender } from './push/sender.js';
 import type { OcrService } from './ocr/service.js';
+import { registerRouteSubRoutes } from './routes/route-subs.js';
 import { registerSubmarineRoutes } from './routes/submarines.js';
 import { registerWorkshopRoutes } from './routes/workshops.js';
 
@@ -60,6 +61,7 @@ export function buildPublicServer(deps: AppDeps, opts: { logger?: boolean } = {}
   registerNotifyPrefsRoutes(app, deps, requireSession);
   registerPushRoutes(app, deps, requireSession);
   registerOcrRoutes(app, deps, requireSession);
+  registerRouteSubRoutes(app, deps, requireSession);
   return app;
 }
 

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import type { NotifyPrefs, WorkshopWithSubmarines } from '@eranaut/shared';
 import { removeKey } from '../core/storage';
 import { ORDER_KEY } from '../core/workshop-order';
+import { ROUTE_LAST_KEY } from '../route/route-cache';
 import { seedWorkshops } from './demo-data';
 
 const KEY = 'eranaut.demo';
@@ -70,5 +71,7 @@ export class DemoStore {
     removeKey('eranaut.snapshot');
     removeKey(ORDER_KEY);
     removeKey('eranaut.demo.push');
+    // 航線模擬器的檢視狀態(臨時配置、已選航點、分頁):展示版沒有伺服器端的儲存配置,重設時一併清掉
+    removeKey(ROUTE_LAST_KEY);
   }
 }

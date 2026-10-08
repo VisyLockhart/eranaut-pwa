@@ -213,3 +213,42 @@ export interface PublicConfigDto {
 
 /** 登入失敗分類碼,由回呼端點以 `/?login_error=` 帶回(D-142 ③) */
 export type LoginErrorCode = 'denied' | 'failed' | 'not_in_guild' | 'no_role';
+
+// ---- 儲存潛艇(航線模擬器,RS-25、RS-26;SCHEMA §3e) ----
+
+/** 儲存潛艇(回應)。四個零件為 1~10(6~10 = 改版) */
+export interface RouteSubDto {
+  id: string;
+  name: string;
+  /** 1~130 */
+  level: number;
+  hull: number;
+  stern: number;
+  bow: number;
+  bridge: number;
+  /** 綁定的工坊潛艇(可多艘:同一組配置常有好幾艘共用);潛艇被刪時由資料庫自動解除。一艘潛艇同時只綁一組配置 */
+  bound_submarine_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+/** 新增/整筆取代儲存潛艇的請求。`bound_submarine_ids` 省略或空陣列 = 不綁定 */
+export interface RouteSubInput {
+  name: string;
+  level: number;
+  hull: number;
+  stern: number;
+  bow: number;
+  bridge: number;
+  bound_submarine_ids?: string[];
+}
+
+export interface RouteSubValidationErrorBody {
+  error: 'validation_failed';
+  fields: Partial<Record<keyof RouteSubInput, FieldErrorCode>>;
+}
+
+/** POST 超過每人上限(409) */
+export interface RouteSubLimitErrorBody {
+  error: 'limit_reached';
+}

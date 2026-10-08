@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { openDatabase, migrate, type Db } from '../src/db/index.js';
+import { migrations } from '../src/db/migrations.js';
 
 const NOW = '2026-10-01T00:00:00Z';
 
@@ -33,10 +34,10 @@ test('連線啟用外鍵', () => {
 
 test('migrate 建立全部資料表,且可重複執行', () => {
   const db = openDatabase(':memory:');
-  assert.equal(migrate(db), 2);
-  assert.equal(migrate(db), 2);
+  assert.equal(migrate(db), 4);
+  assert.equal(migrate(db), 4);
   const names = (db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all() as { name: string }[]).map((r) => r.name);
-  assert.deepEqual(names, ['push_subscriptions', 'reminder_deliveries', 'reminders', 'sessions', 'submarines', 'users', 'workshops']);
+  assert.deepEqual(names, ['push_subscriptions', 'reminder_deliveries', 'reminders', 'route_sub_bindings', 'route_subs', 'sessions', 'submarines', 'users', 'workshops']);
 });
 
 test('預設值:notify_methods = 1(只 DM)、停用欄位為 NULL、工坊預設不提醒', () => {
@@ -141,4 +142,16 @@ test('migration 失敗時整個交易回滾、版本不前進', () => {
   assert.throws(() => migrate(db, [{ version: 1, name: 'bad', sql: 'CREATE TABLE a (x); CREATE TABLE a (x);' }]));
   assert.equal(db.pragma('user_version', { simple: true }), 0);
   assert.equal(count(db, 'sqlite_master'), 0);
+});
+
+test('migration 4:舊的單艘綁定搬進綁定表,舊欄位清空', () => {
+  const db = openDatabase(':memory:');
+  migrate(db, migrations.filter((m) => m.version <= 3));
+  const u = addUser(db);
+  const sub = addSub(db, addWorkshop(db, u), 1);
+  const rs = randomUUID();
+  db.prepare('INSERT INTO route_subs (id, user_id, name, level, hull, stern, bow, bridge, bound_submarine_id, created_at, updated_at) VALUES (?, ?, ?, 1, 1, 1, 1, 1, ?, ?, ?)').run(rs, u, 'R', sub, NOW, NOW);
+  assert.equal(migrate(db), 4);
+  assert.deepEqual(db.prepare('SELECT route_sub_id, submarine_id FROM route_sub_bindings').all(), [{ route_sub_id: rs, submarine_id: sub }]);
+  assert.equal((db.prepare('SELECT bound_submarine_id AS b FROM route_subs').get() as { b: string | null }).b, null);
 });

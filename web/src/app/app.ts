@@ -3,6 +3,7 @@ import { AuthScreen } from './auth/auth-screen';
 import { Auth } from './core/auth';
 import { DataStore } from './core/data-store';
 import { UiScale } from './core/ui-scale';
+import { clearRouteCache } from './route/route-cache';
 import { Shell } from './layout/shell';
 import { ToastHost } from './ui/toast-host';
 
@@ -22,7 +23,15 @@ export class App {
     // 登入後開始載入與倒數;登出或 session 失效就停止並清掉本機快取
     effect(() => {
       const authenticated = this.auth.status() === 'authenticated';
-      untracked(() => (authenticated ? this.store.start() : this.store.stop()));
+      untracked(() => {
+        if (authenticated) this.store.start();
+        else {
+          this.store.stop();
+          // 航線儲存潛艇的離線快照(RouteVm 還沒建立也要清;檢視狀態保留)。啟動中('loading')與離線('unreachable')不清
+          const status = this.auth.status();
+          if (status === 'anonymous' || status === 'expired') clearRouteCache();
+        }
+      });
     });
   }
 }

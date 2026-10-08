@@ -1,0 +1,78 @@
+<section class="rt-block" aria-label="去過哪些航點">
+  <div class="rt-block-head">
+    <div class="rt-block-title">去過哪些航點 <span class="rt-count">已標記 {{ x.exploredCount() }} / {{ x.totalCount }}</span></div>
+    <button type="button" class="rt-link-btn" [attr.aria-expanded]="x.mapOpen()" aria-controls="rt-explore-map" (click)="x.mapOpen.set(!x.mapOpen())">{{ x.mapOpen() ? '收合' : '展開' }}</button>
+  </div>
+  @if (x.mapOpen()) {
+    <div id="rt-explore-map">
+      <div class="rt-note" style="margin-bottom: 8px">點航點標記「去過」(派出去並且收艇回來才算)。收艇後會不會開出下一個航點是機率,不是一定;虛線外框的點只是「有機會解鎖」,實際有沒有開要看遊戲裡。點後面的點,前面解鎖它的航點會一起標記;點已去過的點則取消它和它後面的點。</div>
+      <app-route-sea-pager [sea]="x.viewSea()" (seaChange)="x.viewSea.set($event)" />
+      <app-route-map [sea]="seaIdx()" [explored]="x.explored()" [graph]="x.graph" (pick)="pickPoint($event)" />
+      <div class="rt-map-legend" aria-hidden="true">
+        <span><i class="lg done"></i>去過</span><span><i class="lg open"></i>可能解鎖</span><span><i class="lg locked"></i>尚未解鎖</span>
+        <span class="rt-map-prog">本海域 {{ seaProgress() }}</span>
+      </div>
+      @if (x.undo(); as u) {
+        <div class="rt-undo" role="status" aria-live="polite">
+          <span>{{ u.text }}</span>
+          <button type="button" class="rt-link-btn" (click)="x.undoLast()">復原</button>
+          <button type="button" class="rt-x" aria-label="關閉提示" (click)="x.dismissUndo()">×</button>
+        </div>
+      }
+      <div class="rt-save-actions" style="margin-top: 8px">
+        <button type="button" class="rt-save-btn" [disabled]="x.exploredCount() === 0" (click)="clear()">{{ confirmClear() ? '確定清除全部?' : '全部清除' }}</button>
+      </div>
+    </div>
+  }
+</section>
+
+<section class="rt-block" aria-label="探索條件">
+  <div class="rt-block-title">探索:這趟回來能開出最多新航點</div>
+  <div class="rt-note" style="margin-bottom: 8px">只會推薦前一個點已去過、自己還沒去過的航點(可能已解鎖,但不保證)。用上面選的配置找,依「最多可能開出的新航點數」排序,一樣多時時間短的在前。</div>
+  <div class="rt-exp-fields">
+    <label class="rt-exp-field">
+      <span>海域</span>
+      <app-select size="compact" ariaLabel="海域" [options]="seaOptions" [value]="x.sea()" (valueChange)="onSea($event)" />
+    </label>
+    <label class="rt-exp-field">
+      <span>最長航行時間</span>
+      <app-select size="compact" ariaLabel="最長航行時間" [options]="hourOptions" [value]="x.maxHours() ?? 'any'" (valueChange)="onHours($event)" />
+    </label>
+  </div>
+  <div class="rt-save-actions" style="margin-top: 10px">
+    <button type="button" class="rt-save-btn primary" [disabled]="x.busy()" (click)="search()">{{ x.busy() ? '計算中…' : '找路線' }}</button>
+  </div>
+</section>
+
+@if (x.stale()) { <div class="rt-dirty" role="status">配置或去過的航點已經改過,下面的結果是舊的。按「找路線」重新計算。</div> }
+
+@if (x.result(); as rs) {
+  <section class="rt-block" aria-label="探索結果">
+    @if (rs.length === 0) {
+      <div class="rt-empty">沒有可以去的航點。可能是這個配置的距離不夠、等級不足,或這個海域的航點都已經去過了;試著放寬「最長航行時間」,或到上面標記還沒標的航點。</div>
+    } @else {
+      <div class="rt-block-title" role="status">共 {{ rs.length }} 條路線,依最多可能開出的新航點數排序</div>
+      @for (c of visible(); track c.key) {
+        <article class="rt-card rt-hit">
+          <div class="rt-hit-main">
+            <div class="rt-card-title"><b>{{ c.seaName }}</b><span class="rt-card-sub">{{ c.stops }}</span></div>
+            <div class="rt-card-opens">跑完回來有機會解鎖(機率,不保證)最多 {{ c.opensCount }} 個新航點{{ c.opensCount > 0 ? ':' + c.opens : '' }}</div>
+            <div class="rt-card-foot"><span>經驗 {{ c.exp }}</span><span>航行 {{ c.time }}</span><span>燃料 {{ c.fuel }}</span><span>耗用 {{ c.range }}</span></div>
+            <div class="rt-card-lights" role="group" aria-label="達標燈號">
+              @for (l of c.lights; track l.label) {
+                <span class="rt-light g-{{ l.grade }}"><i aria-hidden="true"></i>{{ l.text }}</span>
+              }
+            </div>
+          </div>
+          <div class="rt-hit-side">
+            <span class="rt-card-lv">最多開 {{ c.opensCount }} 點</span>
+            <button type="button" class="rt-save-btn primary" (click)="load(c)">帶到航點</button>
+          </div>
+        </article>
+      }
+      @if (visible().length < cards().length) {
+        <button type="button" class="rt-save-btn" style="margin-top: 10px; width: 100%" (click)="more()">顯示更多(還有 {{ cards().length - visible().length }} 條)</button>
+      }
+    }
+  </section>
+}

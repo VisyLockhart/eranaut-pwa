@@ -183,6 +183,16 @@ This repository ships a **build-time-only** demo mode (`ng build --configuration
 
 **Push in the demo:** there is no push server, so there is no real push. The settings page still shows the push switch; turning it on only requests notification permission, and "send test notification" is displayed locally through the service worker — it looks the same as the real thing (including the system banner in an iPhone home-screen app) but nothing is scheduled.
 
+## 14. Route simulator
+
+It is the fifth navigation item. It brings a popular community web tool (pick waypoints and get travel time, build search, drop lookup) into the app, and adds goal-based route recommendations. The main trade-offs:
+
+- **All calculations are pure functions** (`web/src/app/route/core/`): waypoint selection rules (level, range limit, at most 5 stops — after every pick, every other waypoint is re-evaluated), shortest order, travel time, build search (10⁴ part combinations) and route recommendations. They do not depend on Angular and are tested directly; the formulas were checked against known cases from the external tool and cross-checked with numbers from the real game screens.
+- **The dataset ships with the code, not in the database:** waypoints, items, parts and level tables live in `route/data/`, load with the route page's lazy chunk and are cached together by the service worker, so it works offline; updating the data means redeploying. The dataset is a converted version of third-party data and **its license differs from MIT** (CC BY-NC-SA 3.0), so it sits in its own folder with a `NOTICE.md`.
+- **Saved builds live in the database and sync across devices:** up to 10 per user in `route_subs`; one build can be bound to several workshop submarines (`route_sub_bindings` — a submarine is bound to at most one build, both sides are `ON DELETE CASCADE`, no cleanup job needed). Only the *view state* (selected sea and waypoints, the temporary build) stays in each device's `localStorage`. Offline shows the last list snapshot and writes need the network; the last write wins — all deliberately simple.
+- **The demo turns saving and binding off:** both need login and server-side tables. An injected token, `ROUTE_FEATURES` (all on by default; the demo configuration sets `saving` to `false`), hides the related buttons and keeps `RouteVm` from calling `/api/route-subs`; the build is just a temporary one.
+- **It warns instead of forbidding what the game itself checks:** for example, exceeding the weight cap only shows a warning, and fuel is shown but never limits selection. The simulator is there to help players decide, not to replicate every game restriction.
+
 ## Known limitations and technical debt
 
 An honest list of what is not done, or deliberately not done:
@@ -194,4 +204,5 @@ An honest list of what is not done, or deliberately not done:
 - **This repository does not include the deployment files:** `docker-compose.yml`, the Tunnel configuration and the backup scripts are not here, so it is not a "clone and deploy in one step" project.
 - **Push on iOS requires adding to the home screen** — a platform restriction that code cannot work around.
 - Reminder messages do not include a link to the site, and a failed DM does not fall back to the channel (see section 8).
-- What the demo lacks: real login, real OCR, and real push scheduling.
+- What the demo lacks: real login, real OCR, and real push scheduling; and the route simulator's saved builds and workshop-submarine binding (see section 14).
+- The route dataset is third-party and gets updated; some names were converted from Simplified to Traditional Chinese and have not been checked against the Traditional Chinese client, and a few level/weight-cap values are inferred (see `route/data/TODO.md`).

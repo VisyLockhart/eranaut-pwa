@@ -103,4 +103,44 @@ CREATE TABLE push_subscriptions (
 CREATE INDEX ix_push_subscriptions_user ON push_subscriptions(user_id);
 `,
   },
+  {
+    version: 3,
+    name: 'route_subs',
+    // 航線模擬器的儲存潛艇(RS-25、RS-26):每人最多 10 組由 API 檢查,表上不加 CHECK;
+    // 綁定的工坊潛艇被刪時自動解除(SET NULL),不需清理排程。
+    sql: `
+CREATE TABLE route_subs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  level INTEGER NOT NULL,
+  hull INTEGER NOT NULL,
+  stern INTEGER NOT NULL,
+  bow INTEGER NOT NULL,
+  bridge INTEGER NOT NULL,
+  bound_submarine_id TEXT REFERENCES submarines(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX ix_route_subs_user ON route_subs(user_id);
+CREATE INDEX ix_route_subs_bound ON route_subs(bound_submarine_id);
+`,
+  },
+  {
+    version: 4,
+    name: 'route_sub_bindings',
+    // 一組配置可綁多艘潛艇(同配置的艇很常見):改成綁定表。submarine_id UNIQUE = 一艘艇只綁一組配置;
+    // 兩邊都 CASCADE,刪配置或刪潛艇都自動解除,不需清理排程。
+    // 舊欄位 route_subs.bound_submarine_id 有外鍵、SQLite 不能直接 DROP,留著不再讀寫(搬完設 NULL)。
+    sql: `
+CREATE TABLE route_sub_bindings (
+  route_sub_id TEXT NOT NULL REFERENCES route_subs(id) ON DELETE CASCADE,
+  submarine_id TEXT NOT NULL UNIQUE REFERENCES submarines(id) ON DELETE CASCADE,
+  PRIMARY KEY (route_sub_id, submarine_id)
+);
+INSERT OR IGNORE INTO route_sub_bindings (route_sub_id, submarine_id)
+  SELECT id, bound_submarine_id FROM route_subs WHERE bound_submarine_id IS NOT NULL;
+UPDATE route_subs SET bound_submarine_id = NULL;
+`,
+  },
 ];

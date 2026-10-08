@@ -11,6 +11,8 @@ import type {
   PushSubscriptionInput,
   PushSubscriptionsDto,
   PushTestResult,
+  RouteSubDto,
+  RouteSubInput,
   SubmarineInput,
   SubmarinesUpdateResult,
   WorkshopDto,
@@ -88,5 +90,19 @@ export class Api {
   }
   testPush(): Promise<PushTestResult> {
     return firstValueFrom(this.http.post<PushTestResult>('/api/push/test', null));
+  }
+
+  // ---- 航線模擬器的儲存潛艇(SCHEMA §8.11;RS-25、RS-26);PUT 是整筆取代 ----
+  routeSubs(): Promise<RouteSubDto[]> {
+    return firstValueFrom(this.http.get<RouteSubDto[]>('/api/route-subs'));
+  }
+  createRouteSub(input: RouteSubInput): Promise<RouteSubDto> {
+    return firstValueFrom(this.http.post<RouteSubDto>('/api/route-subs', input));
+  }
+  updateRouteSub(id: string, input: RouteSubInput): Promise<RouteSubDto> {
+    return firstValueFrom(this.http.put<RouteSubDto>(`/api/route-subs/${encodeURIComponent(id)}`, input));
+  }
+  deleteRouteSub(id: string): Promise<unknown> {
+    return firstValueFrom(this.http.delete(`/api/route-subs/${encodeURIComponent(id)}`));
   }
 }

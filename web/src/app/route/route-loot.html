@@ -1,0 +1,8 @@
+<div class="rt-loot-head">經驗 {{ point().expReward }}</div>
+@for (t of tiers(); track t.key) {
+  <div class="rt-tier" [class.locked]="t.locked">
+    <span class="rt-tier-label">{{ t.label }}</span>
+    <span class="rt-tier-items">{{ t.names.length ? t.names.join('、') : '—' }}</span>
+    @if (t.locked) { <span class="rt-tier-lock">鎖定 · 差 {{ t.gap }}</span> }
+  </div>
+}

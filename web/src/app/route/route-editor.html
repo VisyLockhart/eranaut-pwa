@@ -1,0 +1,18 @@
+<section class="rt-block" aria-label="配置">
+  @if (vm.canSave) {
+    <div class="rt-block-head">
+      <div class="rt-block-title">我的配置 <span class="rt-save-count">已儲存 {{ vm.saved().length }} / {{ max }} 組</span></div>
+      <button type="button" class="rt-save-btn primary" (click)="add()">＋ 新增配置</button>
+    </div>
+    @if (vm.loadError()) { <div class="rt-dirty">無法更新儲存配置清單,先顯示上次的資料</div> }
+    @if (vm.saved().length === 0 && vm.loaded()) {
+      <div class="rt-empty">還沒有儲存的配置。按「＋ 新增配置」設定等級與零件;不儲存也能先用下方的臨時配置選航點。</div>
+    }
+  } @else {
+    <div class="rt-block-head">
+      <div class="rt-block-title">目前配置</div>
+    </div>
+    <div class="rt-note">展示版不儲存配置,也不綁定工坊潛艇;這裡的設定只留在這個瀏覽器。按「編輯」設定等級與零件。</div>
+  }
+  <app-route-subs actions="manage" />
+</section>

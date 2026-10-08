@@ -5,6 +5,7 @@ import { DemoBar } from './demo-bar';
 import { DemoPushVm } from './demo-push';
 import { PushVm } from '../core/push-vm';
 import { DemoStore } from './demo-store';
+import { ROUTE_FEATURES } from '../route/route-features';
 
 // 展示模式(D-168):以假的 HTTP 後端取代 `/api/*`,資料只存在這個瀏覽器。畫面與其餘程式碼完全沿用正式版。
 export const DEMO_LOGIN_URL: string | null = '/?demo_login=1';
@@ -14,6 +15,8 @@ export const demoProviders: (Provider | EnvironmentProviders)[] = [
   { provide: HttpBackend, useClass: DemoBackend },
   // 推播:沒有推播伺服器,改由本機 service worker 顯示測試通知
   { provide: PushVm, useClass: DemoPushVm },
+  // 航線模擬器:沒有伺服器,不提供儲存配置與綁定工坊潛艇(RS-25、RS-26);配置只是臨時配置
+  { provide: ROUTE_FEATURES, useValue: { saving: false } },
   // 必須在 Auth.init() 之前跑(app.config 的順序):先依網址參數決定登入狀態
   provideAppInitializer(() => {
     const store = inject(DemoStore);

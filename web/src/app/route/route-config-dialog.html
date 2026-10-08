@@ -1,0 +1,111 @@
+@if (vm.draft(); as d) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
+    <div class="modal-box rt-dlg" [class.wide]="layout.isDesktop()" role="dialog" aria-modal="true" aria-labelledby="rt-cfg-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <div class="rt-dlg-head">
+        <div class="modal-title" id="rt-cfg-title">{{ title() }}</div>
+        <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+      </div>
+
+      @if (step() === 'edit') {
+        @if (stats(); as s) {
+          <div class="rt-dlg-top">
+            @if (vm.canSave) {
+              <div class="rt-dlg-field">
+                <label class="field-label" for="rt-cfg-name">名稱</label>
+                <input id="rt-cfg-name" class="rt-text-input" type="text" [value]="d.name" (input)="onName($event)" autocomplete="off" />
+                <div class="rt-save-count" [class.bad]="!nameValid()">{{ nameLength() }} / {{ nameMax }} 字</div>
+              </div>
+            }
+            <div class="rt-dlg-field">
+              <label class="field-label" for="rt-cfg-level">潛艇等級</label>
+              <div class="rt-level">
+                <input id="rt-cfg-level" class="rt-level-input" type="number" inputmode="numeric" min="1" [attr.max]="maxLevel" step="1" [value]="d.level" (change)="onLevel($event)" />
+                <div class="rt-cap">重量上限 <b>{{ s.weightCap }}</b></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rt-dlg-body" [class.wide]="layout.isDesktop()">
+            <div class="rt-parts" role="group" aria-label="零件選擇">
+              <div class="rt-parts-head">
+                <span></span>
+                @for (k of partKeys; track k) { <span>{{ partName(k) }}</span> }
+              </div>
+              @for (g of grades; track g) {
+                <div class="rt-parts-row">
+                  <span class="rt-parts-type" [attr.title]="partInfo('hull', g).name"><b>{{ partInfo('hull', g).code }}</b>{{ g }}</span>
+                  @for (k of partKeys; track k; let i = $index) {
+                    <span class="rt-pair">
+                      <button type="button" class="rt-part" [class.active]="d.parts[i] === g" [attr.aria-pressed]="d.parts[i] === g" [attr.aria-label]="partName(k) + ' ' + label(g)" (click)="setPart(i, g)">{{ g }}</button>
+                      <button type="button" class="rt-part mod" [class.active]="d.parts[i] === g + 5" [attr.aria-pressed]="d.parts[i] === g + 5" [attr.aria-label]="partName(k) + ' ' + label(g + 5)" (click)="setPart(i, g + 5)">{{ g }}改</button>
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="rt-dlg-stats">
+              <table class="rt-stats">
+                <thead><tr><th scope="col"></th><th scope="col">等級</th><th scope="col">零件</th><th scope="col">合計</th><th scope="col">路線需求</th></tr></thead>
+                <tbody>
+                  @for (r of rows(); track r.key) {
+                    <tr>
+                      <th scope="row">{{ r.label }}</th>
+                      <td>{{ r.level }}</td>
+                      <td>{{ r.parts }}</td>
+                      <td class="rt-total g-{{ r.grade }}">{{ r.total }}</td>
+                      <td class="rt-need">{{ r.need }}</td>
+                    </tr>
+                  }
+                  <tr>
+                    <th scope="row">重量</th>
+                    <td></td>
+                    <td>{{ s.weight }}</td>
+                    <td class="rt-total" [class.g-none]="s.overweight">{{ s.weight }}</td>
+                    <td class="rt-need">≤ {{ s.weightCap }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              @if (s.overweight) { <div class="rt-dirty bad">超過重量上限 {{ s.weightCap }}(模擬器不限制,遊戲內無法組裝)</div> }
+              @if (vm.seq().length === 0) { <div class="rt-save-count">還沒選航點,選好之後這裡會顯示路線需求與達標顏色</div> }
+              <div class="rt-legend"><span class="g-full">達最高階</span><span class="g-partial">只達較低階</span><span class="g-none">未達</span></div>
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="rt-save-label">已滿 {{ max }} 組,選一組覆蓋(會保留那一組的名稱與綁定)</div>
+        <ul class="rt-pick-list">
+          @for (s of vm.saved(); track s.id) {
+            <li>
+              <button type="button" class="rt-pick" (click)="ask(s.id)" [attr.aria-expanded]="confirmId() === s.id"><b>{{ s.name }}</b><span>Lv{{ s.level }}</span></button>
+              @if (confirmId() === s.id) {
+                <button type="button" class="rt-save-btn danger" [disabled]="busy()" (click)="overwrite(s.id)">確定覆蓋這一組</button>
+              }
+            </li>
+          }
+        </ul>
+      }
+
+      @if (error()) { <div class="rt-save-error" role="alert">{{ error() }}</div> }
+
+      <div class="rt-dlg-foot">
+        @if (step() === 'edit') {
+          @if (!layout.isDesktop()) { <div class="rt-dlg-sum">{{ summary() }}</div> }
+          <div class="rt-save-actions">
+            <button type="button" class="rt-save-btn" (click)="close()">取消</button>
+            @if (vm.canSave) {
+              <button type="button" class="rt-save-btn" [disabled]="busy()" (click)="apply()">只套用</button>
+              <button type="button" class="rt-save-btn primary" [disabled]="!nameValid() || busy()" (click)="save()">{{ saveText() }}</button>
+            } @else {
+              <button type="button" class="rt-save-btn primary" (click)="apply()">套用</button>
+            }
+          </div>
+        } @else {
+          <div class="rt-save-actions">
+            <button type="button" class="rt-save-btn" (click)="back()">返回</button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

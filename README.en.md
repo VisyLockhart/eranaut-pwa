@@ -45,6 +45,7 @@ This repository is the **production frontend + backend monorepo** (with its full
 - **Workshop management**: create, edit, delete, and reorder by drag or buttons (mouse and touch).
 - **Update submarines**: type values in, or upload / paste / capture a game screenshot for the self-hosted OCR; results are verified boat by boat before submitting, and low-confidence fields are flagged "please verify".
 - **Reminders**: Discord DM, server-channel mention and browser push (Web Push) can be combined; each workshop can remind N minutes ahead, or once per batch.
+- **Route simulator**: pick waypoints on a sea map to get travel time, return time and fuel; waypoints you cannot take (level or range limit) are greyed out live; edit part builds (10⁴ combinations) against the route's requirements; get route suggestions by goal (levelling, exploration, variety, a specific drop), or the reverse — find the part combinations that meet a target. Builds can be saved and synced across devices, and each can be bound to several workshop submarines. The dataset is third-party and **not MIT** (see the license at the end).
 - **PWA**: installable to the phone's home screen; the service worker caches only the app shell, and the API always goes to the network.
 - **Interface**: dark theme only, separate phone and desktop layouts, three interface sizes, collapsible stats (phone) and sidebar (desktop), pull-to-refresh on phones.
 
@@ -59,7 +60,8 @@ If you want a quick tour of the engineering trade-offs, start here (full context
 - **Eligibility rule defined once**: website login, the daily sweep and bot commands share one evaluation function; losing eligibility only suspends (data is kept), and the sweep aborts entirely if Discord returns no member list, so an outage cannot suspend everyone.
 - **Per-device Web Push**: one reminder fans out to all of a user's devices, dead subscriptions are pruned automatically, and iOS's "must be added to the home screen" restriction is handled.
 - **Demo mode**: the same Angular code with a fake `HttpBackend` swapped in via build-time `fileReplacements`; the production bundle contains no demo code.
-- **Tests**: backend uses Node.js's built-in `node:test` (OCR parsing, reminder delivery and retries, eligibility sweep, authentication, and more); the frontend has about 280 unit tests.
+- **Route calculations are pure functions**: selection rules, shortest order, build search and route recommendations live in `route/core/`, independent of Angular; the dataset ships in a lazy chunk (works offline); features are switched by an injected `ROUTE_FEATURES` token (the demo turns saving and binding off).
+- **Tests**: backend uses Node.js's built-in `node:test` (OCR parsing, reminder delivery and retries, eligibility sweep, authentication, and more); the frontend has about 560 unit tests.
 
 ## Demo mode
 
@@ -69,6 +71,7 @@ The [live demo](https://demo.eranaut.aequoreranos.com/) is not a separate page; 
 - `fileReplacements` in the `demo` build configuration performs the switch, so the production bundle contains no demo code.
 - The "展示模式" (Demo mode) tag at the bottom right can reset the data, log out to show the welcome page, or jump to the various login-failure screens.
 - What the demo does **not** have: real Discord login, real OCR (it returns a fixed sample result), and real push scheduling ("send test notification" is displayed locally by the service worker and looks the same as the real thing).
+- The **route simulator** is fully usable in the demo, but **without saved builds and workshop-submarine binding** (both need login and server-side tables): the build is just a temporary one kept in this browser, and "reset data" clears it too. This is done with the `ROUTE_FEATURES` injection token — the demo configuration sets `saving` to `false`, the screens hide the related buttons, and `RouteVm` never calls `/api/route-subs`.
 
 Build the demo locally (shared must be built first):
 
@@ -121,6 +124,7 @@ For the full design context — why each choice was made and what was given up �
 │  ├─ src/app/
 │  │  ├─ core/            API client, per-screen view models, wait-time compensation, … (mostly unit-tested)
 │  │  ├─ overview/ workshops/ update/ settings/ auth/   The screens
+│  │  ├─ route/           Route simulator: core/ (pure functions), data/ (third-party dataset, CC BY-NC-SA — see NOTICE.md there) and the tab screens
 │  │  ├─ layout/ ui/      Shell and shared components
 │  │  └─ demo/            Demo mode (enabled only in the demo build)
 │  ├─ dev.mjs             Local dev proxy (/api → local API, everything else → Angular dev server)
@@ -186,7 +190,7 @@ The backend uses Node.js's built-in `node:test`, with no extra test framework. T
 
 ## `D-xx` and `SCHEMA §` in the code
 
-Code comments often contain markers such as `D-125` or `SCHEMA §8.1`. They are numbers from the author's design documents and explain *why* something was done that way. Those original documents are not published; read [`docs/DESIGN-NOTES.md`](docs/DESIGN-NOTES.md) (Traditional Chinese) for the convention and a summary of the main decisions, and [`docs/ARCHITECTURE.en.md`](docs/ARCHITECTURE.en.md) for the fuller context.
+Code comments often contain markers such as `D-125` or `SCHEMA §8.1`. They are numbers from the author's design documents and explain *why* something was done that way. The route simulator also uses `RS-xx` numbers, where `RS-nn` is `D-(178+nn)`. Those original documents are not published; read [`docs/DESIGN-NOTES.md`](docs/DESIGN-NOTES.md) (Traditional Chinese) for the convention and a summary of the main decisions, and [`docs/ARCHITECTURE.en.md`](docs/ARCHITECTURE.en.md) for the fuller context.
 
 ## Known limitations
 
@@ -208,4 +212,4 @@ An honest list of what is not done, or deliberately not done (details in [`docs/
 
 An unofficial fan tool, not affiliated with SQUARE ENIX CO., LTD., for community use only.
 
-License: [MIT](LICENSE). Created by Visy Lockhart (Winter@迦樓羅).
+License: the code is [MIT](LICENSE). **Exception:** the route dataset in [`web/src/app/route/data/`](web/src/app/route/data/) is a converted version of third-party data (the Huiji wiki submarine tool, itself based on articles by Lodestone author Eclair Falcie@Hades; Traditional Chinese names come from a compilation on GitHub). It is released under the source's **CC BY-NC-SA 3.0** license (Attribution-NonCommercial-ShareAlike) and is not covered by MIT; keep the [NOTICE.md](web/src/app/route/data/NOTICE.md) in that folder when redistributing or adapting it, and do not use it commercially. Created by Visy Lockhart (Winter@迦樓羅).

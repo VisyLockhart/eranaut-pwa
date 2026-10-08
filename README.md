@@ -43,6 +43,7 @@ FFXIV(Final Fantasy XIV)的潛水艇探索要等好幾小時到好幾天,有多�
 - **工坊管理**:新增、編輯、刪除,拖曳與按鈕排序(滑鼠與觸控)。
 - **更新潛艇**:手動輸入,或上傳 / 貼上 / 擷取遊戲截圖交給自架 OCR 辨識,辨識結果逐艘核對後再送出;信心偏低的欄位會標示「請核對」。
 - **提醒**:Discord 私訊、伺服器頻道 @、瀏覽器推播(Web Push)三種方式可複選;每間工坊可設定提前幾分鐘,或整批一次提醒。
+- **航線模擬**:在海域地圖上選航點,算出航行時間、返航時刻與燃料;依等級與距離上限即時反灰選不了的航點;編輯零件配置(10⁴ 種組合)並對照路線需求;依目標推薦路線(練級、探索、距離、指定掉落物)或反過來找出達標的零件組合。配置可儲存並跨裝置同步,每組可綁定多艘工坊潛艇。資料集為第三方整理,**不適用 MIT**(見文末授權)。
 - **PWA**:可加到手機主畫面;service worker 只快取 app shell,API 一律走網路。
 - **介面**:純深色主題、手機與桌機兩套版面、小 / 中 / 大三種介面大小、手機統計區與桌機側欄可收合、手機下拉重新整理。
 
@@ -57,7 +58,8 @@ FFXIV(Final Fantasy XIV)的潛水艇探索要等好幾小時到好幾天,有多�
 - **資格規則只定義一處**:網站登入、每日比對、bot 指令共用同一個判斷函式;失去資格只標記停用、不刪資料,且 Discord 取不到名單時整次比對放棄,避免誤停所有人。
 - **Web Push 按裝置訂閱**:一筆提醒發給使用者所有裝置,失效訂閱自動清除;處理了 iOS 必須加入主畫面才有推播的限制。
 - **展示模式**:同一份 Angular 程式碼,用建置時的 `fileReplacements` 換上假的 `HttpBackend`,正式版 bundle 不含任何展示程式碼。
-- **測試**:後端用 Node.js 內建的 `node:test`(含 OCR 解析、提醒發送與重試、資格比對、認證等),前端約 280 項單元測試。
+- **航線計算是純函式**:選取判斷、最短順序、配置搜尋、路線推薦都在不依賴 Angular 的 `route/core/`,資料集打包進 lazy chunk(可離線),功能以注入的 `ROUTE_FEATURES` 開關控制(展示版關掉儲存與綁定)。
+- **測試**:後端用 Node.js 內建的 `node:test`(含 OCR 解析、提醒發送與重試、資格比對、認證等),前端約 560 項單元測試。
 
 ## 展示模式
 
@@ -67,6 +69,7 @@ FFXIV(Final Fantasy XIV)的潛水艇探索要等好幾小時到好幾天,有多�
 - 用 `fileReplacements` 在 `demo` 建置組態切換,所以正式版 bundle 不含展示程式碼。
 - 右下角的「展示模式」標籤可重設資料、登出看迎賓頁,或直接看各種登入失敗畫面。
 - 展示版**沒有**的:真實 Discord 登入、真實 OCR(回傳固定的示範結果)、真實推播排程(「傳送測試通知」由本機 service worker 顯示,外觀與正式版一樣)。
+- **航線模擬**在展示版可以完整試用,但**不提供儲存配置與綁定工坊潛艇**(這兩項需要登入與伺服器端的資料表):配置只是臨時配置,留在這個瀏覽器,「重設資料」會一併清掉。做法是 `ROUTE_FEATURES` 注入權杖,展示組態把 `saving` 設為 `false`,畫面隱藏相關按鈕、`RouteVm` 也不呼叫 `/api/route-subs`。
 
 本機建置展示版(需先建置 shared):
 
@@ -119,6 +122,7 @@ web/     Angular 前端(PWA)
 │  ├─ src/app/
 │  │  ├─ core/            API 用戶端、各畫面的 view model、時間補償等(多數有單元測試)
 │  │  ├─ overview/ workshops/ update/ settings/ auth/   各畫面
+│  │  ├─ route/           航線模擬:core/(純函式)、data/(第三方資料集,CC BY-NC-SA,見其中的 NOTICE.md)與各分頁畫面
 │  │  ├─ layout/ ui/      版面骨架與共用元件
 │  │  └─ demo/            展示模式(只在 demo 建置啟用)
 │  ├─ dev.mjs             本機開發的轉發器(/api → 本機 API,其餘 → Angular dev server)
@@ -184,7 +188,7 @@ npm run build             # 建置 shared、api、web
 
 ## 程式碼裡的 `D-xx` 與 `SCHEMA §`
 
-程式碼註解常出現 `D-125`、`SCHEMA §8.1` 這類標記,它們是作者維護的設計文件編號,說明「為什麼這樣做」。這些原始文件沒有隨 repo 公開,可閱讀 [`docs/DESIGN-NOTES.md`](docs/DESIGN-NOTES.md) 了解慣例與主要決策摘要,更完整的脈絡見 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
+程式碼註解常出現 `D-125`、`SCHEMA §8.1` 這類標記,它們是作者維護的設計文件編號,說明「為什麼這樣做」。(航線模擬功能另有 `RS-xx` 編號,`RS-nn` 即 `D-(178+nn)`。)這些原始文件沒有隨 repo 公開,可閱讀 [`docs/DESIGN-NOTES.md`](docs/DESIGN-NOTES.md) 了解慣例與主要決策摘要,更完整的脈絡見 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
 
 ## 已知限制
 
@@ -206,4 +210,4 @@ npm run build             # 建置 shared、api、web
 
 非官方粉絲工具,與 SQUARE ENIX CO., LTD. 無關,僅供社群使用。
 
-授權:[MIT](LICENSE)。Created by Visy Lockhart (Winter@迦樓羅).
+授權:程式碼為 [MIT](LICENSE)。**例外:** [`web/src/app/route/data/`](web/src/app/route/data/) 的航線資料集是第三方資料(灰機 wiki 小工具,原始來源 Lodestone 作者 Eclair Falcie@Hades;繁體中文名稱取自 GitHub 上的整理)的轉換結果,依來源授權以 **CC BY-NC-SA 3.0**(姓名標示-非商業性-相同方式分享)釋出,不適用 MIT;轉載或改作請保留該資料夾的 [NOTICE.md](web/src/app/route/data/NOTICE.md),且不得商業使用。Created by Visy Lockhart (Winter@迦樓羅).

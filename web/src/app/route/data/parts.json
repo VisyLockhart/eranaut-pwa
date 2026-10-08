@@ -1,0 +1,516 @@
+{
+ "_license": "CC BY-NC-SA 3.0",
+ "_notice": "見同資料夾 NOTICE.md;本檔不適用 MIT 授權",
+ "_generatedBy": "tools/route-data/build.mjs",
+ "_maxRank": 130,
+ "columns": [
+  "surveillance",
+  "retrieval",
+  "speed",
+  "range",
+  "favor",
+  "weight"
+ ],
+ "parts": {
+  "hull": {
+   "label": "船體",
+   "grades": [
+    {
+     "code": "S",
+     "name": "鯊魚級",
+     "grade": 1,
+     "modified": false,
+     "surveillance": -10,
+     "retrieval": 30,
+     "speed": 20,
+     "range": 40,
+     "favor": 20,
+     "weight": 5
+    },
+    {
+     "code": "U",
+     "name": "甲鱟級",
+     "grade": 2,
+     "modified": false,
+     "surveillance": 15,
+     "retrieval": 10,
+     "speed": 0,
+     "range": 60,
+     "favor": 15,
+     "weight": 9
+    },
+    {
+     "code": "W",
+     "name": "鬚鯨級",
+     "grade": 3,
+     "modified": false,
+     "surveillance": -15,
+     "retrieval": 55,
+     "speed": 35,
+     "range": 15,
+     "favor": 20,
+     "weight": 12
+    },
+    {
+     "code": "C",
+     "name": "腔棘魚級",
+     "grade": 4,
+     "modified": false,
+     "surveillance": 40,
+     "retrieval": -10,
+     "speed": 25,
+     "range": 40,
+     "favor": 25,
+     "weight": 14
+    },
+    {
+     "code": "SY",
+     "name": "希爾德拉級",
+     "grade": 5,
+     "modified": false,
+     "surveillance": 10,
+     "retrieval": 75,
+     "speed": 30,
+     "range": -15,
+     "favor": 5,
+     "weight": 17
+    },
+    {
+     "code": "SM",
+     "name": "鯊魚改級",
+     "grade": 1,
+     "modified": true,
+     "surveillance": -5,
+     "retrieval": 40,
+     "speed": 25,
+     "range": 45,
+     "favor": 35,
+     "weight": 20
+    },
+    {
+     "code": "UM",
+     "name": "甲鱟改級",
+     "grade": 2,
+     "modified": true,
+     "surveillance": 20,
+     "retrieval": 15,
+     "speed": 5,
+     "range": 65,
+     "favor": 25,
+     "weight": 20
+    },
+    {
+     "code": "WM",
+     "name": "鬚鯨改級",
+     "grade": 3,
+     "modified": true,
+     "surveillance": -10,
+     "retrieval": 55,
+     "speed": 40,
+     "range": 20,
+     "favor": 30,
+     "weight": 20
+    },
+    {
+     "code": "CM",
+     "name": "腔棘魚改級",
+     "grade": 4,
+     "modified": true,
+     "surveillance": 40,
+     "retrieval": -5,
+     "speed": 30,
+     "range": 40,
+     "favor": 30,
+     "weight": 20
+    },
+    {
+     "code": "SYM",
+     "name": "希爾德拉改級",
+     "grade": 5,
+     "modified": true,
+     "surveillance": 10,
+     "retrieval": 80,
+     "speed": 30,
+     "range": -15,
+     "favor": 10,
+     "weight": 20
+    }
+   ]
+  },
+  "stern": {
+   "label": "船尾",
+   "grades": [
+    {
+     "code": "S",
+     "name": "鯊魚級",
+     "grade": 1,
+     "modified": false,
+     "surveillance": -30,
+     "retrieval": 20,
+     "speed": 60,
+     "range": 30,
+     "favor": 15,
+     "weight": 5
+    },
+    {
+     "code": "U",
+     "name": "甲鱟級",
+     "grade": 2,
+     "modified": false,
+     "surveillance": 15,
+     "retrieval": 0,
+     "speed": 30,
+     "range": 40,
+     "favor": 25,
+     "weight": 9
+    },
+    {
+     "code": "W",
+     "name": "鬚鯨級",
+     "grade": 3,
+     "modified": false,
+     "surveillance": 15,
+     "retrieval": 20,
+     "speed": 0,
+     "range": 55,
+     "favor": 15,
+     "weight": 12
+    },
+    {
+     "code": "C",
+     "name": "腔棘魚級",
+     "grade": 4,
+     "modified": false,
+     "surveillance": 10,
+     "retrieval": 25,
+     "speed": 35,
+     "range": 25,
+     "favor": 25,
+     "weight": 14
+    },
+    {
+     "code": "SY",
+     "name": "希爾德拉級",
+     "grade": 5,
+     "modified": false,
+     "surveillance": 20,
+     "retrieval": 60,
+     "speed": 35,
+     "range": -15,
+     "favor": 5,
+     "weight": 17
+    },
+    {
+     "code": "SM",
+     "name": "鯊魚改級",
+     "grade": 1,
+     "modified": true,
+     "surveillance": -25,
+     "retrieval": 25,
+     "speed": 70,
+     "range": 35,
+     "favor": 25,
+     "weight": 20
+    },
+    {
+     "code": "UM",
+     "name": "甲鱟改級",
+     "grade": 2,
+     "modified": true,
+     "surveillance": 20,
+     "retrieval": 5,
+     "speed": 35,
+     "range": 45,
+     "favor": 35,
+     "weight": 20
+    },
+    {
+     "code": "WM",
+     "name": "鬚鯨改級",
+     "grade": 3,
+     "modified": true,
+     "surveillance": 20,
+     "retrieval": 20,
+     "speed": 5,
+     "range": 60,
+     "favor": 20,
+     "weight": 20
+    },
+    {
+     "code": "CM",
+     "name": "腔棘魚改級",
+     "grade": 4,
+     "modified": true,
+     "surveillance": 10,
+     "retrieval": 25,
+     "speed": 40,
+     "range": 30,
+     "favor": 30,
+     "weight": 20
+    },
+    {
+     "code": "SYM",
+     "name": "希爾德拉改級",
+     "grade": 5,
+     "modified": true,
+     "surveillance": 20,
+     "retrieval": 60,
+     "speed": 35,
+     "range": -10,
+     "favor": 10,
+     "weight": 20
+    }
+   ]
+  },
+  "bow": {
+   "label": "船首",
+   "grades": [
+    {
+     "code": "S",
+     "name": "鯊魚級",
+     "grade": 1,
+     "modified": false,
+     "surveillance": 50,
+     "retrieval": 40,
+     "speed": 10,
+     "range": -20,
+     "favor": 15,
+     "weight": 5
+    },
+    {
+     "code": "U",
+     "name": "甲鱟級",
+     "grade": 2,
+     "modified": false,
+     "surveillance": 60,
+     "retrieval": 20,
+     "speed": 20,
+     "range": -15,
+     "favor": 10,
+     "weight": 9
+    },
+    {
+     "code": "W",
+     "name": "鬚鯨級",
+     "grade": 3,
+     "modified": false,
+     "surveillance": 25,
+     "retrieval": 60,
+     "speed": -15,
+     "range": 20,
+     "favor": 15,
+     "weight": 12
+    },
+    {
+     "code": "C",
+     "name": "腔棘魚級",
+     "grade": 4,
+     "modified": false,
+     "surveillance": 65,
+     "retrieval": 10,
+     "speed": -10,
+     "range": 30,
+     "favor": 0,
+     "weight": 14
+    },
+    {
+     "code": "SY",
+     "name": "希爾德拉級",
+     "grade": 5,
+     "modified": false,
+     "surveillance": 45,
+     "retrieval": 30,
+     "speed": -15,
+     "range": 40,
+     "favor": 40,
+     "weight": 17
+    },
+    {
+     "code": "SM",
+     "name": "鯊魚改級",
+     "grade": 1,
+     "modified": true,
+     "surveillance": 55,
+     "retrieval": 50,
+     "speed": 15,
+     "range": -15,
+     "favor": 25,
+     "weight": 20
+    },
+    {
+     "code": "UM",
+     "name": "甲鱟改級",
+     "grade": 2,
+     "modified": true,
+     "surveillance": 65,
+     "retrieval": 25,
+     "speed": 25,
+     "range": -10,
+     "favor": 20,
+     "weight": 20
+    },
+    {
+     "code": "WM",
+     "name": "鬚鯨改級",
+     "grade": 3,
+     "modified": true,
+     "surveillance": 25,
+     "retrieval": 65,
+     "speed": -10,
+     "range": 25,
+     "favor": 25,
+     "weight": 20
+    },
+    {
+     "code": "CM",
+     "name": "腔棘魚改級",
+     "grade": 4,
+     "modified": true,
+     "surveillance": 70,
+     "retrieval": 15,
+     "speed": -10,
+     "range": 30,
+     "favor": 5,
+     "weight": 20
+    },
+    {
+     "code": "SYM",
+     "name": "希爾德拉改級",
+     "grade": 5,
+     "modified": true,
+     "surveillance": 45,
+     "retrieval": 30,
+     "speed": -10,
+     "range": 40,
+     "favor": 40,
+     "weight": 20
+    }
+   ]
+  },
+  "bridge": {
+   "label": "艦橋",
+   "grades": [
+    {
+     "code": "S",
+     "name": "鯊魚級",
+     "grade": 1,
+     "modified": false,
+     "surveillance": 20,
+     "retrieval": 20,
+     "speed": 20,
+     "range": 20,
+     "favor": 20,
+     "weight": 5
+    },
+    {
+     "code": "U",
+     "name": "甲鱟級",
+     "grade": 2,
+     "modified": false,
+     "surveillance": 25,
+     "retrieval": 5,
+     "speed": 25,
+     "range": 30,
+     "favor": 30,
+     "weight": 9
+    },
+    {
+     "code": "W",
+     "name": "鬚鯨級",
+     "grade": 3,
+     "modified": false,
+     "surveillance": 0,
+     "retrieval": 25,
+     "speed": 20,
+     "range": 45,
+     "favor": 40,
+     "weight": 12
+    },
+    {
+     "code": "C",
+     "name": "腔棘魚級",
+     "grade": 4,
+     "modified": false,
+     "surveillance": 55,
+     "retrieval": 20,
+     "speed": 35,
+     "range": -15,
+     "favor": 50,
+     "weight": 14
+    },
+    {
+     "code": "SY",
+     "name": "希爾德拉級",
+     "grade": 5,
+     "modified": false,
+     "surveillance": 55,
+     "retrieval": 20,
+     "speed": -5,
+     "range": 30,
+     "favor": 60,
+     "weight": 17
+    },
+    {
+     "code": "SM",
+     "name": "鯊魚改級",
+     "grade": 1,
+     "modified": true,
+     "surveillance": 25,
+     "retrieval": 25,
+     "speed": 30,
+     "range": 25,
+     "favor": 35,
+     "weight": 20
+    },
+    {
+     "code": "UM",
+     "name": "甲鱟改級",
+     "grade": 2,
+     "modified": true,
+     "surveillance": 30,
+     "retrieval": 10,
+     "speed": 30,
+     "range": 35,
+     "favor": 40,
+     "weight": 20
+    },
+    {
+     "code": "WM",
+     "name": "鬚鯨改級",
+     "grade": 3,
+     "modified": true,
+     "surveillance": 0,
+     "retrieval": 30,
+     "speed": 25,
+     "range": 50,
+     "favor": 45,
+     "weight": 20
+    },
+    {
+     "code": "CM",
+     "name": "腔棘魚改級",
+     "grade": 4,
+     "modified": true,
+     "surveillance": 60,
+     "retrieval": 20,
+     "speed": 35,
+     "range": -10,
+     "favor": 55,
+     "weight": 20
+    },
+    {
+     "code": "SYM",
+     "name": "希爾德拉改級",
+     "grade": 5,
+     "modified": true,
+     "surveillance": 60,
+     "retrieval": 20,
+     "speed": -5,
+     "range": 30,
+     "favor": 60,
+     "weight": 20
+    }
+   ]
+  }
+ }
+}

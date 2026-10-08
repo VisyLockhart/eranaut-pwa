@@ -1,0 +1,47 @@
+<svg class="rt-map" viewBox="0 0 1024 1024" role="group" aria-label="{{ sea().sea.name }}航點地圖" preserveAspectRatio="xMidYMid meet">
+  @for (l of links(); track l.key) {
+    <line class="rt-link" [class.lit]="l.lit" [attr.x1]="l.x1" [attr.y1]="l.y1" [attr.x2]="l.x2" [attr.y2]="l.y2" />
+  }
+  @if (path()) {
+    <polyline class="rt-path" [attr.points]="path()" />
+  }
+  <g class="rt-home" [attr.transform]="'translate(' + home().x + ' ' + home().y + ')'">
+    <rect x="-20" y="-20" width="40" height="40" rx="7" transform="rotate(45)" />
+    <text y="54">出發</text>
+  </g>
+  @for (d of dots(); track d.p.id) {
+    <g
+      class="rt-pt"
+      role="button"
+      tabindex="0"
+      [class.sel]="d.state === 'selected'"
+      [class.done]="d.visit === 'done'"
+      [class.open]="d.visit === 'open'"
+      [class.locked]="d.visit === 'locked'"
+      [class.off]="d.state !== 'ok' && d.state !== 'selected'"
+      [attr.aria-label]="label(d)"
+      [attr.aria-pressed]="d.visit ? d.visit === 'done' : d.state === 'selected'"
+      [attr.aria-disabled]="d.state !== 'ok' && d.state !== 'selected' ? 'true' : null"
+      [attr.transform]="'translate(' + d.p.x + ' ' + d.p.y + ')'"
+      (click)="activate(d)"
+      (keydown.enter)="activate(d)"
+      (keydown.space)="$event.preventDefault(); activate(d)"
+    >
+      <circle class="hit" [attr.r]="hitR" />
+      <circle class="dot" [attr.r]="dotR" />
+      <text class="code" y="1">{{ d.p.code }}</text>
+      @if (d.visit === 'done') {
+        <g class="badge check" transform="translate(27 -27)">
+          <circle r="19" />
+          <path d="M-9 1 L-3 8 L9 -7" />
+        </g>
+      }
+      @if (d.order > 0) {
+        <g class="badge" transform="translate(27 -27)">
+          <circle r="19" />
+          <text y="1">{{ d.order }}</text>
+        </g>
+      }
+    </g>
+  }
+</svg>

@@ -1,0 +1,62 @@
+<section class="rt-block" aria-label="練級條件">
+  <div class="rt-block-title">練級:每分鐘經驗最高的路線</div>
+  <div class="rt-note" style="margin-bottom: 8px">用上面選的配置找,結果都是這個配置走得完(距離夠用)的路線。</div>
+  <div class="rt-exp-fields">
+    <label class="rt-exp-field">
+      <span>海域</span>
+      <app-select size="compact" ariaLabel="海域" [options]="seaOptions" [value]="x.sea()" (valueChange)="onSea($event)" />
+    </label>
+    <label class="rt-exp-field">
+      <span>最長航行時間</span>
+      <app-select size="compact" ariaLabel="最長航行時間" [options]="hourOptions" [value]="x.maxHours() ?? 'any'" (valueChange)="onHours($event)" />
+    </label>
+  </div>
+  <div class="rt-exp-label">每一站至少要拿到</div>
+  <div class="rt-chips" role="group" aria-label="每一站至少要拿到的階層">
+    @for (t of tiers; track t.id) {
+      <button type="button" class="rt-chip" [class.active]="x.tier() === t.id" [attr.aria-pressed]="x.tier() === t.id" (click)="x.tier.set(t.id)">{{ t.label }}</button>
+    }
+  </div>
+  <div class="rt-exp-label">排序</div>
+  <div class="rt-chips" role="group" aria-label="排序">
+    @for (s of sorts; track s.id) {
+      <button type="button" class="rt-chip" [class.active]="x.sort() === s.id" [attr.aria-pressed]="x.sort() === s.id" (click)="x.sort.set(s.id)">{{ s.label }}</button>
+    }
+  </div>
+  @if (x.sort() === 'total') { <div class="rt-note" style="margin-top: 6px">一天只派一次時看這個;搭配「最長航行時間」,在時間內拿最多經驗。</div> }
+  <div class="rt-save-actions" style="margin-top: 10px">
+    <button type="button" class="rt-save-btn primary" [disabled]="x.busy()" (click)="search()">{{ x.busy() ? '計算中…' : '找路線' }}</button>
+  </div>
+</section>
+
+@if (x.stale()) { <div class="rt-dirty" role="status">配置已經改過,下面的結果是舊配置算的。按「找路線」重新計算。</div> }
+
+@if (x.result(); as rs) {
+  <section class="rt-block" aria-label="練級結果">
+    @if (rs.length === 0) {
+      <div class="rt-empty">用這個配置找不到符合的路線。試試放寬「每一站至少要拿到」或「最長航行時間」,或到「配置」提高距離與探索。</div>
+    } @else {
+      <div class="rt-block-title" role="status">共 {{ rs.length }} 條路線,依{{ x.searchedSort() === 'total' ? '一趟總經驗' : '每分鐘經驗' }}排序</div>
+      @for (c of visible(); track c.key) {
+        <article class="rt-card rt-hit">
+          <div class="rt-hit-main">
+            <div class="rt-card-title"><b>{{ c.seaName }}</b><span class="rt-card-sub">{{ c.stops }}</span></div>
+            <div class="rt-card-foot"><span>經驗 {{ c.exp }}</span><span>航行 {{ c.time }}</span><span>燃料 {{ c.fuel }}</span><span>耗用 {{ c.range }}</span></div>
+            <div class="rt-card-lights" role="group" aria-label="達標燈號">
+              @for (l of c.lights; track l.label) {
+                <span class="rt-light g-{{ l.grade }}"><i aria-hidden="true"></i>{{ l.text }}</span>
+              }
+            </div>
+          </div>
+          <div class="rt-hit-side">
+            <span class="rt-card-lv">每分鐘 {{ c.perMin }} 經驗</span>
+            <button type="button" class="rt-save-btn primary" (click)="load(c)">帶到航點</button>
+          </div>
+        </article>
+      }
+      @if (visible().length < cards().length) {
+        <button type="button" class="rt-save-btn" style="margin-top: 10px; width: 100%" (click)="more()">顯示更多(還有 {{ cards().length - visible().length }} 條)</button>
+      }
+    }
+  </section>
+}

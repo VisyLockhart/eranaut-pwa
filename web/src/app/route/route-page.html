@@ -1,0 +1,114 @@
+@if (layout.isDesktop()) {
+  <div class="d-topbar">
+    <div>
+      <div class="d-title">航線模擬</div>
+      <div class="d-subtitle">選航點,算航行時間、返航時刻與燃料</div>
+    </div>
+  </div>
+  <div class="rt-d-wrap"><ng-container *ngTemplateOutlet="body" /></div>
+} @else {
+  <div class="m-upload-body rt-m-body"><ng-container *ngTemplateOutlet="body" /></div>
+}
+
+<ng-template #body>
+  <div #tabbar class="up-tabs rt-tabs" role="tablist" aria-label="航線功能">
+    @for (t of tabs; track t.id) {
+      <button type="button" class="up-tab" role="tab" [class.active]="vm.tab() === t.id" [attr.aria-selected]="vm.tab() === t.id" (click)="vm.setTab(t.id)">{{ t.label }}</button>
+    }
+  </div>
+  @switch (vm.tab()) {
+    @case ('config') { <app-route-editor /> }
+    @case ('recommend') { <app-route-recommend /> }
+    @case ('map') {
+      <div class="rt-view-map" [class.rt-grid]="layout.isDesktop()"><ng-container *ngTemplateOutlet="mapView" /></div>
+    }
+  }
+  <app-route-about />
+  <app-route-config-dialog />
+  <app-route-perf-dialog />
+  <app-route-replace-dialog />
+  @if (fabVisible()) {
+    <div class="rt-fab-wrap">
+      @if (menuOpen()) {
+        <div class="rt-fab-menu" id="rt-fab-menu" role="menu" aria-label="航線功能">
+          @for (t of tabs; track t.id) {
+            <button type="button" role="menuitemradio" class="rt-fab-item" [class.active]="vm.tab() === t.id" [attr.aria-checked]="vm.tab() === t.id" (click)="fabPick(t.id)">{{ t.label }}</button>
+          }
+          <button type="button" role="menuitem" class="rt-fab-item top" (click)="fabTop()"><app-icon name="chevronUp" [size]="14" />回到頂部</button>
+        </div>
+      }
+      <button #fab type="button" class="rt-fab" aria-haspopup="menu" aria-controls="rt-fab-menu" [attr.aria-expanded]="menuOpen()" aria-label="航線功能選單" (click)="toggleMenu()"><app-icon name="list" [size]="20" /></button>
+    </div>
+  }
+</ng-template>
+
+<ng-template #mapView>
+  <section class="rt-main" aria-label="地圖">
+    <app-route-sea-pager [sea]="vm.sea()" (seaChange)="setSea($event)" />
+
+    <app-route-map [sea]="vm.seaIdx()" [seq]="vm.seq()" [states]="vm.selectable()" (pick)="pick($event)" />
+
+    <div class="rt-hint" role="status" aria-live="polite">{{ hint() }}</div>
+  </section>
+
+  <section class="rt-side" aria-label="路線">
+    <app-route-stats />
+    <app-route-cfg-bar>
+      <button type="button" class="rt-lights" aria-controls="rt-need" [attr.aria-expanded]="vm.needOpen()" [attr.aria-label]="lightsLabel()" (click)="vm.needOpen.set(!vm.needOpen())">
+        @for (l of lights(); track l.label) {
+          <span class="rt-light g-{{ l.grade }}"><i aria-hidden="true"></i>{{ l.label }}</span>
+        }
+        <app-icon class="rt-lights-chev" [name]="vm.needOpen() ? 'chevronUp' : 'chevronDown'" [size]="14" />
+      </button>
+      @if (vm.needOpen()) {
+        <div class="rt-needbox" id="rt-need">
+          @if (needRows(); as rows) {
+            @for (r of rows; track r.label) { <div class="rt-need-row"><span>{{ r.label }}</span><b>{{ r.text }}</b></div> }
+            <div class="rt-need-note">括號內是這條路線的需求,左邊是目前配置的數值</div>
+          } @else {
+            <div class="rt-need-note">選了航點之後,這裡會顯示這條路線需要的探索、收集、恩惠與距離</div>
+          }
+        </div>
+      }
+    </app-route-cfg-bar>
+
+    <div class="rt-meter" role="img" [attr.aria-label]="'航行距離 ' + vm.cost().range + ',上限 ' + vm.stats().range">
+      <div class="rt-meter-row"><span>航行距離</span><span><b [class.over]="vm.cost().range > vm.stats().range">{{ vm.cost().range }}</b> / {{ vm.stats().range }}</span></div>
+      <div class="rt-meter-bar"><div class="rt-meter-fill" [style.width.%]="usedPct()"></div></div>
+    </div>
+
+    <div class="rt-list-head">
+      <span>已選航點 {{ vm.seq().length }} / {{ maxStops }}</span>
+      <span class="rt-actions">
+        <button type="button" class="rt-link-btn" [disabled]="vm.seq().length < 2" (click)="shortest()">最短順序</button>
+        <button type="button" class="rt-link-btn" [disabled]="vm.seq().length === 0" (click)="clear()">清除</button>
+      </span>
+    </div>
+    @if (picked().length === 0) {
+      <div class="rt-empty">在地圖上點航點,依點選順序航行</div>
+    } @else {
+      <ol class="rt-picked">
+        @for (s of picked(); track s.point.id) {
+          <li class="rt-stop" [class.open]="openStops().has(s.point.id)">
+            <div class="rt-stop-row">
+              <button type="button" class="rt-stop-toggle" [attr.aria-expanded]="openStops().has(s.point.id)" [attr.aria-controls]="'rt-loot-' + s.point.id" [attr.aria-label]="s.point.code + ' ' + s.point.name + ',打撈物'" (click)="toggleStop(s.point.id)">
+                <span class="rt-n">{{ s.n }}</span>
+                <span class="rt-pname"><b>{{ s.point.code }}</b> {{ s.point.name }}</span>
+                <span class="rt-tier-sum" aria-hidden="true">
+                  @for (t of s.tiers; track t.label) { <i [class.locked]="t.locked">{{ t.label }}@if (t.locked) {<em>🔒</em>}</i> }
+                </span>
+                <app-icon [name]="openStops().has(s.point.id) ? 'chevronUp' : 'chevronDown'" [size]="14" />
+              </button>
+              <button type="button" class="rt-x" (click)="pick(s.point.id)" [attr.aria-label]="'取消 ' + s.point.code"><app-icon name="close" [size]="13" /></button>
+            </div>
+            @if (openStops().has(s.point.id)) {
+              <div class="rt-stop-loot" [id]="'rt-loot-' + s.point.id"><app-route-loot [point]="s.point" [surveillance]="vm.stats().surveillance" /></div>
+            }
+          </li>
+        }
+      </ol>
+    }
+
+    <div class="rt-note">航行時間與返航時刻為推算值,可能與遊戲差 1 分鐘。只依潛艇等級與航行距離判斷能不能選。</div>
+  </section>
+</ng-template>

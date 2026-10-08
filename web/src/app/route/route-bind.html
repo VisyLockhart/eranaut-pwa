@@ -1,0 +1,28 @@
+<div class="rt-bind">
+  @if (boundIds().length > 0) {
+    <span class="rt-tag">已綁定 {{ boundIds().length }} 艘:{{ boundLabels().join('、') }}</span>
+  }
+  <div class="rt-card-actions">
+    <button type="button" class="rt-save-btn" [attr.aria-expanded]="open()" (click)="open.set(!open())">{{ open() ? '完成' : boundIds().length > 0 ? '調整綁定' : '綁定工坊潛艇' }}</button>
+    @if (boundIds().length > 0) {
+      <button type="button" class="rt-save-btn" [disabled]="busy()" (click)="clearAll()">全部解除</button>
+    }
+  </div>
+  @if (open()) {
+    @if (groups().length === 0) {
+      <div class="rt-empty">還沒有工坊潛艇可以綁定</div>
+    } @else {
+      <div class="rt-note">可以多選,點一下綁定、再點一下取消。已綁在別組配置的艇,選了會改綁到這一組。</div>
+      @for (g of groups(); track g.workshop) {
+        <div class="rt-bind-group">
+          <div class="rt-save-label">{{ g.workshop }}</div>
+          <div class="rt-chips">
+            @for (o of g.subs; track o.id) {
+              <button type="button" class="rt-chip" [class.active]="isBound(o.id)" [attr.aria-pressed]="isBound(o.id)" [disabled]="busy()" (click)="toggle(o.id)">{{ o.label }}@if (boundElsewhere().get(o.id); as other) {<small>(綁在「{{ other }}」)</small>}</button>
+            }
+          </div>
+        </div>
+      }
+    }
+  }
+</div>

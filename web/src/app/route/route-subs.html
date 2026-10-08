@@ -1,0 +1,84 @@
+<div class="rt-legend"><span class="g-full">達最高階</span><span class="g-partial">只達較低階</span><span class="g-none">未達(差 N)</span></div>
+<div class="rt-cards">
+@for (c of cards(); track c.id ?? 'temp') {
+  <article class="rt-card" [class.active]="c.active" [class.ok]="c.ok">
+    <header class="rt-card-head">
+      <div class="rt-card-title">
+        <b>{{ c.title }}</b>
+        @if (c.active) { <span class="rt-badge on">使用中</span> }
+        @if (c.fit === 'ok') { <span class="rt-badge ok">可跑</span> } @else if (c.fit === 'bad') { <span class="rt-badge bad">跑不了</span> }
+        @if (c.sub) { <span class="rt-card-sub">{{ c.sub }}</span> }
+      </div>
+      <span class="rt-card-lv">Lv{{ c.level }} · {{ c.parts }}</span>
+    </header>
+    <div class="rt-chips5">
+      @for (ch of c.chips; track ch.label) {
+        <div class="rt-chip5 g-{{ ch.grade }}">
+          <span class="l">{{ ch.label }}</span>
+          <span class="v">{{ ch.value }}</span>
+          @if (ch.gap > 0 && ch.grade !== 'plain') { <span class="d">差 {{ ch.gap }}</span> }
+        </div>
+      }
+    </div>
+    <div class="rt-card-foot">
+      <span>航行 {{ c.time }}</span>
+      @if (c.overweight) { <span class="g-none">超重</span> }
+      @if (c.fit === 'bad') { <span class="g-none">{{ c.fitText }}</span> }
+    </div>
+    @if (c.fit === 'bad' && !c.active && c.drops > 0) { <div class="rt-dirty">改用這組會移除 {{ c.drops }} 個放不下的航點</div> }
+    <div class="rt-card-actions"><ng-container *ngTemplateOutlet="acts; context: { $implicit: c, short: false }" /></div>
+    @if (c.id; as id) { @if (actions() === 'manage') { <app-route-bind [subId]="id" /> } }
+  </article>
+}
+</div>
+<div class="rt-cmp-wrap">
+  <table class="rt-cmp">
+    <thead>
+      <tr><th scope="col">配置</th><th scope="col">探索</th><th scope="col">收集</th><th scope="col">巡航</th><th scope="col">距離</th><th scope="col">恩惠</th><th scope="col">航行</th><th scope="col"><span class="sr-only">操作</span></th></tr>
+    </thead>
+    <tbody>
+      @for (c of cards(); track c.id ?? 'temp') {
+        <tr [class.active]="c.active">
+          <th scope="row">
+            <div class="rt-cmp-name">
+              <b>{{ c.title }}</b>
+              <span>Lv{{ c.level }} · {{ c.parts }}</span>
+              @if (c.active) { <span class="rt-badge on">使用中</span> }
+              @if (c.fit === 'ok') { <span class="rt-badge ok">可跑</span> } @else if (c.fit === 'bad') { <span class="rt-badge bad">{{ c.fitText }}</span> }
+              @if (c.sub) { <span>{{ c.sub }}</span> }
+              @if (c.fit === 'bad' && !c.active && c.drops > 0) { <span class="g-none">改用會移除 {{ c.drops }} 個航點</span> }
+            </div>
+            @if (c.id; as id) { @if (actions() === 'manage') { <app-route-bind [subId]="id" /> } }
+          </th>
+          @for (ch of c.chips; track ch.label) {
+            <td class="g-{{ ch.grade }}"><b>{{ ch.value }}</b>@if (ch.gap > 0 && ch.grade !== 'plain') { <i>差 {{ ch.gap }}</i> }</td>
+          }
+          <td>{{ c.time }}@if (c.overweight) { <i class="g-none">超重</i> }</td>
+          <td class="rt-cmp-act"><ng-container *ngTemplateOutlet="acts; context: { $implicit: c, short: true }" /></td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+<ng-template #acts let-c let-short="short">
+  @if (actions() === 'pick') {
+    @if (c.id; as id) {
+      <button type="button" class="rt-save-btn primary" [disabled]="c.active" (click)="useSub(id, c.title)">{{ c.active ? '使用中' : '改用這組' }}</button>
+    }
+    <button type="button" class="rt-save-btn" (click)="editSub(c.id)">{{ short ? '編輯' : '編輯配置' }}</button>
+  } @else {
+    @if (c.id; as id) {
+      <button type="button" class="rt-save-btn" [disabled]="c.active" (click)="useSub(id, c.title)">{{ c.active ? '使用中' : '使用' }}</button>
+      <button type="button" class="rt-save-btn" (click)="editSub(id)">編輯</button>
+      @if (confirmDel() === id) {
+        <button type="button" class="rt-save-btn danger" (click)="remove(id)">確定刪除</button>
+      } @else {
+        <button type="button" class="rt-save-btn" (click)="askDelete(id)">刪除</button>
+      }
+    } @else {
+      <button type="button" class="rt-save-btn" [class.primary]="!vm.canSave" (click)="editSub(null)">編輯</button>
+      @if (vm.canSave) { <button type="button" class="rt-save-btn primary" (click)="saveTemp()">儲存</button> }
+    }
+  }
+</ng-template>

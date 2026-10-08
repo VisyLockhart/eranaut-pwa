@@ -15,6 +15,8 @@ dist/
 *.db-wal
 *.db-shm
 data/
+# 航線模擬器的資料集(第三方資料,CC BY-NC-SA,見 NOTICE.md)要納入版控
+!web/src/app/route/data/
 
 # OS / editor
 .DS_Store

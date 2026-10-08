@@ -18,6 +18,7 @@
         <div class="nav-upload-fab"><app-icon name="camera" [size]="20" /></div>
         <span>更新</span>
       </a>
+      <a class="nav-item" routerLink="/route" routerLinkActive="active"><app-icon name="route" [size]="20" /><span>航線</span></a>
       <a class="nav-item" routerLink="/settings" routerLinkActive="active"><app-icon name="user" [size]="20" /><span>我的</span></a>
     </div>
     <app-copyright variant="bar" />
@@ -38,6 +39,7 @@
       <a class="d-nav-item" routerLink="/" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '總覽' : null" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>總覽</span></a>
       <a class="d-nav-item" routerLink="/workshops" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '工坊管理' : null"><app-icon name="workshops" [size]="20" /><span>工坊管理</span></a>
       <a class="d-nav-item" routerLink="/update" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '更新潛艇' : null"><app-icon name="camera" [size]="20" /><span>更新潛艇</span></a>
+      <a class="d-nav-item" routerLink="/route" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '航線模擬' : null"><app-icon name="route" [size]="20" /><span>航線模擬</span></a>
       <a class="d-nav-item" routerLink="/settings" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '設定' : null"><app-icon name="settings" [size]="20" /><span>設定</span></a>
       <div style="flex-grow: 1"></div>
       <div class="d-user">

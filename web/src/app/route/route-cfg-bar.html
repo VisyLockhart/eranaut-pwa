@@ -1,0 +1,24 @@
+<div class="rt-cfgbar" role="group" aria-label="使用的配置">
+  @if (vm.canSave && vm.loaded() && vm.saved().length === 0) {
+    <div class="rt-cfg-banner">
+      <span>目前使用預設配置(Lv{{ vm.level() }},零件全 1 級){{ hint() ? ',' + hint() : '' }}。</span>
+      <button type="button" class="rt-link-btn" (click)="vm.setTab('config')">設定配置</button>
+    </div>
+  }
+  <div class="rt-cfg-row">
+    @if (vm.canSave) {
+      <app-select class="rt-cfg-select" size="compact" ariaLabel="使用的配置" [options]="options()" [value]="value()" (valueChange)="onChange($event)" />
+    } @else {
+      <span class="rt-cfg-fixed">目前配置</span>
+    }
+    @if (showPerf()) {
+      <button type="button" class="rt-save-btn" (click)="vm.perfOpen.set(true)">查看性能</button>
+    }
+    <button type="button" class="rt-link-btn" (click)="vm.editCurrent()">編輯</button>
+    @if (showNew() && vm.canSave) {
+      <button type="button" class="rt-link-btn" (click)="vm.openConfig('new')">＋ 新增</button>
+    }
+  </div>
+  <ng-content />
+  <div class="rt-cap">{{ caption() }}</div>
+</div>
