@@ -803,7 +803,10 @@ button.rt-lights { width: 100%; align-items: center; min-height: 36px; padding: 
 .rt-subhead b { font-size: 18px; }
 .rt-subhead .rt-link-btn { min-height: 40px; }
 app-route-recommend, app-route-find { display: block; }
-app-route-find > .rt-block, app-route-find > .rt-dirty { margin-top: 12px; }
+app-route-find > .rt-block, app-route-find > .rt-dirty, app-route-find > .rt-find-top { margin-top: 12px; }
+.rt-find-top:not(.rt-grid) { display: contents; }
+.rt-find-top:not(.rt-grid) > .rt-block { margin-top: 12px; }
+.rt-find-top.rt-grid > .rt-block { margin-top: 0; }
 .rt-exp-fields { display: flex; flex-wrap: wrap; gap: 8px; }
 .rt-exp-field { flex: 1 1 140px; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-dim); }
 .rt-exp-label { margin: 10px 0 6px; font-size: 11px; color: var(--text-dim); }

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Layout } from '../core/layout';
 import { SelectField, type SelectOption, type SelectValue } from '../ui/select';
 import { SEAS, SEA_INDEXES } from './core/data';
 import type { FindRoute, FindSort } from './core/find';
@@ -58,6 +59,7 @@ interface Card {
   templateUrl: './route-find.html',
 })
 export class RouteFind {
+  protected readonly layout = inject(Layout);
   protected readonly vm = inject(RouteVm);
   protected readonly f = inject(RouteFindVm);
   protected readonly x = this.f.x;

@@ -1,3 +1,4 @@
+<div class="rt-find-top" [class.rt-grid]="layout.isDesktop()">
 <section class="rt-block" aria-label="海圖">
   <div class="rt-block-head">
     <div class="rt-seg" role="group" aria-label="海圖模式">
@@ -55,7 +56,7 @@
   }
 </section>
 
-<section class="rt-block" aria-label="找路線條件">
+<section class="rt-block rt-find-cond" aria-label="找路線條件">
   <div class="rt-block-title">找路線</div>
   <div class="rt-exp-fields">
     <label class="rt-exp-field">
@@ -109,6 +110,7 @@
     <button type="button" class="rt-save-btn primary" [disabled]="f.busy()" (click)="search()">{{ f.busy() ? '計算中…' : '找路線' }}</button>
   </div>
 </section>
+</div>
 
 @if (f.stale()) { <div class="rt-dirty" role="status">條件、配置或去過的航點已經改過,下面的結果是舊的。按「找路線」重新計算。</div> }
 
