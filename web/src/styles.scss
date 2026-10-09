@@ -578,7 +578,7 @@ app-select { display: block; position: relative; }
 .rt-view-map { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .rt-view-map.rt-grid { display: grid; }
 .rt-block { background: var(--bg-elevated-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; min-width: 0; margin-bottom: 0; }
-app-route-result, app-route-editor, app-route-loot-search { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+app-route-result, app-route-editor { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .rt-block-title { font-size: 12.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
 .rt-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .rt-chip { min-height: 36px; line-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-muted); font-size: 12.5px; font-weight: 600; cursor: pointer; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -660,12 +660,8 @@ app-route-result, app-route-editor, app-route-loot-search { display: flex; flex-
 .rt-pick.active span { color: var(--accent); }
 .rt-pick b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rt-pick span { color: var(--text-dim); font-size: 11.5px; flex: 0 0 auto; }
-.rt-pick-scroll { max-height: 316px; overflow-y: auto; overscroll-behavior: contain; }
 .rt-hit { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
 /* D-215 距離型:物品清單 */
-.rt-variety-items { font-size: 12px; line-height: 1.6; color: var(--text-dim, var(--text)); overflow-wrap: anywhere; }
-.rt-variety-items b { display: block; color: var(--text); font-size: 13px; }
-.rt-variety-items .rt-link-btn { margin-left: 6px; }
 .rt-hit-main { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .rt-hit-top { display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; }
 .rt-hit-items { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
@@ -806,8 +802,8 @@ button.rt-lights { width: 100%; align-items: center; min-height: 36px; padding: 
 .rt-subhead { display: flex; align-items: center; gap: 10px; margin-top: 12px; min-height: 40px; }
 .rt-subhead b { font-size: 18px; }
 .rt-subhead .rt-link-btn { min-height: 40px; }
-app-route-recommend, app-route-exp { display: block; }
-app-route-exp > .rt-block, app-route-exp > .rt-dirty { margin-top: 12px; }
+app-route-recommend, app-route-find { display: block; }
+app-route-find > .rt-block, app-route-find > .rt-dirty { margin-top: 12px; }
 .rt-exp-fields { display: flex; flex-wrap: wrap; gap: 8px; }
 .rt-exp-field { flex: 1 1 140px; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-dim); }
 .rt-exp-label { margin: 10px 0 6px; font-size: 11px; color: var(--text-dim); }
@@ -819,8 +815,6 @@ app-route-exp > .rt-block, app-route-exp > .rt-dirty { margin-top: 12px; }
 .rt-replace-body b { color: var(--text); overflow-wrap: anywhere; }
 
 /* D-213 探索:去過哪些航點 */
-app-route-explore { display: block; }
-app-route-explore > .rt-block, app-route-explore > .rt-dirty { margin-top: 12px; }
 .rt-count { font-size: 11px; font-weight: 500; color: var(--text-dim); margin-left: 6px; }
 .rt-link.lit { stroke: var(--accent); opacity: 1; stroke-width: 4; }
 .rt-pt.open .dot { stroke-dasharray: 10 7; stroke-width: 4 }
@@ -835,6 +829,24 @@ app-route-explore > .rt-block, app-route-explore > .rt-dirty { margin-top: 12px;
 .rt-map-legend .lg.open { border-style: dashed; }
 .rt-map-legend .lg.locked { border-color: #4a5273; }
 .rt-map-prog { margin-left: auto; }
+/* 篩選航點模式(D-222):未選灰、選中綠(＋)、排除桃紅(✕),不用虛線(虛線是「可能解鎖」) */
+.rt-pt.fnone .dot { stroke: #4a5273; stroke-width: 4; }
+.rt-pt.fnone .code { fill: #8a93b4; }
+.rt-pt.fin .dot { fill: rgba(74,222,128,0.28); stroke: #4ade80; stroke-width: 6; }
+.rt-pt.fout .dot { fill: rgba(244,114,182,0.24); stroke: #f472b6; stroke-width: 6; }
+.rt-pt.fout .code { fill: #f9a8d4; }
+.rt-pt.flock { cursor: not-allowed; opacity: .5; }
+.rt-pt.flock .dot { stroke: #4a5273; stroke-width: 4; }
+.rt-pt .fbadge.in circle { fill: #4ade80; }
+.rt-pt .fbadge.out circle { fill: #f472b6; }
+.rt-pt .fbadge path { fill: none; stroke: #04121a; stroke-width: 6; stroke-linecap: round; }
+.rt-pt .flockbadge circle { fill: #4a5273; }
+.rt-pt .flockbadge rect { fill: #cbd2ea; stroke: none; }
+.rt-pt .flockbadge path { fill: none; stroke: #cbd2ea; stroke-width: 4; stroke-linecap: round; }
+.rt-map-legend .lg.f-none { border-color: #4a5273; }
+.rt-map-legend .lg.f-in { border-color: #4ade80; background: rgba(74,222,128,0.35); }
+.rt-map-legend .lg.f-out { border-color: #f472b6; background: rgba(244,114,182,0.3); }
+
 .rt-undo { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 8px 6px 10px; border-radius: 10px; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.35); font-size: 12px; color: var(--amber); }
 .rt-undo > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .rt-undo .rt-x { flex: 0 0 auto; min-width: 32px; min-height: 32px; }
@@ -847,3 +859,31 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .rt-target-picked { flex: 1; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
 .rt-baseline { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: var(--bg-elevated); border: 1px solid var(--border); }
 .rt-baseline-title { font-size: 11px; color: var(--text-dim); margin-bottom: 2px; }
+
+/* 找路線頁(D-222):分段按鈕、「?」、條件列、結果卡的物品區、彈出視窗內容 */
+.rt-seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 10px; overflow: hidden; }
+.rt-seg-btn { min-height: 36px; padding: 0 14px; border: 0; background: transparent; color: var(--text-muted); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.rt-seg-btn + .rt-seg-btn { border-left: 1px solid var(--border-strong); }
+.rt-seg-btn.active { background: rgba(45,212,191,0.14); color: var(--accent); }
+.rt-seg-top { display: flex; width: 100%; margin-top: 12px; }
+.rt-seg-top .rt-seg-btn { flex: 1 1 0; min-height: 40px; font-size: 13.5px; }
+.rt-help-btn { width: 32px; height: 32px; flex: 0 0 auto; border-radius: 50%; border: 1px solid var(--border-strong); background: transparent; color: var(--accent); font-size: 14px; font-weight: 700; cursor: pointer; }
+.rt-head-end { margin-left: auto; }
+.rt-map-count { margin-bottom: 8px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); overflow-wrap: anywhere; }
+.rt-find-row { margin-top: 12px; }
+.rt-find-label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--text-dim); }
+.rt-find-items { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.rt-find-items > b { font-size: 12.5px; color: var(--text); }
+.rt-find-items .rt-hit-items { flex-basis: 100%; }
+.rt-hit-items li.more { color: var(--text-muted); background: transparent; border-color: var(--border-strong); }
+.rt-help p { margin: 0; font-size: 13px; line-height: 1.65; color: var(--text-muted); }
+.rt-help b { color: var(--text); }
+.rt-items-group { display: flex; flex-direction: column; }
+.rt-items-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.rt-items-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 12.5px; overflow-wrap: anywhere; }
+.rt-items-list li i { flex: 0 0 auto; font-style: normal; font-size: 11px; color: var(--text-dim); }
+.rt-items-list li.wanted { border-color: rgba(45,212,191,0.5); background: rgba(45,212,191,0.1); color: var(--accent); }
+.rt-dlg-body .rt-text-input { flex: 0 0 auto; }
+/* 內容短的彈窗(說明、看全部):手機上貼底、依內容高度,不佔滿整個畫面 */
+.modal-overlay.rt-sheet.rt-compact { align-items: flex-end; }
+.rt-sheet.rt-compact .modal-box.rt-dlg { height: auto; max-height: calc(88vh / var(--vu-div)); border-radius: 16px 16px 0 0; border-top: 1px solid var(--border-strong); }

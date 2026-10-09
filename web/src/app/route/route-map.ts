@@ -16,7 +16,14 @@ interface Dot {
   order: number;
   /** 「去過哪些航點」模式才有:去過 / 現在可以去 / 還沒解鎖 */
   visit: ExploreState | null;
+  /** 「篩選航點」模式才有:in = 選中、out = 排除、none = 未選;null = 不是篩選模式 */
+  filter: FilterState | null;
+  /** 篩選模式:潛艇等級不足,不能選(變暗加鎖) */
+  locked: boolean;
 }
+
+/** 篩選航點的三態(D-222):none → in → out → none */
+export type FilterState = 'none' | 'in' | 'out';
 
 /**
  * 海域地圖(ROUTE-SIM.md §9 Main / M7):抽象海圖背景加真實座標、全部連線(RS-09、RS-11,沒選到的也畫)、
@@ -37,6 +44,13 @@ export class RouteMap {
    */
   readonly explored = input<ReadonlySet<number> | null>(null);
   readonly graph = input<UnlockGraph | null>(null);
+  /**
+   * 「篩選航點」模式(D-222):傳入各點的篩選狀態(沒列出的點視為未選)就切換成這個模式——
+   * 未選灰、選中綠(＋徽章)、排除桃紅(✕徽章);不畫選取路線、順序徽章與去過標記。
+   */
+  readonly filter = input<ReadonlyMap<number, FilterState> | null>(null);
+  /** 篩選模式:等級不足的航點 id(變暗加鎖,不能選) */
+  readonly locked = input<ReadonlySet<number>>(new Set());
   readonly pick = output<number>();
 
   protected readonly hitR = HIT_R;
@@ -76,11 +90,15 @@ export class RouteMap {
     const states = this.states();
     const ex = this.explored();
     const g = this.graph();
+    const f = this.filter();
+    const lock = this.locked();
     const dots = this.sea().sea.points.map((p) => ({
       p,
       state: states.get(p.id) ?? 'ok',
       order: seq.indexOf(p.id) + 1,
-      visit: ex && g ? exploreState(g, ex, p.id) : null,
+      visit: ex && g && !f ? exploreState(g, ex, p.id) : null,
+      filter: f ? (f.get(p.id) ?? 'none') : null,
+      locked: !!f && lock.has(p.id),
     }));
     // 已選的畫在最上面,徽章不被別的點蓋住
     return dots.sort((a, b) => Number(a.order > 0) - Number(b.order > 0));
@@ -96,6 +114,14 @@ export class RouteMap {
 
   protected label(d: Dot): string {
     const base = `${d.p.code} ${d.p.name}`;
+    if (d.filter) {
+      if (d.locked) return `${base},潛艇等級不足(需要 ${d.p.rankReq} 級),不能選`;
+      switch (d.filter) {
+        case 'none': return `${base},未選,點一下設為必選`;
+        case 'in': return `${base},必選(路線一定要經過),點一下改為排除`;
+        case 'out': return `${base},排除(路線不能經過),點一下改為未選`;
+      }
+    }
     if (d.visit) {
       switch (d.visit) {
         case 'done': return `${base},去過了,點一下取消(後面的點也會一起取消)`;
@@ -110,6 +136,11 @@ export class RouteMap {
       case 'rank': return `${base},潛艇等級不足(需要 ${d.p.rankReq} 級)`;
       case 'range': return `${base},超過潛艇的航行距離上限`;
     }
+  }
+
+  protected pressed(d: Dot): boolean | 'mixed' {
+    if (d.filter) return d.filter === 'in' ? true : d.filter === 'out' ? 'mixed' : false;
+    return d.visit ? d.visit === 'done' : d.state === 'selected';
   }
 
   protected activate(d: Dot): void {

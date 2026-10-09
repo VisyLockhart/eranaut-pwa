@@ -1,0 +1,89 @@
+@if (f.help(); as mode) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event, closeHelp)">
+    <div class="modal-box rt-dlg" role="dialog" aria-modal="true" aria-labelledby="rt-help-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <div class="rt-dlg-head">
+        <div class="modal-title" id="rt-help-title">{{ mode === 'filter' ? '篩選航點' : '標記去過' }}</div>
+        <button type="button" class="modal-close" (click)="closeHelp()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+      </div>
+      <div class="rt-dlg-body rt-help">
+        @if (mode === 'filter') {
+          <p>點一下航點設為<b>必選</b>(綠色 ＋):找出來的路線一定要經過它。再點一下設為<b>排除</b>(桃紅 ✕):路線不能經過它。第三下回到未選。</p>
+          <p>路線只會在同一個海域裡。每個海域各自要求包含<b>該海域</b>的全部必選點;只要有選了某個海域的點,沒選點的海域就不會被搜尋。排除的點在所有海域都有效。</p>
+          <p>一趟最多 5 個航點。必選的點太多、等級不足,或合起來超過配置的距離上限,下方會提示。</p>
+          <p>可以跨海域翻頁一起選。篩選只存在這個畫面,重新整理頁面後會清除。</p>
+        } @else {
+          <p>點航點標記「去過」(派出去並且收艇回來才算)。</p>
+          <p>收艇後會不會開出下一個航點是機率,不是一定;虛線外框的點只是「有機會解鎖」,實際有沒有開要看遊戲裡。</p>
+          <p>點後面的點,前面解鎖它的航點會一起標記;點已去過的點則取消它和它後面的點。</p>
+          <p>排序選「可能解鎖」時,會用這裡標記的結果,只推薦可以去的點。標記只存在這台裝置。</p>
+        }
+      </div>
+      <div class="rt-dlg-foot"><div class="rt-save-actions"><button type="button" class="rt-save-btn primary" (click)="closeHelp()">知道了</button></div></div>
+    </div>
+  </div>
+}
+
+@if (f.itemsFor(); as r) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event, closeItems)">
+    <div class="modal-box rt-dlg" role="dialog" aria-modal="true" aria-labelledby="rt-items-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <div class="rt-dlg-head">
+        <div class="modal-title" id="rt-items-title">可撈到 {{ r.items.length }} 種物品</div>
+        <button type="button" class="modal-close" (click)="closeItems()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+      </div>
+      <div class="rt-perf-route">{{ routeTitle() }}</div>
+      <div class="rt-dlg-body">
+        @for (g of groups(); track g.label) {
+          <section class="rt-items-group" [attr.aria-label]="g.label">
+            <div class="rt-block-title">{{ g.label }} · {{ g.items.length }} 種</div>
+            <ul class="rt-items-list">
+              @for (i of g.items; track i.id) {
+                <li [class.wanted]="i.wanted"><span>{{ i.name }}</span><i>{{ i.stops }}</i></li>
+              }
+            </ul>
+          </section>
+        }
+        <div class="rt-note">右邊的字母是撈到它的航點。探索值不夠的階層不會列出。</div>
+      </div>
+      <div class="rt-dlg-foot"><div class="rt-save-actions"><button type="button" class="rt-save-btn primary" (click)="closeItems()">關閉</button></div></div>
+    </div>
+  </div>
+}
+
+@if (l.pickerOpen()) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event, closePicker)">
+    <div class="modal-box rt-dlg" [class.wide]="layout.isDesktop()" role="dialog" aria-modal="true" aria-labelledby="rt-pick-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <div class="rt-dlg-head">
+        <div class="modal-title" id="rt-pick-title">想要的物品</div>
+        <button type="button" class="modal-close" (click)="closePicker()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+      </div>
+      <div class="rt-dlg-body">
+        @if (l.items().length > 0) {
+          <div class="rt-chips" role="group" aria-label="已選物品">
+            @for (it of l.items(); track it.id) {
+              <button type="button" class="rt-chip active" [attr.aria-label]="'取消選取 ' + it.name" (click)="l.toggle(it.id)">{{ it.name }} ✕</button>
+            }
+            <button type="button" class="rt-link-btn" (click)="l.clear()">全部清除</button>
+          </div>
+        }
+        <input class="rt-text-input" type="search" placeholder="輸入物品名稱" aria-label="搜尋物品" [ngModel]="l.query()" (ngModelChange)="onQuery($event)" autocomplete="off" />
+        <div class="rt-chips" role="group" aria-label="物品分類">
+          <button type="button" class="rt-chip" [class.active]="l.category() === null" [attr.aria-pressed]="l.category() === null" (click)="onCategory(null)">全部</button>
+          @for (c of l.categories; track c.id) {
+            <button type="button" class="rt-chip" [class.active]="l.category() === c.id" [attr.aria-pressed]="l.category() === c.id" (click)="onCategory(c.id)">{{ c.label }}</button>
+          }
+        </div>
+        <ul class="rt-pick-list">
+          @for (i of pickItems(); track i.id) {
+            <li><button type="button" class="rt-pick" [class.active]="l.isChosen(i.id)" [attr.aria-pressed]="l.isChosen(i.id)" (click)="l.toggle(i.id)"><b>{{ i.name }}</b>@if (l.isChosen(i.id)) {<span>已選</span>}</button></li>
+          } @empty {
+            <li class="rt-empty">沒有符合的物品</li>
+          }
+        </ul>
+        @if (pickItems().length < l.matches().length) {
+          <button type="button" class="rt-save-btn" style="width: 100%" (click)="moreItems()">顯示更多(還有 {{ l.matches().length - pickItems().length }} 個)</button>
+        }
+      </div>
+      <div class="rt-dlg-foot"><div class="rt-save-actions"><button type="button" class="rt-save-btn primary" (click)="closePicker()">完成@if (l.items().length > 0) {(已選 {{ l.items().length }} 個)}</button></div></div>
+    </div>
+  </div>
+}

@@ -1,0 +1,158 @@
+<section class="rt-block" aria-label="海圖">
+  <div class="rt-block-head">
+    <div class="rt-seg" role="group" aria-label="海圖模式">
+      <button type="button" class="rt-seg-btn" [class.active]="f.mode() === 'filter'" [attr.aria-pressed]="f.mode() === 'filter'" (click)="setMode('filter')">篩選航點</button>
+      <button type="button" class="rt-seg-btn" [class.active]="f.mode() === 'visit'" [attr.aria-pressed]="f.mode() === 'visit'" (click)="setMode('visit')">標記去過</button>
+    </div>
+    <button type="button" class="rt-help-btn" [attr.aria-label]="f.mode() === 'filter' ? '篩選航點的說明' : '標記去過的說明'" aria-haspopup="dialog" (click)="f.help.set(f.mode())">?</button>
+    <button type="button" class="rt-link-btn rt-head-end" [attr.aria-expanded]="x.mapOpen()" aria-controls="rt-find-map" (click)="x.mapOpen.set(!x.mapOpen())">{{ x.mapOpen() ? '收合' : '展開' }}</button>
+  </div>
+  <div class="rt-map-count" role="status" aria-live="polite">
+    @if (f.mode() === 'filter') {
+      選中 {{ f.filterCount().required }} · 排除 {{ f.filterCount().excluded }}<span class="rt-count">(路線一定要經過綠色、不能經過桃紅色的點)</span>
+    } @else {
+      已標記 {{ x.exploredCount() }} / {{ x.totalCount }}<span class="rt-count">(排序選「可能解鎖」時會用到)</span>
+    }
+  </div>
+  @if (x.mapOpen()) {
+    <div id="rt-find-map">
+      <app-route-sea-pager [sea]="x.viewSea()" (seaChange)="x.viewSea.set($event)" />
+      <app-route-map
+        [sea]="seaIdx()"
+        [explored]="f.mode() === 'visit' ? x.explored() : null"
+        [graph]="f.mode() === 'visit' ? x.graph : null"
+        [filter]="f.mode() === 'filter' ? f.filterMap() : null"
+        [locked]="f.lockedIds()"
+        (pick)="pickPoint($event)"
+      />
+      <div class="rt-map-legend" aria-hidden="true">
+        @if (f.mode() === 'filter') {
+          <span><i class="lg f-none"></i>未選</span><span><i class="lg f-in"></i>必選</span><span><i class="lg f-out"></i>排除</span>
+          <span class="rt-map-prog">本海域 {{ seaFilter() }}</span>
+        } @else {
+          <span><i class="lg done"></i>去過</span><span><i class="lg open"></i>可能解鎖</span><span><i class="lg locked"></i>尚未解鎖</span>
+          <span class="rt-map-prog">本海域 {{ seaProgress() }}</span>
+        }
+      </div>
+      @if (f.mode() === 'filter' && f.tapNote()) {
+        <div class="rt-dirty" role="status">{{ f.tapNote() }}</div>
+      }
+      @if (f.mode() === 'visit' && x.undo(); as u) {
+        <div class="rt-undo" role="status" aria-live="polite">
+          <span>{{ u.text }}</span>
+          <button type="button" class="rt-link-btn" (click)="x.undoLast()">復原</button>
+          <button type="button" class="rt-x" aria-label="關閉提示" (click)="x.dismissUndo()">×</button>
+        </div>
+      }
+      <div class="rt-save-actions" style="margin-top: 8px">
+        @if (f.mode() === 'filter') {
+          <button type="button" class="rt-save-btn" [disabled]="f.filterCount().required + f.filterCount().excluded === 0" (click)="f.clearFilter()">全部清除</button>
+        } @else {
+          <button type="button" class="rt-save-btn" [disabled]="x.exploredCount() === 0" (click)="clearVisit()">{{ confirmClear() ? '確定清除全部?' : '全部清除' }}</button>
+        }
+      </div>
+    </div>
+  }
+</section>
+
+<section class="rt-block" aria-label="找路線條件">
+  <div class="rt-block-title">找路線</div>
+  <div class="rt-exp-fields">
+    <label class="rt-exp-field">
+      <span>海域</span>
+      <app-select size="compact" ariaLabel="海域" [options]="seaOptions" [value]="f.sea()" (valueChange)="onSea($event)" />
+    </label>
+    <label class="rt-exp-field">
+      <span>最長航行時間</span>
+      <app-select size="compact" ariaLabel="最長航行時間" [options]="hourOptions" [value]="f.maxHours() ?? 'any'" (valueChange)="onHours($event)" />
+    </label>
+  </div>
+
+  <div class="rt-find-row">
+    <span class="rt-find-label">想要的物品</span>
+    @if (l.items().length > 0) {
+      <div class="rt-chips" role="group" aria-label="已選物品">
+        @for (it of l.items(); track it.id) {
+          <button type="button" class="rt-chip active" [attr.aria-label]="'取消選取 ' + it.name" (click)="l.toggle(it.id)">{{ it.name }} ✕</button>
+        }
+        <button type="button" class="rt-link-btn" (click)="l.setPickerOpen(true)">修改物品</button>
+        <button type="button" class="rt-link-btn" (click)="l.clear()">全部清除</button>
+      </div>
+      @if (l.items().length > 1) {
+        <div class="rt-chips" role="group" aria-label="多個物品的條件" style="margin-top: 6px">
+          <button type="button" class="rt-chip" [class.active]="l.match() === 'all'" [attr.aria-pressed]="l.match() === 'all'" (click)="l.setMatch('all')">全部都要(同一條路線)</button>
+          <button type="button" class="rt-chip" [class.active]="l.match() === 'any'" [attr.aria-pressed]="l.match() === 'any'" (click)="l.setMatch('any')">任一個就好</button>
+        </div>
+      }
+    } @else {
+      <button type="button" class="rt-save-btn" aria-haspopup="dialog" (click)="l.setPickerOpen(true)">＋ 選擇物品</button>
+    }
+  </div>
+
+  <div class="rt-find-row">
+    <span class="rt-find-label">排序</span>
+    <div class="rt-chips" role="group" aria-label="排序">
+      @for (s of sorts; track s.id) {
+        <button type="button" class="rt-chip" [class.active]="f.sort() === s.id" [attr.aria-pressed]="f.sort() === s.id" [attr.title]="s.title" (click)="f.setSort(s.id)">{{ s.label }}</button>
+      }
+    </div>
+    @if (f.sort() === 'opens') {
+      <div class="rt-note" style="margin-top: 6px">只列「可去的點」:前一個點已去過、自己還沒去過(用上面「標記去過」記錄)。</div>
+    }
+  </div>
+
+  @for (n of f.notes(); track n.text) {
+    <div class="rt-dirty" [class.bad]="n.kind === 'warn'" role="status">{{ n.text }}</div>
+  }
+
+  <div class="rt-save-actions" style="margin-top: 10px">
+    <button type="button" class="rt-save-btn primary" [disabled]="f.busy()" (click)="search()">{{ f.busy() ? '計算中…' : '找路線' }}</button>
+  </div>
+</section>
+
+@if (f.stale()) { <div class="rt-dirty" role="status">條件、配置或去過的航點已經改過,下面的結果是舊的。按「找路線」重新計算。</div> }
+
+@if (f.result(); as rs) {
+  <section class="rt-block" id="rt-find-results" aria-label="找路線結果">
+    @if (rs.length === 0) {
+      <div class="rt-empty">{{ emptyText() }}</div>
+    } @else {
+      <div class="rt-block-title" role="status">共 {{ rs.length }} 條路線,依{{ sortLabel() }}排序</div>
+      @for (c of visible(); track c.key) {
+        <article class="rt-card rt-hit">
+          <div class="rt-hit-main">
+            <div class="rt-card-title"><b>{{ c.seaName }}</b><span class="rt-card-sub">{{ c.stops }}</span></div>
+            @if (c.opens) {
+              <div class="rt-card-opens">返航時有機會解鎖新航點:{{ c.opens }}</div>
+            }
+            <div class="rt-find-items">
+              <b>可撈到 {{ c.itemsCount }} 種物品</b>
+              <button type="button" class="rt-link-btn" aria-haspopup="dialog" (click)="showAllItems(c)">看全部</button>
+              @if (c.got.length > 0) {
+                <ul class="rt-hit-items" aria-label="指定的物品">
+                  @for (g of c.got; track g) { <li>{{ g }}</li> }
+                  @if (c.gotMore > 0) { <li class="more">+{{ c.gotMore }}</li> }
+                </ul>
+              }
+            </div>
+            <div class="rt-card-foot"><span>經驗 {{ c.exp }}</span>@if (c.showPerMin) { <span>每分鐘 {{ c.perMin }}</span> }<span>航行 {{ c.time }}</span><span>燃料 {{ c.fuel }}</span><span>耗用 {{ c.range }}</span></div>
+            <div class="rt-card-lights" role="group" aria-label="達標燈號">
+              @for (lg of c.lights; track lg.label) {
+                <span class="rt-light g-{{ lg.grade }}"><i aria-hidden="true"></i>{{ lg.text }}</span>
+              }
+            </div>
+          </div>
+          <div class="rt-hit-side">
+            <span class="rt-card-lv">{{ c.headline }}</span>
+            <button type="button" class="rt-save-btn primary" (click)="load(c)">帶到航點</button>
+          </div>
+        </article>
+      }
+      @if (visible().length < cards().length) {
+        <button type="button" class="rt-save-btn" style="margin-top: 10px; width: 100%" (click)="more()">顯示更多(還有 {{ cards().length - visible().length }} 條)</button>
+      }
+    }
+  </section>
+}
+
+<app-route-find-dialogs />

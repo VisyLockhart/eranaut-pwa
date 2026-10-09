@@ -48,10 +48,7 @@ export class RouteVm {
   /** 能不能儲存配置與綁定工坊潛艇;展示模式為 false(沒有伺服器),此時 `saved` 恆為空 */
   readonly canSave = inject(ROUTE_FEATURES).saving;
 
-  private readonly rawLast = readJson<unknown>(ROUTE_LAST_KEY);
-  private readonly init = sanitizeLast(this.rawLast);
-  /** 舊版停在「反查」分頁的人,升級後落在推薦 → 掉落(D-218) */
-  private readonly initLoot = typeof this.rawLast === 'object' && this.rawLast !== null && (this.rawLast as Record<string, unknown>)['tab'] === 'loot';
+  private readonly init = sanitizeLast(readJson<unknown>(ROUTE_LAST_KEY));
 
   // ---- 檢視狀態 ----
   readonly sea = signal(this.init.sea);
@@ -74,8 +71,8 @@ export class RouteVm {
   readonly needOpen = signal(false);
   /** 「查看性能」對話框 */
   readonly perfOpen = signal(false);
-  /** 推薦頁停在哪個目標(null = 目標選擇頁);換分頁不丟 */
-  readonly recGoal = signal<RecGoal | null>(this.initLoot ? 'loot' : null);
+  /** 推薦頁停在哪:`find` = 找路線(預設)、找配置的某個目標、null = 找配置的目標選擇頁(D-222);換分頁不丟 */
+  readonly recGoal = signal<RecGoal | null>('find');
   /** 等待確認的「帶到航點」:航點頁已有不同的選點時,先問再換 */
   readonly pendingLoad = signal<{ sea: number; order: number[] } | null>(null);
 

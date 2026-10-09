@@ -181,7 +181,7 @@ describe('RoutePage', () => {
     tabs[1]!.click();
     f.detectChanges();
     expect(el.querySelector('app-route-recommend')).not.toBeNull();
-    expect(el.querySelector('.rt-map')).toBeNull();
+    expect(el.querySelector('.rt-view-map')).toBeNull();
     tabs[0]!.click();
     f.detectChanges();
     expect(el.querySelector('app-route-editor')).not.toBeNull();

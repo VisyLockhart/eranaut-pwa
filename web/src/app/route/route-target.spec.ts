@@ -38,7 +38,7 @@ describe('找配置:收集 / 恩惠 / 速度(D-214)', () => {
     f.detectChanges();
     el = f.nativeElement as HTMLElement;
   }
-  const btn = (text: string, root: ParentNode = el) => [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim().startsWith(text))!;
+  const btn = (text: string, root: ParentNode = el) => [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => !b.closest('.rt-seg') && b.textContent?.trim().startsWith(text))!;
   const click = (code: string) => {
     const g = [...el.querySelectorAll<SVGGElement>('app-route-target .rt-pt')].find((q) => q.querySelector('.code')!.textContent!.trim() === code)!;
     g.dispatchEvent(new MouseEvent('click', { bubbles: true }));

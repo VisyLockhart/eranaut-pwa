@@ -18,10 +18,14 @@
       [class.done]="d.visit === 'done'"
       [class.open]="d.visit === 'open'"
       [class.locked]="d.visit === 'locked'"
-      [class.off]="d.state !== 'ok' && d.state !== 'selected'"
+      [class.off]="!d.filter && d.state !== 'ok' && d.state !== 'selected'"
+      [class.fnone]="d.filter === 'none' && !d.locked"
+      [class.fin]="d.filter === 'in'"
+      [class.fout]="d.filter === 'out'"
+      [class.flock]="d.locked"
       [attr.aria-label]="label(d)"
-      [attr.aria-pressed]="d.visit ? d.visit === 'done' : d.state === 'selected'"
-      [attr.aria-disabled]="d.state !== 'ok' && d.state !== 'selected' ? 'true' : null"
+      [attr.aria-pressed]="pressed(d)"
+      [attr.aria-disabled]="d.locked || (!d.filter && d.state !== 'ok' && d.state !== 'selected') ? 'true' : null"
       [attr.transform]="'translate(' + d.p.x + ' ' + d.p.y + ')'"
       (click)="activate(d)"
       (keydown.enter)="activate(d)"
@@ -34,6 +38,25 @@
         <g class="badge check" transform="translate(27 -27)">
           <circle r="19" />
           <path d="M-9 1 L-3 8 L9 -7" />
+        </g>
+      }
+      @if (d.filter === 'in') {
+        <g class="badge fbadge in" transform="translate(27 -27)">
+          <circle r="19" />
+          <path d="M-9 0 L9 0 M0 -9 L0 9" />
+        </g>
+      }
+      @if (d.filter === 'out') {
+        <g class="badge fbadge out" transform="translate(27 -27)">
+          <circle r="19" />
+          <path d="M-8 -8 L8 8 M8 -8 L-8 8" />
+        </g>
+      }
+      @if (d.locked) {
+        <g class="badge flockbadge" transform="translate(27 -27)">
+          <circle r="19" />
+          <rect x="-8" y="-3" width="16" height="12" rx="2" />
+          <path d="M-5 -3 V-7 a5 5 0 0 1 10 0 V-3" />
         </g>
       }
       @if (d.order > 0) {
