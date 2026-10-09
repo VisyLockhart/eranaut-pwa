@@ -18,7 +18,7 @@
           <div class="eyebrow">FFXIV 繁體中文版 ・ 潛水艇同好會</div>
           <h1 class="hero">純水與銀礦之詩<span>靜謐海域交換所</span></h1>
           <div class="latin">Aequor Eranos</div>
-          <p class="lead">海面以下,潛水艇日夜作業。我們希望海面是平的,圈子裡的人互相照應。這個名字,就是這兩件事。</p>
+          <p class="lead">我們希望海面是平靜的,海面以下,潛水艇悄然作業。圈子裡的人互相照應。這個名字,就是這兩件事。</p>
           <svg class="wave" viewBox="0 0 600 18" preserveAspectRatio="none" aria-hidden="true"><path d="M0 9 Q 25 0 50 9 T 100 9 T 150 9 T 200 9 T 250 9 T 300 9 T 350 9 T 400 9 T 450 9 T 500 9 T 550 9 T 600 9" fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
 
           <h2>名字裡的兩層意思</h2>
@@ -120,17 +120,16 @@
             <span><span class="tag lock"><svg viewBox="0 0 12 12" aria-hidden="true"><path fill="currentColor" d="M3 5V4a3 3 0 016 0v1h1v6H2V5zm1.5 0h3V4a1.5 1.5 0 00-3 0z" /></svg>加入社群後解鎖</span> 需要 Discord 登入與社群身分</span>
           </div>
 
-          <div class="feats locked-grid">
-            @for (f of lockedFeatures; track f.title) {
-              <ng-container *ngTemplateOutlet="card; context: { $implicit: f }" />
-            }
-          </div>
           <div class="feats free-grid">
             @for (f of freeFeatures; track f.title) {
               <ng-container *ngTemplateOutlet="card; context: { $implicit: f }" />
             }
           </div>
-
+          <div class="feats locked-grid">
+            @for (f of lockedFeatures; track f.title) {
+              <ng-container *ngTemplateOutlet="card; context: { $implicit: f }" />
+            }
+          </div>
           <div class="cta">
             <h2>想把它變成自己的工具?</h2>
             <p>Eranaut 只開放給同好會成員。加入之後,以上全部解鎖。</p>

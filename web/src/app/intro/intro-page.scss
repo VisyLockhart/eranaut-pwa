@@ -67,7 +67,7 @@ details ul { margin: 8px 0 0; padding-left: 18px; }
 .locked-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .locked-grid .feat { grid-column: span 2; }
 .locked-grid .feat:nth-child(n + 4) { grid-column: span 3; }
-.free-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
+.free-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 14px; }
 .feat { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .feat.locked { border-color: rgba(230, 189, 106, 0.6); background: linear-gradient(180deg, rgba(230, 189, 106, 0.09), rgba(230, 189, 106, 0.02)); }
 .feat h3 { color: var(--silver); font-size: 16px; }
