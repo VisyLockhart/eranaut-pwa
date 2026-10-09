@@ -64,7 +64,7 @@ export class IntroPage {
   protected readonly freeFeatures = this.features.filter((f) => !f.locked);
 
   constructor() {
-    this.layout.pageTitle.set('海域介紹');
+    this.layout.pageTitle.set('加入海域');
     this.loadFonts();
   }
 

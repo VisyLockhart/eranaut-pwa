@@ -47,9 +47,8 @@
           </div>
           <p class="gap">潛水艇同好會每天在做的事很像:航線怎麼排、零件誰有、燃料誰能讓。不是叫賣,是把自己的一份放到公共桌上。</p>
 
-          <h2>取名時被拿掉的選項</h2>
           <details>
-            <summary>Exchange、Moorings、Mutuum</summary>
+            <summary>取名時被拿掉的選項</summary>
             <ul>
               <li><b>Exchange</b>:太像交易所、兌換窗口。功能對,氣味不對。</li>
               <li><b>Moorings</b>(泊位):有靠岸、有歸屬的感覺,但只寫出「停下來的地方」,寫不出互相幫忙。</li>
@@ -83,7 +82,7 @@
           </p>
 
           <div class="share">
-            <button type="button" class="btn ghost" (click)="copyLink('join')">複製分享連結</button>
+            <button type="button" class="btn" (click)="copyLink('join')">複製分享連結</button>
             <span class="pron" aria-live="polite">
               @switch (linkState().join) {
                 @case ('ok') { 已複製 {{ shareLinks.join }},貼到 Discord、LINE 或臉書就會顯示預覽卡。 }
@@ -115,7 +114,7 @@
             <div class="card"><h3>不只談潛艇</h3><p>不定時舉辦休閒副本、A 車、音樂會。</p></div>
           </div>
 
-          <h2>有問題找管理方</h2>
+          <h2>任何問題請洽管理員</h2>
           <p>諮詢時段:上午 09:00 ~ 12:00。</p>
           <div class="contact"><span class="chip">Evy@巴哈姆特</span><span class="chip">若月@巴哈姆特</span></div>
         </div>
@@ -132,7 +131,7 @@
           </div>
 
           <div class="share tour-share">
-            <button type="button" class="btn ghost" (click)="copyLink('route')">複製分享連結</button>
+            <button type="button" class="btn" (click)="copyLink('route')">複製分享連結</button>
             <span class="pron" aria-live="polite">
               @switch (linkState().route) {
                 @case ('ok') { 已複製 {{ shareLinks.route }},朋友點開就能直接試玩航線模擬器。 }
