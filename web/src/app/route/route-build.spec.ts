@@ -65,7 +65,7 @@ describe('找配置子畫面(D-223)', () => {
     b.open.set(false);
     f.detectChanges();
     expect(el.querySelector('app-route-build')).toBeNull();
-    const entry = [...el.querySelectorAll<HTMLButtonElement>('app-route-editor button')].find((x) => x.textContent?.trim() === '找配置')!;
+    const entry = [...el.querySelectorAll<HTMLButtonElement>('app-route-editor button')].find((x) => x.textContent?.includes('找配置'))!;
     entry.click();
     f.detectChanges();
     expect(b.open()).toBe(true);

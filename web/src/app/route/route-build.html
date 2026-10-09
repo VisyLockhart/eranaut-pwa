@@ -106,10 +106,15 @@
 
 <ng-template #card let-c let-near="near">
   <article class="rt-card">
-    <header class="rt-card-head">
-      <div class="rt-card-title"><b>{{ c.parts }}</b><span class="rt-card-sub">船體 船尾 船首 艦橋</span></div>
+    <div class="rt-card-head">
+      <span class="rt-card-sub">零件</span>
       <span class="rt-card-lv">重量 {{ c.weight }}</span>
-    </header>
+    </div>
+    <div class="rt-parts4" role="group" [attr.aria-label]="'零件:' + c.partsText">
+      @for (pt of c.partList; track pt.label) {
+        <div class="rt-part"><span class="l">{{ pt.label }}</span><b class="v">{{ pt.value }}</b></div>
+      }
+    </div>
     <div class="rt-chips5">
       @for (st of c.stats; track st.label) {
         <div class="rt-chip5 g-plain"><span class="l">{{ st.label }}</span><span class="v">{{ st.value }}</span></div>

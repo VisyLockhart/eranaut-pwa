@@ -17,6 +17,7 @@ import { sameBuild } from './route-state';
 import { RouteVm } from './route-vm';
 
 const PAGE = 20;
+const PART_NAMES = ['船體', '船尾', '船首', '艦橋'] as const;
 
 const GOALS: readonly { id: BuildGoal; label: string; title: string }[] = [
   { id: 'collect', label: '收集', title: '收集:同一個地點撈到最大量' },
@@ -29,7 +30,10 @@ interface Light { label: string; grade: string; text: string }
 
 interface HitCard {
   key: string;
+  /** 儲存名稱用:「3改 1 2 4」 */
   parts: string;
+  partList: { label: string; value: string }[];
+  partsText: string;
   weight: number;
   stats: { label: string; value: number }[];
   /** 沒選航點時為 null */
@@ -111,6 +115,8 @@ export class RouteBuild {
     return {
       key: h.build.parts.join('-'),
       parts: h.build.parts.map(partLabel).join(' '),
+      partList: h.build.parts.map((p, i) => ({ label: PART_NAMES[i]!, value: partLabel(p) })),
+      partsText: h.build.parts.map((p, i) => `${PART_NAMES[i]} ${partLabel(p)}`).join('、'),
       weight: h.stats.weight,
       stats: [
         { label: '探索', value: h.stats.surveillance },
