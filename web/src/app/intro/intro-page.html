@@ -82,6 +82,17 @@
             }
           </p>
 
+          <div class="share">
+            <button type="button" class="btn ghost" (click)="copyLink()">複製分享連結</button>
+            <span class="pron" aria-live="polite">
+              @switch (linkCopied()) {
+                @case ('ok') { 已複製,貼到 Discord、LINE 或臉書就會顯示預覽卡。 }
+                @case ('manual') { 這台裝置無法自動複製,請從網址列複製。 }
+                @default { 想把這一頁分享給朋友? }
+              }
+            </span>
+          </div>
+
           <h2>我們是誰</h2>
           <p>專為<b>單人公會</b>設立的同好會,有兩個目的:</p>
           <div class="two">

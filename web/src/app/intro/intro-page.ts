@@ -33,6 +33,7 @@ export class IntroPage {
 
   protected readonly tab = signal<TabId>('intro');
   protected readonly copied = signal<'' | 'ok' | 'manual'>('');
+  protected readonly linkCopied = signal<'' | 'ok' | 'manual'>('');
   protected readonly joinName = '純水與銀礦之詩, 靜謐海域交換所';
 
   protected readonly tabs: readonly { id: TabId; label: string }[] = [
@@ -78,6 +79,17 @@ export class IntroPage {
         sel.addRange(r);
       }
       this.copied.set('manual');
+    }
+  }
+
+  /** 複製這一頁的分享連結(固定指向 /intro,連結預覽卡見 tools/make-intro-html.mjs) */
+  protected async copyLink(): Promise<void> {
+    const url = `${this.doc.location.origin}/intro`;
+    try {
+      await navigator.clipboard.writeText(url);
+      this.linkCopied.set('ok');
+    } catch {
+      this.linkCopied.set('manual');
     }
   }
 
