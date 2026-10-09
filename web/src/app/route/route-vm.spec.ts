@@ -60,14 +60,13 @@ describe('RouteVm', () => {
       expect(again.subId()).toBe('abc');
     });
 
-    it('舊版停在「反查」分頁 → 升級後落在推薦的「找路線」(D-218、D-222)', () => {
+    it('舊版停在「反查」分頁 → 升級後落在「找路線」(D-218、D-222、D-223)', () => {
       localStorage.setItem(ROUTE_LAST_KEY, JSON.stringify({ sea: GREY, seq: [], level: 76, parts: [3, 1, 2, 3], subId: null, tab: 'loot' }));
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
       TestBed.inject(Auth).status.set('authenticated');
       const again = TestBed.inject(RouteVm);
       expect(again.tab()).toBe('recommend');
-      expect(again.recGoal()).toBe('find');
     });
 
     it('壞資料 → 預設值,不丟錯', () => {

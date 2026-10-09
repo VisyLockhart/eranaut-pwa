@@ -12,7 +12,6 @@ import { routeCost, selectability, shortestOrder, travelMinutes } from './core/r
 import type { Build } from './core/types';
 import { ROUTE_CACHE_KEY, ROUTE_LAST_KEY, clearRouteCache } from './route-cache';
 import { ROUTE_FEATURES } from './route-features';
-import type { RecGoal } from './route-goals';
 import { defaultSubName, normalizeSeq, sameBuild, sanitizeLast, sanitizeSubs, subToBuild, type Parts, type RouteTab } from './route-state';
 
 /** 配置編輯對話框的模式:new = 新增(以目前配置為起點)、edit = 編輯某一組儲存潛艇、temp = 編輯臨時配置 */
@@ -60,7 +59,7 @@ export class RouteVm {
   readonly subId = signal<string | null>(this.init.subId);
 
   // ---- 分頁與對話框(放在這裡,換版面重建頁面元件時不會丟失) ----
-  /** 目前的分頁。預設:沒有儲存配置 → 配置;否則記住上次主動切到的分頁(沒有記錄就進推薦) */
+  /** 目前的分頁。預設:沒有儲存配置 → 配置;否則記住上次主動切到的分頁(沒有記錄就進找路線) */
   readonly tab = signal<RouteTab>(this.init.tab ?? 'config');
   /** 使用者本次已主動切過分頁(之後不再自動決定預設分頁) */
   private tabTouched = false;
@@ -71,8 +70,6 @@ export class RouteVm {
   readonly needOpen = signal(false);
   /** 「查看性能」對話框 */
   readonly perfOpen = signal(false);
-  /** 推薦頁停在哪:`find` = 找路線(預設)、找配置的某個目標、null = 找配置的目標選擇頁(D-222);換分頁不丟 */
-  readonly recGoal = signal<RecGoal | null>('find');
   /** 等待確認的「帶到航點」:航點頁已有不同的選點時,先問再換 */
   readonly pendingLoad = signal<{ sea: number; order: number[] } | null>(null);
 
@@ -142,7 +139,7 @@ export class RouteVm {
     this.tab.set(tab);
   }
 
-  /** 載入儲存潛艇後決定預設分頁:沒有儲存配置 → 配置;有但沒有記錄 → 推薦;有記錄 → 沿用。只在使用者還沒切過分頁時做 */
+  /** 載入儲存潛艇後決定預設分頁:沒有儲存配置 → 配置;有但沒有記錄 → 找路線;有記錄 → 沿用。只在使用者還沒切過分頁時做 */
   private settleTab(): void {
     if (this.tabTouched || this.tabSettled || !this.loaded()) return;
     this.tabSettled = true;
@@ -174,7 +171,7 @@ export class RouteVm {
   }
 
   /**
-   * 推薦頁的「帶到航點」:航點頁已有不同的選點就先請使用者確認(`pendingLoad`),否則直接換過去並切到航點頁。
+   * 找路線的「帶到航點」:航點頁已有不同的選點就先請使用者確認(`pendingLoad`),否則直接換過去並切到航點頁。
    * 相同的路線不需要確認。
    */
   requestLoad(sea: number, order: readonly number[]): void {

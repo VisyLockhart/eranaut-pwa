@@ -1,0 +1,158 @@
+<div class="rt-subhead">
+  <button type="button" class="rt-link-btn" (click)="back()">‹ 配置</button>
+  <b>找配置</b>
+</div>
+<div class="rt-note rt-subnote">用目前配置的等級 <strong>Lv{{ vm.level() }}</strong> 找,零件組合共 10⁴ 種</div>
+
+<div class="rt-find-top" [class.rt-grid]="layout.isDesktop()">
+  <section class="rt-block" aria-label="想去的航點">
+    <div class="rt-block-head">
+      <div class="rt-seg" role="group" aria-label="找配置的目標">
+        @for (g of goals; track g.id) {
+          <button type="button" class="rt-seg-btn" [class.active]="b.goal() === g.id" [attr.aria-pressed]="b.goal() === g.id" (click)="b.setGoal(g.id)">{{ g.label }}</button>
+        }
+      </div>
+      <button type="button" class="rt-help-btn" aria-label="找配置的說明" aria-haspopup="dialog" (click)="b.help.set(true)">?</button>
+      <button type="button" class="rt-link-btn rt-head-end" [attr.aria-expanded]="b.mapOpen()" aria-controls="rt-build-map" (click)="b.mapOpen.set(!b.mapOpen())">{{ b.mapOpen() ? '收合' : '展開' }}</button>
+    </div>
+    <div class="rt-map-count" role="status" aria-live="polite">
+      @if (b.ids().length === 0) { 還沒選航點 } @else { 已選:{{ picked().join(' › ') }} }<span class="rt-count">(最多 {{ b.maxStops() }} 個@if (b.hidden() > 0) {,另外 {{ b.hidden() }} 個先收起來,切回「速度」或「自訂」會還原}@if (b.goal() === 'custom') {;也可以不選}@else {,找出走得完的零件組合})</span>
+    </div>
+    @if (b.mapOpen()) {
+      <div id="rt-build-map">
+        <app-route-sea-pager [sea]="b.sea()" (seaChange)="setSea($event)" />
+        <app-route-map [sea]="b.seaIdx()" [seq]="b.ids()" [states]="b.states()" (pick)="pick($event)" />
+        <div [class]="hint() ? 'rt-hint' : 'rt-note'" style="margin-top: 8px" role="status" aria-live="polite">{{ hint() || (b.maxStops() === 1 ? '點一個航點(再點別的點就是換掉)' : '依序點航點,最多 5 個') }}</div>
+        <div class="rt-save-actions" style="margin-top: 8px">
+          <button type="button" class="rt-save-btn" [disabled]="b.ids().length === 0" (click)="clearPicked()">清除選點</button>
+        </div>
+      </div>
+    }
+  </section>
+
+  <section class="rt-block rt-find-cond" aria-label="找配置條件">
+    <div class="rt-block-title">{{ title() }}</div>
+    @if (b.goal() === 'custom') {
+      <div class="rt-mins">
+        @for (k of minKeys; track k.key) {
+          <label class="rt-min">
+            <span>{{ k.label }}</span>
+            <input type="number" inputmode="numeric" min="0" step="1" [value]="b.mins()[k.key]" (change)="onMin(k.key, $event)" [attr.aria-label]="'最低' + k.label" />
+          </label>
+        }
+        <label class="rt-min">
+          <span>重量上限</span>
+          <input type="number" inputmode="numeric" min="1" step="1" [value]="b.weightLimit() ?? ''" [attr.placeholder]="vm.stats().weightCap" (change)="onWeight($event)" aria-label="重量上限" />
+        </label>
+      </div>
+      <div class="rt-save-actions" style="margin-top: 8px">
+        <button type="button" class="rt-save-btn" [disabled]="b.ids().length === 0" (click)="b.fillFromRoute()">用航點需求帶入</button>
+        <button type="button" class="rt-save-btn" (click)="b.clearCustom()">清除</button>
+      </div>
+    } @else {
+      @if (needRows(); as rows) {
+        <div class="rt-need-list" aria-label="需要的最低性能">
+          @for (r of rows; track r.label) { <div class="rt-need-row"><span>{{ r.label }}</span><b>≥ {{ r.value }}</b></div> }
+        </div>
+        <button type="button" class="rt-link-btn" (click)="b.toCustom()">改成自訂</button>
+      } @else {
+        <div class="rt-note">先在海圖選{{ b.maxStops() === 1 ? '一個' : '想去的' }}航點,這裡會顯示需要的最低性能。</div>
+      }
+      @if (baseline(); as bl) {
+        <div class="rt-baseline" aria-label="目前配置">
+          <div class="rt-baseline-title">目前配置(Lv{{ vm.level() }}):{{ goalName() }}要看</div>
+          <div class="rt-card-lights" role="group" aria-label="目前配置的達標燈號">
+            @for (l of bl; track l.label) { <span class="rt-light g-{{ l.grade }}"><i aria-hidden="true"></i>{{ l.text }}</span> }
+          </div>
+        </div>
+      }
+    }
+
+    <div class="rt-find-row">
+      <span class="rt-find-label">排序</span>
+      <div class="rt-chips" role="group" aria-label="排序">
+        <button type="button" class="rt-chip" [class.active]="b.sort() === 'time'" [attr.aria-pressed]="b.sort() === 'time'" (click)="b.setSort('time')">航行時間短優先</button>
+        <button type="button" class="rt-chip" [class.active]="b.sort() === 'range'" [attr.aria-pressed]="b.sort() === 'range'" (click)="b.setSort('range')">距離高優先</button>
+      </div>
+      @if (b.sort() === 'time' && b.ids().length === 0) { <div class="rt-note" style="margin-top: 6px">沒有選航點時,「航行時間短優先」改依巡航速度排序。</div> }
+    </div>
+
+    <div class="rt-save-actions" style="margin-top: 10px">
+      <button type="button" class="rt-save-btn primary" [disabled]="b.busy() || (b.goal() !== 'custom' && b.ids().length === 0)" (click)="search()">{{ b.busy() ? '計算中…' : '找配置' }}</button>
+    </div>
+  </section>
+</div>
+
+@if (b.result(); as r) {
+  @if (b.stale()) { <div class="rt-dirty" role="status">目標、航點、條件或等級已經改過,下面的結果是舊的。按「找配置」重新計算。</div> }
+  <section class="rt-block" id="rt-build-results" aria-label="找配置結果">
+    @if (!r.levelOk) {
+      <div class="rt-empty">Lv{{ b.searched()!.level }} 還去不了{{ searchedName() }}(要 {{ r.minLevel }} 級以上)。先編輯配置提高等級,或選別的航點。</div>
+    } @else if (r.total === 0) {
+      <div class="rt-block-title" role="status">沒有任何零件組合能達成({{ searchedName() }},Lv{{ b.searched()!.level }})</div>
+      <div class="rt-note" style="margin-bottom: 8px">下面是最接近的 {{ nearest().length }} 組,可以看看還差多少:</div>
+      @for (c of nearest(); track c.key) { <ng-container *ngTemplateOutlet="card; context: { $implicit: c, near: true }" /> }
+    } @else {
+      <div class="rt-block-title" role="status">
+        @if (r.total > r.hits.length) { 共 {{ r.total }} 組達成,只列前 {{ r.hits.length }} 組 } @else { 共 {{ r.total }} 組達成 }({{ searchedName() }})
+      </div>
+      @for (c of visible(); track c.key) { <ng-container *ngTemplateOutlet="card; context: { $implicit: c, near: false }" /> }
+      @if (visible().length < cards().length) {
+        <button type="button" class="rt-save-btn" style="margin-top: 10px; width: 100%" (click)="more()">顯示更多(還有 {{ cards().length - visible().length }} 組)</button>
+      }
+    }
+  </section>
+}
+
+<ng-template #card let-c let-near="near">
+  <article class="rt-card">
+    <header class="rt-card-head">
+      <div class="rt-card-title"><b>{{ c.parts }}</b><span class="rt-card-sub">船體 船尾 船首 艦橋</span></div>
+      <span class="rt-card-lv">重量 {{ c.weight }}</span>
+    </header>
+    <div class="rt-chips5">
+      @for (st of c.stats; track st.label) {
+        <div class="rt-chip5 g-plain"><span class="l">{{ st.label }}</span><span class="v">{{ st.value }}</span></div>
+      }
+    </div>
+    @if (c.lights) {
+      <div class="rt-card-lights" role="group" aria-label="達標燈號">
+        @for (l of c.lights; track l.label) { <span class="rt-light g-{{ l.grade }}"><i aria-hidden="true"></i>{{ l.text }}</span> }
+      </div>
+    }
+    <div class="rt-card-foot">
+      @if (c.time) { <span>航行 {{ c.time }}</span> }
+      @if (near) { <span>還差 {{ c.shortfall }}</span> }
+    </div>
+    <div class="rt-card-actions">
+      <button type="button" class="rt-save-btn" [class.primary]="!vm.canSave" (click)="apply(c)">帶入配置</button>
+      @if (vm.canSave) {
+        @if (c.saved) {
+          <button type="button" class="rt-save-btn" disabled>已儲存 ✓</button>
+        } @else {
+          <button type="button" class="rt-save-btn primary" [disabled]="busyKey() !== null" (click)="save(c)">加入儲存</button>
+        }
+      }
+    </div>
+  </article>
+</ng-template>
+
+@if (b.help()) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
+    <div class="modal-box rt-dlg" role="dialog" aria-modal="true" aria-labelledby="rt-build-help-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <div class="rt-dlg-head">
+        <div class="modal-title" id="rt-build-help-title">找配置怎麼用</div>
+        <button type="button" class="modal-close" (click)="closeHelp()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+      </div>
+      <div class="rt-dlg-body rt-help">
+        <p>用<b>目前配置的等級</b>,從 10⁴ 種零件組合找出「走得完這條路線、性能達標、重量不超過上限」的配置。先在海圖選想去的航點(只能選同一個海域)。</p>
+        <p><b>收集</b>:選 1 個航點,找收集達到該點最高階門檻、距離走得完的組合,同一個地點撈到最大量。</p>
+        <p><b>恩惠</b>:選 1 個航點,找恩惠達到該點門檻、距離走得完的組合,有機會在同一個地點再撈一次。</p>
+        <p><b>速度</b>:選 1~5 個航點,找距離走得完、探索達中階、收集達一般、恩惠達標的組合,預設依航行時間由短到長。</p>
+        <p><b>自訂</b>:自己填五項最低性能與重量上限;航點可選可不選(不選時不算航行時間)。前三個目標的最低性能由航點自動算出、不能改,按「改成自訂」會把算出的數字帶過去再微調。</p>
+        <p>找不到時會列出最接近的 3 組和還差多少。「帶入配置」套用成臨時配置並回到配置列表;「加入儲存」存好後留在這裡,可以再存別組。</p>
+      </div>
+      <div class="rt-dlg-foot"><div class="rt-save-actions"><button type="button" class="rt-save-btn primary" (click)="closeHelp()">知道了</button></div></div>
+    </div>
+  </div>
+}

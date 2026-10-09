@@ -9,7 +9,7 @@ import type { Build } from './core/types';
 
 export type Parts = [number, number, number, number];
 
-/** 航線頁的分頁(順序即畫面順序:先有配置,再看推薦,最後到航點微調) */
+/** 航線頁的分頁(順序即畫面順序:先有配置,再找路線,最後到航點微調) */
 export const ROUTE_TABS = ['config', 'recommend', 'map'] as const;
 export type RouteTab = (typeof ROUTE_TABS)[number];
 
@@ -73,7 +73,7 @@ export function sanitizeLast(raw: unknown): RouteLast {
     level: isInt(o['level'], 1, LIMITS.maxRouteSubLevel) ? o['level'] : d.level,
     parts: sanitizeParts(o['parts']) ?? d.parts,
     subId: typeof o['subId'] === 'string' && o['subId'] !== '' ? o['subId'] : null,
-    // 舊版的「搜尋」分頁改名為「推薦」(原本的數字搜尋收進它的「進階」);「反查」分頁併入推薦的「掉落」(D-218)
+    // 舊版的「搜尋」「反查」分頁併入「找路線」(內部代號 recommend;D-218、D-223:數字搜尋移到配置頁的「找配置」)
     tab: o['tab'] === 'search' || o['tab'] === 'loot' ? 'recommend' : (ROUTE_TABS.find((t) => t === o['tab']) ?? null),
   };
 }

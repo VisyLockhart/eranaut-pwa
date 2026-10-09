@@ -786,24 +786,16 @@ button.rt-lights { width: 100%; align-items: center; min-height: 36px; padding: 
 .rt-need-row b { font-weight: 600; overflow-wrap: anywhere; }
 .rt-need-note { font-size: 11px; color: var(--text-faint); }
 
-/* D-212:推薦頁(目標選擇、練級、帶入前確認) */
-.rt-goal-group { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
-.rt-goal-label { font-size: 12px; color: var(--text-muted); }
-.rt-goals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.rt-goal { min-height: 88px; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text); text-align: left; font: inherit; display: flex; flex-direction: column; gap: 4px; cursor: pointer; min-width: 0; }
-.rt-goal:hover:not(:disabled) { border-color: rgba(45,212,191,0.5); }
-.rt-goal:disabled { opacity: 0.5; cursor: default; }
-.rt-goal-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
-.rt-goal-head b { font-size: 15px; }
-.rt-goal-head i { font-style: normal; font-size: 10.5px; line-height: 1; padding: 3px 5px; border-radius: 6px; background: rgba(45,212,191,0.12); color: var(--accent); white-space: nowrap; }
-.rt-goal.build .rt-goal-head i { background: rgba(251,191,36,0.10); color: var(--amber); }
-.rt-goal:disabled .rt-goal-head i { background: rgba(148,163,184,0.10); color: var(--text-dim); }
-.rt-goal-desc { font-size: 12px; line-height: 1.45; color: var(--text-muted); }
+/* D-212:推薦頁(「找路線」頁籤的子標題、帶入前確認) */
 .rt-subhead { display: flex; align-items: center; gap: 10px; margin-top: 12px; min-height: 40px; }
 .rt-subhead b { font-size: 18px; }
-.rt-subhead .rt-link-btn { min-height: 40px; }
-app-route-recommend, app-route-find { display: block; }
-app-route-find > .rt-block, app-route-find > .rt-dirty, app-route-find > .rt-find-top { margin-top: 12px; }
+.rt-subhead .rt-link-btn { min-height: 40px; white-space: nowrap; }
+.rt-subhead b { white-space: nowrap; }
+.rt-subnote { margin-top: 2px; }
+.rt-subnote strong { color: var(--text); }
+app-route-recommend, app-route-find, app-route-build { display: block; }
+app-route-find > .rt-block, app-route-find > .rt-dirty, app-route-find > .rt-find-top, app-route-build > .rt-block, app-route-build > .rt-dirty, app-route-build > .rt-find-top { margin-top: 12px; }
+.rt-head-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .rt-find-top:not(.rt-grid) { display: contents; }
 .rt-find-top:not(.rt-grid) > .rt-block { margin-top: 12px; }
 .rt-find-top.rt-grid > .rt-block { margin-top: 0; }
@@ -858,8 +850,6 @@ app-route-find > .rt-block, app-route-find > .rt-dirty, app-route-find > .rt-fin
 /* D-214 找配置 */
 app-route-target { display: block; }
 app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
-.rt-target-sel { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12.5px; }
-.rt-target-picked { flex: 1; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
 .rt-baseline { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: var(--bg-elevated); border: 1px solid var(--border); }
 .rt-baseline-title { font-size: 11px; color: var(--text-dim); margin-bottom: 2px; }
 
@@ -868,8 +858,6 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .rt-seg-btn { min-height: 36px; padding: 0 14px; border: 0; background: transparent; color: var(--text-muted); font-size: 12.5px; font-weight: 600; cursor: pointer; }
 .rt-seg-btn + .rt-seg-btn { border-left: 1px solid var(--border-strong); }
 .rt-seg-btn.active { background: rgba(45,212,191,0.14); color: var(--accent); }
-.rt-seg-top { display: flex; width: 100%; margin-top: 12px; }
-.rt-seg-top .rt-seg-btn { flex: 1 1 0; min-height: 40px; font-size: 13.5px; }
 .rt-help-btn { width: 32px; height: 32px; flex: 0 0 auto; border-radius: 50%; border: 1px solid var(--border-strong); background: transparent; color: var(--accent); font-size: 14px; font-weight: 700; cursor: pointer; }
 .rt-head-end { margin-left: auto; }
 .rt-map-count { margin-bottom: 8px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); overflow-wrap: anywhere; }

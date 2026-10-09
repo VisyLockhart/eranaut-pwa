@@ -18,8 +18,8 @@ describe('sanitizeLast', () => {
     const g = grey();
     const last = { sea: 2, seq: ids(g, 'DG'), level: 76, parts: [3, 1, 2, 3], subId: 'abc', tab: 'recommend' };
     expect(sanitizeLast(last)).toEqual(last);
-    expect(sanitizeLast({ ...last, tab: 'search' }).tab).toBe('recommend'); // 舊版的「搜尋」改名為「推薦」
-    expect(sanitizeLast({ ...last, tab: 'loot' }).tab).toBe('recommend'); // 舊版的「反查」併入推薦 → 掉落(D-218)
+    expect(sanitizeLast({ ...last, tab: 'search' }).tab).toBe('recommend'); // 舊版的「搜尋」併入「找路線」
+    expect(sanitizeLast({ ...last, tab: 'loot' }).tab).toBe('recommend'); // 舊版的「反查」併入「找路線」(D-218)
     expect(sanitizeLast({ ...last, tab: 'result' }).tab).toBeNull(); // 已移除的結果頁
     expect(sanitizeLast({ ...last, tab: 'edit' }).tab).toBeNull(); // 舊版的分頁名稱或亂值 → 沒記錄
   });

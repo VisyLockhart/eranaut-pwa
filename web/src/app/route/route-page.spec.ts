@@ -171,13 +171,13 @@ describe('RoutePage', () => {
     expect([...el.querySelectorAll('.rt-stat .num')].map((n) => n.textContent?.trim())).toEqual(['—', '—', '—']);
   });
 
-  it('分頁順序:配置 / 推薦 / 航點;切換時選取狀態保留', () => {
+  it('分頁順序:配置 / 找路線 / 航點;切換時選取狀態保留', () => {
     const f = mount();
     vm.selectSea(2);
     vm.toggle(ids(g(), 'D')[0]!);
     f.detectChanges();
     const tabs = [...el.querySelectorAll<HTMLButtonElement>('.rt-tabs .up-tab')];
-    expect(tabs.map((t) => t.textContent?.trim())).toEqual(['配置', '推薦', '航點']);
+    expect(tabs.map((t) => t.textContent?.trim())).toEqual(['配置', '找路線', '航點']);
     tabs[1]!.click();
     f.detectChanges();
     expect(el.querySelector('app-route-recommend')).not.toBeNull();
@@ -307,7 +307,7 @@ describe('RoutePage', () => {
       fab()!.click();
       f.detectChanges();
       expect(fab()!.getAttribute('aria-expanded')).toBe('true');
-      expect(items().map((b) => b.textContent?.trim())).toEqual(['配置', '推薦', '航點', '回到頂部']);
+      expect(items().map((b) => b.textContent?.trim())).toEqual(['配置', '找路線', '航點', '回到頂部']);
       expect(items()[2]!.getAttribute('aria-checked')).toBe('true');
       items()[1]!.click();
       f.detectChanges();

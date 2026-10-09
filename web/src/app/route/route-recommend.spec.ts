@@ -60,43 +60,13 @@ describe('推薦頁(D-212、D-222)', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => vm.stop());
 
-  describe('頂端分段與找配置', () => {
-    it('預設進「找路線」;找配置的目標選擇頁只有四個目標', () => {
+  describe('找路線分頁', () => {
+    it('直接是找路線:沒有「找路線 | 找配置」分段與目標選擇頁', () => {
       mount();
-      expect(vm.recGoal()).toBe('find');
       expect(el.querySelector('app-route-find')).not.toBeNull();
+      expect(el.querySelector('.rt-seg-top')).toBeNull();
       expect(el.querySelectorAll('.rt-goal')).toHaveLength(0);
-      btn('找配置', el.querySelector('.rt-seg-top')!).click();
-      f.detectChanges();
-      expect(vm.recGoal()).toBeNull();
-      expect(el.querySelector('app-route-find')).toBeNull();
-      const goals = [...el.querySelectorAll<HTMLButtonElement>('.rt-goal')];
-      expect(goals.map((b) => b.querySelector('b')!.textContent)).toEqual(['收集', '恩惠', '速度', '進階']);
-      expect(goals.every((b) => !b.disabled)).toBe(true);
-      expect(el.querySelectorAll('.rt-goal.build')).toHaveLength(4);
-    });
-
-    it('進階:顯示原本的數字搜尋;「‹ 目標」回來,再按「找路線」回到找路線;換分頁再回來仍停在原處', () => {
-      mount();
-      btn('找配置', el.querySelector('.rt-seg-top')!).click();
-      f.detectChanges();
-      [...el.querySelectorAll<HTMLButtonElement>('.rt-goal')].find((b) => b.textContent!.includes('進階'))!.click();
-      f.detectChanges();
-      expect(vm.recGoal()).toBe('advanced');
-      expect(el.querySelector('app-route-search')).not.toBeNull();
-      expect(el.querySelector('.rt-subhead')!.textContent).toContain('進階');
-      vm.setTab('map');
-      f.detectChanges();
-      vm.setTab('recommend');
-      f.detectChanges();
-      expect(el.querySelector('app-route-search')).not.toBeNull();
-      btn('‹ 目標').click();
-      f.detectChanges();
-      expect(vm.recGoal()).toBeNull();
-      btn('找路線', el.querySelector('.rt-seg-top')!).click();
-      f.detectChanges();
-      expect(vm.recGoal()).toBe('find');
-      expect(el.querySelector('app-route-find')).not.toBeNull();
+      expect(el.querySelector('app-route-build')).toBeNull();
     });
 
     it('推薦頁頂端有配置列:沒有「查看性能」與「＋ 新增」;沒有儲存配置時提醒用預設配置', async () => {

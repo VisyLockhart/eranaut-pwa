@@ -42,7 +42,7 @@ export class RoutePage {
   /** 分頁順序:先有配置才選航點 */
   protected readonly tabs = [
     { id: 'config', label: '配置' },
-    { id: 'recommend', label: '推薦' },
+    { id: 'recommend', label: '找路線' },
     { id: 'map', label: '航點' },
   ] as const;
   /** 試著點了不能選的航點時顯示原因 */
