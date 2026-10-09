@@ -11,16 +11,16 @@ import { RouteVm } from './route-vm';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="rt-summary">
-      <div class="rt-stat"><div class="label">航行時間</div><div class="num">{{ travel() }}</div></div>
+      <div class="rt-stat rt-stat-wide"><span class="label">航行時間</span><span class="num">{{ travel() }}</span></div>
       <div class="rt-stat">
-        <div class="label">返航時刻</div>
+        <span class="label">返航時刻</span>
         @if (ret(); as r) {
-          <div class="num rt-ret"><span class="rt-ret-date">{{ r.date }}</span><span class="rt-ret-time">{{ r.time }}</span></div>
+          <span class="num rt-ret"><span class="rt-ret-date">{{ r.date }}</span> <span class="rt-ret-time">{{ r.time }}</span></span>
         } @else {
-          <div class="num">—</div>
+          <span class="num">—</span>
         }
       </div>
-      <div class="rt-stat"><div class="label">燃料</div><div class="num">{{ fuel() }}</div></div>
+      <div class="rt-stat rt-stat-fuel"><span class="label">燃料</span><span class="num">{{ fuel() }}</span></div>
     </div>
   `,
 })

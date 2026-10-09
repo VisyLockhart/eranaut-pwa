@@ -1,4 +1,4 @@
-import type { District, NotifyLeadMinutes, Server, SubmarineStatus } from './constants.js';
+import type { District, NotifyLeadMinutes, RouteFilterSort, Server, SubmarineStatus } from './constants.js';
 
 // 公開 API 的請求/回應型別(D-140)。JSON 欄位沿用資料表的 snake_case(SCHEMA §8)。
 
@@ -251,4 +251,46 @@ export interface RouteSubValidationErrorBody {
 /** POST 超過每人上限(409) */
 export interface RouteSubLimitErrorBody {
   error: 'limit_reached';
+}
+
+// ---- 找路線的條件組合(航線模擬器,D-229;SCHEMA §3f、§8.12) ----
+
+/** 條件組合的內容(存成 JSON)。不含配置與去過的航點(D-229 ②) */
+export interface RouteFilterSpec {
+  /** 版本,目前恆為 1 */
+  v: 1;
+  /** 'all' 或海域編號 */
+  sea: 'all' | number;
+  /** 最長航行時間(小時);null = 不限 */
+  max_hours: number | null;
+  sort: RouteFilterSort;
+  /** 篩選航點:路線一定要經過 */
+  required: number[];
+  /** 篩選航點:路線不能經過 */
+  excluded: number[];
+  /** 想要的物品 */
+  item_ids: number[];
+  /** 多個物品時:all = 同一條路線都要;any = 任一個 */
+  match: 'all' | 'any';
+}
+
+export interface RouteFilterDto {
+  id: string;
+  name: string;
+  spec: RouteFilterSpec;
+  created_at: string;
+  updated_at: string;
+}
+
+/** 新增 / 整筆取代條件組合的請求 */
+export interface RouteFilterInput {
+  name: string;
+  spec: RouteFilterSpec;
+}
+
+export type RouteFilterField = 'name' | 'spec' | 'sea' | 'max_hours' | 'sort' | 'required' | 'excluded' | 'item_ids' | 'match';
+
+export interface RouteFilterValidationErrorBody {
+  error: 'validation_failed';
+  fields: Partial<Record<RouteFilterField, FieldErrorCode>>;
 }

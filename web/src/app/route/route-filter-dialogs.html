@@ -1,0 +1,97 @@
+@if (fv.dialog(); as d) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
+    @if (d === 'replace') {
+      <div class="modal-box rt-dlg" role="dialog" aria-modal="true" aria-labelledby="rt-fl-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+        <div class="rt-dlg-head">
+          <div class="modal-title" id="rt-fl-title">要換掉目前的條件嗎?</div>
+          <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+        </div>
+        <div class="rt-dlg-body">
+          @if (fv.loadTarget(); as t) {
+            <p>載入「{{ t.name }}」會換掉畫面上現在的篩選航點、海域、最長航行時間、想要的物品與排序。</p>
+            <div class="rt-note">{{ specText(t.spec) }}</div>
+            <p class="rt-note">載入後會自動搜尋,並收合海圖與條件區。配置、去過的航點不受影響。</p>
+          }
+        </div>
+        <div class="rt-dlg-foot">
+          <div class="rt-save-actions">
+            <button type="button" class="rt-save-btn" (click)="close()">取消</button>
+            <button type="button" class="rt-save-btn primary" (click)="confirmLoad()">換掉並載入</button>
+          </div>
+        </div>
+      </div>
+    } @else if (d === 'save') {
+      <div class="modal-box rt-dlg" role="dialog" aria-modal="true" aria-labelledby="rt-fs-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+        <div class="rt-dlg-head">
+          <div class="modal-title" id="rt-fs-title">儲存條件組合</div>
+          <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+        </div>
+        <div class="rt-dlg-body">
+          <div class="rt-note">{{ summary() }}</div>
+          @if (canUpdate()) {
+            <div class="rt-chips" role="group" aria-label="儲存方式">
+              <button type="button" class="rt-chip" [class.active]="saveMode() === 'update'" [attr.aria-pressed]="saveMode() === 'update'" (click)="setMode('update')">更新「{{ fv.active()!.name }}」</button>
+              <button type="button" class="rt-chip" [class.active]="saveMode() === 'new'" [attr.aria-pressed]="saveMode() === 'new'" (click)="setMode('new')">另存新組</button>
+            </div>
+          }
+          @if (saveMode() === 'new') {
+            @if (mustOverwrite()) {
+              <div class="rt-dirty" role="status">已滿 {{ limit }} 組。選一組覆蓋,或先到「管理」刪掉不用的。</div>
+              <ul class="rt-pick-list" aria-label="選一組覆蓋">
+                @for (s of fv.saved(); track s.id) {
+                  <li>
+                    <button type="button" class="rt-pick" [class.active]="overTarget() === s.id" [attr.aria-pressed]="overTarget() === s.id" (click)="pickOver(s.id)">
+                      <b>{{ s.name }}</b><span>{{ specText(s.spec) }}</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+            <label class="rt-exp-field">
+              <span>名稱(最多 {{ nameMax }} 字)</span>
+              <input class="rt-text-input" type="text" [attr.maxlength]="nameMax" [ngModel]="name()" (ngModelChange)="name.set($event)" (keydown.enter)="submit()" autocomplete="off" />
+            </label>
+          }
+          @if (error()) { <div class="rt-dirty bad" role="alert">{{ error() }}</div> }
+        </div>
+        <div class="rt-dlg-foot">
+          <div class="rt-save-actions">
+            <button type="button" class="rt-save-btn" (click)="close()">取消</button>
+            <button type="button" class="rt-save-btn primary" [disabled]="!canSubmit()" (click)="submit()">{{ saveMode() === 'update' ? '更新' : mustOverwrite() ? '覆蓋' : '儲存' }}</button>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="modal-box rt-dlg" role="dialog" aria-modal="true" aria-labelledby="rt-fm-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+        <div class="rt-dlg-head">
+          <div class="modal-title" id="rt-fm-title">管理條件組合({{ fv.saved().length }} / {{ limit }})</div>
+          <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+        </div>
+        <div class="rt-dlg-body">
+          <ul class="rt-pick-list">
+            @for (s of fv.saved(); track s.id) {
+              <li class="rt-fm-row">
+                @if (renaming() === s.id) {
+                  <input class="rt-text-input" type="text" [attr.maxlength]="nameMax" [attr.aria-label]="'新名稱'" [ngModel]="renameText()" (ngModelChange)="renameText.set($event)" (keydown.enter)="doRename(s.id)" autocomplete="off" />
+                  <div class="rt-save-actions">
+                    <button type="button" class="rt-save-btn" (click)="renaming.set(null)">取消</button>
+                    <button type="button" class="rt-save-btn primary" (click)="doRename(s.id)">確定</button>
+                  </div>
+                } @else {
+                  <div class="rt-fm-main"><b>{{ s.name }}</b><span class="rt-note">{{ specText(s.spec) }}</span></div>
+                  <div class="rt-save-actions">
+                    <button type="button" class="rt-link-btn" [attr.aria-label]="'改名 ' + s.name" (click)="startRename(s.id, s.name)">改名</button>
+                    <button type="button" class="rt-link-btn" [attr.aria-label]="'刪除 ' + s.name" (click)="doDelete(s.id)">{{ confirmDelete() === s.id ? '確定刪除?' : '刪除' }}</button>
+                  </div>
+                }
+              </li>
+            } @empty {
+              <li class="rt-empty">還沒有條件組合</li>
+            }
+          </ul>
+        </div>
+        <div class="rt-dlg-foot"><div class="rt-save-actions"><button type="button" class="rt-save-btn primary" (click)="close()">完成</button></div></div>
+      </div>
+    }
+  </div>
+}

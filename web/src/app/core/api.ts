@@ -11,6 +11,8 @@ import type {
   PushSubscriptionInput,
   PushSubscriptionsDto,
   PushTestResult,
+  RouteFilterDto,
+  RouteFilterInput,
   RouteSubDto,
   RouteSubInput,
   SubmarineInput,
@@ -104,5 +106,19 @@ export class Api {
   }
   deleteRouteSub(id: string): Promise<unknown> {
     return firstValueFrom(this.http.delete(`/api/route-subs/${encodeURIComponent(id)}`));
+  }
+
+  // ---- 找路線的條件組合(SCHEMA §8.12;D-229);PUT 是整筆取代 ----
+  routeFilters(): Promise<RouteFilterDto[]> {
+    return firstValueFrom(this.http.get<RouteFilterDto[]>('/api/route-filters'));
+  }
+  createRouteFilter(input: RouteFilterInput): Promise<RouteFilterDto> {
+    return firstValueFrom(this.http.post<RouteFilterDto>('/api/route-filters', input));
+  }
+  updateRouteFilter(id: string, input: RouteFilterInput): Promise<RouteFilterDto> {
+    return firstValueFrom(this.http.put<RouteFilterDto>(`/api/route-filters/${encodeURIComponent(id)}`, input));
+  }
+  deleteRouteFilter(id: string): Promise<unknown> {
+    return firstValueFrom(this.http.delete(`/api/route-filters/${encodeURIComponent(id)}`));
   }
 }

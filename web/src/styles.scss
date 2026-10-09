@@ -565,10 +565,13 @@ app-select { display: block; position: relative; }
 .rt-pname { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rt-pname b { color: var(--accent); margin-right: 4px; }
 .rt-x { flex: 0 0 auto; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--text-dim); cursor: pointer; border-radius: 8px; }
-.rt-summary { display: flex; gap: 8px; }
-.rt-stat { flex: 1; min-width: 0; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.22); border-radius: 10px; padding: 8px 10px; }
-.rt-stat .label { font-size: 10.5px; color: #d8a94c; }
-.rt-stat .num { margin-top: 2px; font-size: 14px; font-weight: 700; color: var(--amber); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rt-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.rt-stat { min-width: 0; display: flex; align-items: baseline; gap: 8px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.22); border-radius: 10px; padding: 8px 12px; white-space: nowrap; }
+.rt-stat-wide { grid-column: 1 / -1; }
+.rt-stat .label { font-size: 12px; color: #d8a94c; }
+.rt-stat .label::after { content: ':'; }
+.rt-stat .num { font-size: 17px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; }
+@media (max-width: 340px) { .rt-summary { grid-template-columns: minmax(0, 1fr); } }
 .rt-note { font-size: 11px; line-height: 1.5; color: var(--text-faint); }
 @media (max-width: 1000px) { .rt-grid { grid-template-columns: minmax(0, 1fr); } }
 
@@ -622,6 +625,12 @@ app-route-result, app-route-editor { display: flex; flex-direction: column; gap:
 .rt-card-title { min-width: 0; display: flex; flex-direction: column; }
 .rt-card-title b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rt-card-sub { font-size: 11px; color: var(--text-dim); }
+/* 找路線結果的航點串:代號亮而粗(對照海圖),名稱次要但清楚,航點之間用箭頭分隔,窄螢幕自然換行 */
+.rt-stops { list-style: none; margin: 4px 0 2px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 0; align-items: baseline; }
+.rt-hop { display: inline-flex; align-items: baseline; gap: 5px; font-size: 13px; line-height: 1.4; }
+.rt-hop + .rt-hop::before { content: '›'; margin: 0 7px; color: var(--accent); font-weight: 700; opacity: 0.8; }
+.rt-hop-code { min-width: 1.6em; padding: 0 5px; border-radius: 6px; background: rgba(45,212,191,0.14); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; text-align: center; }
+.rt-hop-name { color: var(--text-muted); }
 .rt-card-lv { font-size: 11.5px; color: var(--text-dim); }
 .rt-chips5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 8px 0; }
 .rt-chip5 { display: flex; flex-direction: column; align-items: center; padding: 6px 2px; border-radius: 8px; background: rgba(148,163,184,0.06); text-align: center; min-width: 0; }
@@ -725,6 +734,11 @@ app-route-subs { display: block; container: rt-result / inline-size; }
 .rt-light.g-plain { color: var(--text-faint); }
 .rt-light.g-plain i { background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
 .rt-cfgbar .rt-cap { margin-left: 0; }
+.rt-filterbar { margin: 8px 0; }
+.rt-fm-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--bg-elevated-2); border: 1px solid var(--border); }
+.rt-fm-row .rt-text-input { flex: 1 1 auto; min-width: 0; }
+.rt-fm-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rt-fm-main b { overflow-wrap: anywhere; }
 
 .modal-box.rt-dlg { display: flex; flex-direction: column; gap: 10px; padding: 0; overflow: hidden; max-width: 520px; max-height: calc(90vh / var(--vu-div)); }
 .modal-box.rt-dlg.wide { max-width: 860px; }
@@ -753,10 +767,8 @@ app-route-subs { display: block; container: rt-result / inline-size; }
 .rt-sheet .rt-dlg-foot .rt-save-btn { flex: 1 1 0; }
 
 /* 航線模擬器:摘要格換行與返航時刻上下排版、手機浮動功能鈕(D-209) */
-.rt-stat .num { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.25; }
-.rt-ret { display: flex; flex-direction: column; }
-.rt-ret-date { font-size: 10.5px; font-weight: 500; color: #d8a94c; line-height: 1.2; }
-.rt-ret-time { font-size: 15px; font-weight: 700; }
+.rt-ret-date { font-weight: 500; color: #d8a94c; }
+.rt-ret-time { margin-left: 6px; font-weight: 700; }
 /* 零高度的黏底容器:黏在捲動區可視範圍的底端(正好在底部導覽列上方),不佔版面 */
 .rt-fab-wrap { position: sticky; bottom: 12px; height: 0; margin-top: -14px; align-self: stretch; z-index: 20; pointer-events: none; }
 .rt-fab-wrap > * { pointer-events: auto; }
@@ -810,6 +822,8 @@ app-route-find > .rt-block, app-route-find > .rt-dirty, app-route-find > .rt-fin
 .rt-find-top:not(.rt-grid) { display: contents; }
 .rt-find-top:not(.rt-grid) > .rt-block { margin-top: 12px; }
 .rt-find-top.rt-grid > .rt-block { margin-top: 0; }
+/* 海圖與條件區都收合:兩欄等高、對齊(平常 align-items: start,各自依內容) */
+.rt-find-top.rt-grid.rt-both-closed { align-items: stretch; }
 .rt-exp-fields { display: flex; flex-wrap: wrap; gap: 8px; }
 .rt-exp-field { flex: 1 1 140px; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-dim); }
 .rt-exp-label { margin: 10px 0 6px; font-size: 11px; color: var(--text-dim); }

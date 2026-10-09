@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Layout } from '../core/layout';
 import { SelectField, type SelectOption, type SelectValue } from '../ui/select';
 import { SEAS, SEA_INDEXES } from './core/data';
@@ -6,6 +6,8 @@ import type { FindRoute, FindSort } from './core/find';
 import { judgeBuild, routeNeed } from './core/need';
 import { MAX_HOURS_OPTIONS } from './route-explore-vm';
 import { RouteFindDialogs } from './route-find-dialogs';
+import { specSummary } from './route-filter-state';
+import { RouteFilterVm } from './route-filter-vm';
 import { RouteFindVm } from './route-find-vm';
 import { formatTravel } from './route-format';
 import { itemName } from './route-loot-vm';
@@ -29,7 +31,7 @@ interface Card {
   sea: number;
   order: number[];
   seaName: string;
-  stops: string;
+  stops: { code: string; name: string }[];
   /** 右側主指標,隨排序變化 */
   headline: string;
   /** 只在排序為可能解鎖時有;「返航時有機會解鎖新航點:X、X、X」 */
@@ -62,10 +64,15 @@ export class RouteFind {
   protected readonly layout = inject(Layout);
   protected readonly vm = inject(RouteVm);
   protected readonly f = inject(RouteFindVm);
+  protected readonly fv = inject(RouteFilterVm);
   protected readonly x = this.f.x;
   protected readonly l = this.f.l;
 
   protected readonly shown = signal(PAGE);
+  /** 條件區收合時顯示的一行摘要 */
+  protected readonly condSummary = computed(() => specSummary(this.fv.current()) || '沒有額外條件');
+  /** 海圖與條件區都收合:桌機兩欄等高 */
+  protected readonly bothClosed = computed(() => !this.x.mapOpen() && !this.f.condOpen());
   protected readonly confirmClear = signal(false);
   protected readonly sorts = SORT_OPTIONS;
   protected readonly seaOptions: SelectOption[] = [{ value: 'all', label: '全部海域' }, ...SEAS.map((s) => ({ value: s.sea, label: s.name }))];
@@ -83,6 +90,20 @@ export class RouteFind {
     const exc = this.f.excluded();
     return `${pts.filter((p) => req.has(p.id)).length} 選中 · ${pts.filter((p) => exc.has(p.id)).length} 排除`;
   });
+  constructor() {
+    // 每算完一次:結果頁數歸零;若是載入條件組合觸發的,捲到結果
+    effect(() => {
+      if (this.f.runCount() === 0) return;
+      untracked(() => {
+        this.shown.set(PAGE);
+        if (this.f.scrollPending) {
+          this.f.scrollPending = false;
+          setTimeout(() => document.getElementById('rt-find-results')?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }), 80);
+        }
+      });
+    });
+  }
+
   protected readonly sortLabel = computed(() => {
     switch (this.f.searchedSort()) {
       case 'opens': return '可能開出的新航點數';
@@ -118,7 +139,7 @@ export class RouteFind {
       sea: r.sea,
       order: r.order,
       seaName: si.sea.name,
-      stops: r.order.map((id) => { const p = si.byId.get(id)!; return `${p.code} ${p.name}`; }).join(' › '),
+      stops: r.order.map((id) => { const p = si.byId.get(id)!; return { code: p.code, name: p.name }; }),
       headline: sort === 'perMin' ? `每分鐘 ${r.perMin.toFixed(1)} 經驗` : sort === 'opens' ? `最多開 ${r.opens.length} 點` : `共 ${r.items.length} 種物品`,
       opens:
         sort === 'opens' && r.opens.length > 0

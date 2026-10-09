@@ -143,4 +143,21 @@ INSERT OR IGNORE INTO route_sub_bindings (route_sub_id, submarine_id)
 UPDATE route_subs SET bound_submarine_id = NULL;
 `,
   },
+  {
+    version: 5,
+    name: 'route_filters',
+    // 找路線的「條件組合」:每人最多 10 組由 API 檢查,表上不加 CHECK。
+    // spec 是 JSON 文字(不查詢、整筆讀寫),欄位驗證在 services/route-filters.ts(D-229)。
+    sql: `
+CREATE TABLE route_filters (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  spec TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX ix_route_filters_user ON route_filters(user_id);
+`,
+  },
 ];

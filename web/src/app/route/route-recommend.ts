@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouteCfgBar } from './route-cfg-bar';
+import { RouteFilterBar } from './route-filter-bar';
+import { RouteFilterDialogs } from './route-filter-dialogs';
+import { RouteFilterVm } from './route-filter-vm';
 import { RouteFind } from './route-find';
 import { RouteVm } from './route-vm';
 
@@ -9,12 +12,17 @@ import { RouteVm } from './route-vm';
  */
 @Component({
   selector: 'app-route-recommend',
-  imports: [RouteCfgBar, RouteFind],
+  imports: [RouteCfgBar, RouteFilterBar, RouteFilterDialogs, RouteFind],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-recommend.html',
 })
 export class RouteRecommend {
   protected readonly vm = inject(RouteVm);
+
+  constructor() {
+    // 進入「找路線」才載入條件組合(展示模式不會呼叫 API)
+    inject(RouteFilterVm).start();
+  }
 
   protected back(): void {
     this.vm.findOpen.set(false);

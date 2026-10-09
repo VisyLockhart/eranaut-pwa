@@ -64,6 +64,12 @@ export class RouteFindVm {
   readonly maxHours = signal<number | null>(null);
   readonly sort = signal<FindSort>('perMin');
   readonly busy = signal(false);
+  /** 右側「找路線」條件區是否展開(收合時只留標題、條件摘要與按鈕) */
+  readonly condOpen = signal(true);
+  /** 每算完一次加 1;畫面用來把結果頁數歸零 */
+  readonly runCount = signal(0);
+  /** 下一次算完要不要捲到結果(載入條件組合時用) */
+  scrollPending = false;
   private readonly snapshot = signal<FindSnapshot | null>(null);
 
   /** 地圖用:各點的篩選狀態(沒列出 = 未選) */
@@ -229,6 +235,7 @@ export class RouteFindVm {
         match: this.l.match(),
         explored: this.x.explored(),
       });
+      this.runCount.update((n) => n + 1);
       this.busy.set(false);
     }, 0);
   }

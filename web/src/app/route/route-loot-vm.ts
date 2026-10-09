@@ -25,6 +25,11 @@ const DROPPABLE: LootItem[] = (() => {
     .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
 })();
 
+/** 這個物品 id 是不是真的會掉落(條件組合載入時用來略過資料集已沒有的物品) */
+export function isLootItem(id: number): boolean {
+  return DROPPABLE.some((i) => i.id === id);
+}
+
 /** 物品 id → 繁中名稱(找不到回 id 字串) */
 export function itemName(id: number): string {
   return ITEMS[String(id)]?.name ?? String(id);

@@ -1,4 +1,4 @@
-<div class="rt-find-top" [class.rt-grid]="layout.isDesktop()">
+<div class="rt-find-top" [class.rt-grid]="layout.isDesktop()" [class.rt-both-closed]="bothClosed()">
 <section class="rt-block" aria-label="海圖">
   <div class="rt-block-head">
     <div class="rt-seg" role="group" aria-label="海圖模式">
@@ -62,7 +62,15 @@
 </section>
 
 <section class="rt-block rt-find-cond" aria-label="找路線條件">
-  <div class="rt-block-title">找路線</div>
+  <div class="rt-block-head">
+    <div class="rt-block-title">找路線</div>
+    <button type="button" class="rt-link-btn rt-head-end" [attr.aria-expanded]="f.condOpen()" aria-controls="rt-find-cond-body" (click)="f.condOpen.set(!f.condOpen())">{{ f.condOpen() ? '收合' : '展開' }}</button>
+  </div>
+  @if (!f.condOpen()) {
+    <div class="rt-map-count" role="status">{{ condSummary() }}</div>
+  }
+  @if (f.condOpen()) {
+  <div id="rt-find-cond-body">
   <div class="rt-exp-fields">
     <label class="rt-exp-field">
       <span>海域</span>
@@ -107,12 +115,18 @@
     }
   </div>
 
+  </div>
+  }
+
   @for (n of f.notes(); track n.text) {
     <div class="rt-dirty" [class.bad]="n.kind === 'warn'" role="status">{{ n.text }}</div>
   }
 
   <div class="rt-save-actions" style="margin-top: 10px">
     <button type="button" class="rt-save-btn primary" [disabled]="f.busy()" (click)="search()">{{ f.busy() ? '計算中…' : '找路線' }}</button>
+    @if (fv.enabled) {
+      <button type="button" class="rt-save-btn" [disabled]="fv.isEmpty() && !fv.modified()" (click)="fv.dialog.set('save')">儲存條件</button>
+    }
   </div>
 </section>
 </div>
@@ -124,11 +138,16 @@
     @if (rs.length === 0) {
       <div class="rt-empty">{{ emptyText() }}</div>
     } @else {
-      <div class="rt-block-title" role="status">共 {{ rs.length }} 條路線,依{{ sortLabel() }}排序</div>
+      <div class="rt-block-title" role="status">共 {{ rs.length }} 條路線,依{{ sortLabel() }}排序@if (fv.enabled) { <button type="button" class="rt-link-btn" [disabled]="fv.isEmpty() && !fv.modified()" (click)="fv.dialog.set('save')">儲存這組條件</button> }</div>
       @for (c of visible(); track c.key) {
         <article class="rt-card rt-hit">
           <div class="rt-hit-main">
-            <div class="rt-card-title"><b>{{ c.seaName }}</b><span class="rt-card-sub">{{ c.stops }}</span></div>
+            <div class="rt-card-title"><b>{{ c.seaName }}</b></div>
+            <ol class="rt-stops" aria-label="依序經過的航點">
+              @for (s of c.stops; track $index) {
+                <li class="rt-hop"><b class="rt-hop-code">{{ s.code }}</b><span class="rt-hop-name">{{ s.name }}</span></li>
+              }
+            </ol>
             @if (c.opens) {
               <div class="rt-card-opens">返航時有機會解鎖新航點:{{ c.opens }}</div>
             }

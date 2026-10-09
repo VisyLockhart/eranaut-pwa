@@ -39,6 +39,9 @@ export const LIMITS = {
   maxRouteSubLevel: 130,
   /** 一組儲存潛艇最多綁幾艘工坊潛艇(只是擋異常輸入;一般使用者的潛艇總數遠少於此) */
   maxRouteSubBindings: 32,
+  /** 找路線的條件組合(D-229):名稱字數、每位使用者組數上限 */
+  routeFilterName: 20,
+  maxRouteFiltersPerUser: 10,
   /** 剩餘時間上限:99 天 23 小時 59 分(D-118 的天≤99、時≤23、分≤59),單位分鐘 */
   maxRemainingMinutes: 99 * 24 * 60 + 23 * 60 + 59,
 } as const;
@@ -47,3 +50,17 @@ export const LIMITS = {
 export const ROUTE_PART_KEYS = ['hull', 'stern', 'bow', 'bridge'] as const;
 export type RoutePartKey = (typeof ROUTE_PART_KEYS)[number];
 export const ROUTE_PART_MAX = 10;
+
+/** 找路線的條件組合 `spec`(D-229)的排序選項,與前端 `FindSort` 一致 */
+export const ROUTE_FILTER_SORTS = ['perMin', 'opens', 'variety'] as const;
+export type RouteFilterSort = (typeof ROUTE_FILTER_SORTS)[number];
+/** 條件組合 `spec` 的範圍上限:API 不認識航點與物品資料集(D-202),只擋明顯異常的輸入;實際存不存在由前端帶入時處理 */
+export const ROUTE_FILTER_LIMITS = {
+  pointIdMax: 9999,
+  itemIdMax: 1000000,
+  seaMax: 99,
+  maxHoursMax: 168,
+  maxRequired: 128,
+  maxExcluded: 128,
+  maxItems: 50,
+} as const;
