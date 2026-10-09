@@ -33,6 +33,8 @@ jobs:
         run: |
           cp web/dist/demo/browser/index.html web/dist/demo/browser/404.html
           echo "demo.eranaut.aequoreranos.com" > web/dist/demo/browser/CNAME
+      - name: Link preview page for /intro
+        run: node tools/make-intro-html.mjs web/dist/demo/browser
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web/dist/demo/browser
