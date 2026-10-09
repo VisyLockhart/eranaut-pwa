@@ -48,9 +48,12 @@ details ul { margin: 8px 0 0; padding-left: 18px; }
 .search { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--ink); border: 1px dashed var(--water); border-radius: 8px; padding: 14px 16px; margin: 8px 0 6px; }
 .search code { font-family: var(--serif); font-size: 17px; color: var(--water); flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; }
 .btn { font: inherit; font-weight: 700; border: 0; border-radius: 6px; padding: 9px 16px; cursor: pointer; background: var(--gold); color: var(--ink); }
-.share { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 4px; }
-.share .pron { margin: 0; overflow-wrap: anywhere; min-width: 0; }
-.tour-share { margin: -4px 0 18px; }
+.share { margin-top: 14px; }
+.share > p:first-child { margin-bottom: 0; }
+.search.link { border-color: var(--mist); }
+.search.link code { font-family: var(--sans); font-size: 15px; color: var(--silver); user-select: all; }
+.search.link .btn { background: var(--water); }
+.tour-share { margin: 0 0 18px; }
 .who { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .who span { background: var(--current); border-radius: 4px; padding: 3px 10px; font-size: 13px; color: var(--water); }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; counter-reset: s; }

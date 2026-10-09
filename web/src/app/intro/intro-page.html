@@ -82,14 +82,18 @@
           </p>
 
           <div class="share">
-            <button type="button" class="btn" (click)="copyLink('join')">複製分享連結</button>
-            <span class="pron" aria-live="polite">
+            <p>想把這一頁分享給朋友?</p>
+            <div class="search link">
+              <code id="sea-link-join">{{ shareLinks.join }}</code>
+              <button type="button" class="btn" (click)="copyLink('join')">複製連結</button>
+            </div>
+            <p class="pron" aria-live="polite">
               @switch (linkState().join) {
-                @case ('ok') { 已複製 {{ shareLinks.join }},貼到 Discord、LINE 或臉書就會顯示預覽卡。 }
-                @case ('manual') { 這台裝置無法自動複製,請手動複製:{{ shareLinks.join }} }
-                @default { 想把這一頁分享給朋友?{{ shareLinks.join }} }
+                @case ('ok') { 已複製,貼到 Discord、LINE 或臉書就會顯示預覽卡。 }
+                @case ('manual') { 請手動複製已選取的連結。 }
+                @default { &nbsp; }
               }
-            </span>
+            </p>
           </div>
 
           <h2>我們是誰</h2>
@@ -131,14 +135,18 @@
           </div>
 
           <div class="share tour-share">
-            <button type="button" class="btn" (click)="copyLink('route')">複製分享連結</button>
-            <span class="pron" aria-live="polite">
+            <p>想讓朋友先試玩航線模擬器?分享這個連結:</p>
+            <div class="search link">
+              <code id="sea-link-route">{{ shareLinks.route }}</code>
+              <button type="button" class="btn" (click)="copyLink('route')">複製連結</button>
+            </div>
+            <p class="pron" aria-live="polite">
               @switch (linkState().route) {
-                @case ('ok') { 已複製 {{ shareLinks.route }},朋友點開就能直接試玩航線模擬器。 }
-                @case ('manual') { 這台裝置無法自動複製,請手動複製:{{ shareLinks.route }} }
-                @default { 分享航線模擬器的試玩連結:{{ shareLinks.route }} }
+                @case ('ok') { 已複製,朋友點開就能直接試玩航線模擬器。 }
+                @case ('manual') { 請手動複製已選取的連結。 }
+                @default { &nbsp; }
               }
-            </span>
+            </p>
           </div>
 
           <div class="feats free-grid">

@@ -96,6 +96,14 @@ export class IntroPage {
       await navigator.clipboard.writeText(SHARE_LINKS[which]);
       this.linkState.update((m) => ({ ...m, [which]: 'ok' }));
     } catch {
+      const sel = this.doc.defaultView?.getSelection();
+      const el = this.doc.getElementById(`sea-link-${which}`);
+      if (sel && el) {
+        const r = this.doc.createRange();
+        r.selectNodeContents(el);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      }
       this.linkState.update((m) => ({ ...m, [which]: 'manual' }));
     }
   }
