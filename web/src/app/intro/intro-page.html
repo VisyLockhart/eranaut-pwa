@@ -1,0 +1,155 @@
+@if (layout.isDesktop()) {
+  <div class="sea-wrap sea-desktop"><ng-container *ngTemplateOutlet="body" /></div>
+} @else {
+  <div class="sea-wrap sea-mobile"><ng-container *ngTemplateOutlet="body" /></div>
+}
+
+<ng-template #body>
+  <div class="sea">
+    <div class="tabs" role="tablist" aria-label="海域介紹子頁">
+      @for (t of tabs; track t.id) {
+        <button type="button" role="tab" [id]="'sea-t-' + t.id" [attr.aria-controls]="'sea-p-' + t.id" [attr.aria-selected]="tab() === t.id" (click)="show(t.id)">{{ t.label }}</button>
+      }
+    </div>
+
+    @switch (tab()) {
+      @case ('intro') {
+        <div class="panel" id="sea-p-intro" role="tabpanel" aria-labelledby="sea-t-intro">
+          <div class="eyebrow">FFXIV 繁體中文版 ・ 潛水艇同好會</div>
+          <h1 class="hero">純水與銀礦之詩<span>靜謐海域交換所</span></h1>
+          <div class="latin">Aequor Eranos</div>
+          <p class="lead">海面以下,潛水艇日夜作業。我們希望海面是平的,圈子裡的人互相照應。這個名字,就是這兩件事。</p>
+          <svg class="wave" viewBox="0 0 600 18" preserveAspectRatio="none" aria-hidden="true"><path d="M0 9 Q 25 0 50 9 T 100 9 T 150 9 T 200 9 T 250 9 T 300 9 T 350 9 T 400 9 T 450 9 T 500 9 T 550 9 T 600 9" fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
+
+          <h2>名字裡的兩層意思</h2>
+          <div class="two">
+            <div class="card"><h3>靜謐海域</h3><p>潛水艇都在海面下作業,我們要的是一片平靜的海。沒有驚濤,只有能安心出航、準時收艇的日子。</p></div>
+            <div class="card"><h3>交換所</h3><p>不是櫃檯做生意。是成員之間互相協助,讓金錢和物資在圈子裡轉起來。</p></div>
+          </div>
+          <div class="quote">「純水與銀礦之詩」,對會長來說,是海底挖寶的一種浪漫。雖然跟勞動一樣。</div>
+          <p>正式名稱是「純水與銀礦之詩,靜謐海域交換所」。通訊貝只能寫七個字,所以招募時只掛了後半段「靜謐海域交換所」,剛好七個字。</p>
+
+          <h2>Aequor Eranos 是什麼意思</h2>
+          <p>對外想掛一個羅馬字母名稱,最後定案為 Aequor Eranos。一個拉丁字、一個希臘字,都很老,也都很乾淨,各自接住中文名的一層意思。</p>
+          <div class="two">
+            <div class="card">
+              <div class="big">Aequor<small>拉丁文 ・ AY-kwor / EH-kwor</small></div>
+              <p class="gap"><b>被風整平的那層海。</b>本義不是「海」,是「一片平整的表面」,字根 aequus 就是平的、水平的。</p>
+              <p>古羅馬人自己解釋過:海面沒被風攪動時,像被整平一樣,所以叫 aequor。維吉爾寫海最常用這個字。比起帶著深淵與風暴的 pontus、pelagus,它先讓人看見的是可以航行的海面。</p>
+              <p class="pron">對應:靜謐海域</p>
+            </div>
+            <div class="card">
+              <div class="big">Eranos<small>古希臘文 ἔρανος ・ EH-ra-nos</small></div>
+              <p class="gap"><b>各出一份的圈子。</b>最早出現在《奧德賽》,是每人帶一份來的飯局。後來成為雅典朋友之間的習慣:各出一點錢,幫熟人度過眼前的缺口,通常沒有利息,但有默契,下次輪到別人缺,你也出。</p>
+              <p>再後來,它成了常設的互助社團。它不是市集,也不是銀行。</p>
+              <p class="pron">對應:交換所</p>
+            </div>
+          </div>
+          <p class="gap">潛水艇同好會每天在做的事很像:航線怎麼排、零件誰有、燃料誰能讓。不是叫賣,是把自己的一份放到公共桌上。</p>
+
+          <h2>取名時被拿掉的選項</h2>
+          <details>
+            <summary>Exchange、Moorings、Mutuum</summary>
+            <ul>
+              <li><b>Exchange</b>:太像交易所、兌換窗口。功能對,氣味不對。</li>
+              <li><b>Moorings</b>(泊位):有靠岸、有歸屬的感覺,但只寫出「停下來的地方」,寫不出互相幫忙。</li>
+              <li><b>Mutuum</b>:拉丁文互貸,語意接近,但現在搜尋幾乎被加密貨幣借貸盤佔滿,容易被認錯門。</li>
+            </ul>
+          </details>
+          <details>
+            <summary>想查原文的人</summary>
+            <p><b>Aequor</b>:Lewis &amp; Short《A Latin Dictionary》、Oxford Latin Dictionary、瓦羅《論拉丁語》7.23、西塞羅殘篇(Nonius 引)、維吉爾《埃涅阿斯紀》。</p>
+            <p><b>Eranos</b>:Liddell–Scott Greek–English Lexicon、Oxford Classical Dictionary 條目 “eranos”(Paul Millett)、荷馬《奧德賽》1.226、蘇達辭典 ε.2893、Harper Dictionary of Classical Antiquities。</p>
+            <p>現代也有叫 Eranos 的學術年會與現代希臘文的「募款」,那是後世借用。我們用古典義,前面加了 Aequor,不會和它們混在一起。</p>
+          </details>
+        </div>
+      }
+
+      @case ('join') {
+        <div class="panel" id="sea-p-join" role="tabpanel" aria-labelledby="sea-t-join">
+          <div class="eyebrow">招募中 ・ 同好會搜尋</div>
+          <p class="slogan">你是單人玩潛艇的<em>孤狼玩家</em>嗎?<br />想要<em>收艇不誤點</em>嗎?<br />想要認識大地主,擁有強力的後盾嗎?</p>
+          <p>在遊戲內的同好會搜尋以下名稱:</p>
+          <div class="search">
+            <code id="sea-join-name">{{ joinName }}</code>
+            <button type="button" class="btn" (click)="copyName()">複製名稱</button>
+          </div>
+          <p class="pron" aria-live="polite">
+            @switch (copied()) {
+              @case ('ok') { 已複製,到遊戲內同好會搜尋貼上即可。 }
+              @case ('manual') { 請手動複製已選取的名稱。 }
+              @default { &nbsp; }
+            }
+          </p>
+
+          <h2>我們是誰</h2>
+          <p>專為<b>單人公會</b>設立的同好會,有兩個目的:</p>
+          <div class="two">
+            <div class="card"><h3>增加交流</h3><p>讓單人公會玩家之間認識彼此,不再一個人顧艇。</p></div>
+            <div class="card"><h3>跨服支援</h3><p>潛水艇打撈物與裝備的跨服買賣與支援。</p></div>
+          </div>
+          <div class="who"><span>只收擁有潛艇或飛艇的玩家</span></div>
+
+          <h2>加入三步驟</h2>
+          <ol class="steps">
+            <li><div><b>加入同好會,到留言版留下公會地址</b><br />這一步決定你有沒有被看見。</div></li>
+            <li><div><b>管理員在遊戲內與你聯絡</b><br />約時間確認公會工坊的運營情況。</div></li>
+            <li><div><b>確認後邀請你進跨服貝與專屬 Discord</b><br />Eranaut 也在這裡解鎖,見「Eranaut 導覽」。</div></li>
+          </ol>
+
+          <h2>入會前先知道</h2>
+          <div class="rules">
+            <div class="card"><h3>留言版要留地址</h3><p>沒有在留言板告知公會地址的新人,視為無心加入,不再詢問處理。</p></div>
+            <div class="card"><h3>詐欺零容忍</h3><p>交易詐欺一律黑名單剔除並檢舉。</p></div>
+            <div class="card"><h3>不只談潛艇</h3><p>不定時舉辦休閒副本、A 車、音樂會。</p></div>
+          </div>
+
+          <h2>有問題找管理方</h2>
+          <p>諮詢時段:上午 09:00 ~ 12:00。</p>
+          <div class="contact"><span class="chip">Evy@巴哈姆特</span><span class="chip">若月@巴哈姆特</span></div>
+        </div>
+      }
+
+      @case ('tour') {
+        <div class="panel" id="sea-p-tour" role="tabpanel" aria-labelledby="sea-t-tour">
+          <div class="eyebrow">社群專屬工具</div>
+          <h1 class="tour-title">把潛艇的返航時間,交給 Eranaut</h1>
+          <p class="lead">同時經營好幾個工坊、十幾艘潛艇,人腦排不出每一艘的返航時間。Eranaut 是同好會自己做的網頁工具,幫你記、幫你算、時間到了叫你。</p>
+          <div class="legend">
+            <span><span class="tag free">展示版可試玩</span> 這個頁面就能體驗</span>
+            <span><span class="tag lock"><svg viewBox="0 0 12 12" aria-hidden="true"><path fill="currentColor" d="M3 5V4a3 3 0 016 0v1h1v6H2V5zm1.5 0h3V4a1.5 1.5 0 00-3 0z" /></svg>加入社群後解鎖</span> 需要 Discord 登入與社群身分</span>
+          </div>
+
+          <div class="feats locked-grid">
+            @for (f of lockedFeatures; track f.title) {
+              <ng-container *ngTemplateOutlet="card; context: { $implicit: f }" />
+            }
+          </div>
+          <div class="feats free-grid">
+            @for (f of freeFeatures; track f.title) {
+              <ng-container *ngTemplateOutlet="card; context: { $implicit: f }" />
+            }
+          </div>
+
+          <div class="cta">
+            <h2>想把它變成自己的工具?</h2>
+            <p>Eranaut 只開放給同好會成員。加入之後,以上全部解鎖。</p>
+            <button type="button" class="btn" (click)="show('join')">看加入辦法</button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</ng-template>
+
+<ng-template #card let-f>
+  <div class="feat" [class.locked]="f.locked">
+    @if (f.locked) {
+      <span class="tag lock"><svg viewBox="0 0 12 12" aria-hidden="true"><path fill="currentColor" d="M3 5V4a3 3 0 016 0v1h1v6H2V5zm1.5 0h3V4a1.5 1.5 0 00-3 0z" /></svg>加入社群後解鎖</span>
+    } @else {
+      <span class="tag free">展示版可試玩</span>
+    }
+    <h3>{{ f.title }}</h3>
+    <p>{{ f.text }}</p>
+  </div>
+</ng-template>

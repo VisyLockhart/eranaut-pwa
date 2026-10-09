@@ -65,7 +65,7 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
+                  "maximumWarning": "6kB",
                   "maximumError": "8kB"
                 }
               ],
@@ -75,6 +75,10 @@
                 {
                   "replace": "src/app/demo/demo-providers.ts",
                   "with": "src/app/demo/demo-providers.demo.ts"
+                },
+                {
+                  "replace": "src/app/demo/demo-routes.ts",
+                  "with": "src/app/demo/demo-routes.demo.ts"
                 }
               ]
             }

@@ -12,6 +12,9 @@
     <router-outlet />
 
     <div class="m-nav">
+      @if (intro) {
+        <a class="nav-item m-intro" routerLink="/intro" routerLinkActive="active"><app-icon name="mapPin" [size]="20" /><span>介紹</span><i class="intro-dot"></i></a>
+      }
       <a class="nav-item" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>總覽</span></a>
       <a class="nav-item" routerLink="/workshops" routerLinkActive="active"><app-icon name="workshops" [size]="20" /><span>工坊</span></a>
       <a class="nav-item nav-upload" routerLink="/update" routerLinkActive="active">
@@ -36,6 +39,9 @@
           <div class="d-brand-sub">潛水艇追蹤</div>
         </div>
       </div>
+      @if (intro) {
+        <a class="d-nav-item intro-link" routerLink="/intro" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '海域介紹' : null"><app-icon name="mapPin" [size]="20" /><span>海域介紹</span><span class="intro-new">NEW</span></a>
+      }
       <a class="d-nav-item" routerLink="/" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '總覽' : null" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>總覽</span></a>
       <a class="d-nav-item" routerLink="/workshops" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '工坊管理' : null"><app-icon name="workshops" [size]="20" /><span>工坊管理</span></a>
       <a class="d-nav-item" routerLink="/update" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '更新潛艇' : null"><app-icon name="camera" [size]="20" /><span>更新潛艇</span></a>
