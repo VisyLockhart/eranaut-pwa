@@ -448,6 +448,16 @@ app-root { display: block; }
 .uf-actions-m { padding-right: 18px; }
 .uf-actions-m .primary-btn:disabled, .uf-actions-d .primary-btn:disabled { opacity: 0.6; cursor: default; }
 .uf-name::placeholder { color: var(--text-faint); font-weight: 400; }
+.install-prompt { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 280; width: min(400px, calc(100vw / var(--vu-div) - 24px)); box-sizing: border-box; padding: 14px 16px; border-radius: 16px; background: var(--bg-elevated-2); border: 1px solid var(--accent); box-shadow: 0 8px 30px rgba(0,0,0,0.5); animation: ip-in .25s ease-out 1.2s both; }
+.install-prompt p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text); }
+.install-prompt .ip-steps { margin-top: 6px; color: var(--text-muted); }
+.install-prompt .ip-share { vertical-align: -2px; margin: 0 2px; color: var(--accent); }
+.install-prompt .ip-actions { display: flex; gap: 8px; margin-top: 12px; }
+.install-prompt .ip-actions button { flex: 1; padding: 10px; }
+/* 展示模式的小標籤在右下角,卡片再往上讓開 */
+body:has(app-demo-bar) .install-prompt { bottom: calc(136px + env(safe-area-inset-bottom)); }
+@keyframes ip-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .install-prompt { animation: none; } }
 .toast-stack { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; align-items: center; gap: 8px; width: max-content; max-width: calc(100vw / var(--vu-div) - 32px); pointer-events: none; }
 .toast-stack .toast { position: static; transform: none; border-radius: 14px; text-align: center; line-height: 1.5; }
 .toast-stack .toast.warn { border-color: var(--amber); color: #f0c869; }

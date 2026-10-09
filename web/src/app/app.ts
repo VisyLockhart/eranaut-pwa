@@ -2,22 +2,26 @@ import { ChangeDetectionStrategy, Component, effect, inject, untracked } from '@
 import { AuthScreen } from './auth/auth-screen';
 import { Auth } from './core/auth';
 import { DataStore } from './core/data-store';
+import { InstallPrompt } from './core/install-prompt';
 import { UiScale } from './core/ui-scale';
 import { clearRouteCache } from './route/route-cache';
 import { Shell } from './layout/shell';
+import { InstallPromptCard } from './ui/install-prompt';
 import { ToastHost } from './ui/toast-host';
 
 @Component({
   selector: 'app-root',
-  imports: [AuthScreen, Shell, ToastHost],
+  imports: [AuthScreen, Shell, ToastHost, InstallPromptCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `@if (auth.status() === 'authenticated') { <app-shell /> } @else { <app-auth-screen /> }<app-toast-host />`,
+  template: `@if (auth.status() === 'authenticated') { <app-shell /> } @else { <app-auth-screen /> }<app-install-prompt /><app-toast-host />`,
 })
 export class App {
   protected readonly auth = inject(Auth);
   private readonly store = inject(DataStore);
   /** 開機就建立,讓儲存的介面大小在第一次繪製前套用(D-164) */
   private readonly uiScale = inject(UiScale);
+  /** 開機就建立,才收得到瀏覽器很早送出的 `beforeinstallprompt` */
+  private readonly installPrompt = inject(InstallPrompt);
 
   constructor() {
     // 登入後開始載入與倒數;登出或 session 失效就停止並清掉本機快取
