@@ -15,6 +15,11 @@
       已標記 {{ x.exploredCount() }} / {{ x.totalCount }}<span class="rt-count">(排序選「可能解鎖」時會用到)</span>
     }
   </div>
+  @if (f.mode() === 'filter' && vm.seq().length > 0) {
+    <div class="rt-use-route">
+      <button type="button" class="rt-chip" (click)="useRoute()">用目前選的 {{ vm.seq().length }} 個點當必選</button>
+    </div>
+  }
   @if (x.mapOpen()) {
     <div id="rt-find-map">
       <app-route-sea-pager [sea]="x.viewSea()" (seaChange)="x.viewSea.set($event)" />
@@ -146,7 +151,7 @@
           </div>
           <div class="rt-hit-side">
             <span class="rt-card-lv">{{ c.headline }}</span>
-            <button type="button" class="rt-save-btn primary" (click)="load(c)">帶到航點</button>
+            <button type="button" class="rt-save-btn primary" (click)="load(c)">模擬路線</button>
           </div>
         </article>
       }

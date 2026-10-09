@@ -18,9 +18,16 @@
   </div>
   @switch (vm.tab()) {
     @case ('config') { <app-route-editor /> }
-    @case ('recommend') { <app-route-recommend /> }
-    @case ('map') {
-      <div class="rt-view-map" [class.rt-grid]="layout.isDesktop()"><ng-container *ngTemplateOutlet="mapView" /></div>
+    @case ('route') {
+      @if (vm.findOpen()) {
+        <app-route-recommend />
+      } @else {
+        <div class="rt-block-head rt-plan-head">
+          <div class="rt-block-title">規劃航線</div>
+          <button type="button" class="rt-save-btn rt-cta" (click)="openFind()"><span aria-hidden="true">✦ </span>找路線</button>
+        </div>
+        <div class="rt-view-map" [class.rt-grid]="layout.isDesktop()"><ng-container *ngTemplateOutlet="mapView" /></div>
+      }
     }
   }
   <app-route-about />
@@ -85,7 +92,10 @@
       </span>
     </div>
     @if (picked().length === 0) {
-      <div class="rt-empty">在地圖上點航點,依點選順序航行</div>
+      <div class="rt-empty">
+        在地圖上點航點,依點選順序航行
+        <button type="button" class="rt-link-btn" (click)="openFind()">或讓它幫你找路線</button>
+      </div>
     } @else {
       <ol class="rt-picked">
         @for (s of picked(); track s.point.id) {

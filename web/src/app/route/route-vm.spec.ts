@@ -66,7 +66,7 @@ describe('RouteVm', () => {
       TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
       TestBed.inject(Auth).status.set('authenticated');
       const again = TestBed.inject(RouteVm);
-      expect(again.tab()).toBe('recommend');
+      expect(again.tab()).toBe('route');
     });
 
     it('壞資料 → 預設值,不丟錯', () => {
@@ -425,26 +425,26 @@ describe('RouteVm', () => {
       await tick();
     };
 
-    it('第一次進來:沒有儲存配置 → 配置頁;有儲存配置 → 推薦頁', async () => {
+    it('第一次進來:沒有儲存配置 → 配置頁;有儲存配置 → 航線頁', async () => {
       await load([]);
       expect(vm.tab()).toBe('config');
       vm.stop();
       localStorage.clear();
       setup();
       await load([dto()]);
-      expect(vm.tab()).toBe('recommend');
+      expect(vm.tab()).toBe('route');
     });
 
     it('使用者切過分頁就記住,下次沿用(有儲存配置時);自動決定的預設不寫入', async () => {
       await load([dto()]);
       expect(JSON.parse(localStorage.getItem(ROUTE_LAST_KEY)!).tab).toBeNull();
-      vm.setTab('map');
+      vm.setTab('config');
       TestBed.tick();
-      expect(JSON.parse(localStorage.getItem(ROUTE_LAST_KEY)!).tab).toBe('map');
+      expect(JSON.parse(localStorage.getItem(ROUTE_LAST_KEY)!).tab).toBe('config');
       vm.stop();
       setup();
       await load([dto()]);
-      expect(vm.tab()).toBe('map');
+      expect(vm.tab()).toBe('config');
     });
 
     it('草稿不動畫面配置;只套用 → 臨時配置;編輯的內容和那一組相同 → 改用那一組', async () => {

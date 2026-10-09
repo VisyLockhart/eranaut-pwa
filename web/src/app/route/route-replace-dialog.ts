@@ -4,7 +4,7 @@ import { seaIndex } from './core/data';
 import { RouteVm } from './route-vm';
 
 /**
- * 「帶到航點」前的確認:航點頁已經有不同的選點時,先問要不要換掉(D-212)。
+ * 「模擬路線」前的確認:航線頁已經有不同的選點時,先問要不要換掉(D-212)。
  * 狀態放在 root 的 RouteVm(`pendingLoad`,D-163)。取消、背景點擊、Esc 都不會動到已選航點。
  */
 @Component({

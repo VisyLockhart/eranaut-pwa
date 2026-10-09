@@ -795,6 +795,8 @@ button.rt-lights { width: 100%; align-items: center; min-height: 36px; padding: 
 .rt-subnote strong { color: var(--text); }
 app-route-recommend, app-route-find, app-route-build { display: block; }
 app-route-find > .rt-block, app-route-find > .rt-dirty, app-route-find > .rt-find-top, app-route-build > .rt-block, app-route-build > .rt-dirty, app-route-build > .rt-find-top { margin-top: 12px; }
+.rt-use-route { margin: 4px 0 8px; }
+.rt-plan-head { margin-bottom: 0; }
 .rt-parts4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 6px 0 2px; }
 .rt-part { display: flex; flex-direction: column; align-items: center; padding: 6px 2px; border-radius: 8px; background: rgba(45,212,191,0.07); min-width: 0; }
 .rt-part .l { font-size: 10.5px; color: var(--text-dim); }

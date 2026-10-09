@@ -59,18 +59,20 @@ export class RouteVm {
   readonly subId = signal<string | null>(this.init.subId);
 
   // ---- 分頁與對話框(放在這裡,換版面重建頁面元件時不會丟失) ----
-  /** 目前的分頁。預設:沒有儲存配置 → 配置;否則記住上次主動切到的分頁(沒有記錄就進找路線) */
+  /** 目前的分頁。預設:沒有儲存配置 → 配置;否則記住上次主動切到的分頁(沒有記錄就進航線) */
   readonly tab = signal<RouteTab>(this.init.tab ?? 'config');
   /** 使用者本次已主動切過分頁(之後不再自動決定預設分頁) */
   private tabTouched = false;
   private tabSettled = false;
   /** 編輯中的配置草稿;null = 對話框關閉 */
   readonly draft = signal<ConfigDraft | null>(null);
-  /** 航點頁:燈號下方的「路線需求」是否展開 */
+  /** 航線頁:燈號下方的「路線需求」是否展開 */
   readonly needOpen = signal(false);
   /** 「查看性能」對話框 */
   readonly perfOpen = signal(false);
-  /** 等待確認的「帶到航點」:航點頁已有不同的選點時,先問再換 */
+  /** 航線頁是否顯示「找路線」子頁(D-224);只放記憶體,換分頁不丟 */
+  readonly findOpen = signal(false);
+  /** 等待確認的「模擬路線」:航線頁已有不同的選點時,先問再換 */
   readonly pendingLoad = signal<{ sea: number; order: number[] } | null>(null);
 
   // ---- 儲存潛艇(伺服器) ----
@@ -139,12 +141,12 @@ export class RouteVm {
     this.tab.set(tab);
   }
 
-  /** 載入儲存潛艇後決定預設分頁:沒有儲存配置 → 配置;有但沒有記錄 → 找路線;有記錄 → 沿用。只在使用者還沒切過分頁時做 */
+  /** 載入儲存潛艇後決定預設分頁:沒有儲存配置 → 配置;有但沒有記錄 → 航線;有記錄 → 沿用。只在使用者還沒切過分頁時做 */
   private settleTab(): void {
     if (this.tabTouched || this.tabSettled || !this.loaded()) return;
     this.tabSettled = true;
     if (this.saved().length === 0) this.tab.set('config');
-    else if (this.init.tab === null) this.tab.set('recommend');
+    else if (this.init.tab === null) this.tab.set('route');
   }
 
   // ---- 路線選取 ----
@@ -171,7 +173,7 @@ export class RouteVm {
   }
 
   /**
-   * 找路線的「帶到航點」:航點頁已有不同的選點就先請使用者確認(`pendingLoad`),否則直接換過去並切到航點頁。
+   * 找路線結果的「模擬路線」:航線頁已有不同的選點就先請使用者確認(`pendingLoad`),否則直接換過去並回到航線頁。
    * 相同的路線不需要確認。
    */
   requestLoad(sea: number, order: readonly number[]): void {
@@ -196,7 +198,8 @@ export class RouteVm {
 
   private finishLoad(sea: number, order: readonly number[]): void {
     this.loadRoute(sea, order);
-    this.setTab('map');
+    this.findOpen.set(false);
+    this.setTab('route');
   }
 
   /** 「最短順序」按鈕(RS-05、RS-23) */

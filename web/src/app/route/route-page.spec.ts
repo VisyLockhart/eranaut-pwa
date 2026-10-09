@@ -7,6 +7,7 @@ import { Layout } from '../core/layout';
 import { SEA_INDEXES } from './core/data';
 import { ids } from './core/test-helpers';
 import { RoutePage } from './route-page';
+import { RouteFindVm } from './route-find-vm';
 import { RouteVm } from './route-vm';
 
 const g = () => SEA_INDEXES[1]!; // 灰海
@@ -15,7 +16,7 @@ describe('RoutePage', () => {
   let el: HTMLElement;
   let vm: RouteVm;
 
-  function mount(desktop = false, tab: 'config' | 'map' = 'map') {
+  function mount(desktop = false, tab: 'config' | 'route' = 'route') {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     TestBed.inject(Auth).status.set('authenticated');
@@ -171,24 +172,88 @@ describe('RoutePage', () => {
     expect([...el.querySelectorAll('.rt-stat .num')].map((n) => n.textContent?.trim())).toEqual(['—', '—', '—']);
   });
 
-  it('分頁順序:配置 / 找路線 / 航點;切換時選取狀態保留', () => {
+  it('分頁順序:配置 / 航線;切換時選取狀態保留', () => {
     const f = mount();
     vm.selectSea(2);
     vm.toggle(ids(g(), 'D')[0]!);
     f.detectChanges();
     const tabs = [...el.querySelectorAll<HTMLButtonElement>('.rt-tabs .up-tab')];
-    expect(tabs.map((t) => t.textContent?.trim())).toEqual(['配置', '找路線', '航點']);
-    tabs[1]!.click();
-    f.detectChanges();
-    expect(el.querySelector('app-route-recommend')).not.toBeNull();
-    expect(el.querySelector('.rt-view-map')).toBeNull();
+    expect(tabs.map((t) => t.textContent?.trim())).toEqual(['配置', '航線']);
+    expect(el.querySelector('.rt-view-map')).not.toBeNull();
+    expect(el.querySelector('app-route-recommend')).toBeNull();
     tabs[0]!.click();
     f.detectChanges();
     expect(el.querySelector('app-route-editor')).not.toBeNull();
-    tabs[2]!.click();
+    tabs[1]!.click();
     f.detectChanges();
     expect(el.querySelector('.rt-map')).not.toBeNull();
     expect(vm.seq()).toEqual(ids(g(), 'D'));
+  });
+
+  describe('航線頁的「找路線」子頁(D-224)', () => {
+    const cta = () => [...el.querySelectorAll<HTMLButtonElement>('.rt-plan-head button')].find((b) => b.textContent?.includes('找路線'))!;
+
+    it('主頁標題列有琥珀色「找路線」按鈕,點了切成子頁,「‹ 航線」返回;選點不丟', () => {
+      const f = mount();
+      vm.selectSea(2);
+      vm.toggle(ids(g(), 'D')[0]!);
+      f.detectChanges();
+      expect(cta().classList.contains('rt-cta')).toBe(true);
+      cta().click();
+      f.detectChanges();
+      expect(vm.findOpen()).toBe(true);
+      expect(el.querySelector('app-route-recommend')).not.toBeNull();
+      expect(el.querySelector('.rt-view-map')).toBeNull();
+      [...el.querySelectorAll<HTMLButtonElement>('app-route-recommend .rt-subhead button')].find((b) => b.textContent?.includes('航線'))!.click();
+      f.detectChanges();
+      expect(vm.findOpen()).toBe(false);
+      expect(el.querySelector('.rt-view-map')).not.toBeNull();
+      expect(vm.seq()).toEqual(ids(g(), 'D'));
+    });
+
+    it('換分頁再回來,子頁仍開著(狀態在 VM)', () => {
+      const f = mount();
+      vm.findOpen.set(true);
+      f.detectChanges();
+      vm.setTab('config');
+      f.detectChanges();
+      vm.setTab('route');
+      f.detectChanges();
+      expect(el.querySelector('app-route-recommend')).not.toBeNull();
+    });
+
+    it('已選清單是空的:提示下方有「或讓它幫你找路線」', () => {
+      const f = mount();
+      const hint = [...el.querySelectorAll<HTMLButtonElement>('.rt-empty button')].find((b) => b.textContent?.includes('幫你找路線'))!;
+      hint.click();
+      f.detectChanges();
+      expect(vm.findOpen()).toBe(true);
+    });
+
+    it('選填晶片「用目前選的 N 個點當必選」:有選點才出現,按了設為必選並切到該海域', () => {
+      const f = mount();
+      const find = TestBed.inject(RouteFindVm);
+      cta().click();
+      f.detectChanges();
+      expect(el.textContent).not.toContain('當必選');
+      vm.setTab('route');
+      vm.findOpen.set(false);
+      vm.selectSea(2);
+      const two = [ids(g(), 'D')[0]!, ids(g(), 'G')[0]!];
+      for (const id of two) vm.toggle(id);
+      f.detectChanges();
+      cta().click();
+      f.detectChanges();
+      const chip = [...el.querySelectorAll<HTMLButtonElement>('app-route-find .rt-use-route button')][0]!;
+      expect(chip.textContent).toContain('2 個點當必選');
+      find.excluded.set(new Set([two[0]!]));
+      chip.click();
+      f.detectChanges();
+      expect([...find.required()].sort()).toEqual([...two].sort());
+      expect(find.excluded().size).toBe(0);
+      expect(find.x.viewSea()).toBe(2);
+      expect(find.mode()).toBe('filter');
+    });
   });
 
   it('沒記錄過分頁時第一次進來是配置頁', () => {
@@ -298,7 +363,7 @@ describe('RoutePage', () => {
       expect(fab()).toBeNull();
     });
 
-    it('點開有五個分頁加回到頂部,目前分頁打勾;選分頁會切換、回到頂部並收起', () => {
+    it('點開有兩個分頁加回到頂部,目前分頁打勾;選分頁會切換、回到頂部並收起', () => {
       const f = mount();
       cb!([{ isIntersecting: false }]);
       f.detectChanges();
@@ -307,11 +372,11 @@ describe('RoutePage', () => {
       fab()!.click();
       f.detectChanges();
       expect(fab()!.getAttribute('aria-expanded')).toBe('true');
-      expect(items().map((b) => b.textContent?.trim())).toEqual(['配置', '找路線', '航點', '回到頂部']);
-      expect(items()[2]!.getAttribute('aria-checked')).toBe('true');
-      items()[1]!.click();
+      expect(items().map((b) => b.textContent?.trim())).toEqual(['配置', '航線', '回到頂部']);
+      expect(items()[1]!.getAttribute('aria-checked')).toBe('true');
+      items()[0]!.click();
       f.detectChanges();
-      expect(vm.tab()).toBe('recommend');
+      expect(vm.tab()).toBe('config');
       expect(body.scrollTop).toBe(0);
       expect(el.querySelector('.rt-fab-menu')).toBeNull();
     });
@@ -324,9 +389,9 @@ describe('RoutePage', () => {
       body.scrollTop = 300;
       fab()!.click();
       f.detectChanges();
-      items()[3]!.click();
+      items()[2]!.click();
       f.detectChanges();
-      expect(vm.tab()).toBe('map');
+      expect(vm.tab()).toBe('route');
       expect(body.scrollTop).toBe(0);
       fab()!.click();
       f.detectChanges();

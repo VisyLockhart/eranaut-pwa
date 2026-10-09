@@ -183,6 +183,23 @@ export class RouteFindVm {
     this.excluded.set(exc);
   }
 
+  /** 航線頁已選的航點 → 當必選(D-224):切到該海域、從排除移除;之後可再改 */
+  useRouteAsRequired(): void {
+    const seq = this.vm.seq();
+    if (seq.length === 0) return;
+    const req = new Set(this.required());
+    const exc = new Set(this.excluded());
+    for (const id of seq) {
+      req.add(id);
+      exc.delete(id);
+    }
+    this.required.set(req);
+    this.excluded.set(exc);
+    this.x.viewSea.set(this.vm.sea());
+    this.mode.set('filter');
+    this.tapNote.set('');
+  }
+
   clearFilter(): void {
     this.required.set(new Set());
     this.excluded.set(new Set());

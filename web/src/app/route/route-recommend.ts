@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouteCfgBar } from './route-cfg-bar';
 import { RouteFind } from './route-find';
+import { RouteVm } from './route-vm';
 
 /**
- * 「找路線」分頁(D-212、D-222、D-223;內部代號仍是 `recommend`,舊的本機記錄不必搬):配置列加上找路線。
- * 練級、探索、最多物品、掉落整併成同一頁,用上面選的配置;找配置已移到配置頁的子畫面。
+ * 航線頁的「找路線」子頁(D-212、D-222、D-224):「‹ 航線」返回 + 配置列 + 找路線。
+ * 練級、探索、最多物品、掉落整併成同一頁,用上面選的配置;結果按「模擬路線」回到航線主頁。
  */
 @Component({
   selector: 'app-route-recommend',
@@ -12,4 +13,10 @@ import { RouteFind } from './route-find';
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-recommend.html',
 })
-export class RouteRecommend {}
+export class RouteRecommend {
+  protected readonly vm = inject(RouteVm);
+
+  protected back(): void {
+    this.vm.findOpen.set(false);
+  }
+}

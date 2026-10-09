@@ -9,8 +9,8 @@ import type { Build } from './core/types';
 
 export type Parts = [number, number, number, number];
 
-/** 航線頁的分頁(順序即畫面順序:先有配置,再找路線,最後到航點微調) */
-export const ROUTE_TABS = ['config', 'recommend', 'map'] as const;
+/** 航線頁的分頁(順序即畫面順序:先有配置,再規劃航線(航點與找路線)) */
+export const ROUTE_TABS = ['config', 'route'] as const;
 export type RouteTab = (typeof ROUTE_TABS)[number];
 
 export interface RouteLast {
@@ -73,8 +73,8 @@ export function sanitizeLast(raw: unknown): RouteLast {
     level: isInt(o['level'], 1, LIMITS.maxRouteSubLevel) ? o['level'] : d.level,
     parts: sanitizeParts(o['parts']) ?? d.parts,
     subId: typeof o['subId'] === 'string' && o['subId'] !== '' ? o['subId'] : null,
-    // 舊版的「搜尋」「反查」分頁併入「找路線」(內部代號 recommend;D-218、D-223:數字搜尋移到配置頁的「找配置」)
-    tab: o['tab'] === 'search' || o['tab'] === 'loot' ? 'recommend' : (ROUTE_TABS.find((t) => t === o['tab']) ?? null),
+    // 舊版的「搜尋」「反查」「推薦」「航點」分頁都併入「航線」(D-218、D-223、D-224;數字搜尋移到配置頁的「找配置」,找路線是航線頁的子頁)
+    tab: ['search', 'loot', 'recommend', 'map'].includes(o['tab'] as string) ? 'route' : (ROUTE_TABS.find((t) => t === o['tab']) ?? null),
   };
 }
 

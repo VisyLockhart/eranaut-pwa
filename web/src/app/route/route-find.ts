@@ -148,6 +148,10 @@ export class RouteFind {
     if (this.f.mode() === 'visit') this.x.toggle(id);
     else this.f.cycleFilter(id);
   }
+  protected useRoute(): void {
+    this.confirmClear.set(false);
+    this.f.useRouteAsRequired();
+  }
   protected clearVisit(): void {
     if (!this.confirmClear()) {
       this.confirmClear.set(true);

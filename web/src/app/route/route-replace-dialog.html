@@ -5,13 +5,13 @@
         <div class="modal-title" id="rt-replace-title">要換掉已選的航點嗎?</div>
       </div>
       <div class="rt-replace-body" id="rt-replace-desc">
-        <p>航點頁目前已選 {{ t.count }} 個航點:<b>{{ t.current }}</b>。</p>
+        <p>航線頁目前已選 {{ t.count }} 個航點:<b>{{ t.current }}</b>。</p>
         <p>帶入後會換成這條路線:<b>{{ t.next }}</b>,航行時間、燃料與距離會重新計算。</p>
       </div>
       <div class="rt-dlg-foot">
         <div class="rt-save-actions">
           <button type="button" class="rt-save-btn" (click)="vm.cancelLoad()">取消</button>
-          <button type="button" class="rt-save-btn primary" (click)="vm.confirmLoad()">換掉並前往航點</button>
+          <button type="button" class="rt-save-btn primary" (click)="vm.confirmLoad()">換掉並模擬</button>
         </div>
       </div>
     </div>

@@ -39,11 +39,14 @@ export class RoutePage {
   protected readonly layout = inject(Layout);
   protected readonly vm = inject(RouteVm);
   protected readonly maxStops = MAX_STOPS;
-  /** 分頁順序:先有配置才選航點 */
+
+  protected openFind(): void {
+    this.vm.findOpen.set(true);
+  }
+  /** 分頁順序:先有配置才規劃航線 */
   protected readonly tabs = [
     { id: 'config', label: '配置' },
-    { id: 'recommend', label: '找路線' },
-    { id: 'map', label: '航點' },
+    { id: 'route', label: '航線' },
   ] as const;
   /** 試著點了不能選的航點時顯示原因 */
   protected readonly hint = signal('');

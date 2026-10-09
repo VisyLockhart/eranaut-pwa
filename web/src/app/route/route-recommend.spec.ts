@@ -29,7 +29,8 @@ describe('推薦頁(D-212、D-222)', () => {
     TestBed.inject(Layout).isDesktop.set(false);
     vm = TestBed.inject(RouteVm);
     find = TestBed.inject(RouteFindVm);
-    vm.setTab('recommend');
+    vm.setTab('route');
+    vm.findOpen.set(true);
     f = TestBed.createComponent(RoutePage);
     f.detectChanges();
     if (opts.saved !== undefined) {
@@ -277,19 +278,20 @@ describe('推薦頁(D-212、D-222)', () => {
       expect(el.textContent).toContain('下面的結果是舊的');
     });
 
-    it('「帶到航點」:航點頁沒有選點時直接帶入並切到航點頁', async () => {
+    it('「模擬路線」:航線頁沒有選點時直接帶入並回到航線主頁', async () => {
       await search();
       const top = find.result()![0]!;
-      btn('帶到航點', cards()[0]!).click();
+      btn('模擬路線', cards()[0]!).click();
       f.detectChanges();
       expect(vm.pendingLoad()).toBeNull();
       expect(vm.sea()).toBe(top.sea);
       expect(vm.seq()).toEqual(top.order);
-      expect(vm.tab()).toBe('map');
+      expect(vm.tab()).toBe('route');
+      expect(vm.findOpen()).toBe(false);
     });
   });
 
-  describe('帶到航點前的確認', () => {
+  describe('模擬路線前的確認', () => {
     const top = () => find.result()![0]!;
     beforeEach(async () => {
       mount({ saved: true });
@@ -306,7 +308,7 @@ describe('推薦頁(D-212、D-222)', () => {
       // 搜尋結果的第一條不會剛好只有 A;若剛好相同就不需要確認
       const same = vm.sea() === top().sea && vm.seq().join() === top().order.join();
       if (same) return;
-      btn('帶到航點', el.querySelector('app-route-find .rt-card')!).click();
+      btn('模擬路線', el.querySelector('app-route-find .rt-card')!).click();
       f.detectChanges();
       expect(el.querySelector('app-route-replace-dialog [role=alertdialog]')).not.toBeNull();
       expect(el.querySelector('#rt-replace-title')!.textContent).toContain('要換掉已選的航點嗎?');
@@ -315,18 +317,20 @@ describe('推薦頁(D-212、D-222)', () => {
       f.detectChanges();
       expect(el.querySelector('app-route-replace-dialog [role=alertdialog]')).toBeNull();
       expect(vm.seq()).toEqual(ids(grey(), 'A'));
-      expect(vm.tab()).toBe('recommend');
+      expect(vm.tab()).toBe('route');
+      expect(vm.findOpen()).toBe(true);
     });
 
-    it('確認:換成推薦的路線並切到航點頁', () => {
+    it('確認:換成推薦的路線並回到航線主頁', () => {
       vm.requestLoad(grey().sea.sea, ids(grey(), 'AB'));
       f.detectChanges();
       expect(vm.pendingLoad()).not.toBeNull();
-      btn('換掉並前往航點', el.querySelector('app-route-replace-dialog')!).click();
+      btn('換掉並模擬', el.querySelector('app-route-replace-dialog')!).click();
       f.detectChanges();
       expect(vm.pendingLoad()).toBeNull();
       expect(vm.seq()).toEqual(ids(grey(), 'AB'));
-      expect(vm.tab()).toBe('map');
+      expect(vm.tab()).toBe('route');
+      expect(vm.findOpen()).toBe(false);
     });
 
     it('Esc 與點背景都是取消;帶入完全相同的路線不需要確認', () => {
@@ -344,11 +348,13 @@ describe('推薦頁(D-212、D-222)', () => {
       overlay.click();
       f.detectChanges();
       expect(vm.pendingLoad()).toBeNull();
-      expect(vm.tab()).toBe('recommend');
+      expect(vm.tab()).toBe('route');
+      expect(vm.findOpen()).toBe(true);
 
       vm.requestLoad(grey().sea.sea, ids(grey(), 'A'));
       expect(vm.pendingLoad()).toBeNull();
-      expect(vm.tab()).toBe('map');
+      expect(vm.tab()).toBe('route');
+      expect(vm.findOpen()).toBe(false);
     });
   });
 });
