@@ -216,7 +216,7 @@ export type LoginErrorCode = 'denied' | 'failed' | 'not_in_guild' | 'no_role';
 
 // ---- 儲存潛艇(航線模擬器,RS-25、RS-26;SCHEMA §3e) ----
 
-/** 儲存潛艇(回應)。四個零件為 1~10(6~10 = 改版) */
+/** 儲存潛艇(回應)。四個配件為 1~10(6~10 = 改版) */
 export interface RouteSubDto {
   id: string;
   name: string;

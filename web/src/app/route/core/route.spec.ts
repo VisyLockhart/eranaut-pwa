@@ -58,7 +58,7 @@ describe('燃料(RS-22)', () => {
     }
   });
 
-  it('與零件、等級無關:只看航點', () => {
+  it('與配件、等級無關:只看航點', () => {
     const g = sea(SEA.grey);
     const before = routeCost(g, ids(g, 'DGFK')).fuel;
     buildStats(TABLES, { level: 100, parts: [10, 10, 10, 10] }); // 換配置不影響路線燃料

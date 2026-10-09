@@ -15,7 +15,7 @@
    - 【潜水艦-南蒼茫洋】7.3～ドロップ一覧:https://jp.finalfantasyxiv.com/lodestone/character/2199398/blog/5481886/
    - 【潜水艦-北洋】7.5～ドロップ一覧:https://jp.finalfantasyxiv.com/lodestone/character/2199398/blog/5635462/
    取用內容:航點座標、等級門檻、距離與航行耗用、探索需求、經驗、燃料、中高階掉落物 ID、航點連線(由 unlocks 推得)。
-2. GitHub `cxzzsf0896753245657-hue/Final-Fantasy-XIV-watre`(該 repo 未附授權條款):僅取用繁體中文名稱(航點、物品、零件)、零件數值表、等級獎勵表、重量上限與低階物品對照。
+2. GitHub `cxzzsf0896753245657-hue/Final-Fantasy-XIV-watre`(該 repo 未附授權條款):僅取用繁體中文名稱(航點、物品、配件)、配件數值表、等級獎勵表、重量上限與低階物品對照。
 
 ## 改動說明
 

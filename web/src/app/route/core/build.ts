@@ -1,7 +1,7 @@
 import type { Build, BuildStats, PartGrade, PartKey, RankRow, Tables } from './types';
 import { PART_KEYS } from './types';
 
-// 配置的性能計算(ROUTE-SIM.md §5 第 4 點):性能 = Σ 四個零件 + 等級獎勵;重量 = Σ 零件重量。
+// 配置的性能計算(ROUTE-SIM.md §5 第 4 點):性能 = Σ 四個配件 + 等級獎勵;重量 = Σ 配件重量。
 
 export const PART_GRADE_COUNT = 10;
 
@@ -14,7 +14,7 @@ export function rankRow(tables: Tables, level: number): RankRow {
 /** idx 為 1~10(1~5 原版,6~10 改版) */
 export function partGrade(tables: Tables, key: PartKey, idx: number): PartGrade {
   const g = tables.parts.parts[key].grades[idx - 1];
-  if (!g || !Number.isInteger(idx)) throw new Error(`零件編號 ${idx} 不合法`);
+  if (!g || !Number.isInteger(idx)) throw new Error(`配件編號 ${idx} 不合法`);
   return g;
 }
 
@@ -43,7 +43,7 @@ export function buildStats(tables: Tables, build: Build): BuildStats {
   return s;
 }
 
-/** 零件編號的顯示:「3」或「3改」 */
+/** 配件編號的顯示:「3」或「3改」 */
 export function partLabel(idx: number): string {
   return idx > 5 ? `${idx - 5}改` : `${idx}`;
 }

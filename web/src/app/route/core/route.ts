@@ -25,7 +25,7 @@ export interface RouteCost {
   distance: number;
   /** 總耗用:Σ surveyRange + Σ 各段 range(與潛艇「距離」性能比較) */
   range: number;
-  /** 燃料(RS-22):Σ tankReq,與順序、零件、等級無關 */
+  /** 燃料(RS-22):Σ tankReq,與順序、配件、等級無關 */
   fuel: number;
   stops: number;
 }

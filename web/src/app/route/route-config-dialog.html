@@ -26,7 +26,7 @@
           </div>
 
           <div class="rt-dlg-body" [class.wide]="layout.isDesktop()">
-            <div class="rt-parts" role="group" aria-label="零件選擇">
+            <div class="rt-parts" role="group" aria-label="配件選擇">
               <div class="rt-parts-head">
                 <span></span>
                 @for (k of partKeys; track k) { <span>{{ partName(k) }}</span> }
@@ -46,7 +46,7 @@
 
             <div class="rt-dlg-stats">
               <table class="rt-stats">
-                <thead><tr><th scope="col"></th><th scope="col">等級</th><th scope="col">零件</th><th scope="col">合計</th><th scope="col">路線需求</th></tr></thead>
+                <thead><tr><th scope="col"></th><th scope="col">等級</th><th scope="col">配件</th><th scope="col">合計</th><th scope="col">路線需求</th></tr></thead>
                 <tbody>
                   @for (r of rows(); track r.key) {
                     <tr>

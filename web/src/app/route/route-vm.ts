@@ -33,7 +33,7 @@ export interface ConfigDraft {
 /**
  * 航線模擬器的狀態(root 層級,版面切換或換頁不丟狀態,參照 D-163)。
  *
- * - 檢視狀態(海域、已選航點、等級與零件、目前使用的儲存潛艇)只存 localStorage、各裝置獨立(RS-26 ⑤)。
+ * - 檢視狀態(海域、已選航點、等級與配件、目前使用的儲存潛艇)只存 localStorage、各裝置獨立(RS-26 ⑤)。
  * - 儲存潛艇(RS-25)存在伺服器、跨裝置同步:進入頁面載入、App 回前景再抓一次,不輪詢;同一筆以最後寫入為準;
  *   離線時顯示 localStorage 的快照,寫入需要網路(RS-26 ③④)。
  * - 寫入成功才更新畫面;失敗時丟出原始的 HttpErrorResponse 給呼叫端處理(409 = 已滿 10 組、400 = 驗證)。
@@ -229,7 +229,7 @@ export class RouteVm {
     this.renormalize();
   }
 
-  /** 「帶入」已儲存的潛艇:填入等級與零件,並記住目前使用的是哪一組 */
+  /** 「帶入」已儲存的潛艇:填入等級與配件,並記住目前使用的是哪一組 */
   useSub(id: string): void {
     const sub = this.saved().find((s) => s.id === id);
     if (!sub) return;
@@ -239,14 +239,14 @@ export class RouteVm {
     this.renormalize();
   }
 
-  /** 把搜尋結果等「只有零件」的配置帶進畫面:保留目前等級,成為臨時配置(不再使用任何儲存潛艇) */
+  /** 把搜尋結果等「只有配件」的配置帶進畫面:保留目前等級,成為臨時配置(不再使用任何儲存潛艇) */
   applyParts(parts: Parts): void {
     this.subId.set(null);
     this.parts.set(parts);
     this.renormalize();
   }
 
-  /** 不再使用任何儲存潛艇(保留畫面上的等級與零件作為臨時配置) */
+  /** 不再使用任何儲存潛艇(保留畫面上的等級與配件作為臨時配置) */
   detachSub(): void {
     this.subId.set(null);
   }
@@ -298,7 +298,7 @@ export class RouteVm {
     if (d) this.draft.set({ ...d, name });
   }
 
-  /** 改等級或零件時,若名稱還是依舊值產生的預設名稱,就跟著換成新的預設名稱 */
+  /** 改等級或配件時,若名稱還是依舊值產生的預設名稱,就跟著換成新的預設名稱 */
   private patchDraft(patch: { level?: number; parts?: Parts }): void {
     const d = this.draft();
     if (!d) return;
@@ -398,7 +398,7 @@ export class RouteVm {
     }
   }
 
-  /** 把畫面上的等級與零件存成新的一組;已滿 10 組時伺服器回 409,畫面應改問要覆蓋哪一組 */
+  /** 把畫面上的等級與配件存成新的一組;已滿 10 組時伺服器回 409,畫面應改問要覆蓋哪一組 */
   async saveCurrent(name: string): Promise<RouteSubDto> {
     const created = await this.write(() => this.api.createRouteSub(this.input(name, [])));
     this.setSaved([...this.saved(), created]);
@@ -406,7 +406,7 @@ export class RouteVm {
     return created;
   }
 
-  /** 用畫面上的等級與零件覆蓋某一組(保留原名稱與綁定;可選擇改名) */
+  /** 用畫面上的等級與配件覆蓋某一組(保留原名稱與綁定;可選擇改名) */
   async overwrite(id: string, name?: string): Promise<RouteSubDto> {
     const old = this.saved().find((s) => s.id === id);
     const updated = await this.write(() => this.api.updateRouteSub(id, this.input(name ?? old?.name ?? '', old?.bound_submarine_ids ?? [])));
@@ -415,7 +415,7 @@ export class RouteVm {
     return updated;
   }
 
-  /** 只改名稱或綁定,不動等級與零件(用該筆已儲存的值送出) */
+  /** 只改名稱或綁定,不動等級與配件(用該筆已儲存的值送出) */
   async updateSub(id: string, patch: { name?: string; bound_submarine_ids?: string[] }): Promise<RouteSubDto> {
     const old = this.saved().find((s) => s.id === id);
     if (!old) throw new Error('找不到這一組儲存潛艇');

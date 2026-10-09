@@ -37,7 +37,7 @@ describe('RouteVm', () => {
   });
   afterEach(() => vm.stop());
 
-  /** 案例 C:灰海、等級 76、零件 3 1 2 3 */
+  /** 案例 C:灰海、等級 76、配件 3 1 2 3 */
   function caseC(): void {
     vm.selectSea(GREY);
     vm.setLevel(76);
@@ -151,7 +151,7 @@ describe('RouteVm', () => {
       expect(vm.seq()).toEqual([]);
     });
 
-    it('降低等級或換成距離較短的零件後,放不下的航點被丟掉', () => {
+    it('降低等級或換成距離較短的配件後,放不下的航點被丟掉', () => {
       caseC();
       for (const c of ['D', 'G', 'F', 'K']) vm.toggle(ids(g(), c)[0]!);
       vm.setPart(0, 1); // 距離性能下降
@@ -160,7 +160,7 @@ describe('RouteVm', () => {
       expect(vm.seq()).toEqual([]);
     });
 
-    it('不合法的等級與零件編號被忽略', () => {
+    it('不合法的等級與配件編號被忽略', () => {
       caseC();
       vm.setLevel(0);
       vm.setLevel(131);
@@ -226,7 +226,7 @@ describe('RouteVm', () => {
       expect(vm.saved()).toHaveLength(1);
     });
 
-    it('saveCurrent:送出畫面上的等級與零件,成功後加入清單、設為使用中並寫快照', async () => {
+    it('saveCurrent:送出畫面上的等級與配件,成功後加入清單、設為使用中並寫快照', async () => {
       await load([]);
       caseC();
       const p = vm.saveCurrent('  主力艇  ');
@@ -251,7 +251,7 @@ describe('RouteVm', () => {
       expect(vm.pending()).toBe(0);
     });
 
-    it('useSub 填入等級與零件;改動後 dirty;overwrite 後恢復', async () => {
+    it('useSub 填入等級與配件;改動後 dirty;overwrite 後恢復', async () => {
       await load([dto({ id: 'a', level: 90, hull: 6, stern: 7, bow: 8, bridge: 9 })]);
       vm.useSub('a');
       expect(vm.level()).toBe(90);
@@ -288,7 +288,7 @@ describe('RouteVm', () => {
       expect(vm.cost().range).toBeLessThanOrEqual(vm.stats().range);
     });
 
-    it('bind / 解除綁定:只改綁定,用該筆已儲存的等級與零件送出', async () => {
+    it('bind / 解除綁定:只改綁定,用該筆已儲存的等級與配件送出', async () => {
       await load([dto({ id: 'a' })]);
       caseC();
       vm.setLevel(100); // 畫面上改了也不影響送出的值
@@ -478,7 +478,7 @@ describe('RouteVm', () => {
       expect(vm.seq().length).toBeLessThan(4);
     });
 
-    it('預設名稱:沒手動改過就跟著等級與零件變', async () => {
+    it('預設名稱:沒手動改過就跟著等級與配件變', async () => {
       await load([]);
       vm.openConfig('new');
       const lv = vm.draft()!.level;

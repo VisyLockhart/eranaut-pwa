@@ -12,7 +12,7 @@ describe('配置性能', () => {
     expect(() => rankRow(TABLES, 131)).toThrow();
   });
 
-  it('案例 C:76 級、零件 3 1 2 3(原版)→ 距離 98、速度 155', () => {
+  it('案例 C:76 級、配件 3 1 2 3(原版)→ 距離 98、速度 155', () => {
     const s = buildStats(TABLES, { level: 76, parts: [3, 1, 2, 3] });
     expect(s.range).toBe(98);
     expect(s.speed).toBe(155);
@@ -38,7 +38,7 @@ describe('配置性能', () => {
     expect(s.overweight).toBe(true);
   });
 
-  it('零件編號不合法會丟錯', () => {
+  it('配件編號不合法會丟錯', () => {
     expect(() => partGrade(TABLES, 'hull', 0)).toThrow();
     expect(() => partGrade(TABLES, 'hull', 11)).toThrow();
     expect(() => partGrade(TABLES, 'hull', 1.5)).toThrow();

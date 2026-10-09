@@ -126,7 +126,7 @@ test('驗證:每個欄位的錯誤碼,且錯誤時不寫入 DB', async () => {
   assert.equal((await api('POST', '/api/route-subs', null)).statusCode, 400);
 });
 
-test('邊界值:等級 1 / 125、零件 1 / 10 可存', async () => {
+test('邊界值:等級 1 / 125、配件 1 / 10 可存', async () => {
   const t = makeApp();
   const api = await asUser(t, ID_A);
   assert.equal((await api('POST', '/api/route-subs', { name: 'x'.repeat(20), level: 1, hull: 1, stern: 1, bow: 1, bridge: 1 })).statusCode, 201);

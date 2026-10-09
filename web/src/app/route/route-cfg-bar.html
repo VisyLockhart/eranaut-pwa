@@ -1,7 +1,7 @@
 <div class="rt-cfgbar" role="group" aria-label="使用的配置">
   @if (vm.canSave && vm.loaded() && vm.saved().length === 0) {
     <div class="rt-cfg-banner">
-      <span>目前使用預設配置(Lv{{ vm.level() }},零件全 1 級){{ hint() ? ',' + hint() : '' }}。</span>
+      <span>目前使用預設配置(Lv{{ vm.level() }},配件全 1 級){{ hint() ? ',' + hint() : '' }}。</span>
       <button type="button" class="rt-link-btn" (click)="vm.setTab('config')">設定配置</button>
     </div>
   }

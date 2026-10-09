@@ -173,7 +173,7 @@ describe('找配置子畫面(D-223)', () => {
     await search();
     expect(b.result()!.total).toBe(0);
     const sec = el.querySelector('[aria-label=找配置結果]')!;
-    expect(sec.textContent).toContain('沒有任何零件組合能達成');
+    expect(sec.textContent).toContain('沒有任何配件組合能達成');
     expect(sec.querySelectorAll('.rt-card')).toHaveLength(3);
     expect(sec.textContent).toContain('還差');
   });

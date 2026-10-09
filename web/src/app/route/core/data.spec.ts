@@ -49,7 +49,7 @@ describe('資料集(P1 產生)', () => {
     }
   });
 
-  it('零件:4 類 × 10 種;等級 1~130 連續', () => {
+  it('配件:4 類 × 10 種;等級 1~130 連續', () => {
     for (const k of ['hull', 'stern', 'bow', 'bridge'] as const) expect(TABLES.parts.parts[k].grades).toHaveLength(10);
     expect(TABLES.ranks.map((r) => r.rank)).toEqual(Array.from({ length: 130 }, (_, i) => i + 1));
   });

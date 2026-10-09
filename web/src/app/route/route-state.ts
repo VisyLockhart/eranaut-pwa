@@ -43,7 +43,7 @@ export function sanitizeParts(raw: unknown): Parts | null {
 /**
  * 依等級與距離上限整理已選序列(RS-06、RS-07、RS-08):
  * 去掉重複與不在這張海域的點,依序加入,等級不足、超過 5 點或耗用超過上限的點(含其後所有)被丟掉。
- * 換等級、換零件、取消中間的點之後都要重新整理,因為耗用可能變大。
+ * 換等級、換配件、取消中間的點之後都要重新整理,因為耗用可能變大。
  */
 export function normalizeSeq(si: SeaIndex, seq: readonly number[], level: number, rangeCap: number): number[] {
   const kept: number[] = [];
@@ -78,7 +78,7 @@ export function sanitizeLast(raw: unknown): RouteLast {
   };
 }
 
-/** 儲存潛艇的預設名稱,例如 `Lv76 3/1/2/3`(零件編號 1~10 以「3」「3改」顯示) */
+/** 儲存潛艇的預設名稱,例如 `Lv76 3/1/2/3`(配件編號 1~10 以「3」「3改」顯示) */
 export function defaultSubName(build: Build): string {
   return `Lv${build.level} ${build.parts.map(partLabel).join('/')}`;
 }
@@ -113,7 +113,7 @@ export function subToBuild(s: Pick<RouteSubDto, 'level' | 'hull' | 'stern' | 'bo
   return { level: s.level, parts: [s.hull, s.stern, s.bow, s.bridge] };
 }
 
-/** 兩個配置是否相同(等級與四個零件) */
+/** 兩個配置是否相同(等級與四個配件) */
 export function sameBuild(a: Build, b: Build): boolean {
   return a.level === b.level && a.parts.every((v, i) => v === b.parts[i]);
 }

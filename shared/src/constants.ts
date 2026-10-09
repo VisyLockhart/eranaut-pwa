@@ -43,7 +43,7 @@ export const LIMITS = {
   maxRemainingMinutes: 99 * 24 * 60 + 23 * 60 + 59,
 } as const;
 
-/** 儲存潛艇的四個零件欄位;值為 1~10(1~5 = 原版 1~5 級,6~10 = 改 1~5 級,與 parts.json 的 grades 順序一致) */
+/** 儲存潛艇的四個配件欄位;值為 1~10(1~5 = 原版 1~5 級,6~10 = 改 1~5 級,與 parts.json 的 grades 順序一致) */
 export const ROUTE_PART_KEYS = ['hull', 'stern', 'bow', 'bridge'] as const;
 export type RoutePartKey = (typeof ROUTE_PART_KEYS)[number];
 export const ROUTE_PART_MAX = 10;

@@ -57,7 +57,7 @@ describe('RouteConfigDialog', () => {
     expect(el.querySelector('.rt-dlg')).toBeNull();
   });
 
-  it('五列 × 四個零件,每格 1 | 1改 兩顆按鈕;標題依模式', async () => {
+  it('五列 × 四個配件,每格 1 | 1改 兩顆按鈕;標題依模式', async () => {
     await mount([dto()]);
     open('new');
     expect(el.querySelectorAll('.rt-parts-row')).toHaveLength(5);
@@ -71,7 +71,7 @@ describe('RouteConfigDialog', () => {
     expect(el.querySelector('.modal-title')?.textContent).toContain('臨時');
   });
 
-  it('點零件與改等級只動草稿,不動畫面上的配置與航點;統計表即時變(案例 C:距離 98、巡航 155)', async () => {
+  it('點配件與改等級只動草稿,不動畫面上的配置與航點;統計表即時變(案例 C:距離 98、巡航 155)', async () => {
     await mount();
     vm.selectSea(2);
     vm.setLevel(76);
@@ -138,7 +138,7 @@ describe('RouteConfigDialog', () => {
     expect(vm.draft()).toBeNull();
   });
 
-  it('新增並儲存:預設名稱、字數驗證、送出等級與零件', async () => {
+  it('新增並儲存:預設名稱、字數驗證、送出等級與配件', async () => {
     await mount();
     vm.setLevel(76);
     [3, 1, 2, 3].forEach((p, i) => vm.setPart(i as 0 | 1 | 2 | 3, p));
@@ -161,7 +161,7 @@ describe('RouteConfigDialog', () => {
     expect(el.querySelector('.rt-dlg')).toBeNull();
   });
 
-  it('預設名稱會跟著零件變,手動改過名稱就不再自動換', async () => {
+  it('預設名稱會跟著配件變,手動改過名稱就不再自動換', async () => {
     await mount();
     open('new');
     const input = el.querySelector<HTMLInputElement>('#rt-cfg-name')!;

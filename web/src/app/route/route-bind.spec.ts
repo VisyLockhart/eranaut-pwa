@@ -58,7 +58,7 @@ describe('RouteBind', () => {
     expect(el.querySelectorAll('.rt-bind-group .rt-chip')).toHaveLength(3);
   });
 
-  it('選一艘 → PUT 只改綁定(保留等級與零件)→ 顯示「已綁定 1 艘:工坊 ①名稱」', async () => {
+  it('選一艘 → PUT 只改綁定(保留等級與配件)→ 顯示「已綁定 1 艘:工坊 ①名稱」', async () => {
     await mount([dto()]);
     btn('綁定工坊潛艇').click();
     fixture.detectChanges();

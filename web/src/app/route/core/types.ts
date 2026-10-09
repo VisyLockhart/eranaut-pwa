@@ -88,7 +88,7 @@ export interface Tables {
   ranks: RankRow[];
 }
 
-/** 一個潛艇配置:等級 + 四個零件(船體、船尾、船首、艦橋),各為 1~10(1~5 原版,6~10 改版,與 parts.json 的 grades 順序、API 的 hull/stern/bow/bridge 一致) */
+/** 一個潛艇配置:等級 + 四個配件(船體、船尾、船首、艦橋),各為 1~10(1~5 原版,6~10 改版,與 parts.json 的 grades 順序、API 的 hull/stern/bow/bridge 一致) */
 export interface Build {
   level: number;
   parts: readonly [number, number, number, number];

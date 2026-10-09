@@ -3,7 +3,7 @@ import { judgeBuild, routeNeed, type BuildJudgement, type RouteNeed } from './ne
 import { permutations, routeCost, shortestOrder, travelMinutes, type SeaIndex } from './route';
 import type { Build, BuildStats, Tables } from './types';
 
-// 找配置(D-223):固定等級,從 10⁴ 種零件組合找出「走得完這條路線、性能達標、重量不超過上限」的配置。
+// 找配置(D-223):固定等級,從 10⁴ 種配件組合找出「走得完這條路線、性能達標、重量不超過上限」的配置。
 // 收集 / 恩惠 / 速度只是「由航點需求自動算出最低性能」的預設;自訂 = 使用者自己填最低性能(原「進階」)。
 // 取代 D-214 的 `findBuildsForTarget`(target.ts)與 D-219 前的 `searchBuilds`(search.ts)。
 
