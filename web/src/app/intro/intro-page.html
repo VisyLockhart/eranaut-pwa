@@ -83,12 +83,12 @@
           </p>
 
           <div class="share">
-            <button type="button" class="btn ghost" (click)="copyLink()">複製分享連結</button>
+            <button type="button" class="btn ghost" (click)="copyLink('join')">複製分享連結</button>
             <span class="pron" aria-live="polite">
-              @switch (linkCopied()) {
-                @case ('ok') { 已複製,貼到 Discord、LINE 或臉書就會顯示預覽卡。 }
-                @case ('manual') { 這台裝置無法自動複製,請從網址列複製。 }
-                @default { 想把這一頁分享給朋友? }
+              @switch (linkState().join) {
+                @case ('ok') { 已複製 {{ shareLinks.join }},貼到 Discord、LINE 或臉書就會顯示預覽卡。 }
+                @case ('manual') { 這台裝置無法自動複製,請手動複製:{{ shareLinks.join }} }
+                @default { 想把這一頁分享給朋友?{{ shareLinks.join }} }
               }
             </span>
           </div>
@@ -129,6 +129,17 @@
           <div class="legend">
             <span><span class="tag free">展示版可試玩</span> 這個頁面就能體驗</span>
             <span><span class="tag lock"><svg viewBox="0 0 12 12" aria-hidden="true"><path fill="currentColor" d="M3 5V4a3 3 0 016 0v1h1v6H2V5zm1.5 0h3V4a1.5 1.5 0 00-3 0z" /></svg>加入社群後解鎖</span> 需要 Discord 登入與社群身分</span>
+          </div>
+
+          <div class="share tour-share">
+            <button type="button" class="btn ghost" (click)="copyLink('route')">複製分享連結</button>
+            <span class="pron" aria-live="polite">
+              @switch (linkState().route) {
+                @case ('ok') { 已複製 {{ shareLinks.route }},朋友點開就能直接試玩航線模擬器。 }
+                @case ('manual') { 這台裝置無法自動複製,請手動複製:{{ shareLinks.route }} }
+                @default { 分享航線模擬器的試玩連結:{{ shareLinks.route }} }
+              }
+            </span>
           </div>
 
           <div class="feats free-grid">

@@ -3,6 +3,13 @@ import { ChangeDetectionStrategy, Component, DOCUMENT, inject, signal } from '@a
 import { Layout } from '../core/layout';
 
 type TabId = 'intro' | 'join' | 'tour';
+type ShareKey = 'join' | 'route';
+
+/** 對外推廣用的短連結 */
+const SHARE_LINKS: Record<ShareKey, string> = {
+  join: 'https://aequoreranos.com/join',
+  route: 'https://aequoreranos.com/route',
+};
 
 interface Feature {
   readonly title: string;
@@ -33,7 +40,8 @@ export class IntroPage {
 
   protected readonly tab = signal<TabId>('intro');
   protected readonly copied = signal<'' | 'ok' | 'manual'>('');
-  protected readonly linkCopied = signal<'' | 'ok' | 'manual'>('');
+  protected readonly shareLinks = SHARE_LINKS;
+  protected readonly linkState = signal<Partial<Record<ShareKey, 'ok' | 'manual'>>>({});
   protected readonly joinName = '純水與銀礦之詩, 靜謐海域交換所';
 
   protected readonly tabs: readonly { id: TabId; label: string }[] = [
@@ -82,14 +90,13 @@ export class IntroPage {
     }
   }
 
-  /** 複製這一頁的分享連結(固定指向 /intro,連結預覽卡見 tools/make-intro-html.mjs) */
-  protected async copyLink(): Promise<void> {
-    const url = `${this.doc.location.origin}/intro`;
+  /** 複製固定的短連結(Cloudflare 重新導向到 /intro 與 /route,預覽卡見 tools/make-intro-html.mjs) */
+  protected async copyLink(which: ShareKey): Promise<void> {
     try {
-      await navigator.clipboard.writeText(url);
-      this.linkCopied.set('ok');
+      await navigator.clipboard.writeText(SHARE_LINKS[which]);
+      this.linkState.update((m) => ({ ...m, [which]: 'ok' }));
     } catch {
-      this.linkCopied.set('manual');
+      this.linkState.update((m) => ({ ...m, [which]: 'manual' }));
     }
   }
 

@@ -49,7 +49,8 @@ details ul { margin: 8px 0 0; padding-left: 18px; }
 .btn { font: inherit; font-weight: 700; border: 0; border-radius: 6px; padding: 9px 16px; cursor: pointer; background: var(--gold); color: var(--ink); }
 .share { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 4px; }
 .btn.ghost { background: none; border: 1px solid var(--water); color: var(--water); }
-.share .pron { margin: 0; }
+.share .pron { margin: 0; overflow-wrap: anywhere; min-width: 0; }
+.tour-share { margin: -4px 0 18px; }
 .who { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .who span { background: var(--current); border-radius: 4px; padding: 3px 10px; font-size: 13px; color: var(--water); }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; counter-reset: s; }
