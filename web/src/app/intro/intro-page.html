@@ -81,21 +81,6 @@
             }
           </p>
 
-          <div class="share">
-            <p>想把這一頁分享給朋友?</p>
-            <div class="search link">
-              <code id="sea-link-join">{{ shareLinks.join }}</code>
-              <button type="button" class="btn" (click)="copyLink('join')">複製連結</button>
-            </div>
-            <p class="pron" aria-live="polite">
-              @switch (linkState().join) {
-                @case ('ok') { 已複製,貼到 Discord、LINE 或臉書就會顯示預覽卡。 }
-                @case ('manual') { 請手動複製已選取的連結。 }
-                @default { &nbsp; }
-              }
-            </p>
-          </div>
-
           <h2>我們是誰</h2>
           <p>專為<b>單人公會</b>設立的同好會,有兩個目的:</p>
           <div class="two">
@@ -121,6 +106,21 @@
           <h2>任何問題請洽管理員</h2>
           <p>諮詢時段:上午 09:00 ~ 12:00。</p>
           <div class="contact"><span class="chip">Evy@巴哈姆特</span><span class="chip">若月@巴哈姆特</span></div>
+
+          <div class="share join-share">
+            <p>想把這一頁分享給朋友?</p>
+            <div class="search link">
+              <code id="sea-link-join">{{ shareLinks.join }}</code>
+              <button type="button" class="btn" (click)="copyLink('join')">複製連結</button>
+            </div>
+            <p class="pron" aria-live="polite">
+              @switch (linkState().join) {
+                @case ('ok') { 已複製,貼到 Discord、LINE 或臉書就會顯示預覽卡。 }
+                @case ('manual') { 請手動複製已選取的連結。 }
+                @default { &nbsp; }
+              }
+            </p>
+          </div>
         </div>
       }
 
