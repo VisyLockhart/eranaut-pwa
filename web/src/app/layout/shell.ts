@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Auth } from '../core/auth';
+import { InstallPrompt } from '../core/install-prompt';
 import { Layout } from '../core/layout';
 import { INTRO_ENABLED } from '../demo/demo-routes';
 import { AvatarComponent } from '../ui/avatar';
@@ -29,5 +30,6 @@ import { IconComponent } from '../ui/icon';
 export class Shell {
   protected readonly auth = inject(Auth);
   protected readonly layout = inject(Layout);
+  protected readonly install = inject(InstallPrompt);
   protected readonly intro = INTRO_ENABLED;
 }

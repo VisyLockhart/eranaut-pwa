@@ -8,6 +8,8 @@ import { Toast } from './toast';
 export const INSTALL_PROMPT_KEY = 'eranaut.install-prompt';
 
 export type InstallPlatform = 'android' | 'ios';
+/** 桌面瀏覽器的安裝方式:Chrome / Edge 等可由頁面觸發;Mac 的 Safari 17 以上只能手動「加入 Dock」 */
+export type DesktopInstall = 'chromium' | 'safari';
 
 /** Chromium 的安裝事件(尚未列入 TypeScript 內建型別) */
 interface BeforeInstallPromptEvent extends Event {
@@ -27,6 +29,20 @@ export function detectInstallPlatform(input: { userAgent: string; ios: boolean; 
   if (input.standalone || IN_APP_BROWSER.test(input.userAgent)) return null;
   if (input.ios) return 'ios';
   if (/Android/i.test(input.userAgent)) return 'android';
+  return null;
+}
+
+/**
+ * 判斷是不是可以「安裝到桌面」的桌面瀏覽器(只看裝置與瀏覽器種類,不看畫面寬度)。
+ * 手機、平板(含偽裝成 Mac 的 iPadOS)、已經從已安裝的 App 視窗開啟、Firefox 與舊版 Safari 都不算。
+ */
+export function detectDesktopInstall(input: { userAgent: string; mobile: boolean | undefined; ios: boolean; standalone: boolean }): DesktopInstall | null {
+  const ua = input.userAgent;
+  if (input.standalone || input.ios || input.mobile === true) return null;
+  if (/Android|Mobile|CriOS|FxiOS/i.test(ua) || /Firefox\//.test(ua)) return null;
+  if (/Chrome\/|Chromium\/|Edg\/|OPR\//.test(ua)) return 'chromium';
+  const version = /Version\/(\d+)/.exec(ua);
+  if (/Macintosh/.test(ua) && /Safari\//.test(ua) && version !== null && Number(version[1]) >= 17) return 'safari';
   return null;
 }
 
@@ -52,23 +68,33 @@ export class InstallPrompt {
   private readonly deferred = signal<BeforeInstallPromptEvent | null>(null);
   private readonly handled = signal(readJson<unknown>(INSTALL_PROMPT_KEY) !== null);
 
+  /** 桌面瀏覽器的安裝方式(不是桌面瀏覽器為 null);側欄的「安裝到桌面」鈕用,不受「只問一次」限制 */
+  readonly desktop: DesktopInstall | null = detectDesktopInstall({
+    userAgent: navigator.userAgent,
+    mobile: (navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile,
+    ios: this.env.isIos(),
+    standalone: this.env.isStandalone(),
+  });
+  /** Chrome / Edge:瀏覽器送出安裝事件才顯示(已安裝或不符安裝條件就不顯示);Safari:一律顯示,按下說明步驟 */
+  readonly canInstallDesktop = computed(() => this.desktop === 'safari' || (this.desktop === 'chromium' && this.deferred() !== null));
+
   readonly visible = computed(() => {
     if (this.handled() || this.auth.status() !== 'authenticated') return false;
     return this.platform === 'ios' || (this.platform === 'android' && this.deferred() !== null);
   });
 
   constructor() {
-    if (this.platform === 'android') {
+    if (this.platform === 'android' || this.desktop === 'chromium') {
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         this.deferred.set(e as BeforeInstallPromptEvent);
       });
     }
-    if (this.platform !== null) {
+    if (this.platform !== null || this.desktop === 'chromium') {
       window.addEventListener('appinstalled', () => {
-        this.markHandled();
+        if (this.platform !== null) this.markHandled();
         this.deferred.set(null);
-        this.toast.show('已加入主畫面');
+        this.toast.show(this.platform !== null ? '已加入主畫面' : '已安裝到桌面');
       });
     }
   }
@@ -84,6 +110,23 @@ export class InstallPrompt {
       await event.userChoice;
     } catch {
       // 瀏覽器拒絕顯示(例如已經顯示過):不再處理
+    }
+  }
+
+  /** 側欄「安裝到桌面」:Chrome / Edge 顯示系統的安裝確認(事件只能用一次,用過就等瀏覽器重新送出);Safari 顯示手動步驟 */
+  async installDesktop(): Promise<void> {
+    if (this.desktop === 'safari') {
+      this.toast.show('Safari:請從選單列的「檔案」→「加入 Dock」安裝', { ms: 6000 });
+      return;
+    }
+    const event = this.deferred();
+    if (!event) return;
+    this.deferred.set(null);
+    try {
+      await event.prompt();
+      await event.userChoice;
+    } catch {
+      // 瀏覽器拒絕顯示:不再處理
     }
   }
 

@@ -48,6 +48,9 @@
       <a class="d-nav-item" routerLink="/route" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '航線模擬' : null"><app-icon name="route" [size]="20" /><span>航線模擬</span></a>
       <a class="d-nav-item" routerLink="/settings" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '設定' : null"><app-icon name="settings" [size]="20" /><span>設定</span></a>
       <div style="flex-grow: 1"></div>
+      @if (install.canInstallDesktop()) {
+        <button type="button" class="d-install" (click)="install.installDesktop()" [attr.title]="layout.sidebarCollapsed() ? '安裝到桌面' : null" aria-label="安裝到桌面"><app-icon name="download" [size]="18" /><span>安裝到桌面</span></button>
+      }
       <div class="d-user">
         <app-avatar [name]="auth.user()?.displayName ?? ''" [url]="auth.user()?.avatarUrl ?? null" [size]="30" />
         <div class="d-user-text" style="min-width: 0; flex-grow: 1">

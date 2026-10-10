@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Auth } from './auth';
-import { INSTALL_PROMPT_KEY, InstallPrompt, detectInstallPlatform } from './install-prompt';
+import { INSTALL_PROMPT_KEY, InstallPrompt, detectDesktopInstall, detectInstallPlatform } from './install-prompt';
 import { PushEnv } from './push-env';
 
 const ANDROID = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/126.0 Mobile Safari/537.36';
@@ -24,6 +24,34 @@ describe('detectInstallPlatform', () => {
     expect(d(ANDROID, false, true)).toBeNull();
     expect(d(IPHONE, true, true)).toBeNull();
     expect(d(LINE_IOS, true)).toBeNull();
+  });
+});
+
+describe('detectDesktopInstall', () => {
+  const MAC_CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+  const MAC_SAFARI = (v: number) => `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/${v}.5 Safari/605.1.15`;
+  const FIREFOX = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0';
+  const d = (userAgent: string, o: { mobile?: boolean; ios?: boolean; standalone?: boolean } = {}) =>
+    detectDesktopInstall({ userAgent, mobile: o.mobile, ios: o.ios ?? false, standalone: o.standalone ?? false });
+  it('Windows / Mac / Linux 的 Chrome、Edge 算 chromium', () => {
+    expect(d(DESKTOP)).toBe('chromium');
+    expect(d(MAC_CHROME)).toBe('chromium');
+    expect(d(DESKTOP + ' Edg/126.0')).toBe('chromium');
+  });
+  it('Mac 的 Safari 17 以上算 safari,舊版與 Firefox 不算', () => {
+    expect(d(MAC_SAFARI(17))).toBe('safari');
+    expect(d(MAC_SAFARI(16))).toBeNull();
+    expect(d(FIREFOX)).toBeNull();
+  });
+  it('手機、平板(含偽裝成 Mac 的 iPadOS)、Android 都不算', () => {
+    expect(d(ANDROID)).toBeNull();
+    expect(d(ANDROID_TABLET, { mobile: false })).toBeNull();
+    expect(d(IPHONE, { ios: true })).toBeNull();
+    expect(d(MAC_SAFARI(17), { ios: true })).toBeNull();
+    expect(d(DESKTOP, { mobile: true })).toBeNull();
+  });
+  it('已從安裝的 App 視窗開啟就不顯示', () => {
+    expect(d(DESKTOP, { standalone: true })).toBeNull();
   });
 });
 
