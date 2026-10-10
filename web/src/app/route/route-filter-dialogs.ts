@@ -2,20 +2,22 @@ import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LIMITS } from '@eranaut/shared';
+import { LIMITS, type RouteFilterDto } from '@eranaut/shared';
 import { Layout } from '../core/layout';
 import { Toast } from '../core/toast';
 import { IconComponent } from '../ui/icon';
+import { ListView } from './list-view';
+import { RouteListTools, RouteStar } from './route-list-ui';
 import { autoName, specSummary } from './route-filter-state';
 import { RouteFilterVm } from './route-filter-vm';
 
 /**
- * 條件組合的三個對話框(D-229):儲存(新增 / 更新 / 滿 10 組時選一組覆蓋)、管理(改名、刪除按兩下)、
+ * 條件組合的三個對話框(D-229):儲存(新增 / 更新 / 滿 30 組時選一組覆蓋)、管理(改名、刪除按兩下)、
  * 載入前確認「要換掉目前的條件嗎?」。狀態在 root 的 `RouteFilterVm`,換版面重建元件時不會丟。手機是底部面板。
  */
 @Component({
   selector: 'app-route-filter-dialogs',
-  imports: [CdkTrapFocus, FormsModule, IconComponent],
+  imports: [CdkTrapFocus, FormsModule, IconComponent, RouteListTools, RouteStar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-filter-dialogs.html',
   host: { '(document:keydown.escape)': 'onEscape($event)' },
@@ -28,15 +30,19 @@ export class RouteFilterDialogs {
   protected readonly nameMax = LIMITS.routeFilterName;
   protected readonly limit = LIMITS.maxRouteFiltersPerUser;
 
+  /** 對話框裡的清單不分頁(用捲動),但有搜尋與「只看常用」(D-237) */
+  protected readonly manageList = new ListView<RouteFilterDto>(() => this.fv.saved());
+  protected readonly overList = new ListView<RouteFilterDto>(() => this.fv.saved());
+
   // ---- 儲存 ----
   protected readonly name = signal('');
-  /** update = 更新載入的那一組;new = 另存新組(滿 10 組時改成選一組覆蓋) */
+  /** update = 更新載入的那一組;new = 另存新組(滿 30 組時改成選一組覆蓋) */
   protected readonly saveMode = signal<'update' | 'new'>('new');
   protected readonly overTarget = signal<string | null>(null);
   protected readonly error = signal('');
   protected readonly summary = computed(() => specSummary(this.fv.current()) || '(沒有任何限制)');
   protected readonly canUpdate = computed(() => this.fv.active() !== null && this.fv.modified());
-  /** 另存新組但已滿 10 組:要選一組覆蓋 */
+  /** 另存新組但已滿 30 組:要選一組覆蓋 */
   protected readonly mustOverwrite = computed(() => this.saveMode() === 'new' && this.fv.isFull());
   protected readonly nameValid = computed(() => [...this.name().trim()].length >= 1 && [...this.name().trim()].length <= this.nameMax);
   protected readonly canSubmit = computed(() => {
@@ -60,10 +66,12 @@ export class RouteFilterDialogs {
           this.saveMode.set(upd ? 'update' : 'new');
           this.name.set(autoName(this.fv.current()));
           this.overTarget.set(null);
+          this.overList.clearFilters();
           this.error.set('');
         });
       } else if (this.fv.dialog() === 'manage') {
         untracked(() => {
+          this.manageList.clearFilters();
           this.renaming.set(null);
           this.confirmDelete.set(null);
         });

@@ -1,10 +1,12 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { LIMITS } from '@eranaut/shared';
+import { LIMITS, type RouteSubDto } from '@eranaut/shared';
 import { Layout } from '../core/layout';
 import { Toast } from '../core/toast';
 import { IconComponent } from '../ui/icon';
+import { ListView } from './list-view';
+import { RouteListTools, RouteStar } from './route-list-ui';
 import { PART_GRADE_COUNT, buildStats, partLabel, rankRow } from './core/build';
 import { TABLES } from './core/data';
 import { judgeBuild } from './core/need';
@@ -28,12 +30,12 @@ const GRADES = [1, 2, 3, 4, 5] as const;
  *
  * 編輯的是草稿(`RouteVm.draft`),不會動到畫面上的配置與已選航點,所以取消不會丟航點;
  * 草稿放在 root 的 RouteVm,換版面重建元件時不會丟(D-163)。
- * 底部:「只套用」(不存伺服器)、「儲存」(新增或覆蓋;已滿 10 組時改成選一組覆蓋)。統計表即時跟著草稿變,
+ * 底部:「只套用」(不存伺服器)、「儲存」(新增或覆蓋;已滿 30 組時改成選一組覆蓋)。統計表即時跟著草稿變,
  * 並對照目前選的航點顯示路線需求與顏色。
  */
 @Component({
   selector: 'app-route-config-dialog',
-  imports: [CdkTrapFocus, IconComponent],
+  imports: [CdkTrapFocus, IconComponent, RouteListTools, RouteStar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-config-dialog.html',
   host: { '(document:keydown.escape)': 'onEscape($event)' },
@@ -51,8 +53,10 @@ export class RouteConfigDialog {
   protected readonly max = LIMITS.maxRouteSubsPerUser;
   protected readonly maxLevel = LIMITS.maxRouteSubLevel;
 
-  /** 'edit' = 編輯畫面;'pick' = 已滿 10 組,選一組覆蓋 */
+  /** 'edit' = 編輯畫面;'pick' = 已滿 30 組,選一組覆蓋 */
   protected readonly step = signal<'edit' | 'pick'>('edit');
+  /** 已滿時選一組覆蓋的清單:不分頁(用捲動),有搜尋與「只看常用」(D-237) */
+  protected readonly pickList = new ListView<RouteSubDto>(() => this.vm.saved());
   protected readonly confirmId = signal<string | null>(null);
   protected readonly error = signal('');
   protected downOnOverlay = false;
@@ -153,6 +157,7 @@ export class RouteConfigDialog {
     if (!d || !this.nameValid() || this.busy()) return;
     this.error.set('');
     if (d.mode !== 'edit' && this.vm.isFull()) {
+      this.pickList.clearFilters();
       this.step.set('pick');
       return;
     }
@@ -163,7 +168,8 @@ export class RouteConfigDialog {
       if (e instanceof HttpErrorResponse && e.status === 409) {
         // 別的裝置剛好存滿了:重抓清單,改成選一組覆蓋
         await this.vm.refresh();
-        this.step.set('pick');
+        this.pickList.clearFilters();
+      this.step.set('pick');
         this.error.set(`已經有 ${this.max} 組了,請選一組覆蓋`);
       } else this.fail(e);
     }

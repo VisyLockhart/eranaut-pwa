@@ -18,6 +18,7 @@ const OPTIONS: SelectOption[] = [
     <label for="s1">伺服器</label>
     <app-select inputId="s1" [options]="options" [formControl]="control" [invalid]="invalid()" />
     <div id="esc" (keydown.escape)="escaped = true"><app-select inputId="s2" [options]="options" [(value)]="plain" /></div>
+    <label id="wrap"><span>包在 label 裡</span><app-select inputId="s3" [options]="options" [(value)]="wrapped" /></label>
   `,
 })
 class Host {
@@ -25,6 +26,7 @@ class Host {
   control = new FormControl<string | number>('');
   invalid = signal(false);
   plain: string | number = 'b';
+  wrapped: string | number = 'a';
   escaped = false;
 }
 
@@ -57,6 +59,26 @@ describe('SelectField', () => {
     expect(trigger('s2').textContent).toContain('利維坦');
   });
 
+  it('選項帶 group:與前一項不同時多一列群組標題(不是選項、不能被選取)', () => {
+    host.options = [
+      { value: '', label: '請選擇' },
+      { value: 'a', label: '伊弗利特', group: '★ 常用' },
+      { value: 'b', label: '利維坦', group: '全部' },
+      { value: 'c', label: '迦樓羅', group: '全部' },
+    ];
+    fixture.detectChanges();
+    trigger().click();
+    fixture.detectChanges();
+    expect([...el.querySelectorAll('.sel-group')].map((g) => g.textContent!.trim())).toEqual(['★ 常用', '全部']);
+    expect(labels()).toEqual(['請選擇', '伊弗利特', '利維坦', '迦樓羅']);
+    el.querySelector<HTMLElement>('.sel-group')!.click();
+    fixture.detectChanges();
+    expect(host.control.value).toBe(''); // 點標題沒有任何作用
+    el.querySelectorAll<HTMLElement>('.sel-opt')[3].click();
+    fixture.detectChanges();
+    expect(host.control.value).toBe('c');
+  });
+
   it('點開列出全部選項,點選後寫回表單控制項並收起', () => {
     trigger().click();
     fixture.detectChanges();
@@ -66,6 +88,15 @@ describe('SelectField', () => {
     expect(host.control.value).toBe('c');
     expect(el.querySelector('.sel-panel')).toBeNull();
     expect(trigger().textContent).toContain('迦樓羅');
+  });
+
+  it('包在 <label> 裡時,點選項後清單要收起(label 不能把點擊轉給按鈕而重新展開)', () => {
+    trigger('s3').click();
+    fixture.detectChanges();
+    el.querySelector<HTMLElement>('#wrap .sel-opt:nth-child(3)')!.click();
+    fixture.detectChanges();
+    expect(host.wrapped).toBe('b');
+    expect(el.querySelector('.sel-panel')).toBeNull();
   });
 
   it('表單控制項由外部設值:按鈕文字跟著變', () => {

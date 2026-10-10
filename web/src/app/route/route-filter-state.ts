@@ -27,7 +27,7 @@ export function sanitizeSpec(raw: unknown): RouteFilterSpec {
   };
 }
 
-/** 讀回來的清單(API 回應或快照):丟掉形狀不對的列,最多 10 組 */
+/** 讀回來的清單(API 回應或快照):丟掉形狀不對的列,最多 30 組(上限常數) */
 export function sanitizeFilters(raw: unknown): RouteFilterDto[] {
   if (!Array.isArray(raw)) return [];
   const out: RouteFilterDto[] = [];
@@ -39,6 +39,7 @@ export function sanitizeFilters(raw: unknown): RouteFilterDto[] {
       id: o['id'],
       name: o['name'],
       spec: sanitizeSpec(o['spec']),
+      favorite: o['favorite'] === true,
       created_at: typeof o['created_at'] === 'string' ? o['created_at'] : '',
       updated_at: typeof o['updated_at'] === 'string' ? o['updated_at'] : '',
     });

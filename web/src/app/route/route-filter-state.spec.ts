@@ -15,11 +15,11 @@ describe('條件組合的純函式(D-229)', () => {
     expect(sanitizeSpec({ sort: 'nope', sea: 'x', max_hours: 0, match: 'zzz' })).toEqual(DEFAULT_SPEC);
   });
 
-  it('sanitizeFilters:丟掉形狀不對的列,最多 10 組', () => {
+  it('sanitizeFilters:丟掉形狀不對的列,最多 30 組', () => {
     const row = (i: number) => ({ id: `i${i}`, name: `n${i}`, spec: {}, created_at: '', updated_at: '' });
     expect(sanitizeFilters('x')).toEqual([]);
     expect(sanitizeFilters([null, { id: 1 }, { id: 'a' }, row(1)]).map((r) => r.id)).toEqual(['i1']);
-    expect(sanitizeFilters(Array.from({ length: 12 }, (_, i) => row(i)))).toHaveLength(10);
+    expect(sanitizeFilters(Array.from({ length: 35 }, (_, i) => row(i)))).toHaveLength(30);
   });
 
   it('fitToDataset:略過資料集沒有的航點、海域、物品、時間選項,並回報數量', () => {

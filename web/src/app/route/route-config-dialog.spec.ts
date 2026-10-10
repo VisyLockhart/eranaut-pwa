@@ -12,7 +12,7 @@ import { RouteVm } from './route-vm';
 
 const g = () => SEA_INDEXES[1]!;
 const dto = (over: Partial<RouteSubDto> = {}): RouteSubDto => ({
-  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [],
+  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [], favorite: false,
   created_at: '2026-10-08T00:00:00.000Z', updated_at: '2026-10-08T00:00:00.000Z', ...over,
 });
 const settle = () => new Promise((r) => setTimeout(r));
@@ -190,14 +190,14 @@ describe('RouteConfigDialog', () => {
     expect(vm.draft()).toBeNull();
   });
 
-  it('已滿 10 組:改成選一組覆蓋,再按一次確認才送出 PUT(保留那一組的名稱)', async () => {
-    const full = Array.from({ length: 10 }, (_, i) => dto({ id: `s${i}`, name: `艇${i}` }));
+  it('已滿 30 組:改成選一組覆蓋,再按一次確認才送出 PUT(保留那一組的名稱)', async () => {
+    const full = Array.from({ length: 30 }, (_, i) => dto({ id: `s${i}`, name: `艇${i}` }));
     await mount(full);
     vm.setLevel(100);
     open('new');
     btn('儲存為新配置').click();
     fixture.detectChanges();
-    expect(el.textContent).toContain('已滿 10 組');
+    expect(el.textContent).toContain('已滿 30 組');
     el.querySelectorAll<HTMLButtonElement>('.rt-pick')[3]!.click();
     fixture.detectChanges();
     http.expectNone('/api/route-subs/s3');
@@ -212,17 +212,38 @@ describe('RouteConfigDialog', () => {
     expect(vm.draft()).toBeNull();
   });
 
+  it('已滿時的覆蓋清單(D-237):不分頁、常用在前、有搜尋;星號送 PATCH', async () => {
+    const full = Array.from({ length: 30 }, (_, i) => dto({ id: `s${i}`, name: `艇${String(i).padStart(2, '0')}`, favorite: i === 9 }));
+    await mount(full);
+    open('new');
+    btn('儲存為新配置').click();
+    fixture.detectChanges();
+    const names = () => [...el.querySelectorAll('.rt-pick b')].map((b) => b.textContent);
+    expect(names()).toHaveLength(30);
+    expect(names()[0]).toBe('艇09');
+    const q = el.querySelector<HTMLInputElement>('.rt-lt-q')!;
+    q.value = '艇2';
+    q.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(names()).toHaveLength(10);
+    el.querySelectorAll<HTMLButtonElement>('.rt-pick-row .rt-star')[0]!.click();
+    await settle();
+    const req = http.expectOne((r) => r.url === '/api/route-subs/s20' && r.method === 'PATCH');
+    expect(req.request.body).toEqual({ favorite: true });
+    req.flush(dto({ id: 's20', favorite: true }));
+  });
+
   it('伺服器回 409(別的裝置剛存滿):重抓清單並改成選一組覆蓋', async () => {
     await mount();
     open('new');
     btn('儲存為新配置').click();
     http.expectOne('/api/route-subs').flush({ error: 'limit_reached' }, { status: 409, statusText: 'Conflict' });
     await settle();
-    http.expectOne('/api/route-subs').flush(Array.from({ length: 10 }, (_, i) => dto({ id: `s${i}`, name: `艇${i}` })));
+    http.expectOne('/api/route-subs').flush(Array.from({ length: 30 }, (_, i) => dto({ id: `s${i}`, name: `艇${i}` })));
     await settle();
     fixture.detectChanges();
-    expect(el.querySelector('.rt-save-error')?.textContent).toContain('10 組');
-    expect(el.querySelectorAll('.rt-pick')).toHaveLength(10);
+    expect(el.querySelector('.rt-save-error')?.textContent).toContain('30 組');
+    expect(el.querySelectorAll('.rt-pick')).toHaveLength(30);
   });
 
   it('寫入失敗(沒網路)只顯示錯誤,不改清單,草稿保留', async () => {

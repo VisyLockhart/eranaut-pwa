@@ -62,10 +62,10 @@ describe('sanitizeSubs', () => {
     expect(list[1]!.bound_submarine_ids).toEqual(['sub-1']);
   });
 
-  it('不是陣列 → 空;最多保留 10 組', () => {
+  it('不是陣列 → 空;最多保留 30 組', () => {
     expect(sanitizeSubs({})).toEqual([]);
     expect(sanitizeSubs(null)).toEqual([]);
-    expect(sanitizeSubs(Array.from({ length: 15 }, (_, i) => sub({ id: `s${i}` })))).toHaveLength(10);
+    expect(sanitizeSubs(Array.from({ length: 35 }, (_, i) => sub({ id: `s${i}` })))).toHaveLength(30);
   });
 
   it('缺時間欄位不影響;多餘欄位被忽略', () => {

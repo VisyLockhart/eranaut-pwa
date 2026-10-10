@@ -36,7 +36,7 @@ export interface ConfigDraft {
  * - 檢視狀態(海域、已選航點、等級與配件、目前使用的儲存潛艇)只存 localStorage、各裝置獨立(RS-26 ⑤)。
  * - 儲存潛艇(RS-25)存在伺服器、跨裝置同步:進入頁面載入、App 回前景再抓一次,不輪詢;同一筆以最後寫入為準;
  *   離線時顯示 localStorage 的快照,寫入需要網路(RS-26 ③④)。
- * - 寫入成功才更新畫面;失敗時丟出原始的 HttpErrorResponse 給呼叫端處理(409 = 已滿 10 組、400 = 驗證)。
+ * - 寫入成功才更新畫面;失敗時丟出原始的 HttpErrorResponse 給呼叫端處理(409 = 已滿 30 組、400 = 驗證)。
  * - 登出或 session 失效:停止並清掉快照(檢視狀態保留)。
  */
 @Injectable({ providedIn: 'root' })
@@ -324,7 +324,7 @@ export class RouteVm {
   }
 
   /**
-   * 「儲存」:edit 模式覆蓋該組(可改名,保留綁定);new / temp 新增一組。`overwriteId` 用於已滿 10 組時改覆蓋另一組
+   * 「儲存」:edit 模式覆蓋該組(可改名,保留綁定);new / temp 新增一組。`overwriteId` 用於已滿 30 組時改覆蓋另一組
    * (保留那一組原本的名稱與綁定)。成功後草稿成為畫面上的配置並關閉對話框;失敗時丟出原始錯誤,草稿保留。
    */
   async saveDraft(overwriteId?: string): Promise<RouteSubDto> {
@@ -398,7 +398,7 @@ export class RouteVm {
     }
   }
 
-  /** 把畫面上的等級與配件存成新的一組;已滿 10 組時伺服器回 409,畫面應改問要覆蓋哪一組 */
+  /** 把畫面上的等級與配件存成新的一組;已滿 30 組時伺服器回 409,畫面應改問要覆蓋哪一組 */
   async saveCurrent(name: string): Promise<RouteSubDto> {
     const created = await this.write(() => this.api.createRouteSub(this.input(name, [])));
     this.setSaved([...this.saved(), created]);
@@ -445,6 +445,37 @@ export class RouteVm {
   /** 整組取代綁定的工坊潛艇(RS-26 ①;同一組配置可綁多艘);空陣列 = 全部解除 */
   bind(id: string, submarineIds: string[]): Promise<RouteSubDto> {
     return this.updateSub(id, { bound_submarine_ids: submarineIds });
+  }
+
+  private favChain: Promise<void> = Promise.resolve();
+
+  /**
+   * 切換常用(D-237):畫面先改(樂觀更新),再依序送 PATCH(只改星號,不蓋掉別台裝置的編輯);
+   * 失敗就改回來並提示;404 代表在別處被刪了,重抓清單。連按多次也是依序送,最後的狀態以最後一次為準。
+   */
+  toggleFavorite(id: string): void {
+    if (!this.canSave) return;
+    const cur = this.saved().find((s) => s.id === id);
+    if (!cur) return;
+    const next = !cur.favorite;
+    this.setFavoriteLocal(id, next);
+    this.favChain = this.favChain
+      .then(() => this.api.setRouteSubFavorite(id, next))
+      .then(
+        () => undefined,
+        (error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 404) {
+            void this.refresh();
+            return;
+          }
+          if (this.saved().find((s) => s.id === id)?.favorite === next) this.setFavoriteLocal(id, !next);
+          this.toast.show('設定常用失敗,稍後再試', { tone: 'warn' });
+        },
+      );
+  }
+
+  private setFavoriteLocal(id: string, favorite: boolean): void {
+    this.setSaved(this.saved().map((s) => (s.id === id ? { ...s, favorite } : s)));
   }
 
   /** 404 代表已被刪掉(例如在別的裝置),當作成功 */

@@ -12,7 +12,7 @@ import { RouteVm } from './route-vm';
 const GREY = 2; // 灰海
 const g = () => SEA_INDEXES[1]!;
 const dto = (over: Partial<RouteSubDto> = {}): RouteSubDto => ({
-  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [],
+  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [], favorite: false,
   created_at: '2026-10-08T00:00:00.000Z', updated_at: '2026-10-08T00:00:00.000Z', ...over,
 });
 const tick = () => new Promise((r) => setTimeout(r));
@@ -241,14 +241,83 @@ describe('RouteVm', () => {
       expect(JSON.parse(localStorage.getItem(ROUTE_CACHE_KEY) ?? '[]')).toHaveLength(1);
     });
 
-    it('saveCurrent 已滿 10 組:伺服器回 409,畫面不變、錯誤丟給呼叫端', async () => {
-      await load(Array.from({ length: 10 }, (_, i) => dto({ id: `s${i}` })));
+    it('saveCurrent 已滿 30 組:伺服器回 409,畫面不變、錯誤丟給呼叫端', async () => {
+      await load(Array.from({ length: 30 }, (_, i) => dto({ id: `s${i}` })));
       expect(vm.isFull()).toBe(true);
       const p = vm.saveCurrent('x');
       http.expectOne('/api/route-subs').flush({ error: 'limit_reached' }, { status: 409, statusText: 'Conflict' });
       await expect(p).rejects.toMatchObject({ status: 409 });
-      expect(vm.saved()).toHaveLength(10);
+      expect(vm.saved()).toHaveLength(30);
       expect(vm.pending()).toBe(0);
+    });
+
+    describe('常用(D-237)', () => {
+      const patch = (id: string) => http.expectOne((r) => r.url === `/api/route-subs/${id}` && r.method === 'PATCH');
+
+      it('toggleFavorite:畫面與快照先改,再送 PATCH { favorite }', async () => {
+        await load([dto({ id: 'a' }), dto({ id: 'b', name: 'B' })]);
+        vm.toggleFavorite('b');
+        expect(vm.saved().find((s) => s.id === 'b')!.favorite).toBe(true);
+        expect(JSON.parse(localStorage.getItem(ROUTE_CACHE_KEY)!).find((s: RouteSubDto) => s.id === 'b').favorite).toBe(true);
+        await tick();
+        const req = patch('b');
+        expect(req.request.body).toEqual({ favorite: true });
+        req.flush(dto({ id: 'b', name: 'B', favorite: true }));
+        await tick();
+        expect(vm.saved().find((s) => s.id === 'b')!.favorite).toBe(true);
+        expect(vm.saved().find((s) => s.id === 'a')!.favorite).toBe(false);
+      });
+
+      it('失敗時改回原值並提示', async () => {
+        await load([dto({ id: 'a' })]);
+        vm.toggleFavorite('a');
+        await tick();
+        patch('a').flush({ error: 'x' }, { status: 500, statusText: 'Server Error' });
+        await tick();
+        expect(vm.saved()[0]!.favorite).toBe(false);
+      });
+
+      it('連按:依序送出(第二筆等第一筆回來才送),最後狀態以最後一次為準', async () => {
+        await load([dto({ id: 'a' })]);
+        vm.toggleFavorite('a');
+        vm.toggleFavorite('a');
+        expect(vm.saved()[0]!.favorite).toBe(false); // 開了又關
+        await tick();
+        const first = patch('a');
+        expect(first.request.body).toEqual({ favorite: true });
+        http.expectNone((r) => r.method === 'PATCH'); // 第二筆還在排隊
+        first.flush(dto({ id: 'a', favorite: true }));
+        await tick();
+        const second = patch('a');
+        expect(second.request.body).toEqual({ favorite: false });
+        second.flush(dto({ id: 'a', favorite: false }));
+        await tick();
+        expect(vm.saved()[0]!.favorite).toBe(false);
+      });
+
+      it('404(在別的裝置被刪了):重抓清單', async () => {
+        await load([dto({ id: 'a' })]);
+        vm.toggleFavorite('a');
+        await tick();
+        patch('a').flush(null, { status: 404, statusText: 'Not Found' });
+        await tick();
+        http.expectOne('/api/route-subs').flush([]);
+        await tick();
+        expect(vm.saved()).toEqual([]);
+      });
+
+      it('不在清單裡的 id、讀不到的快照欄位:不送請求、視為未設常用', async () => {
+        await load([dto({ id: 'a' })]);
+        vm.toggleFavorite('nope');
+        await tick();
+        http.expectNone((r) => r.method === 'PATCH');
+        vm.stop(); // 登出會清掉快照,所以先停再寫入
+        localStorage.setItem(ROUTE_CACHE_KEY, JSON.stringify([{ ...dto({ id: 'z' }), favorite: undefined }, dto({ id: 'y', favorite: true })]));
+        vm.start();
+        http.expectOne('/api/route-subs').error(new ProgressEvent('error'));
+        await tick();
+        expect(vm.saved().map((s) => [s.id, s.favorite])).toEqual([['z', false], ['y', true]]);
+      });
     });
 
     it('useSub 填入等級與配件;改動後 dirty;overwrite 後恢復', async () => {

@@ -37,13 +37,17 @@
           @if (saveMode() === 'new') {
             @if (mustOverwrite()) {
               <div class="rt-dirty" role="status">已滿 {{ limit }} 組。選一組覆蓋,或先到「管理」刪掉不用的。</div>
-              <ul class="rt-pick-list" aria-label="選一組覆蓋">
-                @for (s of fv.saved(); track s.id) {
-                  <li>
+              <app-route-list-tools [view]="overList" noun="條件組合" />
+              <ul class="rt-pick-list rt-scroll" aria-label="選一組覆蓋">
+                @for (s of overList.filtered(); track s.id) {
+                  <li class="rt-pick-row">
+                    <app-route-star [on]="s.favorite" [name]="s.name" (toggle)="fv.toggleFavorite(s.id)" />
                     <button type="button" class="rt-pick" [class.active]="overTarget() === s.id" [attr.aria-pressed]="overTarget() === s.id" (click)="pickOver(s.id)">
                       <b>{{ s.name }}</b><span>{{ specText(s.spec) }}</span>
                     </button>
                   </li>
+                } @empty {
+                  <li class="rt-empty">沒有符合的條件組合 <button type="button" class="rt-link-btn" (click)="overList.clearFilters()">清除篩選</button></li>
                 }
               </ul>
             }
@@ -67,10 +71,12 @@
           <div class="modal-title" id="rt-fm-title">管理條件組合({{ fv.saved().length }} / {{ limit }})</div>
           <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
         </div>
+        <app-route-list-tools [view]="manageList" noun="條件組合" />
         <div class="rt-dlg-body">
           <ul class="rt-pick-list">
-            @for (s of fv.saved(); track s.id) {
+            @for (s of manageList.filtered(); track s.id) {
               <li class="rt-fm-row">
+                <app-route-star [on]="s.favorite" [name]="s.name" (toggle)="fv.toggleFavorite(s.id)" />
                 @if (renaming() === s.id) {
                   <input class="rt-text-input" type="text" [attr.maxlength]="nameMax" [attr.aria-label]="'新名稱'" [ngModel]="renameText()" (ngModelChange)="renameText.set($event)" (keydown.enter)="doRename(s.id)" autocomplete="off" />
                   <div class="rt-save-actions">
@@ -86,7 +92,7 @@
                 }
               </li>
             } @empty {
-              <li class="rt-empty">還沒有條件組合</li>
+              <li class="rt-empty">@if (manageList.filtering()) { 沒有符合的條件組合 <button type="button" class="rt-link-btn" (click)="manageList.clearFilters()">清除篩選</button> } @else { 還沒有條件組合 }</li>
             }
           </ul>
         </div>

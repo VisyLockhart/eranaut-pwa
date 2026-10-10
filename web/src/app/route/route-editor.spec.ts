@@ -8,7 +8,7 @@ import { RouteEditor } from './route-editor';
 import { RouteVm } from './route-vm';
 
 const dto = (over: Partial<RouteSubDto> = {}): RouteSubDto => ({
-  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [],
+  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [], favorite: false,
   created_at: '2026-10-08T00:00:00.000Z', updated_at: '2026-10-08T00:00:00.000Z', ...over,
 });
 const settle = () => new Promise((r) => setTimeout(r));
@@ -44,7 +44,7 @@ describe('RouteEditor(配置頁)', () => {
     expect(el.querySelector('.rt-level-input')).toBeNull();
     expect(el.querySelector('.rt-chips')).toBeNull();
     expect(el.querySelector('app-route-save')).toBeNull();
-    expect(el.textContent).toContain('已儲存 1 / 10 組');
+    expect(el.textContent).toContain('已儲存 1 / 30 組');
   });
 
   it('沒有儲存配置時顯示空狀態與臨時配置', async () => {
@@ -68,7 +68,9 @@ describe('RouteEditor(配置頁)', () => {
     const cards = el.querySelectorAll('.rt-card');
     expect(cards).toHaveLength(1);
     expect(btn(cards[0]!, '使用中').disabled).toBe(true);
-    btn(cards[0]!, '編輯').click();
+    btn(cards[0]!, '展開').click(); // 手機卡片預設收合(D-237)
+    fixture.detectChanges();
+    btn(el.querySelectorAll('.rt-card')[0]!, '編輯').click();
     expect(vm.draft()).toMatchObject({ mode: 'edit', id: 'a' });
   });
 

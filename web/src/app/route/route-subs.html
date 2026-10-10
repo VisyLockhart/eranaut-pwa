@@ -1,8 +1,13 @@
+<app-route-list-tools [view]="list" noun="配置" />
+@if (list.filtering() && list.filtered().length === 0) {
+  <div class="rt-empty rt-lt-empty">沒有符合的配置。<button type="button" class="rt-link-btn" (click)="list.clearFilters()">清除搜尋與篩選</button></div>
+}
 <div class="rt-legend"><span class="g-full">達最高階</span><span class="g-partial">只達較低階</span><span class="g-none">未達(差 N)</span></div>
 <div class="rt-cards">
 @for (c of cards(); track c.id ?? 'temp') {
-  <article class="rt-card" [class.active]="c.active" [class.ok]="c.ok">
+  <article class="rt-card" [class.active]="c.active" [class.ok]="c.ok" [class.flash]="c.id !== null && flashId() === c.id">
     <header class="rt-card-head">
+      @if (c.id; as id) { <app-route-star [on]="c.favorite" [name]="c.title" (toggle)="toggleFav(id)" /> }
       <div class="rt-card-title">
         <b>{{ c.title }}</b>
         @if (c.active) { <span class="rt-badge on">使用中</span> }
@@ -11,23 +16,39 @@
       </div>
       <span class="rt-card-lv">Lv{{ c.level }} · {{ c.parts }}</span>
     </header>
-    <div class="rt-chips5">
-      @for (ch of c.chips; track ch.label) {
-        <div class="rt-chip5 g-{{ ch.grade }}">
-          <span class="l">{{ ch.label }}</span>
-          <span class="v">{{ ch.value }}</span>
-          @if (ch.gap > 0 && ch.grade !== 'plain') { <span class="d">差 {{ ch.gap }}</span> }
-        </div>
+    @if (isOpen(c)) {
+      <div class="rt-chips5">
+        @for (ch of c.chips; track ch.label) {
+          <div class="rt-chip5 g-{{ ch.grade }}">
+            <span class="l">{{ ch.label }}</span>
+            <span class="v">{{ ch.value }}</span>
+            @if (ch.gap > 0 && ch.grade !== 'plain') { <span class="d">差 {{ ch.gap }}</span> }
+          </div>
+        }
+      </div>
+      <div class="rt-card-foot">
+        <span>航行 {{ c.time }}</span>
+        @if (c.overweight) { <span class="g-none">超重</span> }
+        @if (c.fit === 'bad') { <span class="g-none">{{ c.fitText }}</span> }
+      </div>
+      @if (c.fit === 'bad' && !c.active && c.drops > 0) { <div class="rt-dirty">改用這組會移除 {{ c.drops }} 個放不下的航點</div> }
+      <div class="rt-card-actions"><ng-container *ngTemplateOutlet="acts; context: { $implicit: c, short: false }" /></div>
+      @if (c.id; as id) { @if (actions() === 'manage') { <app-route-bind [subId]="id" /> } }
+      @if (actions() === 'manage' && c.id) {
+        <button type="button" class="rt-link-btn rt-card-fold" (click)="toggleOpen(c)">收合</button>
       }
-    </div>
-    <div class="rt-card-foot">
-      <span>航行 {{ c.time }}</span>
-      @if (c.overweight) { <span class="g-none">超重</span> }
-      @if (c.fit === 'bad') { <span class="g-none">{{ c.fitText }}</span> }
-    </div>
-    @if (c.fit === 'bad' && !c.active && c.drops > 0) { <div class="rt-dirty">改用這組會移除 {{ c.drops }} 個放不下的航點</div> }
-    <div class="rt-card-actions"><ng-container *ngTemplateOutlet="acts; context: { $implicit: c, short: false }" /></div>
-    @if (c.id; as id) { @if (actions() === 'manage') { <app-route-bind [subId]="id" /> } }
+    } @else {
+      <div class="rt-card-quick">
+        <span>航行 {{ c.time }}</span>
+        @if (c.overweight) { <span class="g-none">超重</span> }
+        @if (c.id; as id) {
+          <span class="rt-quick-act">
+            <button type="button" class="rt-save-btn" [disabled]="c.active" (click)="useSub(id, c.title)">{{ c.active ? '使用中' : '使用' }}</button>
+            <button type="button" class="rt-link-btn" [attr.aria-expanded]="false" [attr.aria-label]="'展開 ' + c.title" (click)="toggleOpen(c)">展開</button>
+          </span>
+        }
+      </div>
+    }
   </article>
 }
 </div>
@@ -38,10 +59,10 @@
     </thead>
     <tbody>
       @for (c of cards(); track c.id ?? 'temp') {
-        <tr [class.active]="c.active">
+        <tr [class.active]="c.active" [class.flash]="c.id !== null && flashId() === c.id">
           <th scope="row">
             <div class="rt-cmp-name">
-              <b>{{ c.title }}</b>
+              <b class="rt-cmp-title">@if (c.id; as id) { <app-route-star [on]="c.favorite" [name]="c.title" (toggle)="toggleFav(id)" /> }{{ c.title }}</b>
               <span>Lv{{ c.level }} · {{ c.parts }}</span>
               @if (c.active) { <span class="rt-badge on">使用中</span> }
               @if (c.fit === 'ok') { <span class="rt-badge ok">可跑</span> } @else if (c.fit === 'bad') { <span class="rt-badge bad">{{ c.fitText }}</span> }
@@ -60,6 +81,8 @@
     </tbody>
   </table>
 </div>
+
+<app-route-pager [page]="list.page()" [pages]="list.pages()" [count]="list.filtered().length" (pageChange)="goPage($event)" />
 
 <ng-template #acts let-c let-short="short">
   @if (actions() === 'pick') {

@@ -15,7 +15,7 @@ const grey = () => SEA_INDEXES[1]!;
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 const row = (over: Partial<RouteFilterDto> = {}): RouteFilterDto => ({
   id: 'a', name: '灰海組', spec: { v: 1, sea: 'all', max_hours: 6, sort: 'perMin', required: [grey().sea.points[0]!.id], excluded: [], item_ids: [], match: 'all' },
-  created_at: '', updated_at: '', ...over,
+  favorite: false, created_at: '', updated_at: '', ...over,
 });
 
 describe('條件組合的畫面(D-229)', () => {
@@ -133,13 +133,13 @@ describe('條件組合的畫面(D-229)', () => {
     expect(fv.modified()).toBe(false);
   });
 
-  it('已滿 10 組:另存新組要選一組覆蓋', async () => {
-    await mount(Array.from({ length: 10 }, (_, i) => row({ id: `r${i}`, name: `組${i}` })));
+  it('已滿 30 組:另存新組要選一組覆蓋', async () => {
+    await mount(Array.from({ length: 30 }, (_, i) => row({ id: `r${i}`, name: `組${i}` })));
     find.maxHours.set(48);
     f.detectChanges();
     btn('儲存', el.querySelector('app-route-filter-bar')!).click();
     f.detectChanges();
-    expect(dlg()!.textContent).toContain('已滿 10 組');
+    expect(dlg()!.textContent).toContain('已滿 30 組');
     expect(dlgBtn('覆蓋').disabled).toBe(true);
     dlg()!.querySelectorAll<HTMLButtonElement>('.rt-pick')[3]!.click();
     f.detectChanges();
@@ -149,6 +149,47 @@ describe('條件組合的畫面(D-229)', () => {
     req.flush(row({ id: 'r3', name: '組3' }));
     await tick();
     expect(dlg()).toBeNull();
+  });
+
+  it('下拉:有常用時分成「★ 常用」「全部條件組合」兩組,常用排前面', async () => {
+    await mount([row({ id: 'a', name: '甲' }), row({ id: 'b', name: '乙', favorite: true })]);
+    btn('選擇條件組合', el.querySelector('app-route-filter-bar')!).click();
+    f.detectChanges();
+    const items = [...document.querySelectorAll('.sel-panel > li')].map((li) => `${li.className.includes('sel-group') ? '#' : ''}${li.textContent?.trim()}`);
+    expect(items).toEqual(['選擇條件組合…', '#★ 常用', '乙', '#全部條件組合', '甲']);
+  });
+
+  it('下拉:沒有任何常用時維持單層清單(沒有群組標題)', async () => {
+    await mount([row({ id: 'a', name: '甲' })]);
+    btn('選擇條件組合', el.querySelector('app-route-filter-bar')!).click();
+    f.detectChanges();
+    expect(document.querySelector('.sel-group')).toBeNull();
+  });
+
+  it('管理:星號切換送 PATCH;超過 8 組有搜尋與「★ 常用」', async () => {
+    await mount(Array.from({ length: 12 }, (_, i) => row({ id: `r${i}`, name: `組${String(i).padStart(2, '0')}`, favorite: i === 4 })));
+    btn('管理', el.querySelector('app-route-filter-bar')!).click();
+    f.detectChanges();
+    const rows = () => [...dlg()!.querySelectorAll('.rt-fm-row .rt-fm-main b')].map((b) => b.textContent);
+    expect(rows()).toHaveLength(12); // 對話框內不分頁
+    expect(rows()[0]).toBe('組04'); // 常用在前
+    const q = dlg()!.querySelector<HTMLInputElement>('.rt-lt-q')!;
+    q.value = '組1';
+    q.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    expect(rows()).toEqual(['組10', '組11']);
+    q.value = '';
+    q.dispatchEvent(new Event('input'));
+    btn('★ 常用', dlg()!).click();
+    f.detectChanges();
+    expect(rows()).toEqual(['組04']);
+    btn('★ 常用', dlg()!).click();
+    f.detectChanges();
+    dlg()!.querySelectorAll<HTMLButtonElement>('.rt-fm-row .rt-star')[1]!.click(); // 組00
+    await tick();
+    const req = http.expectOne((r) => r.url === '/api/route-filters/r0' && r.method === 'PATCH');
+    expect(req.request.body).toEqual({ favorite: true });
+    req.flush(row({ id: 'r0', favorite: true }));
   });
 
   it('管理:改名與刪除(刪除按兩下)', async () => {

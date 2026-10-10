@@ -74,14 +74,20 @@
         }
       } @else {
         <div class="rt-save-label">已滿 {{ max }} 組,選一組覆蓋(會保留那一組的名稱與綁定)</div>
-        <ul class="rt-pick-list">
-          @for (s of vm.saved(); track s.id) {
+        <app-route-list-tools [view]="pickList" noun="配置" />
+        <ul class="rt-pick-list rt-scroll">
+          @for (s of pickList.filtered(); track s.id) {
             <li>
-              <button type="button" class="rt-pick" (click)="ask(s.id)" [attr.aria-expanded]="confirmId() === s.id"><b>{{ s.name }}</b><span>Lv{{ s.level }}</span></button>
+              <div class="rt-pick-row">
+                <app-route-star [on]="s.favorite" [name]="s.name" (toggle)="vm.toggleFavorite(s.id)" />
+                <button type="button" class="rt-pick" (click)="ask(s.id)" [attr.aria-expanded]="confirmId() === s.id"><b>{{ s.name }}</b><span>Lv{{ s.level }}</span></button>
+              </div>
               @if (confirmId() === s.id) {
                 <button type="button" class="rt-save-btn danger" [disabled]="busy()" (click)="overwrite(s.id)">確定覆蓋這一組</button>
               }
             </li>
+          } @empty {
+            <li class="rt-empty">沒有符合的配置 <button type="button" class="rt-link-btn" (click)="pickList.clearFilters()">清除篩選</button></li>
           }
         </ul>
       }

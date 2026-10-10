@@ -100,6 +100,7 @@ export function sanitizeSubs(raw: unknown): RouteSubDto[] {
       stern: parts[1],
       bow: parts[2],
       bridge: parts[3],
+      favorite: o['favorite'] === true,
       bound_submarine_ids: Array.isArray(o['bound_submarine_ids']) ? o['bound_submarine_ids'].filter((x): x is string => typeof x === 'string') : [],
       created_at: typeof o['created_at'] === 'string' ? o['created_at'] : '',
       updated_at: typeof o['updated_at'] === 'string' ? o['updated_at'] : '',

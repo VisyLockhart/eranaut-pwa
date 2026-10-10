@@ -37,7 +37,14 @@ export class RouteFilterBar {
 
   protected readonly options = computed<SelectOption[]>(() => {
     const active = this.fv.active();
-    const out: SelectOption[] = this.fv.saved().map((s) => ({ value: s.id, label: s.id === active?.id && this.fv.modified() ? `${s.name}(已修改)` : s.name }));
+    // 有常用時分成「★ 常用」「全部條件組合」兩組(D-237);沒有常用就維持單層清單
+    const saved = this.fv.saved();
+    const grouped = saved.some((s) => s.favorite);
+    const out: SelectOption[] = [...saved.filter((s) => s.favorite), ...saved.filter((s) => !s.favorite)].map((s) => ({
+      value: s.id,
+      label: s.id === active?.id && this.fv.modified() ? `${s.name}(已修改)` : s.name,
+      ...(grouped ? { group: s.favorite ? '★ 常用' : '全部條件組合' } : {}),
+    }));
     if (active === null) out.unshift({ value: NONE, label: this.fv.saved().length === 0 ? '尚無條件組合' : '選擇條件組合…' });
     return out;
   });

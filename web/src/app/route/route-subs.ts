@@ -1,14 +1,17 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked, ElementRef } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import type { RouteSubDto } from '@eranaut/shared';
+import { Layout } from '../core/layout';
 import { Toast } from '../core/toast';
 import { buildStats, partLabel } from './core/build';
 import { TABLES } from './core/data';
 import { judgeBuild, type BuildJudgement, type Grade } from './core/need';
 import { travelMinutes } from './core/route';
 import type { Build } from './core/types';
+import { ListView, PAGE_SIZE_DESKTOP, PAGE_SIZE_MOBILE } from './list-view';
 import { RouteBind } from './route-bind';
+import { RouteListTools, RoutePager, RouteStar } from './route-list-ui';
 import { formatTravel } from './route-format';
 import { normalizeSeq, subToBuild } from './route-state';
 import { RouteVm } from './route-vm';
@@ -32,6 +35,7 @@ interface Card {
   ok: boolean;
   bound: boolean;
   active: boolean;
+  favorite: boolean;
   /** 能不能跑目前這條路線(距離與等級);沒選航點時為 null,不顯示 */
   fit: 'ok' | 'bad' | null;
   fitText: string;
@@ -47,19 +51,50 @@ interface Card {
  */
 @Component({
   selector: 'app-route-subs',
-  imports: [NgTemplateOutlet, RouteBind],
+  imports: [NgTemplateOutlet, RouteBind, RouteListTools, RoutePager, RouteStar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-subs.html',
 })
 export class RouteSubs {
   protected readonly vm = inject(RouteVm);
   private readonly toast = inject(Toast);
+  private readonly layout = inject(Layout);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly actions = input<'manage' | 'pick'>('manage');
   /** 使用了某一組(改用成功)之後通知外層,例如查看性能彈窗收起 */
   readonly used = output<string>();
 
   protected readonly confirmDel = signal<string | null>(null);
+
+  /**
+   * 清單檢視(D-237):常用在前、名稱搜尋、只看常用、分頁(桌機每頁 10、手機 6)。
+   * 「查看性能」彈窗(`pick`)是對話框,不分頁、用捲動,但同樣有搜尋與常用。
+   */
+  protected readonly list = new ListView<RouteSubDto>(
+    () => this.vm.saved(),
+    () => (this.actions() === 'pick' ? Infinity : this.layout.isDesktop() ? PAGE_SIZE_DESKTOP : PAGE_SIZE_MOBILE),
+  );
+  /** 手機卡片預設收合成一列(D-237);點「展開」才顯示燈號與其他操作。臨時配置與彈窗裡的卡片一律展開 */
+  protected readonly openIds = signal<ReadonlySet<string>>(new Set());
+  /** 剛跳到的那一組(短暫標示) */
+  protected readonly flashId = signal<string | null>(null);
+  private flashTimer: ReturnType<typeof setTimeout> | null = null;
+  private seenSubId: string | null | undefined = undefined;
+
+  constructor() {
+    // 使用中的配置變了(開頁、儲存新的一組、別處改用):翻到它所在的頁。不是第一次顯示時再短暫標示
+    effect(() => {
+      const id = this.vm.subId();
+      const n = this.vm.saved().length;
+      untracked(() => {
+        if (this.actions() !== 'manage' || id === null || n === 0 || id === this.seenSubId) return;
+        const first = this.seenSubId === undefined;
+        this.seenSubId = id;
+        if (this.list.goTo(id) && !first) this.flash(id);
+      });
+    });
+  }
 
   protected readonly hasRoute = computed(() => this.vm.seq().length > 0);
 
@@ -70,7 +105,7 @@ export class RouteSubs {
     const si = this.vm.seaIdx();
     const seq = this.vm.seq();
     const needLevel = seq.reduce((m, id) => Math.max(m, si.byId.get(id)?.rankReq ?? 0), 0);
-    const make = (id: string | null, title: string, sub: string, b: Build, bound: boolean, active: boolean): Card => {
+    const make = (id: string | null, title: string, sub: string, b: Build, bound: boolean, active: boolean, favorite = false): Card => {
       const stats = buildStats(TABLES, b);
       const j = judgeBuild(stats, need);
       let fit: Card['fit'] = null;
@@ -83,6 +118,7 @@ export class RouteSubs {
       }
       return {
         id,
+        favorite,
         title,
         sub,
         parts: b.parts.map(partLabel).join(' '),
@@ -108,9 +144,36 @@ export class RouteSubs {
       const sub = !this.vm.canSave ? '' : dirty && sel ? `與「${sel.name}」不同,尚未儲存` : '尚未儲存';
       out.push(make(null, title, sub, this.vm.build(), false, true));
     }
-    for (const s of this.vm.saved()) out.push(make(s.id, s.name, '', subToBuild(s), s.bound_submarine_ids.length > 0, this.vm.subId() === s.id && !dirty));
+    for (const s of this.list.pageItems()) out.push(make(s.id, s.name, '', subToBuild(s), s.bound_submarine_ids.length > 0, this.vm.subId() === s.id && !dirty, s.favorite));
     return out;
   });
+
+  protected isOpen(c: Card): boolean {
+    return this.actions() === 'pick' || c.id === null || this.openIds().has(c.id);
+  }
+
+  protected toggleOpen(c: Card): void {
+    if (c.id === null) return;
+    const next = new Set(this.openIds());
+    if (!next.delete(c.id)) next.add(c.id);
+    this.openIds.set(next);
+  }
+
+  protected toggleFav(id: string): void {
+    this.vm.toggleFavorite(id);
+  }
+
+  /** 換頁:回到清單最上面(手機的頁面很長,換頁後不會停在底部) */
+  protected goPage(n: number): void {
+    this.list.setPage(n);
+    this.host.nativeElement.scrollIntoView?.({ block: 'start' });
+  }
+
+  private flash(id: string): void {
+    this.flashId.set(id);
+    if (this.flashTimer) clearTimeout(this.flashTimer);
+    this.flashTimer = setTimeout(() => this.flashId.set(null), 1800);
+  }
 
   protected useSub(id: string, title: string): void {
     this.vm.useSub(id);

@@ -1,4 +1,5 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { LIMITS } from '@eranaut/shared';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
@@ -185,11 +186,11 @@ export class RouteBuild {
     this.toast.show('已帶入成臨時配置');
   }
 
-  /** 加入儲存:存完留在結果頁(已滿 10 組時回配置頁選一組覆蓋) */
+  /** 加入儲存:存完留在結果頁(已滿 30 組時回配置頁選一組覆蓋) */
   protected async save(c: HitCard): Promise<void> {
     const parts = c.raw.build.parts as [number, number, number, number];
     const overwrite = (): void => {
-      this.toast.show('已滿 10 組,請在配置頁選一組覆蓋', { tone: 'warn' });
+      this.toast.show('已滿 ' + LIMITS.maxRouteSubsPerUser + ' 組,請在配置頁選一組覆蓋', { tone: 'warn' });
       this.b.open.set(false);
       this.vm.setTab('config');
     };

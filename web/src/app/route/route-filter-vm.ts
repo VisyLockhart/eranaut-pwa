@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { LIMITS, type RouteFilterDto, type RouteFilterSpec } from '@eranaut/shared';
 import { Api } from '../core/api';
@@ -19,7 +20,7 @@ export { autoName };
  * 不存:配置、去過的航點、海圖模式與停在哪個海域。
  *
  * 清單的同步方式和儲存潛艇(`RouteVm`)相同:進頁載入、回前景再抓,不輪詢;最後寫入為準;離線顯示快照,寫入需要網路;
- * 寫入成功才更新畫面,失敗丟出原始的 HttpErrorResponse(409 = 已滿 10 組、400 = 驗證);登出清掉快照。
+ * 寫入成功才更新畫面,失敗丟出原始的 HttpErrorResponse(409 = 已滿 30 組、400 = 驗證);登出清掉快照。
  */
 @Injectable({ providedIn: 'root' })
 export class RouteFilterVm {
@@ -153,7 +154,7 @@ export class RouteFilterVm {
 
   /** 清掉目前的條件(不動去過的航點與配置) */
   reset(): void {
-    this.apply({ id: '', name: '', spec: DEFAULT_SPEC, created_at: '', updated_at: '' });
+    this.apply({ id: '', name: '', spec: DEFAULT_SPEC, favorite: false, created_at: '', updated_at: '' });
     this.activeId.set(null);
   }
 
@@ -180,6 +181,34 @@ export class RouteFilterVm {
     const updated = await this.write(() => this.api.updateRouteFilter(id, { name: name.trim(), spec: old.spec }));
     this.replace(updated);
     return updated;
+  }
+
+  private favChain: Promise<void> = Promise.resolve();
+
+  /** 切換常用(D-237):樂觀更新後依序送 PATCH;失敗改回並提示,404 重抓清單(同 `RouteVm.toggleFavorite`) */
+  toggleFavorite(id: string): void {
+    if (!this.enabled) return;
+    const cur = this.saved().find((s) => s.id === id);
+    if (!cur) return;
+    const next = !cur.favorite;
+    this.setFavoriteLocal(id, next);
+    this.favChain = this.favChain
+      .then(() => this.api.setRouteFilterFavorite(id, next))
+      .then(
+        () => undefined,
+        (error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 404) {
+            void this.refresh();
+            return;
+          }
+          if (this.saved().find((s) => s.id === id)?.favorite === next) this.setFavoriteLocal(id, !next);
+          this.toast.show('設定常用失敗,稍後再試', { tone: 'warn' });
+        },
+      );
+  }
+
+  private setFavoriteLocal(id: string, favorite: boolean): void {
+    this.setSaved(this.saved().map((s) => (s.id === id ? { ...s, favorite } : s)));
   }
 
   async remove(id: string): Promise<void> {

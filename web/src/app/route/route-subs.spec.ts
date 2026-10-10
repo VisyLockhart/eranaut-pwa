@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import type { RouteSubDto } from '@eranaut/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Auth } from '../core/auth';
+import { Layout } from '../core/layout';
 import { SEA_INDEXES } from './core/data';
 import { ids } from './core/test-helpers';
 import { RouteSubs } from './route-subs';
@@ -11,7 +12,7 @@ import { RouteVm } from './route-vm';
 
 const g = () => SEA_INDEXES[1]!;
 const dto = (over: Partial<RouteSubDto> = {}): RouteSubDto => ({
-  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [],
+  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [], favorite: false,
   created_at: '2026-10-08T00:00:00.000Z', updated_at: '2026-10-08T00:00:00.000Z', ...over,
 });
 const settle = () => new Promise((r) => setTimeout(r));
@@ -22,10 +23,11 @@ describe('RouteSubs', () => {
   let http: HttpTestingController;
   let fixture: ReturnType<typeof TestBed.createComponent<RouteSubs>>;
 
-  async function mount(saved: RouteSubDto[] = []) {
+  async function mount(saved: RouteSubDto[] = [], expand = true, desktop = false) {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     TestBed.inject(Auth).status.set('authenticated');
+    TestBed.inject(Layout).isDesktop.set(desktop);
     http = TestBed.inject(HttpTestingController);
     vm = TestBed.inject(RouteVm);
     vm.start();
@@ -34,6 +36,12 @@ describe('RouteSubs', () => {
     fixture = TestBed.createComponent(RouteSubs);
     fixture.detectChanges();
     el = fixture.nativeElement as HTMLElement;
+    if (expand) expandAll();
+  }
+  /** 手機卡片預設收合成一列(D-237);大部分案例要看燈號與按鈕,先全部展開 */
+  function expandAll() {
+    el.querySelectorAll<HTMLButtonElement>('.rt-card-quick .rt-link-btn').forEach((b) => b.click());
+    fixture.detectChanges();
   }
   const caseC = () => {
     vm.selectSea(2);
@@ -121,6 +129,104 @@ describe('RouteSubs', () => {
     vm.closeConfig();
     btn(cards[0]!, '儲存').click();
     expect(vm.draft()?.mode).toBe('new');
+  });
+
+  describe('常用、搜尋、分頁、收合(D-237)', () => {
+    const many = (n: number, over: (i: number) => Partial<RouteSubDto> = () => ({})) => Array.from({ length: n }, (_, i) => dto({ id: `s${i}`, name: `艇${String(i).padStart(2, '0')}`, ...over(i) }));
+    const names = () => [...el.querySelectorAll('.rt-cards .rt-card')].map((c) => c.querySelector('.rt-card-title b')?.textContent?.trim());
+    const layout = () => TestBed.inject(Layout);
+
+    it('手機卡片預設收合成一列:有「使用」與「展開」,沒有燈號與編輯;展開後才有', async () => {
+      await mount([dto()], false);
+      const card = el.querySelectorAll('.rt-card')[1]!;
+      expect(card.querySelector('.rt-chips5')).toBeNull();
+      expect(btn(card, '使用')).toBeDefined();
+      expect(btn(card, '編輯')).toBeUndefined();
+      btn(card, '展開').click();
+      fixture.detectChanges();
+      const open = el.querySelectorAll('.rt-card')[1]!;
+      expect(open.querySelector('.rt-chips5')).not.toBeNull();
+      expect(btn(open, '編輯')).toBeDefined();
+      btn(open, '收合').click();
+      fixture.detectChanges();
+      expect(el.querySelectorAll('.rt-card')[1]!.querySelector('.rt-chips5')).toBeNull();
+    });
+
+    it('手機每頁 6 組、桌機每頁 10 組;臨時配置卡固定在最上面不佔頁數', async () => {
+      await mount(many(20), false, false);
+      expect(names().filter((n) => n !== '臨時配置')).toHaveLength(6);
+      expect(el.querySelector('.rt-listpager .sel-label')?.textContent?.trim()).toBe('1 / 4');
+      expect(el.querySelector('.rt-cards .rt-card')?.textContent).toContain('臨時配置');
+      layout().isDesktop.set(true);
+      fixture.detectChanges();
+      expect(names().filter((n) => n !== '臨時配置')).toHaveLength(10);
+      expect(el.querySelector('.rt-listpager .sel-label')?.textContent?.trim()).toBe('1 / 2');
+    });
+
+    it('換頁顯示該頁的項目', async () => {
+      await mount(many(25), false, true);
+      (el.querySelectorAll<HTMLButtonElement>('.rt-listpager .pager-btn')[1]!).click();
+      fixture.detectChanges();
+      expect(names().filter((n) => n !== '臨時配置')[0]).toBe('艇10');
+    });
+
+    it('星號:點了立即反映並送 PATCH;常用排到最前面', async () => {
+      await mount(many(12), false, true);
+      const target = [...el.querySelectorAll('.rt-cards .rt-card')].find((c) => c.textContent?.includes('艇05'))!;
+      target.querySelector<HTMLButtonElement>('.rt-star')!.click();
+      fixture.detectChanges();
+      await settle(); // PATCH 在 Promise 串裡依序送出
+      const req = http.expectOne((r) => r.url === '/api/route-subs/s5' && r.method === 'PATCH');
+      expect(req.request.body).toEqual({ favorite: true });
+      req.flush(dto({ id: 's5', name: '艇05', favorite: true }));
+      await settle();
+      fixture.detectChanges();
+      expect(names().filter((n) => n !== '臨時配置')[0]).toBe('艇05');
+      expect(vm.saved().find((s) => s.id === 's5')!.favorite).toBe(true);
+    });
+
+    it('超過 8 組才有搜尋與「★ 常用」;搜尋只留符合的,沒有符合顯示空狀態與清除', async () => {
+      await mount(many(12, (i) => ({ favorite: i === 7 })), false, true);
+      expect(el.querySelector('.rt-listtools')).not.toBeNull();
+      const q = el.querySelector<HTMLInputElement>('.rt-lt-q')!;
+      q.value = '艇03';
+      q.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(names().filter((n) => n !== '臨時配置')).toEqual(['艇03']);
+      q.value = '沒有這個';
+      q.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(el.querySelector('.rt-lt-empty')?.textContent).toContain('沒有符合的配置');
+      btn(el, '清除搜尋與篩選').click();
+      fixture.detectChanges();
+      expect(names().filter((n) => n !== '臨時配置')).toHaveLength(10);
+      btn(el, '★ 常用 1').click();
+      fixture.detectChanges();
+      expect(names().filter((n) => n !== '臨時配置')).toEqual(['艇07']);
+    });
+
+    it('9 組以下不顯示工具列與分頁列', async () => {
+      await mount(many(8), false, true);
+      expect(el.querySelector('.rt-listtools')).toBeNull();
+      expect(el.querySelector('.rt-listpager')).toBeNull();
+    });
+
+    it('使用中的配置在後面幾頁:開頁時自動翻到它那一頁', async () => {
+      await mount(many(25), false, true);
+      vm.useSub('s22');
+      fixture.detectChanges();
+      expect(names()).toContain('艇22');
+      expect(el.querySelector('.rt-listpager .sel-label')?.textContent?.trim()).toBe('3 / 3');
+    });
+
+    it('actions="pick"(彈窗):不分頁,全部列出,但有搜尋', async () => {
+      await mount(many(25), false);
+      fixture.componentRef.setInput('actions', 'pick');
+      fixture.detectChanges();
+      expect(el.querySelector('.rt-listpager')).toBeNull();
+      expect(el.querySelectorAll('.rt-cards .rt-card').length).toBeGreaterThanOrEqual(25);
+      expect(el.querySelector('.rt-listtools')).not.toBeNull();
+    });
   });
 
   it('actions="pick":只有「改用這組」與編輯,沒有刪除與綁定', async () => {

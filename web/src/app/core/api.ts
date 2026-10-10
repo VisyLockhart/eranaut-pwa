@@ -104,6 +104,10 @@ export class Api {
   updateRouteSub(id: string, input: RouteSubInput): Promise<RouteSubDto> {
     return firstValueFrom(this.http.put<RouteSubDto>(`/api/route-subs/${encodeURIComponent(id)}`, input));
   }
+  /** 只切換常用(D-237):PATCH 不動其他欄位與 updated_at */
+  setRouteSubFavorite(id: string, favorite: boolean): Promise<RouteSubDto> {
+    return firstValueFrom(this.http.patch<RouteSubDto>(`/api/route-subs/${encodeURIComponent(id)}`, { favorite }));
+  }
   deleteRouteSub(id: string): Promise<unknown> {
     return firstValueFrom(this.http.delete(`/api/route-subs/${encodeURIComponent(id)}`));
   }
@@ -117,6 +121,9 @@ export class Api {
   }
   updateRouteFilter(id: string, input: RouteFilterInput): Promise<RouteFilterDto> {
     return firstValueFrom(this.http.put<RouteFilterDto>(`/api/route-filters/${encodeURIComponent(id)}`, input));
+  }
+  setRouteFilterFavorite(id: string, favorite: boolean): Promise<RouteFilterDto> {
+    return firstValueFrom(this.http.patch<RouteFilterDto>(`/api/route-filters/${encodeURIComponent(id)}`, { favorite }));
   }
   deleteRouteFilter(id: string): Promise<unknown> {
     return firstValueFrom(this.http.delete(`/api/route-filters/${encodeURIComponent(id)}`));

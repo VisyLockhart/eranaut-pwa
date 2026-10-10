@@ -12,7 +12,7 @@ import { RouteFindVm } from './route-find-vm';
 const grey = () => SEA_INDEXES[1]!;
 const dto = (over: Partial<RouteFilterDto> = {}): RouteFilterDto => ({
   id: 'a', name: '灰海組', spec: { v: 1, sea: SEAS[1]!.sea, max_hours: 6, sort: 'opens', required: [grey().sea.points[0]!.id], excluded: [], item_ids: [], match: 'all' },
-  created_at: '2026-10-08T00:00:00.000Z', updated_at: '2026-10-08T00:00:00.000Z', ...over,
+  favorite: false, created_at: '2026-10-08T00:00:00.000Z', updated_at: '2026-10-08T00:00:00.000Z', ...over,
 });
 const tick = () => new Promise((r) => setTimeout(r));
 
@@ -143,6 +143,23 @@ describe('RouteFilterVm(條件組合,D-229)', () => {
     await d;
     expect(fv.saved()).toEqual([]);
     expect(fv.activeId()).toBeNull();
+  });
+
+  it('常用(D-237):toggleFavorite 先改畫面再送 PATCH;失敗改回', async () => {
+    await load([dto()]);
+    fv.toggleFavorite('a');
+    expect(fv.saved()[0]!.favorite).toBe(true);
+    await tick();
+    const ok = http.expectOne((r) => r.url === '/api/route-filters/a' && r.method === 'PATCH');
+    expect(ok.request.body).toEqual({ favorite: true });
+    ok.flush(dto({ favorite: true }));
+    await tick();
+    expect(JSON.parse(localStorage.getItem(ROUTE_FILTERS_CACHE_KEY)!)[0].favorite).toBe(true);
+    fv.toggleFavorite('a');
+    await tick();
+    http.expectOne((r) => r.method === 'PATCH').flush({ error: 'x' }, { status: 500, statusText: 'Server Error' });
+    await tick();
+    expect(fv.saved()[0]!.favorite).toBe(true); // 取消失敗 → 改回常用
   });
 
   it('寫入失敗時丟出原始錯誤、清單不變(409 已滿)', async () => {

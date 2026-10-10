@@ -229,7 +229,7 @@ describe('找配置子畫面(D-223)', () => {
     const req = http.expectOne((r) => r.url === '/api/route-subs' && r.method === 'POST');
     const parts = b.result()!.hits[0]!.build.parts;
     expect(req.request.body.hull).toBe(parts[0]);
-    const dto: RouteSubDto = { id: 'n', name: 'x', level: 130, hull: parts[0], stern: parts[1], bow: parts[2], bridge: parts[3], bound_submarine_ids: [], created_at: '2026-10-09T00:00:00.000Z', updated_at: '2026-10-09T00:00:00.000Z' };
+    const dto: RouteSubDto = { id: 'n', name: 'x', level: 130, hull: parts[0], stern: parts[1], bow: parts[2], bridge: parts[3], bound_submarine_ids: [], favorite: false, created_at: '2026-10-09T00:00:00.000Z', updated_at: '2026-10-09T00:00:00.000Z' };
     req.flush(dto);
     await tick();
     f.detectChanges();

@@ -7,6 +7,8 @@ export type SelectValue = string | number;
 export interface SelectOption {
   value: SelectValue;
   label: string;
+  /** 群組標題:與前一項不同時,在這一項前面顯示一列標題(不可選取) */
+  group?: string;
 }
 
 let nextId = 1;
@@ -46,6 +48,9 @@ let nextId = 1;
     @if (open()) {
       <ul class="sel-panel" role="listbox" [id]="listId" [style.left.px]="pos().left" [style.top.px]="pos().top" [style.bottom.px]="pos().bottom" [style.min-width.px]="pos().width" [style.max-height.px]="pos().maxHeight">
         @for (o of options(); track o.value; let i = $index) {
+          @if (o.group && o.group !== options()[i - 1]?.group) {
+            <li class="sel-group" role="presentation">{{ o.group }}</li>
+          }
           <li
             role="option"
             class="sel-opt"
@@ -55,7 +60,7 @@ let nextId = 1;
             [attr.data-i]="i"
             (pointerenter)="active.set(i)"
             (pointerdown)="$event.preventDefault()"
-            (click)="choose(o)"
+            (click)="$event.preventDefault(); choose(o)"
           >
             <span>{{ o.label }}</span>
             @if (o.value === value()) { <app-icon name="check" [size]="14" /> }
@@ -143,7 +148,7 @@ export class SelectField implements ControlValueAccessor {
     const viewport = this.scale.localViewport();
     const below = viewport.height - rect.bottom - 8;
     const above = rect.top - 8;
-    const wanted = Math.min(260, this.options().length * 38 + 8);
+    const wanted = Math.min(260, (this.options().length + new Set(this.options().map((o) => o.group).filter(Boolean)).size) * 38 + 8);
     const up = below < Math.min(wanted, 160) && above > below;
     const width = Math.max(rect.width, 120);
     this.pos.set({

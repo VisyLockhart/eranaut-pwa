@@ -715,6 +715,40 @@ app-route-subs { display: block; container: rt-result / inline-size; }
 .rt-cmp-act { white-space: nowrap; }
 .rt-cmp-act .rt-save-btn { min-height: 32px; padding: 0 10px; margin: 0 2px 4px 0; }
 
+/* 航線模擬器:配置與條件組合清單的常用、搜尋、分頁(D-237) */
+.sel-group { padding: 7px 11px 3px; font-size: 11px; font-weight: 700; color: var(--text-dim); letter-spacing: 0.04em; cursor: default; }
+.sel-group:not(:first-child) { margin-top: 4px; border-top: 1px solid var(--border); padding-top: 9px; }
+.rt-listtools { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; min-width: 0; }
+.rt-listtools .rt-lt-q { flex: 1 1 auto; min-width: 0; padding-top: 8px; padding-bottom: 8px; }
+.rt-listtools .rt-chip { flex: 0 0 auto; }
+.rt-lt-count { margin: 0 0 6px; }
+.rt-lt-empty { margin-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rt-star { width: 36px; height: 36px; flex: 0 0 auto; margin: -4px -2px -4px -6px; display: inline-flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--text-faint); font-size: 20px; line-height: 1; cursor: pointer; border-radius: 8px; }
+.rt-star.on { color: var(--amber); }
+.rt-star:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rt-card-head { align-items: center; }
+.rt-card-head .rt-card-title { flex: 1 1 120px; }
+.rt-cmp-title { display: flex !important; align-items: center; gap: 2px; }
+.rt-cmp-title .rt-star { width: 30px; height: 30px; margin: -4px 0 -4px -6px; font-size: 18px; }
+.rt-card-quick { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 6px; font-size: 11.5px; color: var(--text-muted); }
+.rt-quick-act { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.rt-card-fold { margin-top: 8px; }
+.rt-listpager { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px 0 2px; }
+.rt-pg-sel { display: block; min-width: 92px; }
+.rt-pg-count { font-size: 11.5px; color: var(--text-dim); margin-left: 4px; }
+.rt-card.flash, .rt-cmp tr.flash, .rt-pick.flash { animation: rt-flash 1.8s ease-out; }
+@keyframes rt-flash { 0% { box-shadow: 0 0 0 2px rgba(251,191,36,0.85); background: rgba(251,191,36,0.14); } 100% { box-shadow: 0 0 0 2px rgba(251,191,36,0); } }
+@media (prefers-reduced-motion: reduce) { .rt-card.flash, .rt-cmp tr.flash { animation: none; box-shadow: 0 0 0 2px rgba(251,191,36,0.6); } }
+/* 對話框裡的清單:搜尋列固定在上面,清單自己捲動 */
+.rt-dlg > app-route-list-tools { flex: 0 0 auto; margin: 0 20px; }
+.rt-dlg > .rt-pick-list.rt-scroll { flex: 1 1 auto; min-height: 120px; overflow-y: auto; padding-bottom: 4px; scrollbar-width: thin; scrollbar-color: rgba(148,163,184,0.4) transparent; }
+.rt-dlg-body .rt-pick-list.rt-scroll { max-height: 260px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(148,163,184,0.4) transparent; }
+.rt-fm-main { flex: 1 1 auto; }
+.rt-pick-row { display: flex; align-items: center; gap: 4px; }
+.rt-pick-row .rt-pick { flex: 1 1 auto; min-width: 0; }
+.rt-pick-row .rt-star { margin: 0; }
+.rt-fm-row .rt-star { margin: 0 4px 0 -4px; }
+
 /* 航線模擬器 P9:資料來源與授權 */
 .rt-about { margin-top: 4px; border-top: 1px solid var(--border); padding-top: 8px; font-size: 11.5px; color: var(--text-dim); }
 .rt-about summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; font-weight: 600; }
