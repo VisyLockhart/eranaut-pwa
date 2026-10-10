@@ -11,7 +11,7 @@ const PAGES = [
   {
     path: 'intro',
     title: '純水與銀礦之詩,靜謐海域交換所',
-    description: 'FFXIV 繁體中文版的潛艇同好會。單人玩潛艇的孤狼,來這裡收艇不誤點,認識大地主、擁有強力的後盾。',
+    description: 'FFXIV 繁體中文版的潛艇同好會。單人玩潛艇的孤狼,來這裡收艇不誤點,結識其他潛艇玩家、擁有強力的資源後盾。',
     image: 'og/intro.png',
   },
   {
