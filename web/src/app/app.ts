@@ -7,13 +7,14 @@ import { UiScale } from './core/ui-scale';
 import { clearRouteCache } from './route/route-cache';
 import { Shell } from './layout/shell';
 import { InstallPromptCard } from './ui/install-prompt';
+import { UpdateBanner } from './ui/update-banner';
 import { ToastHost } from './ui/toast-host';
 
 @Component({
   selector: 'app-root',
-  imports: [AuthScreen, Shell, ToastHost, InstallPromptCard],
+  imports: [AuthScreen, Shell, ToastHost, InstallPromptCard, UpdateBanner],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `@if (auth.status() === 'authenticated') { <app-shell /> } @else { <app-auth-screen /> }<app-install-prompt /><app-toast-host />`,
+  template: `@if (auth.status() === 'authenticated') { <app-shell /> } @else { <app-auth-screen /> }<app-install-prompt /><app-update-banner /><app-toast-host />`,
 })
 export class App {
   protected readonly auth = inject(Auth);

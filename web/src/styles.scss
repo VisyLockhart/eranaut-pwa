@@ -459,6 +459,10 @@ app-root { display: block; }
 .install-prompt .ip-actions button { flex: 1; padding: 10px; }
 /* 展示模式的小標籤在右下角,卡片再往上讓開 */
 body:has(app-demo-bar) .install-prompt { bottom: calc(136px + env(safe-area-inset-bottom)); }
+/* 新版本橫幅:固定在上方、不自動消失,按鈕換版(AppUpdate) */
+.update-banner { position: fixed; top: calc(12px + env(safe-area-inset-top) / var(--vu-div)); left: 50%; transform: translateX(-50%); z-index: 310; display: flex; align-items: center; gap: 12px; box-sizing: border-box; max-width: calc(100vw / var(--vu-div) - 24px); padding: 8px 8px 8px 16px; border-radius: 14px; background: var(--bg-elevated-2); border: 1px solid var(--accent); box-shadow: 0 8px 30px rgba(0,0,0,0.5); font-size: 13px; color: var(--text); white-space: nowrap; }
+.update-banner .primary-btn { width: auto; flex: 0 0 auto; padding: 8px 14px; font-size: 13px; }
+.update-banner .primary-btn:disabled { opacity: 0.6; cursor: default; }
 @keyframes ip-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @media (prefers-reduced-motion: reduce) { .install-prompt { animation: none; } }
 .toast-stack { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; align-items: center; gap: 8px; width: max-content; max-width: calc(100vw / var(--vu-div) - 32px); pointer-events: none; }
