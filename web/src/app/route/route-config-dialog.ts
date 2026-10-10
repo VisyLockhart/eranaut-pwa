@@ -13,6 +13,9 @@ import { judgeBuild } from './core/need';
 import { PART_KEYS, type PartKey } from './core/types';
 import { RouteVm } from './route-vm';
 
+/** 等級滑桿最小值(繁中服最低可用等級) */
+export const SLIDER_MIN_LEVEL = 51;
+
 interface StatRow {
   key: string;
   label: string;
@@ -52,6 +55,10 @@ export class RouteConfigDialog {
   protected readonly nameMax = LIMITS.routeSubName;
   protected readonly max = LIMITS.maxRouteSubsPerUser;
   protected readonly maxLevel = LIMITS.maxRouteSubLevel;
+  /** 等級滑桿的範圍(繁中服 51~130);輸入框仍接受 1~130,所以舊資料低於 51 時滑桿停在最左端、數字照實顯示 */
+  protected readonly sliderMin = SLIDER_MIN_LEVEL;
+  /** 正在拖動滑桿:顯示浮動數值泡泡(手指會擋住輸入框旁的數字) */
+  protected readonly sliding = signal(false);
 
   /** 'edit' = 編輯畫面;'pick' = 已滿 30 組,選一組覆蓋 */
   protected readonly step = signal<'edit' | 'pick'>('edit');
@@ -113,6 +120,22 @@ export class RouteConfigDialog {
     const input = ev.target as HTMLInputElement;
     this.vm.setDraftLevel(Number(input.value));
     input.value = String(this.vm.draft()?.level ?? '');
+  }
+
+  /** 滑桿拖動:每格即時更新草稿與統計表(只改本機草稿,不送 API) */
+  protected onSlider(ev: Event): void {
+    this.vm.setDraftLevel(Number((ev.target as HTMLInputElement).value));
+  }
+
+  /** 手機的 − / ＋ 按鈕:一次一級,夾在 1~130 */
+  protected stepLevel(delta: number): void {
+    const d = this.vm.draft();
+    if (d) this.vm.setDraftLevel(Math.min(this.maxLevel, Math.max(1, d.level + delta)));
+  }
+
+  /** 把手所在位置(0~100),泡泡跟著走;低於滑桿最小值時貼左端 */
+  protected sliderPct(level: number): number {
+    return Math.min(100, Math.max(0, ((level - this.sliderMin) / (this.maxLevel - this.sliderMin)) * 100));
   }
 
   protected onName(ev: Event): void {

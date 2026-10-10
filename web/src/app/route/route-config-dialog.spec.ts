@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import type { RouteSubDto } from '@eranaut/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Auth } from '../core/auth';
+import { Layout } from '../core/layout';
 import { Toast } from '../core/toast';
 import { SEA_INDEXES } from './core/data';
 import { ids } from './core/test-helpers';
@@ -69,6 +70,69 @@ describe('RouteConfigDialog', () => {
     vm.closeConfig();
     open('temp');
     expect(el.querySelector('.modal-title')?.textContent).toContain('臨時');
+  });
+
+  describe('等級滑桿(D-238)', () => {
+    const range = () => el.querySelector<HTMLInputElement>('.rt-lv-range')!;
+    const numberInput = () => el.querySelector<HTMLInputElement>('.rt-level-input')!;
+
+    it('範圍 51~130;拖動即時改草稿,數字輸入框跟著變;打字則滑桿跟著動', async () => {
+      await mount([dto({ level: 76 })]);
+      open('edit', 'a');
+      expect([range().min, range().max, range().step]).toEqual(['51', '130', '1']);
+      expect(range().value).toBe('76');
+      type(range(), '100');
+      expect(vm.draft()!.level).toBe(100);
+      expect(numberInput().value).toBe('100');
+      numberInput().value = '60';
+      numberInput().dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+      expect(range().value).toBe('60');
+      expect(el.querySelector('.rt-lv-bubble')!.textContent!.trim()).toBe('60');
+    });
+
+    it('低於 51 的舊配置:滑桿停在最左端,數字照實顯示', async () => {
+      await mount([dto({ level: 20 })]);
+      open('edit', 'a');
+      expect(range().value).toBe('51');
+      expect(numberInput().value).toBe('20');
+      expect(vm.draft()!.level).toBe(20);
+    });
+
+    it('新增配置沒有任何設定時,預設等級 90', async () => {
+      await mount();
+      open('new');
+      expect(vm.draft()!.level).toBe(90);
+      expect(range().value).toBe('90');
+    });
+
+    it('手機有 − / ＋ 按鈕(一次一級,夾在 1~130),桌機沒有', async () => {
+      await mount([dto({ level: 130 })]);
+      open('edit', 'a');
+      expect(el.querySelectorAll('.rt-lv-step')).toHaveLength(2);
+      const plus = el.querySelector<HTMLButtonElement>('button[aria-label="提高一級"]')!;
+      const minus = el.querySelector<HTMLButtonElement>('button[aria-label="降低一級"]')!;
+      expect(plus.disabled).toBe(true);
+      minus.click();
+      fixture.detectChanges();
+      expect(vm.draft()!.level).toBe(129);
+      TestBed.inject(Layout).isDesktop.set(true);
+      fixture.detectChanges();
+      expect(el.querySelectorAll('.rt-lv-step')).toHaveLength(0);
+    });
+
+    it('拖動期間才顯示數值泡泡', async () => {
+      await mount([dto({ level: 76 })]);
+      open('edit', 'a');
+      const box = el.querySelector('.rt-lv-slider')!;
+      expect(box.classList.contains('sliding')).toBe(false);
+      range().dispatchEvent(new Event('pointerdown'));
+      fixture.detectChanges();
+      expect(box.classList.contains('sliding')).toBe(true);
+      range().dispatchEvent(new Event('pointerup'));
+      fixture.detectChanges();
+      expect(box.classList.contains('sliding')).toBe(false);
+    });
   });
 
   it('點配件與改等級只動草稿,不動畫面上的配置與航點;統計表即時變(案例 C:距離 98、巡航 155)', async () => {

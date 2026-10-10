@@ -22,6 +22,32 @@
                 <input id="rt-cfg-level" class="rt-level-input" type="number" inputmode="numeric" min="1" [attr.max]="maxLevel" step="1" [value]="d.level" (change)="onLevel($event)" />
                 <div class="rt-cap">重量上限 <b>{{ s.weightCap }}</b></div>
               </div>
+              <div class="rt-lv-slider" [class.sliding]="sliding()">
+                @if (!layout.isDesktop()) {
+                  <button type="button" class="rt-lv-step" aria-label="降低一級" [disabled]="d.level <= 1" (click)="stepLevel(-1)">−</button>
+                }
+                <div class="rt-lv-track">
+                  <input
+                    type="range"
+                    class="rt-lv-range"
+                    aria-label="潛艇等級"
+                    [min]="sliderMin"
+                    [max]="maxLevel"
+                    step="1"
+                    [value]="d.level"
+                    (input)="onSlider($event)"
+                    (pointerdown)="sliding.set(true)"
+                    (pointerup)="sliding.set(false)"
+                    (pointercancel)="sliding.set(false)"
+                    (blur)="sliding.set(false)"
+                  />
+                  <output class="rt-lv-bubble" [style.--pct]="sliderPct(d.level)">{{ d.level }}</output>
+                  <div class="rt-lv-ends" aria-hidden="true"><span>{{ sliderMin }}</span><span>{{ maxLevel }}</span></div>
+                </div>
+                @if (!layout.isDesktop()) {
+                  <button type="button" class="rt-lv-step" aria-label="提高一級" [disabled]="d.level >= maxLevel" (click)="stepLevel(1)">＋</button>
+                }
+              </div>
             </div>
           </div>
 

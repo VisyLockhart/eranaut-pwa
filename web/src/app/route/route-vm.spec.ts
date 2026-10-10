@@ -75,7 +75,7 @@ describe('RouteVm', () => {
       TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
       const again = TestBed.inject(RouteVm);
       expect(again.seq()).toEqual([]);
-      expect(again.level()).toBe(130);
+      expect(again.level()).toBe(90);
     });
 
     it('讀回來的序列超過目前上限時會被整理', () => {

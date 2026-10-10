@@ -26,7 +26,8 @@ export interface RouteLast {
   tab: RouteTab | null;
 }
 
-export const DEFAULT_LEVEL = LIMITS.maxRouteSubLevel;
+/** 沒有任何設定時的預設等級(D-238:90,與等級滑桿的中央一致;之前是最高等級) */
+export const DEFAULT_LEVEL = 90;
 export const DEFAULT_PARTS: Parts = [1, 1, 1, 1];
 
 export function defaultLast(): RouteLast {

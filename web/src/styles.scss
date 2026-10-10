@@ -554,6 +554,27 @@ app-select { display: block; position: relative; }
 .rt-level label { color: var(--text-muted); }
 .rt-level-input { width: 76px; padding: 8px 10px; border-radius: 9px; background: var(--bg-elevated); border: 1px solid var(--border-strong); color: var(--text); font-size: 14px; font-family: inherit; }
 .rt-cap { margin-left: auto; font-size: 12px; color: var(--text-dim); }
+/* 等級滑桿(D-238):原生 range,拖動是相對位移、整數吸附;手機放大把手並加 −/＋ 微調、拖動時顯示數值泡泡 */
+.rt-lv-slider { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.rt-lv-track { position: relative; flex: 1 1 auto; min-width: 0; padding: 16px 0 14px; }
+.rt-lv-range { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 28px; margin: 0; background: transparent; cursor: pointer; touch-action: pan-y; --lv-fill: calc(var(--pct, 0) * 1%); }
+.rt-lv-range::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: var(--border-strong); }
+.rt-lv-range::-moz-range-track { height: 4px; border-radius: 999px; background: var(--border-strong); }
+.rt-lv-range::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -9px; border-radius: 50%; border: 2px solid #0d1220; background: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+.rt-lv-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #0d1220; background: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+.rt-lv-range:focus-visible { outline: none; }
+.rt-lv-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(45,212,191,0.35); }
+.rt-lv-ends { display: flex; justify-content: space-between; margin-top: -2px; font-size: 11px; color: var(--text-dim); pointer-events: none; }
+.rt-lv-bubble { position: absolute; top: -8px; left: calc(var(--pct, 0) * 1% + (0.5 - var(--pct, 0) / 100) * 22px); transform: translateX(-50%); min-width: 34px; padding: 3px 8px; border-radius: 8px; background: #16202f; border: 1px solid var(--border-strong); color: var(--text); font-size: 12px; font-weight: 700; text-align: center; opacity: 0; pointer-events: none; transition: opacity 0.12s; }
+.rt-lv-slider.sliding .rt-lv-bubble { opacity: 1; }
+.rt-lv-step { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--bg-elevated); color: var(--text); font-size: 20px; line-height: 1; font-family: inherit; cursor: pointer; }
+.rt-lv-step:disabled { opacity: 0.4; cursor: default; }
+@media (max-width: 767.98px) {
+  .rt-lv-range::-webkit-slider-runnable-track { height: 5px; }
+  .rt-lv-range::-webkit-slider-thumb { width: 30px; height: 30px; margin-top: -12.5px; }
+  .rt-lv-range::-moz-range-thumb { width: 30px; height: 30px; }
+  .rt-lv-bubble { left: calc(var(--pct, 0) * 1% + (0.5 - var(--pct, 0) / 100) * 30px); }
+}
 .rt-cap b { color: var(--text); font-size: 13.5px; }
 .rt-meter { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; }
 .rt-meter-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
