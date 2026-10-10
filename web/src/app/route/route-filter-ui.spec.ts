@@ -151,12 +151,17 @@ describe('條件組合的畫面(D-229)', () => {
     expect(dlg()).toBeNull();
   });
 
-  it('下拉:有常用時分成「★ 常用」「全部條件組合」兩組,常用排前面', async () => {
+  it('下拉:有常用時分成「★ 常用」「其它條件組合」兩組,其它預設收合(顯示數量),點標題展開', async () => {
     await mount([row({ id: 'a', name: '甲' }), row({ id: 'b', name: '乙', favorite: true })]);
     btn('選擇條件組合', el.querySelector('app-route-filter-bar')!).click();
     f.detectChanges();
     const items = [...document.querySelectorAll('.sel-panel > li')].map((li) => `${li.className.includes('sel-group') ? '#' : ''}${li.textContent?.trim()}`);
-    expect(items).toEqual(['選擇條件組合…', '#★ 常用', '乙', '#全部條件組合', '甲']);
+    expect(items).toEqual(['選擇條件組合…', '#★ 常用', '乙', '#其它條件組合1']);
+    expect(document.querySelectorAll('.sel-group')[1]!.getAttribute('aria-expanded')).toBe('false');
+    (document.querySelectorAll('.sel-group')[1] as HTMLElement).click();
+    f.detectChanges();
+    const after = [...document.querySelectorAll('.sel-panel > li')].map((li) => li.textContent?.trim());
+    expect(after).toEqual(['選擇條件組合…', '★ 常用', '乙', '其它條件組合', '甲']);
   });
 
   it('下拉:沒有任何常用時維持單層清單(沒有群組標題)', async () => {

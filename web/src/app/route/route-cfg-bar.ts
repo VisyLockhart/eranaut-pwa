@@ -27,13 +27,13 @@ export class RouteCfgBar {
 
   /** 儲存配置,加上「臨時配置」(目前畫面上的配置不是任何一組儲存配置時) */
   protected readonly options = computed<SelectOption[]>(() => {
-    // 有常用時分成「★ 常用」「全部配置」兩組(D-237);沒有常用就維持單層清單
+    // 有常用時分成「★ 常用」「其它配置」兩組(D-237);沒有常用就維持單層清單
     const saved = this.vm.saved();
     const grouped = saved.some((s) => s.favorite);
     const out: SelectOption[] = [...saved.filter((s) => s.favorite), ...saved.filter((s) => !s.favorite)].map((s) => ({
       value: s.id,
       label: s.name,
-      ...(grouped ? { group: s.favorite ? '★ 常用' : '全部配置' } : {}),
+      ...(grouped ? { group: s.favorite ? '★ 常用' : '其它配置' } : {}),
     }));
     if (this.vm.subId() === null || this.vm.dirty()) out.unshift({ value: TEMP, label: this.vm.saved().length === 0 ? '預設配置(未儲存)' : '臨時配置(未儲存)' });
     return out;

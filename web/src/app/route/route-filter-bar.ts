@@ -17,7 +17,7 @@ const NONE = '__none__';
     @if (fv.enabled) {
       <div class="rt-cfgbar rt-filterbar" role="group" aria-label="條件組合">
         <div class="rt-cfg-row">
-          <app-select #sel class="rt-cfg-select" size="compact" ariaLabel="條件組合" [options]="options()" [value]="value()" (valueChange)="onChange($event)" />
+          <app-select #sel class="rt-cfg-select" size="compact" ariaLabel="條件組合" [collapsible]="true" groupMemory="route-filters" [options]="options()" [value]="value()" (valueChange)="onChange($event)" />
           <button type="button" class="rt-save-btn" [disabled]="fv.isEmpty() && !fv.modified()" (click)="fv.dialog.set('save')">儲存</button>
           <button type="button" class="rt-link-btn" [disabled]="fv.saved().length === 0" (click)="fv.dialog.set('manage')">管理</button>
         </div>
@@ -37,13 +37,13 @@ export class RouteFilterBar {
 
   protected readonly options = computed<SelectOption[]>(() => {
     const active = this.fv.active();
-    // 有常用時分成「★ 常用」「全部條件組合」兩組(D-237);沒有常用就維持單層清單
+    // 有常用時分成「★ 常用」「其它條件組合」兩組(D-237);沒有常用就維持單層清單
     const saved = this.fv.saved();
     const grouped = saved.some((s) => s.favorite);
     const out: SelectOption[] = [...saved.filter((s) => s.favorite), ...saved.filter((s) => !s.favorite)].map((s) => ({
       value: s.id,
       label: s.id === active?.id && this.fv.modified() ? `${s.name}(已修改)` : s.name,
-      ...(grouped ? { group: s.favorite ? '★ 常用' : '全部條件組合' } : {}),
+      ...(grouped ? { group: s.favorite ? '★ 常用' : '其它條件組合' } : {}),
     }));
     if (active === null) out.unshift({ value: NONE, label: this.fv.saved().length === 0 ? '尚無條件組合' : '選擇條件組合…' });
     return out;

@@ -13,6 +13,14 @@ export interface SelectOption {
 
 let nextId = 1;
 
+/** 清單列:群組標題或選項(群組標題可收合時也算一個可操作的列) */
+type Row =
+  | { kind: 'group'; key: string; name: string; count: number; collapsed: boolean }
+  | { kind: 'opt'; key: string; option: SelectOption };
+
+/** 本次使用期間記住各下拉的群組收合狀態(以 `groupMemory` 為鍵);重新整理頁面就清掉,不存 localStorage */
+const GROUP_MEMORY = new Map<string, Map<string, boolean>>();
+
 /**
  * 自製下拉選單(取代瀏覽器內建的 <select>,後者的展開清單無法套用主題)。
  * 可搭配 `formControlName`,或用 `[value]` + `(valueChange)`。清單用 position: fixed 定位,
@@ -47,24 +55,39 @@ let nextId = 1;
     </button>
     @if (open()) {
       <ul class="sel-panel" role="listbox" [id]="listId" [style.left.px]="pos().left" [style.top.px]="pos().top" [style.bottom.px]="pos().bottom" [style.min-width.px]="pos().width" [style.max-height.px]="pos().maxHeight">
-        @for (o of options(); track o.value; let i = $index) {
-          @if (o.group && o.group !== options()[i - 1]?.group) {
-            <li class="sel-group" role="presentation">{{ o.group }}</li>
+        @for (r of rows(); track r.key; let i = $index) {
+          @if (r.kind === 'group') {
+            <li
+              class="sel-group"
+              [class.toggle]="collapsible()"
+              [class.active]="collapsible() && i === active()"
+              [attr.role]="collapsible() ? 'button' : 'presentation'"
+              [attr.aria-expanded]="collapsible() ? !r.collapsed : null"
+              [attr.data-i]="i"
+              (pointerenter)="collapsible() && active.set(i)"
+              (pointerdown)="$event.preventDefault()"
+              (click)="collapsible() && toggleGroup(r.name)"
+            >
+              @if (collapsible()) { <app-icon [name]="r.collapsed ? 'chevronRight' : 'chevronDown'" [size]="14" /> }
+              <span class="sel-gname">{{ r.name }}</span>
+              @if (collapsible() && r.collapsed) { <span class="sel-gcount">{{ r.count }}</span> }
+            </li>
+          } @else {
+            <li
+              role="option"
+              class="sel-opt"
+              [class.active]="i === active()"
+              [class.selected]="r.option.value === value()"
+              [attr.aria-selected]="r.option.value === value()"
+              [attr.data-i]="i"
+              (pointerenter)="active.set(i)"
+              (pointerdown)="$event.preventDefault()"
+              (click)="$event.preventDefault(); choose(r.option)"
+            >
+              <span>{{ r.option.label }}</span>
+              @if (r.option.value === value()) { <app-icon name="check" [size]="14" /> }
+            </li>
           }
-          <li
-            role="option"
-            class="sel-opt"
-            [class.active]="i === active()"
-            [class.selected]="o.value === value()"
-            [attr.aria-selected]="o.value === value()"
-            [attr.data-i]="i"
-            (pointerenter)="active.set(i)"
-            (pointerdown)="$event.preventDefault()"
-            (click)="$event.preventDefault(); choose(o)"
-          >
-            <span>{{ o.label }}</span>
-            @if (o.value === value()) { <app-icon name="check" [size]="14" /> }
-          </li>
         }
       </ul>
     }
@@ -79,11 +102,34 @@ export class SelectField implements ControlValueAccessor {
   readonly invalid = input(false);
   /** `lg` 對話框內的表單欄位;`compact` 設定列旁的小選單 */
   readonly size = input<'md' | 'lg' | 'compact'>('md');
+  /** 群組標題可收合:第一組預設展開、其餘預設收合(目前選取的項目所在的組打開時會自動展開) */
+  readonly collapsible = input(false);
+  /** 記住收合狀態的鍵(同一次使用期間,不同畫面的同一個下拉共用);空字串就只在這次開啟內有效 */
+  readonly groupMemory = input('');
 
   protected readonly open = signal(false);
   protected readonly active = signal(0);
   protected readonly disabled = signal(false);
   protected readonly pos = signal<{ left: number; top: number | null; bottom: number | null; width: number; maxHeight: number }>({ left: 0, top: 0, bottom: null, width: 0, maxHeight: 260 });
+  protected readonly groupState = signal<ReadonlyMap<string, boolean>>(new Map());
+  protected readonly rows = computed<Row[]>(() => {
+    const opts = this.options();
+    const state = this.groupState();
+    const collapsible = this.collapsible();
+    const first = opts.find((o) => o.group)?.group;
+    const counts = new Map<string, number>();
+    for (const o of opts) if (o.group) counts.set(o.group, (counts.get(o.group) ?? 0) + 1);
+    const out: Row[] = [];
+    let prev: string | undefined;
+    for (const o of opts) {
+      const g = o.group;
+      const collapsed = collapsible && !!g && (state.get(g) ?? g !== first);
+      if (g && g !== prev) out.push({ kind: 'group', key: `g:${g}`, name: g, count: counts.get(g)!, collapsed });
+      prev = g;
+      if (!collapsed) out.push({ kind: 'opt', key: `o:${o.value}`, option: o });
+    }
+    return out;
+  });
   protected readonly listId = `sel-list-${nextId++}`;
   protected readonly selectedLabel = computed(() => this.options().find((o) => o.value === this.value())?.label ?? this.options()[0]?.label ?? '');
 
@@ -148,7 +194,8 @@ export class SelectField implements ControlValueAccessor {
     const viewport = this.scale.localViewport();
     const below = viewport.height - rect.bottom - 8;
     const above = rect.top - 8;
-    const wanted = Math.min(260, (this.options().length + new Set(this.options().map((o) => o.group).filter(Boolean)).size) * 38 + 8);
+    if (this.collapsible()) this.prepareGroups();
+    const wanted = Math.min(260, this.rows().length * 38 + 8);
     const up = below < Math.min(wanted, 160) && above > below;
     const width = Math.max(rect.width, 120);
     this.pos.set({
@@ -158,9 +205,51 @@ export class SelectField implements ControlValueAccessor {
       width,
       maxHeight: Math.max(96, Math.min(260, up ? above - 4 : below - 4)),
     });
-    this.active.set(Math.max(0, this.options().findIndex((o) => o.value === this.value())));
+    const rows = this.rows();
+    const at = rows.findIndex((r) => r.kind === 'opt' && r.option.value === this.value());
+    this.active.set(at >= 0 ? at : Math.max(0, rows.findIndex((r) => this.navigable(r))));
     this.open.set(true);
     afterNextRender(() => this.reveal(), { injector: this.injector });
+  }
+
+  /** 打開前:取回記住的收合狀態,並把目前選取項目所在的組展開 */
+  private prepareGroups(): void {
+    const key = this.groupMemory();
+    if (key && GROUP_MEMORY.has(key)) this.groupState.set(new Map(GROUP_MEMORY.get(key)));
+    const g = this.options().find((o) => o.value === this.value())?.group;
+    if (g && this.rows().some((r) => r.kind === 'group' && r.name === g && r.collapsed)) this.setGroup(g, false);
+  }
+
+  private setGroup(name: string, collapsed: boolean): void {
+    const next = new Map(this.groupState());
+    next.set(name, collapsed);
+    this.groupState.set(next);
+    const key = this.groupMemory();
+    if (key) GROUP_MEMORY.set(key, next);
+  }
+
+  protected toggleGroup(name: string): void {
+    if (!this.collapsible()) return;
+    const row = this.rows().find((r) => r.kind === 'group' && r.name === name);
+    if (!row || row.kind !== 'group') return;
+    this.setGroup(name, !row.collapsed);
+    if (row.collapsed) afterNextRender(() => this.showGroupTop(name), { injector: this.injector });
+    // 標題列位置不變(它前面的列沒有增減),反白留在標題上,面板不關閉、不改選取
+    this.active.set(this.rows().findIndex((r) => r.key === `g:${name}`));
+  }
+
+  /** 展開後把標題捲到清單頂端,剛展開的項目才看得到(不然要自己再往下捲) */
+  private showGroupTop(name: string): void {
+    const panel = this.host.nativeElement.querySelector<HTMLElement>('.sel-panel');
+    const i = this.rows().findIndex((r) => r.key === `g:${name}`);
+    const header = panel?.querySelector<HTMLElement>(`[data-i="${i}"]`);
+    if (!panel || !header) return;
+    const delta = header.getBoundingClientRect().top - panel.getBoundingClientRect().top - 4;
+    if (delta > 0) panel.scrollTop += delta;
+  }
+
+  private navigable(row: Row | undefined): boolean {
+    return row !== undefined && (row.kind === 'opt' || this.collapsible());
   }
 
   /**
@@ -171,14 +260,19 @@ export class SelectField implements ControlValueAccessor {
     const panel = this.host.nativeElement.querySelector<HTMLElement>('.sel-panel');
     const item = panel?.querySelector<HTMLElement>(`[data-i="${this.active()}"]`);
     if (!panel || !item) return;
-    if (item.offsetTop < panel.scrollTop) panel.scrollTop = Math.max(0, item.offsetTop - 4);
+    // 可收合時群組標題固定在清單頂端(約 40px),反白項目不要被它蓋住
+    const top = this.collapsible() ? 40 : 4;
+    if (item.offsetTop - top < panel.scrollTop) panel.scrollTop = Math.max(0, item.offsetTop - top);
     else if (item.offsetTop + item.offsetHeight > panel.scrollTop + panel.clientHeight) panel.scrollTop = item.offsetTop + item.offsetHeight - panel.clientHeight + 4;
   }
 
-  private move(index: number): void {
-    const count = this.options().length;
-    if (count === 0) return;
-    this.active.set(Math.max(0, Math.min(count - 1, index)));
+  private move(index: number, dir: 1 | -1 = 1): void {
+    const rows = this.rows();
+    if (rows.length === 0) return;
+    let i = Math.max(0, Math.min(rows.length - 1, index));
+    while (i >= 0 && i < rows.length && !this.navigable(rows[i])) i += dir; // 不可操作的群組標題直接跳過
+    if (i < 0 || i >= rows.length) return;
+    this.active.set(i);
     afterNextRender(() => this.reveal(), { injector: this.injector });
   }
 
@@ -205,20 +299,21 @@ export class SelectField implements ControlValueAccessor {
     if (key === 'ArrowDown' || key === 'ArrowUp') {
       event.preventDefault();
       if (!this.open()) this.show();
-      else this.move(this.active() + (key === 'ArrowDown' ? 1 : -1));
+      else this.move(this.active() + (key === 'ArrowDown' ? 1 : -1), key === 'ArrowDown' ? 1 : -1);
       return;
     }
     if (key === 'Home' || key === 'End') {
       if (!this.open()) return;
       event.preventDefault();
-      this.move(key === 'Home' ? 0 : this.options().length - 1);
+      this.move(key === 'Home' ? 0 : this.rows().length - 1, key === 'Home' ? 1 : -1);
       return;
     }
     if (key === 'Enter' || key === ' ') {
       if (!this.open()) return; // 關著時交給按鈕本身的點擊行為(展開)
       event.preventDefault();
-      const option = this.options()[this.active()];
-      if (option) this.choose(option);
+      const row = this.rows()[this.active()];
+      if (row?.kind === 'opt') this.choose(row.option);
+      else if (row?.kind === 'group') this.toggleGroup(row.name);
       return;
     }
     if (key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -226,7 +321,7 @@ export class SelectField implements ControlValueAccessor {
       this.typed = now - this.typedAt > 700 ? key : this.typed + key;
       this.typedAt = now;
       const needle = this.typed.toLowerCase();
-      const found = this.options().findIndex((o) => o.label.toLowerCase().startsWith(needle));
+      const found = this.rows().findIndex((r) => r.kind === 'opt' && r.option.label.toLowerCase().startsWith(needle));
       if (found >= 0) {
         if (!this.open()) this.show();
         this.move(found);

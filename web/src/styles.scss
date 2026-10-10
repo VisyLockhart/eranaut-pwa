@@ -718,6 +718,13 @@ app-route-subs { display: block; container: rt-result / inline-size; }
 /* 航線模擬器:配置與條件組合清單的常用、搜尋、分頁(D-237) */
 .sel-group { padding: 7px 11px 3px; font-size: 11px; font-weight: 700; color: var(--text-dim); letter-spacing: 0.04em; cursor: default; }
 .sel-group:not(:first-child) { margin-top: 4px; border-top: 1px solid var(--border); padding-top: 9px; }
+/* 可收合的群組標題:整列可點(手機 ≥ 40px)、固定在清單頂端,展開很長的清單時不用捲回去就能收合 */
+.sel-group.toggle { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 11px; border-radius: 7px; cursor: pointer; position: sticky; top: -4px; z-index: 1; background: #0d1220; }
+.sel-group.toggle:not(:first-child) { margin-top: 4px; padding-top: 0; }
+.sel-group.toggle.active { background: #16202f; }
+.sel-group.toggle app-icon { flex: 0 0 auto; }
+.sel-gname { flex: 1 1 auto; }
+.sel-gcount { flex: 0 0 auto; min-width: 20px; padding: 1px 7px; border-radius: 999px; background: rgba(148,163,184,0.14); color: var(--text-dim); font-size: 11px; font-weight: 700; text-align: center; }
 .rt-listtools { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; min-width: 0; }
 .rt-listtools .rt-lt-q { flex: 1 1 auto; min-width: 0; padding-top: 8px; padding-bottom: 8px; }
 .rt-listtools .rt-chip { flex: 0 0 auto; }

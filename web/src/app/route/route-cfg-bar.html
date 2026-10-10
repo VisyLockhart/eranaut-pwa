@@ -7,7 +7,7 @@
   }
   <div class="rt-cfg-row">
     @if (vm.canSave) {
-      <app-select class="rt-cfg-select" size="compact" ariaLabel="使用的配置" [options]="options()" [value]="value()" (valueChange)="onChange($event)" />
+      <app-select class="rt-cfg-select" size="compact" ariaLabel="使用的配置" [collapsible]="true" groupMemory="route-subs" [options]="options()" [value]="value()" (valueChange)="onChange($event)" />
     } @else {
       <span class="rt-cfg-fixed">目前配置</span>
     }

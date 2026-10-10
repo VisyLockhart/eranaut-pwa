@@ -16,13 +16,16 @@ const OPTIONS: SelectOption[] = [
   template: `
     <button id="outside" type="button">外面</button>
     <label for="s1">伺服器</label>
-    <app-select inputId="s1" [options]="options" [formControl]="control" [invalid]="invalid()" />
+    <app-select inputId="s1" [options]="groupOptions() ?? options" [formControl]="control" [invalid]="invalid()" [collapsible]="collapsible()" [groupMemory]="memory()" />
     <div id="esc" (keydown.escape)="escaped = true"><app-select inputId="s2" [options]="options" [(value)]="plain" /></div>
     <label id="wrap"><span>包在 label 裡</span><app-select inputId="s3" [options]="options" [(value)]="wrapped" /></label>
   `,
 })
 class Host {
   options = OPTIONS;
+  groupOptions = signal<SelectOption[] | null>(null);
+  collapsible = signal(false);
+  memory = signal('');
   control = new FormControl<string | number>('');
   invalid = signal(false);
   plain: string | number = 'b';
@@ -77,6 +80,86 @@ describe('SelectField', () => {
     el.querySelectorAll<HTMLElement>('.sel-opt')[3].click();
     fixture.detectChanges();
     expect(host.control.value).toBe('c');
+  });
+
+  describe('可收合的群組', () => {
+    const grouped = (mem: string) => {
+      host.groupOptions.set([
+        { value: 'a', label: '伊弗利特', group: '常用' },
+        { value: 'b', label: '利維坦', group: '其它' },
+        { value: 'c', label: '迦樓羅', group: '其它' },
+        { value: 'd', label: '奧丁', group: '其它' },
+      ]);
+      host.collapsible.set(true);
+      host.memory.set(mem);
+      host.control.setValue('');
+      fixture.detectChanges();
+    };
+    const rowsText = () => [...el.querySelectorAll('.sel-panel > li')].map((li) => li.textContent!.trim());
+
+    it('第一組預設展開、其餘預設收合並顯示項目數;點標題展開收合,面板不關閉、不改選取', () => {
+      grouped('t1');
+      trigger().click();
+      fixture.detectChanges();
+      expect(rowsText()).toEqual(['常用', '伊弗利特', '其它3']);
+      const header = () => el.querySelectorAll<HTMLElement>('.sel-group')[1]!;
+      expect(header().getAttribute('aria-expanded')).toBe('false');
+      header().click();
+      fixture.detectChanges();
+      expect(rowsText()).toEqual(['常用', '伊弗利特', '其它', '利維坦', '迦樓羅', '奧丁']);
+      expect(header().getAttribute('aria-expanded')).toBe('true');
+      expect(el.querySelector('.sel-panel')).not.toBeNull();
+      expect(host.control.value).toBe('');
+      el.querySelectorAll<HTMLElement>('.sel-group')[0]!.click();
+      fixture.detectChanges();
+      expect(rowsText()).toEqual(['常用1', '其它', '利維坦', '迦樓羅', '奧丁']);
+    });
+
+    it('同一次使用期間記住收合狀態(同鍵的下拉共用),重開面板不回到預設', () => {
+      grouped('t2');
+      trigger().click();
+      fixture.detectChanges();
+      el.querySelectorAll<HTMLElement>('.sel-group')[1]!.click();
+      fixture.detectChanges();
+      trigger().click(); // 關
+      fixture.detectChanges();
+      trigger().click(); // 再開
+      fixture.detectChanges();
+      expect(rowsText()).toContain('利維坦');
+    });
+
+    it('目前選取的項目在收合的組裡:打開時自動展開那一組', () => {
+      grouped('t3');
+      host.control.setValue('c');
+      fixture.detectChanges();
+      trigger().click();
+      fixture.detectChanges();
+      expect(rowsText()).toEqual(['常用', '伊弗利特', '其它', '利維坦', '迦樓羅', '奧丁']);
+    });
+
+    it('鍵盤:方向鍵會停在群組標題上,Enter 展開收合;收合的項目不會被走到', () => {
+      grouped('t4');
+      trigger().click();
+      fixture.detectChanges();
+      const key = (k: string) => {
+        trigger().dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+        fixture.detectChanges();
+      };
+      const activeText = () => el.querySelector('.sel-panel .active')?.textContent?.trim();
+      expect(activeText()).toBe('常用'); // 沒有選取時從第一個可操作的列開始
+      key('ArrowDown');
+      expect(activeText()).toBe('伊弗利特');
+      key('ArrowDown');
+      expect(activeText()).toBe('其它3');
+      key('Enter');
+      expect(rowsText()).toContain('利維坦');
+      key('ArrowDown');
+      expect(activeText()).toBe('利維坦');
+      key('End');
+      expect(activeText()).toBe('奧丁');
+      key('Enter');
+      expect(host.control.value).toBe('d');
+    });
   });
 
   it('點開列出全部選項,點選後寫回表單控制項並收起', () => {
