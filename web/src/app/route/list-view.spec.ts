@@ -12,6 +12,35 @@ describe('ListView(清單檢視,D-237)', () => {
     expect(v.ordered().map((i) => i.id)).toEqual(['i1', 'i3', 'i0', 'i2', 'i4']);
   });
 
+  it('點星號時項目不會立刻換位置;換頁、搜尋或篩選後才重新排序', () => {
+    const items = signal(make(12));
+    const v = new ListView(items, () => 10);
+    const ids = () => v.pageItems().map((i) => i.id);
+    expect(ids().slice(0, 5)).toEqual(['i0', 'i1', 'i2', 'i3', 'i4']);
+    items.set(items().map((i) => (i.id === 'i0' || i.id === 'i3' ? { ...i, favorite: true } : i)));
+    expect(ids().slice(0, 5)).toEqual(['i0', 'i1', 'i2', 'i3', 'i4']);
+    expect(v.favCount()).toBe(2);
+    v.setPage(2);
+    v.setPage(1);
+    expect(ids().slice(0, 5)).toEqual(['i0', 'i3', 'i1', 'i2', 'i4']);
+    // 新增的項目依目前常用狀態排
+    items.set([...items(), { id: 'n', name: '新', favorite: true }]);
+    expect(ids()[2]).toBe('n');
+  });
+
+  it('只看常用時取消星號,該列先留著,重新篩選後才消失', () => {
+    const items = signal(make(10, (i) => i < 2));
+    const v = new ListView(items, () => 10);
+    expect(v.showTools()).toBe(true);
+    v.setFavOnly(true);
+    expect(v.filtered().map((i) => i.id)).toEqual(['i0', 'i1']);
+    items.set(items().map((i) => (i.id === 'i0' ? { ...i, favorite: false } : i)));
+    expect(v.filtered().map((i) => i.id)).toEqual(['i0', 'i1']);
+    v.setFavOnly(false);
+    v.setFavOnly(true);
+    expect(v.filtered().map((i) => i.id)).toEqual(['i1']);
+  });
+
   it('分頁:每頁筆數、總頁數、頁碼夾在有效範圍', () => {
     const items = signal(make(25));
     const size = signal(10);

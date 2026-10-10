@@ -170,7 +170,7 @@ describe('RouteSubs', () => {
       expect(names().filter((n) => n !== '臨時配置')[0]).toBe('艇10');
     });
 
-    it('星號:點了立即反映並送 PATCH;常用排到最前面', async () => {
+    it('星號:點了立即反映並送 PATCH;位置先不動,換頁後常用才排到最前面', async () => {
       await mount(many(12), false, true);
       const target = [...el.querySelectorAll('.rt-cards .rt-card')].find((c) => c.textContent?.includes('艇05'))!;
       target.querySelector<HTMLButtonElement>('.rt-star')!.click();
@@ -181,8 +181,16 @@ describe('RouteSubs', () => {
       req.flush(dto({ id: 's5', name: '艇05', favorite: true }));
       await settle();
       fixture.detectChanges();
-      expect(names().filter((n) => n !== '臨時配置')[0]).toBe('艇05');
+      const list = () => names().filter((n) => n !== '臨時配置');
+      expect(list()[5]).toBe('艇05'); // 沒有跳位置,下一個要點的星號還在原處
+      expect(target.querySelector('.rt-star')!.getAttribute('aria-pressed')).toBe('true');
       expect(vm.saved().find((s) => s.id === 's5')!.favorite).toBe(true);
+      const btns = el.querySelectorAll<HTMLButtonElement>('.rt-listpager .pager-btn');
+      btns[1]!.click();
+      fixture.detectChanges();
+      el.querySelectorAll<HTMLButtonElement>('.rt-listpager .pager-btn')[0]!.click();
+      fixture.detectChanges();
+      expect(list()[0]).toBe('艇05');
     });
 
     it('超過 8 組才有搜尋與「★ 常用」;搜尋只留符合的,沒有符合顯示空狀態與清除', async () => {

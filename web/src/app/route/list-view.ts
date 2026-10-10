@@ -38,6 +38,10 @@ export class ListView<T extends Listable> {
   readonly query = signal('');
   readonly favOnly = signal(false);
   private readonly rawPage = signal(1);
+  /** 排序用的常用狀態快照:點星號時項目不會立刻跳位置(手指正要點下一個,清單卻重排會點錯);
+   *  換頁、搜尋、篩選、重新進入時才重新排序 */
+  private snap: Map<string, boolean> | null = null;
+  private readonly orderVersion = signal(0);
 
   constructor(
     private readonly items: () => readonly T[],
@@ -53,16 +57,26 @@ export class ListView<T extends Listable> {
 
   /** 常用在前,同組內維持原順序 */
   readonly ordered = computed(() => {
+    this.orderVersion();
     const all = this.items();
-    return [...all.filter((i) => i.favorite), ...all.filter((i) => !i.favorite)];
+    const snap = (this.snap ??= new Map());
+    for (const i of all) if (!snap.has(i.id)) snap.set(i.id, i.favorite);
+    return [...all.filter((i) => snap.get(i.id)), ...all.filter((i) => !snap.get(i.id))];
   });
+
+  /** 讓下一次排序採用最新的常用狀態 */
+  private reorder(): void {
+    this.snap = null;
+    this.orderVersion.update((v) => v + 1);
+  }
 
   readonly filtered = computed<T[]>(() => {
     const all = this.ordered();
     if (!this.filtering()) return all;
     const q = this.query().trim().toLowerCase();
     const fav = this.favOnly();
-    return all.filter((i) => (!fav || i.favorite) && (q === '' || this.haystack(i).toLowerCase().includes(q)));
+    const snap = this.snap!;
+    return all.filter((i) => (!fav || snap.get(i.id)) && (q === '' || this.haystack(i).toLowerCase().includes(q)));
   });
 
   readonly pages = computed(() => {
@@ -78,20 +92,24 @@ export class ListView<T extends Listable> {
   });
 
   setQuery(value: string): void {
+    this.reorder();
     this.query.set(value);
     this.rawPage.set(1);
   }
 
   setFavOnly(value: boolean): void {
+    this.reorder();
     this.favOnly.set(value);
     this.rawPage.set(1);
   }
 
   setPage(n: number): void {
+    this.reorder();
     this.rawPage.set(Math.min(Math.max(1, Math.trunc(n) || 1), this.pages()));
   }
 
   clearFilters(): void {
+    this.reorder();
     this.query.set('');
     this.favOnly.set(false);
     this.rawPage.set(1);
@@ -100,6 +118,7 @@ export class ListView<T extends Listable> {
   /** 翻到某一項所在的頁;不在目前的篩選結果裡就先清掉篩選。找不到這一項回 false */
   goTo(id: string): boolean {
     if (!this.items().some((i) => i.id === id)) return false;
+    this.reorder();
     let index = this.filtered().findIndex((i) => i.id === id);
     if (index < 0) {
       this.clearFilters();
