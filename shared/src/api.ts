@@ -228,6 +228,8 @@ export interface RouteSubDto {
   bridge: number;
   /** 綁定的工坊潛艇(可多艘:同一組配置常有好幾艘共用);潛艇被刪時由資料庫自動解除。一艘潛艇同時只綁一組配置 */
   bound_submarine_ids: string[];
+  /** 常用(星號,D-237):只影響顯示排序與篩選,由 PATCH 切換、PUT 不會改它 */
+  favorite: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -251,6 +253,11 @@ export interface RouteSubValidationErrorBody {
 /** POST 超過每人上限(409) */
 export interface RouteSubLimitErrorBody {
   error: 'limit_reached';
+}
+
+/** 切換常用(PATCH /api/route-subs/:id、/api/route-filters/:id,D-237) */
+export interface RouteFavoriteInput {
+  favorite: boolean;
 }
 
 // ---- 找路線的條件組合(航線模擬器,D-229;SCHEMA §3f、§8.12) ----
@@ -278,6 +285,8 @@ export interface RouteFilterDto {
   id: string;
   name: string;
   spec: RouteFilterSpec;
+  /** 常用(星號,D-237):由 PATCH 切換、PUT 不會改它 */
+  favorite: boolean;
   created_at: string;
   updated_at: string;
 }

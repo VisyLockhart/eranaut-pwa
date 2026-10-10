@@ -5,9 +5,9 @@ import type { ValidRouteSub } from '../services/route-subs.js';
 
 // 所有查詢都帶 user_id,任何查詢都不可跨使用者(CLAUDE.md §5)。
 
-const COLUMNS = 'id, name, level, hull, stern, bow, bridge, created_at, updated_at';
+const COLUMNS = 'id, name, level, hull, stern, bow, bridge, favorite, created_at, updated_at';
 
-type Row = Omit<RouteSubDto, 'bound_submarine_ids'>;
+type Row = Omit<RouteSubDto, 'bound_submarine_ids' | 'favorite'> & { favorite: number };
 
 function withBindings(db: Db, rows: Row[]): RouteSubDto[] {
   if (rows.length === 0) return [];
@@ -15,7 +15,7 @@ function withBindings(db: Db, rows: Row[]): RouteSubDto[] {
   const b = db
     .prepare(`SELECT route_sub_id, submarine_id FROM route_sub_bindings WHERE route_sub_id IN (${ids.map(() => '?').join(',')}) ORDER BY rowid`)
     .all(...ids) as { route_sub_id: string; submarine_id: string }[];
-  return rows.map((r) => ({ ...r, bound_submarine_ids: b.filter((x) => x.route_sub_id === r.id).map((x) => x.submarine_id) }));
+  return rows.map((r) => ({ ...r, favorite: r.favorite === 1, bound_submarine_ids: b.filter((x) => x.route_sub_id === r.id).map((x) => x.submarine_id) }));
 }
 
 /** 整組取代這組配置的綁定;其他配置已綁的同一艘潛艇會被搬過來(一艘艇只綁一組)。呼叫端須先確認潛艇都是本人的 */
@@ -80,6 +80,12 @@ export function replaceRouteSub(db: Db, userId: string, id: string, v: ValidRout
     setBindings(db, id, v.bound_submarine_ids);
     return getRouteSub(db, userId, id);
   })();
+}
+
+/** 切換常用:不動其他欄位與 updated_at;找不到(或不是自己的)回 undefined */
+export function setRouteSubFavorite(db: Db, userId: string, id: string, favorite: boolean): RouteSubDto | undefined {
+  const res = db.prepare('UPDATE route_subs SET favorite = ? WHERE id = ? AND user_id = ?').run(favorite ? 1 : 0, id, userId);
+  return res.changes === 0 ? undefined : getRouteSub(db, userId, id);
 }
 
 export function deleteRouteSub(db: Db, userId: string, id: string): boolean {

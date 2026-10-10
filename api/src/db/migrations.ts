@@ -160,4 +160,14 @@ CREATE TABLE route_filters (
 CREATE INDEX ix_route_filters_user ON route_filters(user_id);
 `,
   },
+  {
+    version: 6,
+    name: 'route_favorites',
+    // 配置與條件組合的「常用」星號(D-237):單一欄位、預設 0;不另開表、不更新 updated_at。
+    // 每人上限同時提高為 30 組(常數在 shared,不需要 migration)。
+    sql: `
+ALTER TABLE route_subs ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE route_filters ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0;
+`,
+  },
 ];

@@ -9,7 +9,7 @@ const ID_B = '666666666666666666';
 async function asUser(t: TestApp, discordId: string) {
   t.discord.grant(`code-${discordId}`, member({ id: discordId, user: { id: discordId, username: `u${discordId.slice(-3)}`, global_name: null, avatar: null } }));
   const cookie = sessionCookie(await loginWith(t, `code-${discordId}`))!;
-  return (method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, payload?: unknown, origin: string | null = ORIGIN) =>
+  return (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, payload?: unknown, origin: string | null = ORIGIN) =>
     t.app.inject({ method, url, payload: payload as object, headers: origin ? { origin } : {}, cookies: { eranaut_session: cookie } });
 }
 
@@ -19,7 +19,7 @@ const count = (t: TestApp) => (t.db.prepare('SELECT COUNT(*) AS n FROM route_fil
 
 test('未登入一律 401', async () => {
   const t = makeApp();
-  for (const [method, url] of [['GET', '/api/route-filters'], ['POST', '/api/route-filters'], ['PUT', '/api/route-filters/x'], ['DELETE', '/api/route-filters/x']] as const) {
+  for (const [method, url] of [['GET', '/api/route-filters'], ['POST', '/api/route-filters'], ['PUT', '/api/route-filters/x'], ['PATCH', '/api/route-filters/x'], ['DELETE', '/api/route-filters/x']] as const) {
     const res = await t.app.inject({ method, url, payload: method === 'POST' || method === 'PUT' ? valid : undefined });
     assert.equal(res.statusCode, 401, `${method} ${url}`);
   }
@@ -69,15 +69,15 @@ test('省略的欄位補預設值、陣列去重', async () => {
   assert.deepEqual((res.json() as RouteFilterDto).spec, { v: 1, sea: 'all', max_hours: null, sort: 'perMin', required: [1, 2], excluded: [], item_ids: [], match: 'all' });
 });
 
-test('每人最多 10 組,第 11 組 409;刪掉後可再新增;上限各人獨立', async () => {
+test('每人最多 30 組,第 31 組 409;刪掉後可再新增;上限各人獨立', async () => {
   const t = makeApp();
   const a = await asUser(t, ID_A);
   const b = await asUser(t, ID_B);
-  for (let i = 0; i < 10; i++) assert.equal((await a('POST', '/api/route-filters', valid)).statusCode, 201);
+  for (let i = 0; i < 30; i++) assert.equal((await a('POST', '/api/route-filters', valid)).statusCode, 201);
   const over = await a('POST', '/api/route-filters', valid);
   assert.equal(over.statusCode, 409);
   assert.equal(over.json().error, 'limit_reached');
-  assert.equal(count(t), 10);
+  assert.equal(count(t), 30);
   assert.equal((await b('POST', '/api/route-filters', valid)).statusCode, 201);
   const list = (await a('GET', '/api/route-filters')).json() as RouteFilterDto[];
   assert.equal((await a('DELETE', `/api/route-filters/${list[0]!.id}`)).statusCode, 204);
@@ -136,4 +136,24 @@ test('PUT 驗證失敗 400、不存在 404;Origin 不符的寫入被擋', async 
   const res = await api('POST', '/api/route-filters', valid, 'https://evil.example');
   assert.equal(res.statusCode, 403);
   assert.equal(count(t), 1);
+});
+
+test('常用:PATCH 只切換星號,不動 spec 與 updated_at;PUT 不會重設它;別人的 404、body 不合法 400', async () => {
+  const t = makeApp();
+  const a = await asUser(t, ID_A);
+  const b = await asUser(t, ID_B);
+  const f = (await a('POST', '/api/route-filters', valid)).json() as RouteFilterDto;
+  assert.equal(f.favorite, false);
+  t.clock.now = new Date('2026-10-03T00:00:00Z');
+  const on = (await a('PATCH', `/api/route-filters/${f.id}`, { favorite: true })).json() as RouteFilterDto;
+  assert.equal(on.favorite, true);
+  assert.equal(on.updated_at, f.updated_at);
+  assert.deepEqual(on.spec, f.spec);
+  const put = (await a('PUT', `/api/route-filters/${f.id}`, { name: '改名', spec })).json() as RouteFilterDto;
+  assert.equal(put.favorite, true);
+  assert.equal(((await a('GET', '/api/route-filters')).json() as RouteFilterDto[])[0]!.favorite, true);
+  assert.equal((await a('PATCH', `/api/route-filters/${f.id}`, { favorite: 'x' })).statusCode, 400);
+  assert.equal((await b('PATCH', `/api/route-filters/${f.id}`, { favorite: false })).statusCode, 404);
+  assert.equal((await a('PATCH', '/api/route-filters/nope', { favorite: false })).statusCode, 404);
+  assert.equal((await t.app.inject({ method: 'PATCH', url: `/api/route-filters/${f.id}`, payload: { favorite: true } })).statusCode, 401);
 });

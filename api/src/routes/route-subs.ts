@@ -1,8 +1,9 @@
 import { LIMITS } from '@eranaut/shared';
 import type { FastifyInstance } from 'fastify';
 import type { registerSessionAuth } from '../auth/session-guard.js';
-import { countRouteSubs, deleteRouteSub, insertRouteSub, listRouteSubs, ownsAllSubmarines, replaceRouteSub } from '../repo/route-subs.js';
+import { countRouteSubs, deleteRouteSub, insertRouteSub, listRouteSubs, ownsAllSubmarines, replaceRouteSub, setRouteSubFavorite } from '../repo/route-subs.js';
 import type { AppDeps } from '../server.js';
+import { parseFavoriteInput } from '../services/route-favorite.js';
 import { validateRouteSubInput } from '../services/route-subs.js';
 
 // 儲存潛艇(RS-25、RS-26)。路由只處理 HTTP;驗證在 services/,SQL 在 repo/(D-131 ③)。
@@ -39,6 +40,13 @@ export function registerRouteSubRoutes(app: FastifyInstance, deps: AppDeps, requ
       return reply.code(400).send({ error: 'validation_failed', fields: { bound_submarine_ids: 'invalid_value' } });
     }
     return replaceRouteSub(db, userId, req.params.id, v.value, deps.now()) ?? reply.code(404).send(notFound);
+  });
+
+  // 只切換常用(D-237):不動其他欄位、綁定與 updated_at,所以不會蓋掉別台裝置的編輯
+  app.patch<{ Params: { id: string } }>('/api/route-subs/:id', opts, async (req, reply) => {
+    const fav = parseFavoriteInput(req.body);
+    if (fav === null) return reply.code(400).send({ error: 'validation_failed', fields: { favorite: 'invalid_type' } });
+    return setRouteSubFavorite(db, req.session!.userId, req.params.id, fav) ?? reply.code(404).send(notFound);
   });
 
   app.delete<{ Params: { id: string } }>('/api/route-subs/:id', opts, async (req, reply) => {

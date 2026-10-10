@@ -35,13 +35,13 @@ export const LIMITS = {
   maxSubmarinesPerWorkshop: 4,
   /** 儲存潛艇(航線模擬器,RS-25、RS-26):名稱字數、每位使用者組數上限、等級上限(繁中服,RS-20) */
   routeSubName: 20,
-  maxRouteSubsPerUser: 10,
+  maxRouteSubsPerUser: 30,
   maxRouteSubLevel: 130,
   /** 一組儲存潛艇最多綁幾艘工坊潛艇(只是擋異常輸入;一般使用者的潛艇總數遠少於此) */
   maxRouteSubBindings: 32,
   /** 找路線的條件組合(D-229):名稱字數、每位使用者組數上限 */
   routeFilterName: 20,
-  maxRouteFiltersPerUser: 10,
+  maxRouteFiltersPerUser: 30,
   /** 剩餘時間上限:99 天 23 小時 59 分(D-118 的天≤99、時≤23、分≤59),單位分鐘 */
   maxRemainingMinutes: 99 * 24 * 60 + 23 * 60 + 59,
 } as const;

@@ -34,8 +34,8 @@ test('連線啟用外鍵', () => {
 
 test('migrate 建立全部資料表,且可重複執行', () => {
   const db = openDatabase(':memory:');
-  assert.equal(migrate(db), 5);
-  assert.equal(migrate(db), 5);
+  assert.equal(migrate(db), 6);
+  assert.equal(migrate(db), 6);
   const names = (db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all() as { name: string }[]).map((r) => r.name);
   assert.deepEqual(names, ['push_subscriptions', 'reminder_deliveries', 'reminders', 'route_filters', 'route_sub_bindings', 'route_subs', 'sessions', 'submarines', 'users', 'workshops']);
 });
@@ -151,7 +151,7 @@ test('migration 4:舊的單艘綁定搬進綁定表,舊欄位清空', () => {
   const sub = addSub(db, addWorkshop(db, u), 1);
   const rs = randomUUID();
   db.prepare('INSERT INTO route_subs (id, user_id, name, level, hull, stern, bow, bridge, bound_submarine_id, created_at, updated_at) VALUES (?, ?, ?, 1, 1, 1, 1, 1, ?, ?, ?)').run(rs, u, 'R', sub, NOW, NOW);
-  assert.equal(migrate(db), 5);
+  assert.equal(migrate(db), 6);
   assert.deepEqual(db.prepare('SELECT route_sub_id, submarine_id FROM route_sub_bindings').all(), [{ route_sub_id: rs, submarine_id: sub }]);
   assert.equal((db.prepare('SELECT bound_submarine_id AS b FROM route_subs').get() as { b: string | null }).b, null);
 });

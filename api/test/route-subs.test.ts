@@ -9,7 +9,7 @@ const ID_B = '666666666666666666';
 async function asUser(t: TestApp, discordId: string) {
   t.discord.grant(`code-${discordId}`, member({ id: discordId, user: { id: discordId, username: `u${discordId.slice(-3)}`, global_name: null, avatar: null } }));
   const cookie = sessionCookie(await loginWith(t, `code-${discordId}`))!;
-  return (method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, payload?: unknown) =>
+  return (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, payload?: unknown) =>
     t.app.inject({ method, url, payload: payload as object, headers: { origin: ORIGIN }, cookies: { eranaut_session: cookie } });
 }
 type Api = Awaited<ReturnType<typeof asUser>>;
@@ -40,7 +40,7 @@ test('新增、列表、取代、刪除', async () => {
   const s = res.json() as RouteSubDto;
   assert.match(s.id, /^[0-9a-f-]{36}$/);
   assert.deepEqual({ ...s, id: 'x' }, {
-    id: 'x', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [],
+    id: 'x', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [], favorite: false,
     created_at: '2026-10-01T00:00:00.000Z', updated_at: '2026-10-01T00:00:00.000Z',
   });
   t.clock.now = new Date('2026-10-02T00:00:00Z');
@@ -69,11 +69,11 @@ test('列表依建立順序;重名可以', async () => {
   assert.deepEqual(((await api('GET', '/api/route-subs')).json() as RouteSubDto[]).map((x) => x.name), ['乙', '甲', '甲']);
 });
 
-test('上限 10 組:第 11 組回 409,刪一組後可再建', async () => {
+test('上限 30 組:第 31 組回 409,刪一組後可再建', async () => {
   const t = makeApp();
   const api = await asUser(t, ID_A);
   let first = '';
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 30; i++) {
     const r = await api('POST', '/api/route-subs', { ...valid, name: `艇${i}` });
     assert.equal(r.statusCode, 201);
     if (i === 0) first = (r.json() as RouteSubDto).id;
@@ -81,7 +81,7 @@ test('上限 10 組:第 11 組回 409,刪一組後可再建', async () => {
   const over = await api('POST', '/api/route-subs', valid);
   assert.equal(over.statusCode, 409);
   assert.deepEqual(over.json(), { error: 'limit_reached' });
-  assert.equal(count(t), 10);
+  assert.equal(count(t), 30);
   assert.equal((await api('PUT', `/api/route-subs/${first}`, { ...valid, name: '覆蓋' })).statusCode, 200); // 滿了仍可覆蓋
   await api('DELETE', `/api/route-subs/${first}`);
   assert.equal((await api('POST', '/api/route-subs', valid)).statusCode, 201);
@@ -91,7 +91,7 @@ test('上限是每位使用者各自計算', async () => {
   const t = makeApp();
   const a = await asUser(t, ID_A);
   const b = await asUser(t, ID_B);
-  for (let i = 0; i < 10; i++) await a('POST', '/api/route-subs', valid);
+  for (let i = 0; i < 30; i++) await a('POST', '/api/route-subs', valid);
   assert.equal((await b('POST', '/api/route-subs', valid)).statusCode, 201);
 });
 
@@ -209,4 +209,44 @@ test('Origin 不符的寫入請求 403', async () => {
   void api;
   const res = await t.app.inject({ method: 'POST', url: '/api/route-subs', payload: valid, headers: { origin: 'https://evil.example' } });
   assert.equal(res.statusCode, 403);
+});
+
+test('常用:PATCH 只切換星號,不動其他欄位、綁定與 updated_at;PUT 不會重設它', async () => {
+  const t = makeApp();
+  const api = await asUser(t, ID_A);
+  const sid = await makeSubmarine(api);
+  const s = (await api('POST', '/api/route-subs', { ...valid, bound_submarine_ids: [sid] })).json() as RouteSubDto;
+  assert.equal(s.favorite, false);
+  t.clock.now = new Date('2026-10-03T00:00:00Z');
+  const on = await api('PATCH', `/api/route-subs/${s.id}`, { favorite: true });
+  assert.equal(on.statusCode, 200);
+  const d = on.json() as RouteSubDto;
+  assert.equal(d.favorite, true);
+  assert.equal(d.updated_at, s.updated_at);
+  assert.equal(d.name, s.name);
+  assert.deepEqual(d.bound_submarine_ids, [sid]);
+  const put = (await api('PUT', `/api/route-subs/${s.id}`, { ...valid, name: '改名', bound_submarine_ids: [sid] })).json() as RouteSubDto;
+  assert.equal(put.favorite, true);
+  assert.equal(((await api('GET', '/api/route-subs')).json() as RouteSubDto[])[0]!.favorite, true);
+  const off = (await api('PATCH', `/api/route-subs/${s.id}`, { favorite: false })).json() as RouteSubDto;
+  assert.equal(off.favorite, false);
+});
+
+test('常用:body 不合法 400、別人的與不存在 404、未登入 401、外站 Origin 403', async () => {
+  const t = makeApp();
+  const a = await asUser(t, ID_A);
+  const b = await asUser(t, ID_B);
+  const s = (await a('POST', '/api/route-subs', valid)).json() as RouteSubDto;
+  for (const body of [undefined, {}, { favorite: 1 }, { favorite: 'true' }, [true]]) {
+    const r = await a('PATCH', `/api/route-subs/${s.id}`, body);
+    assert.equal(r.statusCode, 400);
+    assert.deepEqual(r.json(), { error: 'validation_failed', fields: { favorite: 'invalid_type' } });
+  }
+  assert.equal((await b('PATCH', `/api/route-subs/${s.id}`, { favorite: true })).statusCode, 404);
+  assert.equal((await a('PATCH', '/api/route-subs/nope', { favorite: true })).statusCode, 404);
+  assert.equal(((await a('GET', '/api/route-subs')).json() as RouteSubDto[])[0]!.favorite, false);
+  assert.equal((await t.app.inject({ method: 'PATCH', url: `/api/route-subs/${s.id}`, payload: { favorite: true } })).statusCode, 401);
+  const cookie = sessionCookie(await loginWith(t, `code-${ID_A}`))!;
+  const evil = await t.app.inject({ method: 'PATCH', url: `/api/route-subs/${s.id}`, payload: { favorite: true }, headers: { origin: 'https://evil.example' }, cookies: { eranaut_session: cookie } });
+  assert.equal(evil.statusCode, 403);
 });
