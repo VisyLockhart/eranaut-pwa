@@ -41,11 +41,11 @@ describe('配件製作資料集(V6 完整性)', () => {
     for (const k of SLOT_KEYS) for (const e of slots[k].grades) check(`${k} ${e.grade}${e.modified ? '改' : ''}`, e.recipe);
   });
 
-  it('產量為 ≥2 整數;目前只有聖水、祝聖水(3)與星極油(4)', () => {
+  it('產量為 ≥2 整數;目前只有皇金錠、聖水、祝聖水(3)與星極油(4)', () => {
     for (const [n, c] of Object.entries(crafts)) {
       if (c.yield !== undefined) expect(Number.isInteger(c.yield) && c.yield >= 2, n).toBe(true);
     }
-    expect(Object.entries(crafts).filter(([, c]) => c.yield).map(([n, c]) => [n, c.yield])).toEqual([['聖水', 3], ['祝聖水', 3], ['星極油', 4]]);
+    expect(Object.entries(crafts).filter(([, c]) => c.yield).map(([n, c]) => [n, c.yield])).toEqual([['皇金錠', 3], ['聖水', 3], ['祝聖水', 3], ['星極油', 4]]);
   });
 
   it('配方沒有循環', () => {
@@ -77,8 +77,8 @@ describe('配件製作資料集(V6 完整性)', () => {
     expect('星極油' in base).toBe(false);
   });
 
-  it('資料量:素材 107、可製作品 83', () => {
+  it('資料量:素材 107、可製作品 84', () => {
     expect(Object.keys(base)).toHaveLength(107);
-    expect(Object.keys(crafts)).toHaveLength(83);
+    expect(Object.keys(crafts)).toHaveLength(84);
   });
 });
