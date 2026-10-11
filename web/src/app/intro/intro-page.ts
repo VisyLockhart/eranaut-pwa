@@ -58,6 +58,7 @@ export class IntroPage {
     { locked: true, title: '同步聯動 Discord Bot', text: '在社群伺服器輸入專用指令,就能即時看到潛艇的返航狀況。未來將開放更多功能。' },
     { locked: false, title: '潛艇總覽與工坊管理', text: '所有潛艇依返航時間排好,倒數一目了然。工坊可設定代表角色和地址,管理起來清楚明瞭。可切換列表或卡片顯示。' },
     { locked: false, title: '航線模擬器', text: '選航點、挑配件配置,算出航行時間、燃料與經驗;可以依練級、探索、掉落物找出最適合的路線與配置。' },
+    { locked: false, title: '配件製作', text: '選好配件,列出完整材料表,製作不麻煩。清楚的庫存記錄,幫你省下東抄西漏的時間。' },
   ];
 
   protected readonly lockedFeatures = this.features.filter((f) => f.locked);
