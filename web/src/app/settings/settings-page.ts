@@ -25,7 +25,7 @@ export class SettingsPage {
   protected readonly sizes = UI_SIZES;
 
   constructor() {
-    this.layout.pageTitle.set('我的');
+    this.layout.pageTitle.set('設定');
     void this.vm.load();
     void this.push.load();
   }

@@ -8,6 +8,7 @@ export const routes: Routes = [
   { path: 'workshops', loadComponent: () => import('./workshops/workshops-page').then((m) => m.WorkshopsPage) },
   { path: 'update', loadComponent: () => import('./update/update-page').then((m) => m.UpdatePage) },
   { path: 'route', loadComponent: () => import('./route/route-page').then((m) => m.RoutePage) },
+  { path: 'craft', loadComponent: () => import('./craft/craft-page').then((m) => m.CraftPage) },
   { path: 'settings', loadComponent: () => import('./settings/settings-page').then((m) => m.SettingsPage) },
   ...demoRoutes,
   { path: '**', redirectTo: '' },

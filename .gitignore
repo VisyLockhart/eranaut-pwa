@@ -14,9 +14,9 @@ dist/
 *.db-journal
 *.db-wal
 *.db-shm
-data/
-# 航線模擬器的資料集(第三方資料,CC BY-NC-SA,見 NOTICE.md)要納入版控
-!web/src/app/route/data/
+# 只擋 SQLite 資料夾(用開頭斜線限定位置);不要寫不帶路徑的 data/,會連 web/src/app/*/data/ 的資料集一起擋掉
+/data/
+/api/data/
 
 # OS / editor
 .DS_Store

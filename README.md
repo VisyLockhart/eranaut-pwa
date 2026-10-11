@@ -44,6 +44,7 @@ FFXIV(Final Fantasy XIV)的潛水艇探索要等好幾小時到好幾天,有多�
 - **更新潛艇**:手動輸入,或上傳 / 貼上 / 擷取遊戲截圖交給自架 OCR 辨識,辨識結果逐艘核對後再送出;信心偏低的欄位會標示「請核對」。
 - **提醒**:Discord 私訊、伺服器頻道 @、瀏覽器推播(Web Push)三種方式可複選;每間工坊可設定提前幾分鐘,或整批一次提醒。
 - **航線模擬**:在海域地圖上選航點,算出航行時間、返航時刻與燃料;依等級與距離上限即時反灰選不了的航點;編輯配件配置(10⁴ 種組合)並對照路線需求;「找路線」可用必選 / 排除航點、海域、最長航行時間、想要的物品與排序(每分鐘經驗、可能解鎖、最多物品)篩出路線,或反過來找出達標的配件組合。配置與找路線的條件都可命名儲存並跨裝置同步(「條件組合」),配置可綁定多艘工坊潛艇。資料集為第三方整理,**不適用 MIT**(見文末授權)。
+- **配件製作**:選潛艇四個部位(船體 / 船尾 / 船首 / 艦橋)的等級與數量,依配方遞迴算出要準備的成品、半成品與素材(同一種中間品先加總需求再依「一次做出幾個」取整);可展開改款配件的骨架、記錄庫存算還缺多少、複製清單。選擇與庫存只存在這個瀏覽器(`localStorage`),不進資料庫。
 - **PWA**:可加到手機主畫面;service worker 只快取 app shell,API 一律走網路。
 - **介面**:純深色主題、手機與桌機兩套版面、小 / 中 / 大三種介面大小、手機統計區與桌機側欄可收合、手機下拉重新整理。
 
@@ -123,6 +124,7 @@ web/     Angular 前端(PWA)
 │  │  ├─ core/            API 用戶端、各畫面的 view model、時間補償等(多數有單元測試)
 │  │  ├─ overview/ workshops/ update/ settings/ auth/   各畫面
 │  │  ├─ route/           航線模擬:core/(純函式)、data/(第三方資料集,CC BY-NC-SA,見其中的 NOTICE.md)與各分頁畫面
+│  │  ├─ craft/           配件製作:core/(純函式計算)、data/(第三方遊戲資料的整理結果,不適用 MIT,見其中的 NOTICE.md)與頁面
 │  │  ├─ layout/ ui/      版面骨架與共用元件
 │  │  └─ demo/            展示模式(只在 demo 建置啟用)
 │  ├─ dev.mjs             本機開發的轉發器(/api → 本機 API,其餘 → Angular dev server)
@@ -210,4 +212,4 @@ npm run build             # 建置 shared、api、web
 
 非官方粉絲工具,與 SQUARE ENIX CO., LTD. 無關,僅供社群使用。
 
-授權:程式碼為 [MIT](LICENSE)。**例外:** [`web/src/app/route/data/`](web/src/app/route/data/) 的航線資料集是第三方資料(灰機 wiki 小工具,原始來源 Lodestone 作者 Eclair Falcie@Hades;繁體中文名稱取自 GitHub 上的整理)的轉換結果,依來源授權以 **CC BY-NC-SA 3.0**(姓名標示-非商業性-相同方式分享)釋出,不適用 MIT;轉載或改作請保留該資料夾的 [NOTICE.md](web/src/app/route/data/NOTICE.md),且不得商業使用。Created by Visy Lockhart (Winter@迦樓羅).
+授權:程式碼為 [MIT](LICENSE)。**例外:** [`web/src/app/route/data/`](web/src/app/route/data/) 的航線資料集是第三方資料(灰機 wiki 小工具,原始來源 Lodestone 作者 Eclair Falcie@Hades;繁體中文名稱取自 GitHub 上的整理)的轉換結果,依來源授權以 **CC BY-NC-SA 3.0**(姓名標示-非商業性-相同方式分享)釋出,不適用 MIT;轉載或改作請保留該資料夾的 [NOTICE.md](web/src/app/route/data/NOTICE.md),且不得商業使用。**另一個例外:** [`web/src/app/craft/data/`](web/src/app/craft/data/) 的配件製作資料集是第三方遊戲資料(原整理者的 repo 未附授權條款)的事實性整理結果(名稱、配方、數量、產量;結構為本專案重新設計),**不適用 MIT**;轉載或改作請保留該資料夾的 [NOTICE.md](web/src/app/craft/data/NOTICE.md)。Created by Visy Lockhart (Winter@迦樓羅).

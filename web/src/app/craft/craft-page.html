@@ -1,0 +1,159 @@
+@if (layout.isDesktop()) {
+  <div class="d-topbar">
+    <div>
+      <div class="d-title">配件製作</div>
+    </div>
+  </div>
+  <div class="ct-d-wrap">
+    <div class="ct-slots">
+      @for (slot of vm.slots; track slot) {
+        <section class="ct-slot-card" [class.set]="vm.sel()[slot].gradeIndex !== null" [attr.aria-label]="slotLabel(slot)">
+          <div class="ct-slot-head">
+            <b>{{ slotLabel(slot) }}</b>
+            @if (vm.sel()[slot].gradeIndex !== null) {
+              <button type="button" class="ct-x" (click)="vm.clearSlot(slot)" [attr.aria-label]="'清除' + slotLabel(slot)"><app-icon name="close" [size]="14" /></button>
+            }
+          </div>
+          <ng-container *ngTemplateOutlet="picker; context: { slot: slot }" />
+        </section>
+      }
+    </div>
+    <ng-container *ngTemplateOutlet="toolbar" />
+    <ng-container *ngTemplateOutlet="traceBar" />
+    @if (!vm.hasSelection()) {
+      <div class="ct-empty" aria-label="尚未選擇配件"><app-icon name="anvil" [size]="34" /><b>選擇配件等級</b></div>
+    } @else {
+      <ng-container *ngTemplateOutlet="stockBar" />
+      <div class="ct-cols">
+        @for (t of tabs; track t; let i = $index) {
+          @if (i > 0) {
+            <div class="ct-arrow" aria-hidden="true"><app-icon name="chevronLeft" [size]="18" /></div>
+          }
+          <section class="ct-col" [attr.aria-label]="tabLabel[t]">
+            <div class="ct-col-head"><b>{{ tabLabel[t] }}</b><span class="ct-count">{{ vm.counts()[t] }}</span></div>
+            <ng-container *ngTemplateOutlet="list; context: { tab: t }" />
+          </section>
+        }
+      </div>
+    }
+  </div>
+} @else {
+  <div class="m-upload-body ct-m-body">
+    <div class="ct-tiles">
+      @for (slot of vm.slots; track slot) {
+        <button type="button" class="ct-tile" [class.set]="vm.sel()[slot].gradeIndex !== null" (click)="openSheet(slot)" [attr.aria-label]="'選擇' + slotLabel(slot)">
+          <span class="ct-tile-name">{{ slotLabel(slot) }}</span>
+          @if (vm.sel()[slot].gradeIndex !== null) {
+            <span class="ct-tile-val">{{ gradeLabel(vm.sel()[slot].gradeIndex!) }}<i> ×{{ vm.sel()[slot].qty }}</i></span>
+          } @else {
+            <span class="ct-tile-val plus"><app-icon name="plus" [size]="20" /></span>
+          }
+        </button>
+      }
+    </div>
+    <ng-container *ngTemplateOutlet="toolbar" />
+    @if (!vm.hasSelection()) {
+      <div class="ct-empty" aria-label="尚未選擇配件"><app-icon name="anvil" [size]="34" /><b>選擇配件等級</b></div>
+    } @else {
+      <ng-container *ngTemplateOutlet="stockBar" />
+      <div class="up-tabs ct-tabs" role="tablist" aria-label="清單分類">
+        @for (t of tabs; track t) {
+          <button type="button" class="up-tab" role="tab" [class.active]="vm.view().tab === t" [attr.aria-selected]="vm.view().tab === t" (click)="setTab(t)">{{ tabLabel[t] }} {{ vm.counts()[t] }}</button>
+        }
+      </div>
+      <ng-container *ngTemplateOutlet="traceBar" />
+      <ng-container *ngTemplateOutlet="list; context: { tab: vm.view().tab }" />
+    }
+  </div>
+  @if (sheet(); as slot) {
+    <div class="ct-sheet-overlay" (click)="closeSheet()">
+      <div class="ct-sheet" role="dialog" aria-modal="true" [attr.aria-label]="'選擇' + slotLabel(slot)" (click)="stop($event)">
+        <div class="ct-sheet-head">
+          <b>{{ slotLabel(slot) }}</b>
+          <button type="button" class="ct-done" (click)="closeSheet()">完成</button>
+        </div>
+        <ng-container *ngTemplateOutlet="picker; context: { slot: slot }" />
+        @if (vm.sel()[slot].gradeIndex !== null) {
+          <button type="button" class="ct-clear" (click)="vm.clearSlot(slot); closeSheet()">清除{{ slotLabel(slot) }}</button>
+        }
+      </div>
+    </div>
+  }
+}
+
+<ng-template #picker let-slot="slot">
+  @let s = selOf(slot);
+  <div class="ct-grades" role="group" [attr.aria-label]="slotLabel(slot) + '等級'">
+    @for (gi of gradeIndexes; track gi) {
+      <button type="button" class="ct-chip" [class.mod]="gi >= 5" [class.on]="s.gradeIndex === gi" [attr.aria-pressed]="s.gradeIndex === gi" (click)="vm.setGrade(slot, gi)">{{ gradeLabel(gi) }}</button>
+    }
+  </div>
+  <div class="ct-qty" [class.off]="s.gradeIndex === null">
+    <button type="button" class="ct-step" (click)="vm.stepQty(slot, -1)" [disabled]="s.gradeIndex === null || s.qty <= 1" aria-label="減少數量">−</button>
+    <input type="number" inputmode="numeric" min="1" [max]="maxQty" [value]="s.qty" [disabled]="s.gradeIndex === null" (change)="qtyInput(slot, $event)" aria-label="數量" />
+    <button type="button" class="ct-step" (click)="vm.stepQty(slot, 1)" [disabled]="s.gradeIndex === null || s.qty >= maxQty" aria-label="增加數量">+</button>
+  </div>
+</ng-template>
+
+<ng-template #toolbar>
+  <div class="ct-toolbar">
+    <label class="ct-opt"><span>展開骨架</span>
+      <span class="switch"><input type="checkbox" [checked]="vm.view().expandFrame" (change)="vm.patchView({ expandFrame: !vm.view().expandFrame })" /><span class="slider"></span></span>
+    </label>
+    <label class="ct-opt"><span>記錄庫存</span>
+      <span class="switch"><input type="checkbox" [checked]="vm.view().stockMode" (change)="vm.patchView({ stockMode: !vm.view().stockMode })" /><span class="slider"></span></span>
+    </label>
+    <span class="ct-spacer"></span>
+    @if (vm.hasSelection()) {
+      <button type="button" class="ct-tool" (click)="vm.toggleAllGroups(layout.isDesktop() ? tabs : [vm.view().tab])">{{ vm.allCollapsed(layout.isDesktop() ? tabs : [vm.view().tab]) ? '全部展開' : '全部收合' }}</button>
+      <button type="button" class="ct-tool" [class.ok]="vm.copied()" (click)="vm.copy(layout.isDesktop() ? tabs : [vm.view().tab])" aria-label="複製清單"><app-icon [name]="vm.copied() ? 'check' : 'list'" [size]="16" /><span>{{ vm.copied() ? '已複製' : '複製清單' }}</span></button>
+      <button type="button" class="ct-tool danger" (click)="vm.clearAll()">清除全部</button>
+    }
+  </div>
+</ng-template>
+
+<ng-template #stockBar>
+  @if (vm.view().stockMode) {
+    <div class="ct-stockbar">
+      <div class="ct-progress" role="progressbar" aria-label="備料進度" [attr.aria-valuenow]="(vm.progress() * 100).toFixed(0)" aria-valuemin="0" aria-valuemax="100"><i [style.width.%]="vm.progress() * 100"></i></div>
+      <b class="ct-pct">{{ (vm.progress() * 100).toFixed(0) }}%</b>
+      <label class="ct-opt"><span>只看缺少</span>
+        <span class="switch"><input type="checkbox" [checked]="vm.view().onlyMissing" (change)="vm.patchView({ onlyMissing: !vm.view().onlyMissing })" /><span class="slider"></span></span>
+      </label>
+      <button type="button" class="ct-tool" (click)="vm.clearStock()">清空庫存</button>
+    </div>
+  }
+</ng-template>
+
+<ng-template #traceBar>
+  @if (vm.pin(); as p) {
+    <div class="ct-trace"><span>追蹤</span><b>{{ p }}</b><button type="button" class="ct-x" (click)="vm.togglePin(p)" aria-label="取消追蹤"><app-icon name="close" [size]="14" /></button></div>
+  }
+</ng-template>
+
+<ng-template #list let-tab="tab">
+  @for (g of groupsOf(tab); track g.group) {
+    <div class="ct-group">
+      <button type="button" class="ct-group-head" [attr.aria-expanded]="!vm.isCollapsed(tab, g.group)" (click)="vm.toggleGroup(tab, g.group)">
+        <app-icon [name]="vm.isCollapsed(tab, g.group) ? 'chevronRight' : 'chevronDown'" [size]="14" />
+        <span>{{ g.group }}</span><span class="ct-count">{{ g.rows.length }}</span>
+      </button>
+      @if (!vm.isCollapsed(tab, g.group)) {
+        @for (r of g.rows; track r.name) {
+          <div class="ct-row" [class]="'ct-row ' + rowState(r)" role="button" tabindex="0" (click)="vm.togglePin(r.name)" (keydown.enter)="vm.togglePin(r.name)" (keydown.space)="$event.preventDefault(); vm.togglePin(r.name)">
+            <span class="ct-name">{{ r.name }}</span>
+            @if (vm.view().stockMode) {
+              <span class="ct-need">{{ r.need }}</span>
+              <input class="ct-have" type="number" inputmode="numeric" min="0" placeholder="0" [value]="vm.stock()[r.name] ?? ''" (click)="stop($event)" (keydown)="stop($event)" (input)="stockInput(r, $event)" [attr.aria-label]="r.name + ' 已有'" />
+              <button type="button" class="ct-lack" [class.zero]="missing(r, vm.stock()) === 0" (click)="stop($event); vm.toggleDone(r)" [attr.aria-label]="r.name + ' 還缺 ' + missing(r, vm.stock())">{{ missing(r, vm.stock()) === 0 ? '✓' : missing(r, vm.stock()) }}</button>
+            } @else {
+              <span class="ct-qty-num">{{ r.need }}</span>
+            }
+          </div>
+        }
+      }
+    </div>
+  } @empty {
+    <div class="ct-none"><app-icon name="check" [size]="22" /></div>
+  }
+</ng-template>

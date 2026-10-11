@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import type { NotifyPrefs, WorkshopWithSubmarines } from '@eranaut/shared';
+import { CRAFT_STORAGE_KEYS } from '../craft/craft-keys';
 import { removeKey } from '../core/storage';
 import { ORDER_KEY } from '../core/workshop-order';
 import { INSTALL_PROMPT_KEY } from '../core/install-prompt';
@@ -74,6 +75,8 @@ export class DemoStore {
     removeKey('eranaut.demo.push');
     // 航線模擬器的檢視狀態(臨時配置、已選航點、分頁):展示版沒有伺服器端的儲存配置,重設時一併清掉
     removeKey(ROUTE_LAST_KEY);
+    // 配件製作的選擇、檢視設定與庫存(只存在這個瀏覽器)
+    for (const k of CRAFT_STORAGE_KEYS) removeKey(k);
     // 「加入主畫面」提示:重設後再看一次
     removeKey(INSTALL_PROMPT_KEY);
   }

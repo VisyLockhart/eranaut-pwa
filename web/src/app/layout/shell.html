@@ -6,7 +6,17 @@
         <div style="font-size: 14px; font-weight: 700; letter-spacing: 0.06em">AEQUOR ERANOS</div>
         <div style="font-size: 11px; color: var(--text-dim); margin-top: 1px">{{ layout.pageTitle() }}</div>
       </div>
-      <app-avatar [name]="auth.user()?.displayName ?? ''" [url]="auth.user()?.avatarUrl ?? null" />
+      <div class="m-user">
+        <button type="button" class="m-avatar-btn" [class.on]="menuOpen() || onSettings()" (click)="toggleMenu($event)" aria-haspopup="menu" [attr.aria-expanded]="menuOpen()" aria-label="帳號選單">
+          <app-avatar [name]="auth.user()?.displayName ?? ''" [url]="auth.user()?.avatarUrl ?? null" />
+        </button>
+        @if (menuOpen()) {
+          <div class="m-user-menu" role="menu" aria-label="帳號選單">
+            <a class="m-user-item" role="menuitem" routerLink="/settings" (click)="closeMenu()"><app-icon name="settings" [size]="18" /><span>設定</span></a>
+            <button type="button" class="m-user-item danger" role="menuitem" (click)="closeMenu(); auth.logout()"><app-icon name="logout" [size]="18" /><span>登出</span></button>
+          </div>
+        }
+      </div>
     </div>
 
     <router-outlet />
@@ -22,7 +32,7 @@
         <span>更新</span>
       </a>
       <a class="nav-item" routerLink="/route" routerLinkActive="active"><app-icon name="route" [size]="20" /><span>航線</span></a>
-      <a class="nav-item" routerLink="/settings" routerLinkActive="active"><app-icon name="user" [size]="20" /><span>我的</span></a>
+      <a class="nav-item" routerLink="/craft" routerLinkActive="active"><app-icon name="anvil" [size]="20" /><span>製作</span></a>
     </div>
     <app-copyright variant="bar" />
   </div>
@@ -46,6 +56,7 @@
       <a class="d-nav-item" routerLink="/workshops" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '工坊管理' : null"><app-icon name="workshops" [size]="20" /><span>工坊管理</span></a>
       <a class="d-nav-item" routerLink="/update" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '更新潛艇' : null"><app-icon name="camera" [size]="20" /><span>更新潛艇</span></a>
       <a class="d-nav-item" routerLink="/route" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '航線模擬' : null"><app-icon name="route" [size]="20" /><span>航線模擬</span></a>
+      <a class="d-nav-item" routerLink="/craft" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '配件製作' : null"><app-icon name="anvil" [size]="20" /><span>配件製作</span></a>
       <a class="d-nav-item" routerLink="/settings" routerLinkActive="active" [attr.title]="layout.sidebarCollapsed() ? '設定' : null"><app-icon name="settings" [size]="20" /><span>設定</span></a>
       <div style="flex-grow: 1"></div>
       @if (install.canInstallDesktop()) {
