@@ -101,12 +101,42 @@ describe('CraftVm', () => {
     expect(vm.progress()).toBe(0);
     const row = vm.result().bases[0]!;
     vm.toggleDone(row);
-    expect(vm.progress()).toBeGreaterThan(0);
+    // 進度以成品計算:素材備齊不算進度
+    expect(vm.progress()).toBe(0);
     const before = vm.visible().bases.length;
     vm.patchView({ onlyMissing: true });
     expect(vm.visible().bases.length).toBe(before - 1);
     vm.toggleDone(row);
     expect(vm.stock()[row.name]).toBeUndefined();
+  });
+
+  it('成品達標:進度 100%,半成品與素材一起達標(還缺為 0)', () => {
+    const vm = make();
+    vm.setGrade('hull', 5);
+    vm.patchView({ stockMode: true });
+    for (const f of vm.result().finals) vm.toggleDone(f);
+    expect(vm.progress()).toBe(1);
+    const st = vm.stock();
+    for (const r of vm.eff().semis) expect(Math.max(0, r.need - (st[r.name] ?? 0))).toBe(0);
+    // 素材只剩配件直接使用的量(其餘因成品已備齊而扣除)
+    const gross = vm.result().bases.reduce((n, r) => n + r.need, 0);
+    const left = vm.eff().bases.reduce((n, r) => n + r.need, 0);
+    expect(left).toBeLessThan(gross);
+    vm.patchView({ onlyMissing: true });
+    expect(vm.visible().semis.length).toBe(0);
+    // 取消成品庫存,下層需求回來
+    vm.clearStock();
+    expect(vm.progress()).toBe(0);
+    expect(vm.eff().bases.reduce((n, r) => n + r.need, 0)).toBe(gross);
+  });
+
+  it('關閉記錄庫存:顯示總需求,不受庫存影響', () => {
+    const vm = make();
+    vm.setGrade('hull', 5);
+    vm.patchView({ stockMode: true });
+    for (const f of vm.result().finals) vm.toggleDone(f);
+    vm.patchView({ stockMode: false });
+    expect(vm.eff().semis.map((r) => r.need)).toEqual(vm.result().semis.map((r) => r.need));
   });
 
   it('收合分組與複製文字', () => {

@@ -1,6 +1,7 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 import { CRAFT_KEY_SEL as KEY_SEL, CRAFT_KEY_STOCK as KEY_STOCK, CRAFT_KEY_VIEW as KEY_VIEW } from './craft-keys';
 import { calculate, type CalcResult, type CalcRow, type Selection } from './core/craft-calc';
+import { applyStock, finalsProgress } from './core/craft-stock';
 import { SLOT_KEYS } from './core/data';
 import type { SlotKey } from './core/types';
 import {
@@ -50,11 +51,14 @@ export class CraftVm {
     return out;
   });
   readonly hasSelection = computed(() => this.selections().length > 0);
+  /** 配方總需求(不看庫存) */
   readonly result = computed<CalcResult>(() => calculate(this.selections(), { expandFrame: this.view().expandFrame }));
+  /** 顯示用:記錄庫存開啟時,下層的需求會依上層庫存扣除(D-256);關閉時等於總需求 */
+  readonly eff = computed<CalcResult>(() => (this.view().stockMode ? applyStock(this.result(), this.stock()) : this.result()));
 
   /** 要顯示的列(記錄庫存 + 只看缺少時,濾掉已足夠的) */
   readonly visible = computed<Record<CraftTab, CalcRow[]>>(() => {
-    const r = this.result();
+    const r = this.eff();
     const v = this.view();
     const st = this.stock();
     const f = (rows: CalcRow[]) => (v.stockMode && v.onlyMissing ? rows.filter((x) => missing(x, st) > 0) : rows);
@@ -67,21 +71,11 @@ export class CraftVm {
   }));
   readonly counts = computed(() => ({ finals: this.result().finals.length, semis: this.result().semis.length, bases: this.result().bases.length }));
 
-  /** 整體進度 0~1:所有列「已有(不超過需求)」加總 / 需求加總 */
-  readonly progress = computed(() => {
-    const st = this.stock();
-    const r = this.result();
-    let have = 0;
-    let need = 0;
-    for (const row of [...r.finals, ...r.semis, ...r.bases]) {
-      need += row.need;
-      have += Math.min(row.need, st[row.name] ?? 0);
-    }
-    return need === 0 ? 0 : have / need;
-  });
+  /** 備料進度 0~1:以成品計算,成品全部達標 = 100%(D-256) */
+  readonly progress = computed(() => finalsProgress(this.result(), this.stock()));
   readonly missingTotal = computed(() => {
     const st = this.stock();
-    const r = this.result();
+    const r = this.eff();
     return [...r.finals, ...r.semis, ...r.bases].filter((x) => missing(x, st) > 0).length;
   });
 
@@ -186,7 +180,7 @@ export class CraftVm {
     const st = this.view().stockMode ? this.stock() : null;
     const parts: string[] = [];
     for (const t of tabs) {
-      const lines = copyLines(this.result()[t], st);
+      const lines = copyLines(this.eff()[t], st);
       if (lines.length === 0) continue;
       parts.push(tabs.length > 1 ? [`【${TAB_LABEL[t]}】`, ...lines].join('\n') : lines.join('\n'));
     }
