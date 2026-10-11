@@ -19,9 +19,20 @@ describe('craft-state', () => {
     expect(sanitizeView({ tab: 'nope', stockMode: 1, expandFrame: true })).toEqual({ expandFrame: true, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals' });
   });
 
-  it('庫存只留已知品項與正整數', () => {
-    expect(sanitizeStock({ 熊脂: 5, 不存在: 3, 星極油: -2, 暗栗木木材: '7', 靈銀塊: 1.9 })).toEqual({ 熊脂: 5, 暗栗木木材: 7, 靈銀塊: 1 });
+  it('庫存只留已知的 key 與正整數;舊版沒有前綴的半成品搬到 d:(D-258)', () => {
+    // 熊脂 = 素材;暗栗木木材 = 配件配方直接用到的可製作品(維持原 key);靈銀塊 = 舊版的半成品 → d:靈銀塊
+    expect(sanitizeStock({ 熊脂: 5, 不存在: 3, 星極油: -2, 暗栗木木材: '7', 靈銀塊: 1.9 })).toEqual({ 熊脂: 5, 暗栗木木材: 7, 'd:靈銀塊': 1 });
+    expect(sanitizeStock({ 'd:暗栗木木材': 4, 'd:熊脂': 2, 'd:不存在': 1, 'd:靈銀塊': 3, 靈銀塊: 9 })).toEqual({ 'd:暗栗木木材': 4, 'd:靈銀塊': 3 });
+    expect(sanitizeStock({ 希爾德拉級船體骨架: 2, 鯊魚級船尾骨架: 0 })).toEqual({ 希爾德拉級船體骨架: 2 });
     expect(sanitizeStock('x')).toEqual({});
+    // 搬過一次後再讀不會再變
+    const once = sanitizeStock({ 靈銀塊: 3, 暗栗木木材: 5 });
+    expect(sanitizeStock(once)).toEqual(once);
+  });
+
+  it('舊版的「半成品」欄位置搬到直接素材', () => {
+    expect(sanitizeView({ tab: 'semis' }).tab).toBe('directs');
+    expect(sanitizeView({ tab: 'directs' }).tab).toBe('directs');
   });
 
   it('分組依固定順序;複製清單在庫存模式只列還缺的缺少量', () => {
@@ -110,24 +121,44 @@ describe('CraftVm', () => {
     expect(vm.stock()[row.name]).toBeUndefined();
   });
 
-  it('成品達標:進度 100%,半成品與素材一起達標(還缺為 0)', () => {
+  it('交納素材達標:進度 100%,直接素材與基礎素材一起達標(還缺為 0)', () => {
     const vm = make();
     vm.setGrade('hull', 5);
     vm.patchView({ stockMode: true });
     for (const f of vm.result().finals) vm.toggleDone(f);
     expect(vm.progress()).toBe(1);
     const st = vm.stock();
-    for (const r of vm.eff().semis) expect(Math.max(0, r.need - (st[r.name] ?? 0))).toBe(0);
-    // 素材只剩配件直接使用的量(其餘因成品已備齊而扣除)
-    const gross = vm.result().bases.reduce((n, r) => n + r.need, 0);
-    const left = vm.eff().bases.reduce((n, r) => n + r.need, 0);
-    expect(left).toBeLessThan(gross);
+    for (const r of vm.result().directs) expect(missing(r, st)).toBe(0);
+    for (const r of vm.result().bases) expect(missing(r, st)).toBe(0);
+    expect(vm.result().bases.reduce((n, r) => n + r.need, 0)).toBe(0);
     vm.patchView({ onlyMissing: true });
-    expect(vm.visible().semis.length).toBe(0);
-    // 取消成品庫存,下層需求回來
+    expect(vm.visible().directs.length).toBe(0);
+    expect(vm.visible().bases.length).toBe(0);
+    // 取消交納素材庫存,下層需求回來
     vm.clearStock();
     expect(vm.progress()).toBe(0);
-    expect(vm.eff().bases.reduce((n, r) => n + r.need, 0)).toBe(gross);
+    expect(vm.result().bases.reduce((n, r) => n + r.need, 0)).toBeGreaterThan(0);
+  });
+
+  it('舊版存的庫存與「半成品」分頁會自動搬到新格式', () => {
+    localStorage.setItem('eranaut.craft.stock', JSON.stringify({ 靈銀塊: 3, 暗栗木木材: 5, 熊脂: 2 }));
+    localStorage.setItem('eranaut.craft.view', JSON.stringify({ tab: 'semis', stockMode: true }));
+    const vm = make();
+    expect(vm.stock()).toEqual({ 'd:靈銀塊': 3, 暗栗木木材: 5, 熊脂: 2 });
+    expect(vm.view().tab).toBe('directs');
+  });
+
+  it('同名品項兩處各記各的:交納素材與直接素材的庫存分開', () => {
+    const vm = make();
+    vm.setGrade('stern', 0);
+    vm.patchView({ stockMode: true });
+    const fin = vm.result().finals.find((r) => r.name === '白鋼錠')!;
+    const dir = vm.result().directs.find((r) => r.name === '白鋼錠')!;
+    vm.toggleDone(fin);
+    expect(vm.stock()).toEqual({ 白鋼錠: 54 });
+    expect(missing(vm.result().directs.find((r) => r.name === '白鋼錠')!, vm.stock())).toBe(dir.need);
+    vm.toggleDone(dir);
+    expect(vm.stock()).toEqual({ 白鋼錠: 54, 'd:白鋼錠': 54 });
   });
 
   it('關閉記錄庫存:顯示總需求,不受庫存影響', () => {
@@ -136,7 +167,7 @@ describe('CraftVm', () => {
     vm.patchView({ stockMode: true });
     for (const f of vm.result().finals) vm.toggleDone(f);
     vm.patchView({ stockMode: false });
-    expect(vm.eff().semis.map((r) => r.need)).toEqual(vm.result().semis.map((r) => r.need));
+    expect(vm.result().directs.map((r) => r.need)).toEqual(calculate([{ slot: 'hull', gradeIndex: 5, qty: 1 }]).directs.map((r) => r.need));
   });
 
   it('收合分組與複製文字', () => {
@@ -145,13 +176,14 @@ describe('CraftVm', () => {
     const g = vm.groups().bases[0]!.group;
     vm.toggleGroup('bases', g);
     expect(vm.isCollapsed('bases', g)).toBe(true);
-    vm.toggleAllGroups(['finals', 'semis', 'bases']);
-    expect(vm.allCollapsed(['finals', 'semis', 'bases'])).toBe(true);
-    vm.toggleAllGroups(['finals', 'semis', 'bases']);
-    expect(vm.allCollapsed(['finals', 'semis', 'bases'])).toBe(false);
-    const t = vm.copyText(['finals', 'semis', 'bases']);
-    expect(t).toContain('【成品】');
-    expect(t).toContain('【素材】');
+    vm.toggleAllGroups(['finals', 'directs', 'bases']);
+    expect(vm.allCollapsed(['finals', 'directs', 'bases'])).toBe(true);
+    vm.toggleAllGroups(['finals', 'directs', 'bases']);
+    expect(vm.allCollapsed(['finals', 'directs', 'bases'])).toBe(false);
+    const t = vm.copyText(['finals', 'directs', 'bases']);
+    expect(t).toContain('【交納素材】');
+    expect(t).toContain('【直接素材】');
+    expect(t).toContain('【基礎素材】');
     expect(vm.copyText(['bases'])).not.toContain('【');
   });
 });

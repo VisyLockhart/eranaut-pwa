@@ -193,7 +193,7 @@
             <span class="ct-name">{{ r.name }}</span>
             @if (vm.view().stockMode) {
               <span class="ct-need">{{ r.need }}</span>
-              <input class="ct-have" type="number" inputmode="numeric" min="0" placeholder="0" [value]="vm.stock()[r.name] ?? ''" (click)="stop($event)" (keydown)="stop($event)" (input)="stockInput(r, $event)" [attr.aria-label]="r.name + ' 已有'" />
+              <input class="ct-have" type="number" inputmode="numeric" min="0" placeholder="0" [value]="vm.stock()[r.key] ?? ''" (click)="stop($event)" (keydown)="stop($event)" (input)="stockInput(r, $event)" [attr.aria-label]="r.name + ' 已有'" />
               <button type="button" class="ct-lack" [class.zero]="missing(r, vm.stock()) === 0" (click)="stop($event); vm.toggleDone(r)" [attr.aria-label]="r.name + ' 還缺 ' + missing(r, vm.stock())">{{ missing(r, vm.stock()) === 0 ? '✓' : missing(r, vm.stock()) }}</button>
             } @else {
               <span class="ct-qty-num">{{ r.need }}</span>

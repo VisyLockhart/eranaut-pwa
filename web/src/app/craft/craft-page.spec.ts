@@ -149,10 +149,14 @@ describe('CraftPage', () => {
     f.detectChanges();
     const total = el.querySelectorAll('.ct-row').length;
     const first = vm.result().bases[0]!;
-    vm.setStock(first.name, first.need);
+    vm.setStock(first.key, first.need);
     vm.patchView({ onlyMissing: true });
     f.detectChanges();
-    expect(el.querySelectorAll('.ct-row').length).toBe(total - 1);
+    // 素材的庫存是共用的:直接素材裡同一個素材(需求不超過基礎素材)也一起達標
+    const r = vm.result();
+    const done = [...r.finals, ...r.directs, ...r.bases].filter((x) => x.key === first.key && x.need <= first.need).length;
+    expect(done).toBeGreaterThanOrEqual(1);
+    expect(el.querySelectorAll('.ct-row').length).toBe(total - done);
     expect(el.querySelector('.ct-stockbar')).toBeTruthy();
   });
 });

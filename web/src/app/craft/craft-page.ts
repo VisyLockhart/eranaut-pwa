@@ -8,7 +8,7 @@ import { CraftVm } from './craft-vm';
 import { GRADE_INDEXES, MAX_QTY, TAB_LABEL, TABS, gradeInfo, gradeLabel, missing, type CraftTab, type GradeInfo, type RowGroup, type SlotSel } from './craft-state';
 import { CRAFT_DATA } from './core/data';
 
-/** 配件製作:選潛艇配件等級,算出所需成品 / 半成品 / 素材(D-239、D-240) */
+/** 配件製作:選潛艇配件等級,算出所需交納素材 / 直接素材 / 基礎素材(D-239、D-240、D-258) */
 @Component({
   selector: 'app-craft-page',
   imports: [NgTemplateOutlet, IconComponent],
@@ -56,7 +56,7 @@ export class CraftPage {
     this.vm.setQty(slot, Number((ev.target as HTMLInputElement).value));
   }
   protected stockInput(row: CalcRow, ev: Event): void {
-    this.vm.setStock(row.name, Number((ev.target as HTMLInputElement).value));
+    this.vm.setStock(row.key, Number((ev.target as HTMLInputElement).value));
   }
   protected stop(ev: Event): void {
     ev.stopPropagation();

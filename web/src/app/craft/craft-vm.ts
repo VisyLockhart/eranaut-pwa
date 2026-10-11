@@ -1,8 +1,8 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 import { CRAFT_KEY_SEL as KEY_SEL, CRAFT_KEY_STOCK as KEY_STOCK, CRAFT_KEY_VIEW as KEY_VIEW } from './craft-keys';
 import { calculate, type CalcResult, type CalcRow, type Selection } from './core/craft-calc';
-import { applyStock, finalsProgress } from './core/craft-stock';
-import { SLOT_KEYS } from './core/data';
+import { finalsProgress } from './core/craft-stock';
+import { CRAFT_DATA, SLOT_KEYS } from './core/data';
 import type { SlotKey } from './core/types';
 import {
   DEFAULT_VIEW, MAX_QTY, TAB_LABEL, TABS, clampQty, copyLines, emptySel, groupRows, missing, sanitizeSel, sanitizeStock, sanitizeView,
@@ -51,32 +51,30 @@ export class CraftVm {
     return out;
   });
   readonly hasSelection = computed(() => this.selections().length > 0);
-  /** 配方總需求(不看庫存) */
-  readonly result = computed<CalcResult>(() => calculate(this.selections(), { expandFrame: this.view().expandFrame }));
-  /** 顯示用:記錄庫存開啟時,下層的需求會依上層庫存扣除(D-256);關閉時等於總需求 */
-  readonly eff = computed<CalcResult>(() => (this.view().stockMode ? applyStock(this.result(), this.stock()) : this.result()));
+  /** 三層清單:記錄庫存開啟時,下層的需求會依上層庫存扣除(D-258);關閉時不看庫存 */
+  readonly result = computed<CalcResult>(() => calculate(this.selections(), { expandFrame: this.view().expandFrame }, CRAFT_DATA, this.view().stockMode ? this.stock() : {}));
 
   /** 要顯示的列(記錄庫存 + 只看缺少時,濾掉已足夠的) */
   readonly visible = computed<Record<CraftTab, CalcRow[]>>(() => {
-    const r = this.eff();
+    const r = this.result();
     const v = this.view();
     const st = this.stock();
     const f = (rows: CalcRow[]) => (v.stockMode && v.onlyMissing ? rows.filter((x) => missing(x, st) > 0) : rows);
-    return { finals: f(r.finals), semis: f(r.semis), bases: f(r.bases) };
+    return { finals: f(r.finals), directs: f(r.directs), bases: f(r.bases) };
   });
   readonly groups = computed(() => ({
     finals: groupRows(this.visible().finals),
-    semis: groupRows(this.visible().semis),
+    directs: groupRows(this.visible().directs),
     bases: groupRows(this.visible().bases),
   }));
-  readonly counts = computed(() => ({ finals: this.result().finals.length, semis: this.result().semis.length, bases: this.result().bases.length }));
+  readonly counts = computed(() => ({ finals: this.result().finals.length, directs: this.result().directs.length, bases: this.result().bases.length }));
 
-  /** 備料進度 0~1:以成品計算,成品全部達標 = 100%(D-256) */
+  /** 備料進度 0~1:以交納素材計算,全部達標 = 100%(D-256、D-258) */
   readonly progress = computed(() => finalsProgress(this.result(), this.stock()));
   readonly missingTotal = computed(() => {
     const st = this.stock();
-    const r = this.eff();
-    return [...r.finals, ...r.semis, ...r.bases].filter((x) => missing(x, st) > 0).length;
+    const r = this.result();
+    return [...r.finals, ...r.directs, ...r.bases].filter((x) => missing(x, st) > 0).length;
   });
 
   /** 追蹤:被點的列 + 它的成分 + 用到它的品項 */
@@ -84,8 +82,12 @@ export class CraftVm {
     const p = this.pin();
     if (!p) return new Set();
     const r = this.result();
-    const row = [...r.finals, ...r.semis, ...r.bases].find((x) => x.name === p);
-    return row ? new Set([...Object.keys(row.inputs), ...row.usedBy]) : new Set();
+    const out = new Set<string>();
+    for (const row of [...r.finals, ...r.directs, ...r.bases]) {
+      if (row.name !== p) continue;
+      for (const n of [...Object.keys(row.inputs), ...row.usedBy]) out.add(n);
+    }
+    return out;
   });
 
   constructor() {
@@ -133,18 +135,19 @@ export class CraftVm {
   patchView(p: Partial<CraftView>): void {
     this.view.update((v) => ({ ...DEFAULT_VIEW, ...v, ...p }));
   }
-  setStock(name: string, n: number): void {
+  /** 設定庫存;key 是 CalcRow.key(交納素材與素材用品項名稱,直接素材的可製作品是 `d:品項名稱`) */
+  setStock(key: string, n: number): void {
     const v = Math.min(99999, Math.max(0, Math.floor(Number(n)) || 0));
     this.stock.update((s) => {
       const next = { ...s };
-      if (v > 0) next[name] = v;
-      else delete next[name];
+      if (v > 0) next[key] = v;
+      else delete next[key];
       return next;
     });
   }
   /** 整列勾選:已有補到剛好夠;再點一次清零 */
   toggleDone(row: CalcRow): void {
-    this.setStock(row.name, (this.stock()[row.name] ?? 0) >= row.need ? 0 : row.need);
+    this.setStock(row.key, (this.stock()[row.key] ?? 0) >= row.need ? 0 : row.need);
   }
   clearStock(): void {
     this.stock.set({});
@@ -175,12 +178,12 @@ export class CraftVm {
     return keys.length > 0 && keys.every((k) => this.collapsed().has(k));
   }
 
-  /** 要複製的文字:多欄時加【成品】等標題 */
+  /** 要複製的文字:多欄時加【交納素材】等標題 */
   copyText(tabs: readonly CraftTab[]): string {
     const st = this.view().stockMode ? this.stock() : null;
     const parts: string[] = [];
     for (const t of tabs) {
-      const lines = copyLines(this.eff()[t], st);
+      const lines = copyLines(this.result()[t], st);
       if (lines.length === 0) continue;
       parts.push(tabs.length > 1 ? [`【${TAB_LABEL[t]}】`, ...lines].join('\n') : lines.join('\n'));
     }
