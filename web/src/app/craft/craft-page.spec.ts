@@ -25,6 +25,11 @@ describe('CraftPage', () => {
     });
   }
 
+  it('外層元素 display: contents,手機內容才會在外殼的捲動區內、底部功能表固定(同航線頁)', () => {
+    const { f } = mount(false);
+    expect((f.nativeElement as HTMLElement).style.display).toBe('contents');
+  });
+
   for (const desktop of [false, true]) {
     it(`部位區塊整體收合:只留已選部位一行,未選不顯示(${desktop ? '桌機' : '手機'})`, () => {
       const { f, vm, el } = mount(desktop);

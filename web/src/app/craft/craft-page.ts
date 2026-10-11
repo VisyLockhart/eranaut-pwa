@@ -14,7 +14,7 @@ import { CRAFT_DATA } from './core/data';
   imports: [NgTemplateOutlet, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './craft-page.html',
-  host: { '(document:keydown.escape)': 'closeSheet()' },
+  host: { style: 'display: contents', '(document:keydown.escape)': 'closeSheet()' },
 })
 export class CraftPage {
   protected readonly layout = inject(Layout);
