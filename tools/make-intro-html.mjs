@@ -16,8 +16,8 @@ const PAGES = [
   },
   {
     path: 'route',
-    title: '潛水艇航線模擬器 ・ Eranaut 線上展示',
-    description: '選航點、配配件,算出航行時間、燃料與經驗,還能依練級、探索、掉落物找出最適合的路線與配置。展示版直接試玩。',
+    title: '潛水艇航線模擬器 + 配件製作 ・ Eranaut 線上展示',
+    description: '選航點、配配件,算出航行時間、燃料與經驗;選好配件,列出完整材料表、記錄庫存。展示版直接試玩。',
     image: 'og/route.png',
   },
 ];
