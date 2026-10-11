@@ -84,4 +84,15 @@ describe('AppUpdate', () => {
     document.dispatchEvent(new Event('visibilitychange'));
     expect(sw.checkForUpdate).toHaveBeenCalledTimes(1);
   });
+
+  it('視窗取得焦點:同樣隔夠久才檢查;與回到前景同時發生只檢查一次', () => {
+    setup();
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    window.dispatchEvent(new Event('focus'));
+    expect(sw.checkForUpdate).not.toHaveBeenCalled();
+    vi.setSystemTime(Date.now() + UPDATE_CHECK_MIN_GAP_MS + 1000);
+    window.dispatchEvent(new Event('focus'));
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(sw.checkForUpdate).toHaveBeenCalledTimes(1);
+  });
 });

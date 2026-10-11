@@ -27,9 +27,12 @@ export class AppUpdate {
     // 新舊檔案對不上、快取壞掉:同樣請使用者按更新(重載後會取得完整的新版)
     this.sw.unrecoverable.subscribe(() => this.ready.set(true));
     setInterval(() => this.check(), UPDATE_CHECK_INTERVAL_MS);
+    // 回到前景、或視窗取得焦點(桌面 App 常只是被別的視窗蓋住,不一定觸發 visibilitychange)時各檢查一次;
+    // 兩者常同時發生,共用同一個最小間隔,所以只會檢查一次。沒有新增任何計時器,視窗不在前景時不執行任何東西
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && Date.now() - this.lastCheck >= UPDATE_CHECK_MIN_GAP_MS) this.check();
+      if (document.visibilityState === 'visible') this.checkIfStale();
     });
+    window.addEventListener('focus', () => this.checkIfStale());
   }
 
   /** 按「立即更新」:啟用已下載好的新版本,再重新載入頁面 */
@@ -46,6 +49,10 @@ export class AppUpdate {
 
   protected reloadPage(): void {
     location.reload();
+  }
+
+  private checkIfStale(): void {
+    if (Date.now() - this.lastCheck >= UPDATE_CHECK_MIN_GAP_MS) this.check();
   }
 
   private check(): void {
