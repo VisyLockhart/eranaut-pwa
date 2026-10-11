@@ -1029,6 +1029,7 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-tool:hover { color: var(--text); border-color: var(--accent); }
 .ct-tool.ok { color: var(--accent); border-color: var(--accent); }
 .ct-tool.danger:hover { color: var(--danger); border-color: var(--danger); }
+.ct-tool.danger.confirm { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 700; }
 .ct-progress { flex: 1 1 120px; height: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
 .ct-progress i { display: block; height: 100%; background: var(--accent); transition: width 0.2s; }
 .ct-pct { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); min-width: 40px; }

@@ -156,7 +156,7 @@
     @if (vm.hasSelection()) {
       <button type="button" class="ct-tool" (click)="vm.toggleAllGroups(layout.isDesktop() ? tabs : [vm.view().tab])">{{ vm.allCollapsed(layout.isDesktop() ? tabs : [vm.view().tab]) ? '全部展開' : '全部收合' }}</button>
       <button type="button" class="ct-tool" [class.ok]="vm.copied()" (click)="vm.copy(layout.isDesktop() ? tabs : [vm.view().tab])" aria-label="複製清單"><app-icon [name]="vm.copied() ? 'check' : 'list'" [size]="16" /><span>{{ vm.copied() ? '已複製' : '複製清單' }}</span></button>
-      <button type="button" class="ct-tool danger" (click)="vm.clearAll()">清除全部</button>
+      <button type="button" class="ct-tool danger" [class.confirm]="vm.confirmClear()" (click)="vm.requestClearAll()" (blur)="vm.cancelClearAll()"><app-icon name="trash" [size]="16" /><span>{{ vm.confirmClear() ? '確定清除？' : '清除全部' }}</span></button>
     }
   </div>
 </ng-template>

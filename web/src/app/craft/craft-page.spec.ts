@@ -56,6 +56,23 @@ describe('CraftPage', () => {
     });
   }
 
+  it('清除全部:第一次點變紅底「確定清除？」,第二次才清除', () => {
+    const { f, vm, el } = mount(true);
+    vm.setGrade('hull', 5);
+    f.detectChanges();
+    const btn = () => el.querySelector<HTMLButtonElement>('.ct-tool.danger')!;
+    expect(btn().textContent).toContain('清除全部');
+    btn().click();
+    f.detectChanges();
+    expect(btn().classList.contains('confirm')).toBe(true);
+    expect(btn().textContent).toContain('確定清除？');
+    expect(vm.hasSelection()).toBe(true);
+    btn().click();
+    f.detectChanges();
+    expect(vm.hasSelection()).toBe(false);
+    expect(vm.confirmClear()).toBe(false);
+  });
+
   it('桌機:選等級後出現三欄清單', () => {
     const { f, el } = mount(true);
     const chips = el.querySelectorAll<HTMLButtonElement>('.ct-slot-card:first-child .ct-chip');

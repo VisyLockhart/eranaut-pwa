@@ -39,6 +39,9 @@ export class CraftVm {
   /** 剛複製完的提示(1.5 秒) */
   readonly copied = signal(false);
   private copiedTimer: ReturnType<typeof setTimeout> | undefined;
+  /** 「清除全部」第一次點擊後進入確認狀態(3 秒內再點才真的清除) */
+  readonly confirmClear = signal(false);
+  private confirmTimer: ReturnType<typeof setTimeout> | undefined;
 
   readonly selections = computed<Selection[]>(() => {
     const s = this.sel();
@@ -110,6 +113,20 @@ export class CraftVm {
   }
   clearSlot(slot: SlotKey): void {
     this.sel.update((s) => ({ ...s, [slot]: { gradeIndex: null, qty: 1 } }));
+  }
+  requestClearAll(): void {
+    clearTimeout(this.confirmTimer);
+    if (this.confirmClear()) {
+      this.confirmClear.set(false);
+      this.clearAll();
+      return;
+    }
+    this.confirmClear.set(true);
+    this.confirmTimer = setTimeout(() => this.confirmClear.set(false), 3000);
+  }
+  cancelClearAll(): void {
+    clearTimeout(this.confirmTimer);
+    this.confirmClear.set(false);
   }
   clearAll(): void {
     this.sel.set(emptySel());
