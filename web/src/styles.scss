@@ -1002,7 +1002,7 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-x { width: 24px; height: 24px; border: none; background: none; color: var(--text-dim); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .ct-x:hover { color: var(--text); background: rgba(148,163,184,0.12); }
 .ct-grades { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-.ct-chip { height: 34px; border: 1px solid var(--border-strong); background: var(--bg); color: var(--text-muted); border-radius: 8px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: border-color 0.12s, color 0.12s, background 0.12s; }
+.ct-chip { height: 34px; padding: 0; min-width: 0; white-space: nowrap; border: 1px solid var(--border-strong); background: var(--bg); color: var(--text-muted); border-radius: 8px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: border-color 0.12s, color 0.12s, background 0.12s; }
 .ct-chip.mod { border-color: rgba(251,191,36,0.28); }
 .ct-chip:hover { border-color: var(--accent); color: var(--text); }
 .ct-chip.on { background: var(--amber); border-color: var(--amber); color: #1a1203; }
@@ -1076,3 +1076,27 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-m-body .ct-x { width: 44px; height: 44px; }
 .ct-m-body .ct-group-head { min-height: 44px; }
 .ct-m-body .ct-tabs .up-tab { min-height: 44px; }
+
+/* 選到的配件:名稱 + 英文代號(代號用框與底色區隔);寬度不夠時省略與標題重複的部位名稱(容器查詢) */
+.ct-slot-card { container-type: inline-size; }
+.ct-slot-head { gap: 8px; }
+.ct-slot-head .ct-x { flex: 0 0 auto; margin-left: auto; }
+.ct-sel { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ct-sel-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--text); }
+.ct-sel-part { font-style: normal; }
+.ct-code { flex: 0 0 auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; line-height: 1; color: var(--amber); background: rgba(251,191,36,0.14); border: 1px solid rgba(251,191,36,0.55); border-radius: 6px; padding: 3px 7px; }
+.ct-slot-card.set .ct-slot-title { color: var(--text-dim); font-weight: 600; }
+@container (min-width: 300px) { .ct-slot-card.set .ct-slot-title { display: none; } }
+@container (max-width: 299px) {
+  .ct-slot-head { flex-wrap: wrap; align-content: flex-start; min-height: 58px; row-gap: 6px; }
+  .ct-slot-title { white-space: nowrap; }
+  .ct-slot-head .ct-sel { order: 3; flex: 1 0 100%; }
+  .ct-slot-head .ct-sel-part { display: none; }
+}
+.ct-tile-info { container-type: inline-size; align-self: stretch; min-width: 0; }
+.ct-tile-info .ct-sel { max-width: 100%; }
+@container (max-width: 159px) { .ct-tile-info .ct-sel-part { display: none; } }
+.ct-sheet-sel { min-height: 28px; display: flex; align-items: center; }
+.ct-sheet-sel .ct-sel-name { font-size: 15px; }
+.ct-sheet-sel .ct-code { font-size: 13px; padding: 4px 8px; }
+.ct-tile { min-width: 0; }

@@ -1,3 +1,4 @@
+import partsJson from '../route/data/parts.json';
 import { CRAFT_DATA, SLOT_KEYS } from './core/data';
 import { groupRank, type CalcRow } from './core/craft-calc';
 import type { CraftData, SlotKey } from './core/types';
@@ -98,4 +99,24 @@ export function copyLines(rows: readonly CalcRow[], stock: Readonly<Record<strin
     }
   }
   return out;
+}
+
+/** 選到的配件顯示資訊:名稱(航線資料的等級名稱)、部位名稱、英文代號(改級用後綴「+」,與配置功能一致,例:SM → S+) */
+export interface GradeInfo {
+  /** 例:鯊魚改級 */
+  name: string;
+  /** 例:船體 */
+  part: string;
+  /** 例:S+ */
+  code: string;
+}
+
+type PartsJson = Record<SlotKey, { label: string; grades: { code: string; name: string }[] }>;
+
+export function gradeInfo(slot: SlotKey, gradeIndex: number): GradeInfo | null {
+  const p = (partsJson as unknown as { parts: PartsJson }).parts[slot];
+  const g = p?.grades[gradeIndex];
+  const base = p?.grades[gradeIndex % 5];
+  if (!g || !base) return null;
+  return { name: g.name, part: p.label, code: base.code + (gradeIndex >= 5 ? '+' : '') };
 }

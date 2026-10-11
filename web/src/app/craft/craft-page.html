@@ -9,7 +9,10 @@
       @for (slot of vm.slots; track slot) {
         <section class="ct-slot-card" [class.set]="vm.sel()[slot].gradeIndex !== null" [attr.aria-label]="slotLabel(slot)">
           <div class="ct-slot-head">
-            <b>{{ slotLabel(slot) }}</b>
+            <b class="ct-slot-title">{{ slotLabel(slot) }}</b>
+            @if (infoOf(slot); as i) {
+              <ng-container *ngTemplateOutlet="selInfo; context: { i: i }" />
+            }
             @if (vm.sel()[slot].gradeIndex !== null) {
               <button type="button" class="ct-x" (click)="vm.clearSlot(slot)" [attr.aria-label]="'清除' + slotLabel(slot)"><app-icon name="close" [size]="14" /></button>
             }
@@ -45,6 +48,9 @@
           <span class="ct-tile-name">{{ slotLabel(slot) }}</span>
           @if (vm.sel()[slot].gradeIndex !== null) {
             <span class="ct-tile-val">{{ gradeLabel(vm.sel()[slot].gradeIndex!) }}<i> ×{{ vm.sel()[slot].qty }}</i></span>
+            @if (infoOf(slot); as i) {
+              <span class="ct-tile-info"><ng-container *ngTemplateOutlet="selInfo; context: { i: i }" /></span>
+            }
           } @else {
             <span class="ct-tile-val plus"><app-icon name="plus" [size]="20" /></span>
           }
@@ -72,6 +78,11 @@
           <b>{{ slotLabel(slot) }}</b>
           <button type="button" class="ct-done" (click)="closeSheet()">完成</button>
         </div>
+        <div class="ct-sheet-sel">
+          @if (infoOf(slot); as i) {
+            <ng-container *ngTemplateOutlet="selInfo; context: { i: i }" />
+          }
+        </div>
         <ng-container *ngTemplateOutlet="picker; context: { slot: slot }" />
         @if (vm.sel()[slot].gradeIndex !== null) {
           <button type="button" class="ct-clear" (click)="vm.clearSlot(slot); closeSheet()">清除{{ slotLabel(slot) }}</button>
@@ -80,6 +91,10 @@
     </div>
   }
 }
+
+<ng-template #selInfo let-i="i">
+  <span class="ct-sel"><span class="ct-sel-name">{{ i.name }}<i class="ct-sel-part">{{ i.part }}</i></span><span class="ct-code" aria-label="英文代號">{{ i.code }}</span></span>
+</ng-template>
 
 <ng-template #picker let-slot="slot">
   @let s = selOf(slot);

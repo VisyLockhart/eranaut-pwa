@@ -5,7 +5,7 @@ import { IconComponent } from '../ui/icon';
 import type { CalcRow } from './core/craft-calc';
 import type { SlotKey } from './core/types';
 import { CraftVm } from './craft-vm';
-import { GRADE_INDEXES, MAX_QTY, TAB_LABEL, TABS, gradeLabel, missing, type CraftTab, type RowGroup, type SlotSel } from './craft-state';
+import { GRADE_INDEXES, MAX_QTY, TAB_LABEL, TABS, gradeInfo, gradeLabel, missing, type CraftTab, type GradeInfo, type RowGroup, type SlotSel } from './craft-state';
 import { CRAFT_DATA } from './core/data';
 
 /** 配件製作:選潛艇配件等級,算出所需成品 / 半成品 / 素材(D-239、D-240) */
@@ -37,6 +37,11 @@ export class CraftPage {
   }
   protected groupsOf(tab: CraftTab): RowGroup[] {
     return this.vm.groups()[tab];
+  }
+  /** 該部位目前選到的配件資訊(名稱 + 英文代號);沒選回傳 null */
+  protected infoOf(slot: SlotKey): GradeInfo | null {
+    const gi = this.vm.sel()[slot].gradeIndex;
+    return gi === null ? null : gradeInfo(slot, gi);
   }
   protected slotLabel(slot: SlotKey): string {
     return CRAFT_DATA.slots[slot].label;

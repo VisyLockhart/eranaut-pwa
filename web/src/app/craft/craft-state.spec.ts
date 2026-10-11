@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { calculate } from './core/craft-calc';
-import { copyLines, gradeLabel, groupRows, missing, sanitizeSel, sanitizeStock, sanitizeView } from './craft-state';
+import { copyLines, gradeInfo, gradeLabel, groupRows, missing, sanitizeSel, sanitizeStock, sanitizeView } from './craft-state';
 import { CraftVm } from './craft-vm';
 
 describe('craft-state', () => {
@@ -36,6 +36,16 @@ describe('craft-state', () => {
     expect(missing(r.bases[0]!, st)).toBe(0);
     expect(copyLines(r.bases, st).length).toBe(r.bases.length - 1);
     expect(copyLines(r.bases, { [name]: 1 }).join('\n')).toContain(`${name} ×${Math.max(0, r.bases[0]!.need - 1)}`.replace(/ ×0$/, ''));
+  });
+});
+
+describe('gradeInfo', () => {
+  it('英文代號與配置功能一致,改級用後綴「+」', () => {
+    expect(gradeInfo('hull', 0)).toEqual({ name: '鯊魚級', part: '船體', code: 'S' });
+    expect(gradeInfo('hull', 5)).toEqual({ name: '鯊魚改級', part: '船體', code: 'S+' });
+    expect(gradeInfo('bridge', 4)?.code).toBe('SY');
+    expect(gradeInfo('stern', 9)).toEqual({ name: '希爾德拉改級', part: '船尾', code: 'SY+' });
+    expect(gradeInfo('bow', 10)).toBeNull();
   });
 });
 

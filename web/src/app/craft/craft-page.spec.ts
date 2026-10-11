@@ -58,6 +58,22 @@ describe('CraftPage', () => {
     expect(vm.view().tab).toBe('bases');
   });
 
+  it('選到的配件顯示名稱與英文代號(桌機卡片、手機方塊與面板)', () => {
+    const d = mount(true);
+    d.vm.setGrade('hull', 5);
+    d.f.detectChanges();
+    expect(d.el.querySelector('.ct-slot-card.set .ct-sel-name')!.textContent).toContain('鯊魚改級');
+    expect(d.el.querySelector('.ct-slot-card.set .ct-code')!.textContent!.trim()).toBe('S+');
+    localStorage.clear();
+    const m = mount(false);
+    m.vm.setGrade('bow', 4);
+    m.f.detectChanges();
+    expect(m.el.querySelector('.ct-tile.set .ct-code')!.textContent!.trim()).toBe('SY');
+    m.el.querySelectorAll<HTMLButtonElement>('.ct-tile')[2]!.click();
+    m.f.detectChanges();
+    expect(m.el.querySelector('.ct-sheet .ct-code')!.textContent!.trim()).toBe('SY');
+  });
+
   it('點列追蹤:相關列標記,其餘變暗;再點取消', () => {
     const { f, el, vm } = mount(true);
     vm.setGrade('hull', 5);
