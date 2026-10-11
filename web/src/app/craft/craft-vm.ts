@@ -116,6 +116,9 @@ export class CraftVm {
     this.pin.set(null);
   }
 
+  toggleSlots(): void {
+    this.patchView({ slotsCollapsed: !this.view().slotsCollapsed });
+  }
   patchView(p: Partial<CraftView>): void {
     this.view.update((v) => ({ ...DEFAULT_VIEW, ...v, ...p }));
   }

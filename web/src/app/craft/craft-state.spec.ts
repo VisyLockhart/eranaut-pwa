@@ -16,7 +16,7 @@ describe('craft-state', () => {
     expect(s.bow.gradeIndex).toBeNull();
     expect(s.bridge.gradeIndex).toBeNull();
     expect(sanitizeSel(null).hull.gradeIndex).toBeNull();
-    expect(sanitizeView({ tab: 'nope', stockMode: 1, expandFrame: true })).toEqual({ expandFrame: true, stockMode: false, onlyMissing: false, tab: 'finals' });
+    expect(sanitizeView({ tab: 'nope', stockMode: 1, expandFrame: true })).toEqual({ expandFrame: true, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals' });
   });
 
   it('庫存只留已知品項與正整數', () => {

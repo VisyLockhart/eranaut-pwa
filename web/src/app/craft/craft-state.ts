@@ -14,6 +14,7 @@ export interface CraftView {
   expandFrame: boolean;
   stockMode: boolean;
   onlyMissing: boolean;
+  slotsCollapsed: boolean;
   tab: CraftTab;
 }
 
@@ -35,7 +36,7 @@ export function emptySel(): SelMap {
   return { hull: { gradeIndex: null, qty: 1 }, stern: { gradeIndex: null, qty: 1 }, bow: { gradeIndex: null, qty: 1 }, bridge: { gradeIndex: null, qty: 1 } };
 }
 
-export const DEFAULT_VIEW: CraftView = { expandFrame: false, stockMode: false, onlyMissing: false, tab: 'finals' };
+export const DEFAULT_VIEW: CraftView = { expandFrame: false, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals' };
 
 /** 讀 localStorage 的內容一律當不可信:型別、範圍不對就丟掉 */
 export function sanitizeSel(raw: unknown): SelMap {
@@ -57,6 +58,7 @@ export function sanitizeView(raw: unknown): CraftView {
   if (typeof r['expandFrame'] === 'boolean') v.expandFrame = r['expandFrame'];
   if (typeof r['stockMode'] === 'boolean') v.stockMode = r['stockMode'];
   if (typeof r['onlyMissing'] === 'boolean') v.onlyMissing = r['onlyMissing'];
+  if (typeof r['slotsCollapsed'] === 'boolean') v.slotsCollapsed = r['slotsCollapsed'];
   if (r['tab'] === 'finals' || r['tab'] === 'semis' || r['tab'] === 'bases') v.tab = r['tab'];
   return v;
 }

@@ -5,6 +5,10 @@
     </div>
   </div>
   <div class="ct-d-wrap">
+    <ng-container *ngTemplateOutlet="slotsBar" />
+    @if (vm.view().slotsCollapsed) {
+      <div class="ct-sum"><ng-container *ngTemplateOutlet="slotsSum" /></div>
+    } @else {
     <div class="ct-slots">
       @for (slot of vm.slots; track slot) {
         <section class="ct-slot-card" [class.set]="vm.sel()[slot].gradeIndex !== null" [attr.aria-label]="slotLabel(slot)">
@@ -21,6 +25,7 @@
         </section>
       }
     </div>
+    }
     <ng-container *ngTemplateOutlet="toolbar" />
     <ng-container *ngTemplateOutlet="traceBar" />
     @if (!vm.hasSelection()) {
@@ -42,6 +47,10 @@
   </div>
 } @else {
   <div class="m-upload-body ct-m-body">
+    <ng-container *ngTemplateOutlet="slotsBar" />
+    @if (vm.view().slotsCollapsed) {
+      <div class="ct-sum"><ng-container *ngTemplateOutlet="slotsSum" /></div>
+    } @else {
     <div class="ct-tiles">
       @for (slot of vm.slots; track slot) {
         <button type="button" class="ct-tile" [class.set]="vm.sel()[slot].gradeIndex !== null" (click)="openSheet(slot)" [attr.aria-label]="'選擇' + slotLabel(slot)">
@@ -57,6 +66,7 @@
         </button>
       }
     </div>
+    }
     <ng-container *ngTemplateOutlet="toolbar" />
     @if (!vm.hasSelection()) {
       <div class="ct-empty" aria-label="尚未選擇配件"><app-icon name="anvil" [size]="34" /><b>選擇配件等級</b></div>
@@ -91,6 +101,30 @@
     </div>
   }
 }
+
+<ng-template #slotsBar>
+  <button type="button" class="ct-slots-bar" [attr.aria-expanded]="!vm.view().slotsCollapsed" aria-label="配件部位" (click)="vm.toggleSlots()">
+    <app-icon [name]="vm.view().slotsCollapsed ? 'chevronRight' : 'chevronDown'" [size]="14" />
+    <b>配件部位</b>
+    @if (vm.selections().length > 0) {
+      <span class="ct-count">{{ vm.selections().length }}</span>
+    }
+  </button>
+</ng-template>
+
+<ng-template #slotsSum>
+  @for (slot of vm.slots; track slot) {
+    @if (vm.sel()[slot].gradeIndex !== null) {
+      <div class="ct-sum-row" [class.tap]="!layout.isDesktop()" [attr.role]="layout.isDesktop() ? null : 'button'" [attr.tabindex]="layout.isDesktop() ? null : 0" (click)="!layout.isDesktop() && openSheet(slot)" (keydown.enter)="!layout.isDesktop() && openSheet(slot)">
+        <b class="ct-slot-title">{{ slotLabel(slot) }}</b>
+        <span class="ct-sum-val">{{ gradeLabel(vm.sel()[slot].gradeIndex!) }}<i> ×{{ vm.sel()[slot].qty }}</i></span>
+        @if (infoOf(slot); as i) {
+          <ng-container *ngTemplateOutlet="selInfo; context: { i: i }" />
+        }
+      </div>
+    }
+  }
+</ng-template>
 
 <ng-template #selInfo let-i="i">
   <span class="ct-sel"><span class="ct-sel-name">{{ i.name }}<i class="ct-sel-part">{{ i.part }}</i></span><span class="ct-code" aria-label="英文代號">{{ i.code }}</span></span>

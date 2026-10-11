@@ -25,6 +25,37 @@ describe('CraftPage', () => {
     });
   }
 
+  for (const desktop of [false, true]) {
+    it(`部位區塊整體收合:只留已選部位一行,未選不顯示(${desktop ? '桌機' : '手機'})`, () => {
+      const { f, vm, el } = mount(desktop);
+      vm.setGrade('hull', 5);
+      vm.setGrade('bow', 2);
+      f.detectChanges();
+      const cards = desktop ? '.ct-slot-card' : '.ct-tile';
+      expect(el.querySelectorAll(cards).length).toBe(4);
+      expect(el.querySelector('.ct-sum')).toBeNull();
+      el.querySelector<HTMLButtonElement>('.ct-slots-bar')!.click();
+      f.detectChanges();
+      expect(el.querySelectorAll(cards).length).toBe(0);
+      const rows = el.querySelectorAll('.ct-sum-row');
+      expect(rows.length).toBe(2);
+      expect(rows[0]!.querySelector('.ct-code')!.textContent).toContain('+');
+      expect(el.querySelector('.ct-slots-bar')!.getAttribute('aria-expanded')).toBe('false');
+      expect(el.querySelector('.ct-row')).toBeTruthy();
+      if (!desktop) {
+        (rows[0] as HTMLElement).click();
+        f.detectChanges();
+        expect(el.querySelector('.ct-sheet')).toBeTruthy();
+      }
+      // 全部展開
+      if (!desktop) el.querySelector<HTMLElement>('.ct-done')!.click();
+      f.detectChanges();
+      el.querySelector<HTMLButtonElement>('.ct-slots-bar')!.click();
+      f.detectChanges();
+      expect(el.querySelectorAll(cards).length).toBe(4);
+    });
+  }
+
   it('桌機:選等級後出現三欄清單', () => {
     const { f, el } = mount(true);
     const chips = el.querySelectorAll<HTMLButtonElement>('.ct-slot-card:first-child .ct-chip');
