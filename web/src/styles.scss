@@ -1079,19 +1079,20 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 
 /* 選到的配件:名稱 + 英文代號(代號用框與底色區隔);寬度不夠時省略與標題重複的部位名稱(容器查詢) */
 .ct-slot-card { container-type: inline-size; }
-.ct-slot-head { gap: 8px; }
+.ct-slot-head { gap: 6px; }
 .ct-slot-head .ct-x { flex: 0 0 auto; margin-left: auto; }
 .ct-sel { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .ct-sel-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--text); }
 .ct-sel-part { font-style: normal; }
 .ct-code { flex: 0 0 auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; line-height: 1; color: var(--amber); background: rgba(251,191,36,0.14); border: 1px solid rgba(251,191,36,0.55); border-radius: 6px; padding: 3px 7px; }
-.ct-slot-card.set .ct-slot-title { color: var(--text-dim); font-weight: 600; }
-@container (min-width: 300px) { .ct-slot-card.set .ct-slot-title { display: none; } }
-@container (max-width: 299px) {
-  .ct-slot-head { flex-wrap: wrap; align-content: flex-start; min-height: 58px; row-gap: 6px; }
-  .ct-slot-title { white-space: nowrap; }
+.ct-slot-title { flex: 0 0 auto; white-space: nowrap; font-size: 13px; font-weight: 700; color: var(--text-muted); background: rgba(148,163,184,0.16); border-radius: 8px; padding: 4px 8px; line-height: 1.2; }
+.ct-slot-card.set .ct-slot-title { color: var(--text); background: rgba(251,191,36,0.16); }
+.ct-slot-head { min-height: 28px; }
+.ct-slot-head .ct-sel-part { display: none; }
+/* 卡片寬度不夠放單行(部位 + 名稱 + 代號 + 清除)時,名稱與代號換到第二行 */
+@container (max-width: 204px) {
+  .ct-slot-head { flex-wrap: wrap; align-content: flex-start; min-height: 62px; row-gap: 6px; }
   .ct-slot-head .ct-sel { order: 3; flex: 1 0 100%; }
-  .ct-slot-head .ct-sel-part { display: none; }
 }
 .ct-tile-info { container-type: inline-size; align-self: stretch; min-width: 0; }
 .ct-tile-info .ct-sel { max-width: 100%; }
