@@ -10,12 +10,15 @@ export interface SlotSel {
 }
 export type SelMap = Record<SlotKey, SlotSel>;
 export type CraftTab = 'finals' | 'directs' | 'bases';
+/** 排序方式:按種類(分組,組內按名稱)/ 按名稱(不分組) */
+export type CraftSort = 'group' | 'name';
 export interface CraftView {
   expandFrame: boolean;
   stockMode: boolean;
   onlyMissing: boolean;
   slotsCollapsed: boolean;
   tab: CraftTab;
+  sort: CraftSort;
 }
 
 export const MAX_QTY = 99;
@@ -36,7 +39,7 @@ export function emptySel(): SelMap {
   return { hull: { gradeIndex: null, qty: 1 }, stern: { gradeIndex: null, qty: 1 }, bow: { gradeIndex: null, qty: 1 }, bridge: { gradeIndex: null, qty: 1 } };
 }
 
-export const DEFAULT_VIEW: CraftView = { expandFrame: false, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals' };
+export const DEFAULT_VIEW: CraftView = { expandFrame: false, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group' };
 
 /** 讀 localStorage 的內容一律當不可信:型別、範圍不對就丟掉 */
 export function sanitizeSel(raw: unknown): SelMap {
@@ -59,6 +62,7 @@ export function sanitizeView(raw: unknown): CraftView {
   if (typeof r['stockMode'] === 'boolean') v.stockMode = r['stockMode'];
   if (typeof r['onlyMissing'] === 'boolean') v.onlyMissing = r['onlyMissing'];
   if (typeof r['slotsCollapsed'] === 'boolean') v.slotsCollapsed = r['slotsCollapsed'];
+  if (r['sort'] === 'group' || r['sort'] === 'name') v.sort = r['sort'];
   if (r['tab'] === 'finals' || r['tab'] === 'directs' || r['tab'] === 'bases') v.tab = r['tab'];
   else if (r['tab'] === 'semis') v.tab = 'directs'; // 舊版的「半成品」欄 = 現在的直接素材
   return v;
@@ -101,19 +105,62 @@ export function missing(row: CalcRow, stock: Readonly<Record<string, number>>): 
 export interface RowGroup {
   group: string;
   rows: CalcRow[];
+  /** 追蹤分類(置頂,不收合) */
+  trace?: boolean;
 }
 
-/** 依固定的分組順序分組;同組內維持計算核心給的順序 */
-export function groupRows(rows: readonly CalcRow[]): RowGroup[] {
+/** 追蹤分類的名稱 */
+export const TRACE_GROUP = '追蹤';
+
+const NAME_COLLATOR = new Intl.Collator('zh-Hant-u-co-stroke');
+/** 名稱排序時,前幾個字相同的視為同一群(白鋼錠、白鋼鉚釘、白鋼連接板) */
+const NAME_PREFIX = 2;
+
+/**
+ * 名稱排序:① 前兩個字相同的聚成一群,群之間依筆畫;② 同群內字數少的先;③ 字數相同再依筆畫。
+ * 例:白鋼板、白鋼釘、白鋼錠、白鋼鉚釘、白鋼連接板、鈷鐵板……
+ */
+export function compareNames(a: string, b: string): number {
+  const ca = [...a];
+  const cb = [...b];
+  const k = NAME_COLLATOR.compare(ca.slice(0, NAME_PREFIX).join(''), cb.slice(0, NAME_PREFIX).join(''));
+  if (k !== 0) return k;
+  if (ca.length !== cb.length) return ca.length - cb.length;
+  return NAME_COLLATOR.compare(a, b);
+}
+
+/** 碎晶 / 水晶 / 晶簇維持遊戲內的元素順序(不套名稱排序) */
+const ELEMENT_ORDER = ['火', '冰', '風', '土', '雷', '水'];
+const ELEMENT_GROUPS = new Set(['碎晶', '水晶', '晶簇']);
+function elementRank(name: string): number {
+  const i = ELEMENT_ORDER.indexOf(name[0] ?? '');
+  return i < 0 ? ELEMENT_ORDER.length : i;
+}
+
+/** 按種類:依固定的分組順序分組,組內依名稱排序(元素類依遊戲順序);按名稱:單一組(group 為空字串)依名稱排序 */
+export function groupRows(rows: readonly CalcRow[], sort: CraftSort = 'group'): RowGroup[] {
+  const byName = (a: CalcRow, b: CalcRow) => compareNames(a.name, b.name);
+  if (sort === 'name') return rows.length > 0 ? [{ group: '', rows: [...rows].sort(byName) }] : [];
   const map = new Map<string, CalcRow[]>();
   for (const r of rows) (map.get(r.group) ?? map.set(r.group, []).get(r.group)!).push(r);
-  return [...map.entries()].sort((a, b) => groupRank(a[0]) - groupRank(b[0])).map(([group, rs]) => ({ group, rows: rs }));
+  return [...map.entries()]
+    .sort((a, b) => groupRank(a[0]) - groupRank(b[0]))
+    .map(([group, rs]) => ({ group, rows: [...rs].sort(ELEMENT_GROUPS.has(group) ? (a, b) => elementRank(a.name) - elementRank(b.name) || byName(a, b) : byName) }));
+}
+
+/** 加上追蹤分類:被追蹤的列與它的關聯項目移到最上面(被點的列排第一),其餘照排序方式 */
+export function listGroups(rows: readonly CalcRow[], sort: CraftSort, pin: string | null, related: ReadonlySet<string>): RowGroup[] {
+  if (!pin) return groupRows(rows, sort);
+  const hit = (r: CalcRow) => r.name === pin || related.has(r.name);
+  const traced = rows.filter(hit).sort((a, b) => Number(b.name === pin) - Number(a.name === pin) || compareNames(a.name, b.name));
+  const rest = groupRows(rows.filter((r) => !hit(r)), sort);
+  return traced.length > 0 ? [{ group: TRACE_GROUP, rows: traced, trace: true }, ...rest] : rest;
 }
 
 /** 複製清單:一行「名稱 ×數量」;記錄庫存時只列還缺的、數量為缺少量 */
-export function copyLines(rows: readonly CalcRow[], stock: Readonly<Record<string, number>> | null): string[] {
+export function copyLines(rows: readonly CalcRow[], stock: Readonly<Record<string, number>> | null, sort: CraftSort = 'group'): string[] {
   const out: string[] = [];
-  for (const g of groupRows(rows)) {
+  for (const g of groupRows(rows, sort)) {
     for (const r of g.rows) {
       const n = stock ? missing(r, stock) : r.need;
       if (n > 0) out.push(`${r.name} ×${n}`);

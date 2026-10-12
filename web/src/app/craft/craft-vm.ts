@@ -5,7 +5,7 @@ import { finalsProgress } from './core/craft-stock';
 import { CRAFT_DATA, SLOT_KEYS } from './core/data';
 import type { SlotKey } from './core/types';
 import {
-  DEFAULT_VIEW, MAX_QTY, TAB_LABEL, TABS, clampQty, copyLines, emptySel, groupRows, missing, sanitizeSel, sanitizeStock, sanitizeView,
+  DEFAULT_VIEW, MAX_QTY, TAB_LABEL, TABS, clampQty, copyLines, emptySel, listGroups, missing, sanitizeSel, sanitizeStock, sanitizeView,
   type CraftTab, type CraftView, type SelMap,
 } from './craft-state';
 
@@ -62,11 +62,14 @@ export class CraftVm {
     const f = (rows: CalcRow[]) => (v.stockMode && v.onlyMissing ? rows.filter((x) => missing(x, st) > 0) : rows);
     return { finals: f(r.finals), directs: f(r.directs), bases: f(r.bases) };
   });
-  readonly groups = computed(() => ({
-    finals: groupRows(this.visible().finals),
-    directs: groupRows(this.visible().directs),
-    bases: groupRows(this.visible().bases),
-  }));
+  /** 各欄的分組:排序方式 + 追蹤置頂(追蹤分類排第一) */
+  readonly groups = computed(() => {
+    const v = this.visible();
+    const sort = this.view().sort;
+    const pin = this.pin();
+    const rel = this.related();
+    return { finals: listGroups(v.finals, sort, pin, rel), directs: listGroups(v.directs, sort, pin, rel), bases: listGroups(v.bases, sort, pin, rel) };
+  });
   readonly counts = computed(() => ({ finals: this.result().finals.length, directs: this.result().directs.length, bases: this.result().bases.length }));
 
   /** 備料進度 0~1:以交納素材計算,全部達標 = 100%(D-256、D-258) */
@@ -168,13 +171,17 @@ export class CraftVm {
       return n;
     });
   }
+  /** 可收合的分組 key(不含追蹤分類與按名稱時的單一組) */
+  private groupKeys(tabs: readonly CraftTab[]): string[] {
+    return tabs.flatMap((t) => this.groups()[t].filter((g) => !g.trace && g.group !== '').map((g) => `${t}:${g.group}`));
+  }
   /** 全部收合;全部都已收合時改為全部展開 */
   toggleAllGroups(tabs: readonly CraftTab[]): void {
-    const keys = tabs.flatMap((t) => this.groups()[t].map((g) => `${t}:${g.group}`));
+    const keys = this.groupKeys(tabs);
     this.collapsed.update((c) => (keys.length > 0 && keys.every((k) => c.has(k)) ? new Set([...c].filter((k) => !keys.includes(k))) : new Set([...c, ...keys])));
   }
   allCollapsed(tabs: readonly CraftTab[]): boolean {
-    const keys = tabs.flatMap((t) => this.groups()[t].map((g) => `${t}:${g.group}`));
+    const keys = this.groupKeys(tabs);
     return keys.length > 0 && keys.every((k) => this.collapsed().has(k));
   }
 
@@ -183,7 +190,7 @@ export class CraftVm {
     const st = this.view().stockMode ? this.stock() : null;
     const parts: string[] = [];
     for (const t of tabs) {
-      const lines = copyLines(this.result()[t], st);
+      const lines = copyLines(this.result()[t], st, this.view().sort);
       if (lines.length === 0) continue;
       parts.push(tabs.length > 1 ? [`【${TAB_LABEL[t]}】`, ...lines].join('\n') : lines.join('\n'));
     }

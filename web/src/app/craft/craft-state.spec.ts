@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { calculate } from './core/craft-calc';
-import { copyLines, gradeInfo, gradeLabel, groupRows, missing, sanitizeSel, sanitizeStock, sanitizeView } from './craft-state';
+import { calculate, type CalcRow } from './core/craft-calc';
+import { compareNames, copyLines, gradeInfo, gradeLabel, groupRows, listGroups, missing, sanitizeSel, sanitizeStock, sanitizeView } from './craft-state';
 import { CraftVm } from './craft-vm';
 
 describe('craft-state', () => {
@@ -16,7 +16,7 @@ describe('craft-state', () => {
     expect(s.bow.gradeIndex).toBeNull();
     expect(s.bridge.gradeIndex).toBeNull();
     expect(sanitizeSel(null).hull.gradeIndex).toBeNull();
-    expect(sanitizeView({ tab: 'nope', stockMode: 1, expandFrame: true })).toEqual({ expandFrame: true, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals' });
+    expect(sanitizeView({ tab: 'nope', stockMode: 1, expandFrame: true })).toEqual({ expandFrame: true, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group' });
   });
 
   it('庫存只留已知的 key 與正整數;舊版沒有前綴的半成品搬到 d:(D-258)', () => {
@@ -47,6 +47,63 @@ describe('craft-state', () => {
     expect(missing(r.bases[0]!, st)).toBe(0);
     expect(copyLines(r.bases, st).length).toBe(r.bases.length - 1);
     expect(copyLines(r.bases, { [name]: 1 }).join('\n')).toContain(`${name} ×${Math.max(0, r.bases[0]!.need - 1)}`.replace(/ ×0$/, ''));
+  });
+});
+
+const row = (name: string, group = '其他'): CalcRow => ({ name, key: name, group, kind: 'base', need: 1, crafts: 0, made: 1, inputs: {}, usedBy: [], slots: [] }) as CalcRow;
+
+describe('名稱排序', () => {
+  it('前兩個字相同的相鄰,同群字少的先(白鋼X、白鋼XX…、鈷鐵X、鈷鐵XX)', () => {
+    const names = ['鈷鐵連接板', '白鋼連接板', '白鋼錠', '鈷鐵鉚釘', '白鋼鉚釘', '鈷鐵錠', '白鋼板', '鈷鐵板'];
+    const sorted = [...names].sort(compareNames);
+    expect(sorted).toEqual(['白鋼板', '白鋼錠', '白鋼鉚釘', '白鋼連接板', '鈷鐵板', '鈷鐵錠', '鈷鐵鉚釘', '鈷鐵連接板']);
+  });
+
+  it('前兩個字不同的群之間依筆畫;同首字的群相鄰', () => {
+    const sorted = ['白鋼錠', '白金塊', '白雲母', '玄鋼錠', '白銀錠'].sort(compareNames);
+    expect(sorted.slice(0, 1)).toEqual(['玄鋼錠']);
+    expect(sorted.filter((n) => n.startsWith('白'))).toEqual(sorted.slice(1));
+    expect(sorted.indexOf('白金塊')).toBeLessThan(sorted.indexOf('白鋼錠'));
+  });
+
+  it('按名稱:單一組(沒有分組名)、整份排序;按種類:組內依名稱排序', () => {
+    const rows = [row('鈷鐵錠', '金屬'), row('白鋼連接板', '金屬'), row('白鋼錠', '金屬'), row('熊脂', '鍊金原料')];
+    const flat = groupRows(rows, 'name');
+    expect(flat).toHaveLength(1);
+    expect(flat[0]!.group).toBe('');
+    expect(flat[0]!.rows.map((r) => r.name)).toEqual(['白鋼錠', '白鋼連接板', '熊脂', '鈷鐵錠'].sort(compareNames));
+    const byGroup = groupRows(rows, 'group');
+    expect(byGroup.map((g) => g.group)).toEqual(['金屬', '鍊金原料']);
+    expect(byGroup[0]!.rows.map((r) => r.name)).toEqual(['白鋼錠', '白鋼連接板', '鈷鐵錠']);
+    expect(groupRows([], 'name')).toEqual([]);
+  });
+
+  it('碎晶 / 水晶 / 晶簇維持遊戲元素順序(火冰風土雷水)', () => {
+    const rows = ['水之碎晶', '雷之碎晶', '火之碎晶', '土之碎晶', '冰之碎晶', '風之碎晶'].map((n) => row(n, '碎晶'));
+    expect(groupRows(rows, 'group')[0]!.rows.map((r) => r.name)).toEqual(['火之碎晶', '冰之碎晶', '風之碎晶', '土之碎晶', '雷之碎晶', '水之碎晶']);
+  });
+
+  it('追蹤分類置頂:被點的列第一,關聯項目接著;其餘照排序;沒有命中的清單不出現追蹤分類', () => {
+    const rows = [row('鈷鐵錠', '金屬'), row('白鋼錠', '金屬'), row('白鋼鉚釘', '金屬'), row('熊脂', '鍊金原料')];
+    const gs = listGroups(rows, 'group', '白鋼鉚釘', new Set(['白鋼錠', '熊脂']));
+    expect(gs[0]).toMatchObject({ group: '追蹤', trace: true });
+    expect(gs[0]!.rows.map((r) => r.name)).toEqual(['白鋼鉚釘', '白鋼錠', '熊脂']);
+    expect(gs.slice(1).map((g) => [g.group, g.rows.map((r) => r.name)])).toEqual([['金屬', ['鈷鐵錠']]]);
+    const flat = listGroups(rows, 'name', '白鋼鉚釘', new Set(['白鋼錠']));
+    expect(flat.map((g) => g.group)).toEqual(['追蹤', '']);
+    expect(listGroups(rows, 'group', '不存在', new Set())).toEqual(groupRows(rows, 'group'));
+    expect(listGroups(rows, 'group', null, new Set())).toEqual(groupRows(rows, 'group'));
+  });
+
+  it('複製清單依目前的排序方式', () => {
+    const rows = [row('鈷鐵錠', '金屬'), row('熊脂', '鍊金原料'), row('白鋼錠', '金屬')];
+    expect(copyLines(rows, null, 'group')).toEqual(['白鋼錠 ×1', '鈷鐵錠 ×1', '熊脂 ×1']);
+    expect(copyLines(rows, null, 'name')).toEqual([...['白鋼錠', '鈷鐵錠', '熊脂'].sort(compareNames)].map((n) => `${n} ×1`));
+  });
+
+  it('排序方式存在檢視設定,壞值回預設', () => {
+    expect(sanitizeView({ sort: 'name' }).sort).toBe('name');
+    expect(sanitizeView({ sort: 'x' }).sort).toBe('group');
   });
 });
 
@@ -185,5 +242,35 @@ describe('CraftVm', () => {
     expect(t).toContain('【直接素材】');
     expect(t).toContain('【基礎素材】');
     expect(vm.copyText(['bases'])).not.toContain('【');
+  });
+
+  it('追蹤時各欄最上方出現追蹤分類(排序方式不影響);取消後恢復', () => {
+    const vm = make();
+    vm.setGrade('hull', 5);
+    const pin = vm.result().directs.find((r) => r.group !== '碎晶')!.name;
+    for (const sort of ['group', 'name'] as const) {
+      vm.patchView({ sort });
+      vm.togglePin(pin);
+      const g = vm.groups();
+      expect(g.directs[0]).toMatchObject({ group: '追蹤', trace: true });
+      expect(g.directs[0]!.rows[0]!.name).toBe(pin);
+      const traced = g.directs[0]!.rows.map((r) => r.name);
+      // 被移到追蹤分類的列不會在其他分組重複出現
+      for (const x of g.directs.slice(1)) for (const r of x.rows) expect(traced).not.toContain(r.name);
+      vm.togglePin(pin);
+      expect(vm.groups().directs.some((x) => x.trace)).toBe(false);
+    }
+  });
+
+  it('按名稱:沒有可收合的分組;全部收合不含追蹤分類', () => {
+    const vm = make();
+    vm.setGrade('hull', 5);
+    vm.patchView({ sort: 'name' });
+    expect(vm.groups().bases).toHaveLength(1);
+    expect(vm.allCollapsed(['bases'])).toBe(false);
+    vm.patchView({ sort: 'group' });
+    vm.togglePin(vm.result().directs.find((r) => r.group !== '碎晶')!.name);
+    vm.toggleAllGroups(['directs']);
+    expect([...vm.collapsed()].some((k) => k.includes('追蹤'))).toBe(false);
   });
 });

@@ -152,9 +152,17 @@
     <label class="ct-opt"><span>記錄庫存</span>
       <span class="switch"><input type="checkbox" [checked]="vm.view().stockMode" (change)="vm.patchView({ stockMode: !vm.view().stockMode })" /><span class="slider"></span></span>
     </label>
+    @if (vm.hasSelection()) {
+      <div class="ct-seg" role="group" aria-label="排序方式">
+        <button type="button" [class.on]="vm.view().sort === 'group'" [attr.aria-pressed]="vm.view().sort === 'group'" (click)="vm.patchView({ sort: 'group' })">種類</button>
+        <button type="button" [class.on]="vm.view().sort === 'name'" [attr.aria-pressed]="vm.view().sort === 'name'" (click)="vm.patchView({ sort: 'name' })">名稱</button>
+      </div>
+    }
     <span class="ct-spacer"></span>
     @if (vm.hasSelection()) {
-      <button type="button" class="ct-tool" (click)="vm.toggleAllGroups(layout.isDesktop() ? tabs : [vm.view().tab])">{{ vm.allCollapsed(layout.isDesktop() ? tabs : [vm.view().tab]) ? '全部展開' : '全部收合' }}</button>
+      @if (vm.view().sort === 'group') {
+        <button type="button" class="ct-tool" (click)="vm.toggleAllGroups(layout.isDesktop() ? tabs : [vm.view().tab])">{{ vm.allCollapsed(layout.isDesktop() ? tabs : [vm.view().tab]) ? '全部展開' : '全部收合' }}</button>
+      }
       <button type="button" class="ct-tool" [class.ok]="vm.copied()" (click)="vm.copy(layout.isDesktop() ? tabs : [vm.view().tab])" aria-label="複製清單"><app-icon [name]="vm.copied() ? 'check' : 'list'" [size]="16" /><span>{{ vm.copied() ? '已複製' : '複製清單' }}</span></button>
       <button type="button" class="ct-tool danger" [class.confirm]="vm.confirmClear()" (click)="vm.requestClearAll()" (blur)="vm.cancelClearAll()"><app-icon name="trash" [size]="16" /><span>{{ vm.confirmClear() ? '確定清除？' : '清除全部' }}</span></button>
     }
@@ -176,20 +184,24 @@
 
 <ng-template #traceBar>
   @if (vm.pin(); as p) {
-    <div class="ct-trace"><span>追蹤</span><b>{{ p }}</b><button type="button" class="ct-x" (click)="vm.togglePin(p)" aria-label="取消追蹤"><app-icon name="close" [size]="14" /></button></div>
+    <div class="ct-trace"><span>追蹤</span><b>{{ p }}</b><button type="button" class="ct-x" (click)="unpin($event)" aria-label="取消追蹤"><app-icon name="close" [size]="14" /></button></div>
   }
 </ng-template>
 
 <ng-template #list let-tab="tab">
   @for (g of groupsOf(tab); track g.group) {
-    <div class="ct-group">
-      <button type="button" class="ct-group-head" [attr.aria-expanded]="!vm.isCollapsed(tab, g.group)" (click)="vm.toggleGroup(tab, g.group)">
-        <app-icon [name]="vm.isCollapsed(tab, g.group) ? 'chevronRight' : 'chevronDown'" [size]="14" />
-        <span>{{ g.group }}</span><span class="ct-count">{{ g.rows.length }}</span>
-      </button>
-      @if (!vm.isCollapsed(tab, g.group)) {
+    <div class="ct-group" [class.trace]="g.trace">
+      @if (g.trace) {
+        <div class="ct-group-head ct-trace-head"><span>{{ g.group }}</span><span class="ct-count">{{ g.rows.length }}</span></div>
+      } @else if (g.group) {
+        <button type="button" class="ct-group-head" [attr.aria-expanded]="!vm.isCollapsed(tab, g.group)" (click)="vm.toggleGroup(tab, g.group)">
+          <app-icon [name]="vm.isCollapsed(tab, g.group) ? 'chevronRight' : 'chevronDown'" [size]="14" />
+          <span>{{ g.group }}</span><span class="ct-count">{{ g.rows.length }}</span>
+        </button>
+      }
+      @if (g.trace || !g.group || !vm.isCollapsed(tab, g.group)) {
         @for (r of g.rows; track r.name) {
-          <div class="ct-row" [class]="'ct-row ' + rowState(r)" role="button" tabindex="0" (click)="vm.togglePin(r.name)" (keydown.enter)="vm.togglePin(r.name)" (keydown.space)="$event.preventDefault(); vm.togglePin(r.name)">
+          <div class="ct-row" [class]="'ct-row ' + rowState(r)" role="button" tabindex="0" (click)="pinRow(r.name, $event)" (keydown.enter)="pinRow(r.name, $event)" (keydown.space)="$event.preventDefault(); pinRow(r.name, $event)">
             <span class="ct-name">{{ r.name }}</span>
             @if (vm.view().stockMode) {
               <span class="ct-need">{{ r.need }}</span>

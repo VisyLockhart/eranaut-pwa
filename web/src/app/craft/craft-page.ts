@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, signal } from '@angular/core';
 import { Layout } from '../core/layout';
 import { IconComponent } from '../ui/icon';
 import type { CalcRow } from './core/craft-calc';
@@ -19,6 +19,10 @@ import { CRAFT_DATA } from './core/data';
 export class CraftPage {
   protected readonly layout = inject(Layout);
   protected readonly vm = inject(CraftVm);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+  /** 開始追蹤前的捲動位置;取消追蹤時還原,避免使用者找不到原本看的位置 */
+  private savedTop: number | null = null;
   protected readonly gradeIndexes = GRADE_INDEXES;
   protected readonly tabs = TABS;
   protected readonly tabLabel = TAB_LABEL;
@@ -64,6 +68,39 @@ export class CraftPage {
   protected setTab(t: CraftTab): void {
     this.vm.patchView({ tab: t });
   }
+  /** 點一列:切換追蹤。追蹤分類在清單最上方,所以開始追蹤時捲到那裡;取消時還原原本的位置 */
+  protected pinRow(name: string, ev: Event): void {
+    const was = this.vm.pin() !== null;
+    const sp = scrollParent(ev.currentTarget as HTMLElement);
+    if (!was) this.savedTop = sp.scrollTop;
+    this.vm.togglePin(name);
+    this.afterPinChange(sp);
+  }
+  protected unpin(ev: Event): void {
+    const p = this.vm.pin();
+    if (p === null) return;
+    const sp = scrollParent(ev.currentTarget as HTMLElement);
+    this.vm.togglePin(p);
+    this.afterPinChange(sp);
+  }
+  private afterPinChange(sp: HTMLElement): void {
+    const pinned = this.vm.pin() !== null;
+    afterNextRender(
+      () => {
+        if (pinned) {
+          // 手機:捲到分頁列(追蹤列與追蹤分類在它下面);桌機:捲到追蹤列
+          const target = this.host.nativeElement.querySelector<HTMLElement>(this.layout.isDesktop() ? '.ct-trace' : '.ct-tabs');
+          if (!target) return;
+          const edge = sp === document.scrollingElement ? 0 : sp.getBoundingClientRect().top;
+          if (target.getBoundingClientRect().top < edge) target.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+        } else if (this.savedTop !== null) {
+          sp.scrollTo?.({ top: this.savedTop, behavior: 'auto' });
+          this.savedTop = null;
+        }
+      },
+      { injector: this.injector },
+    );
+  }
   protected rowState(r: CalcRow): string {
     const parts: string[] = [];
     if (this.vm.pin() === r.name) parts.push('pin');
@@ -72,4 +109,13 @@ export class CraftPage {
     if (this.vm.view().stockMode && missing(r, this.vm.stock()) === 0) parts.push('done');
     return parts.join(' ');
   }
+}
+
+/** 最近的可捲動祖先(找不到就是整頁) */
+function scrollParent(el: HTMLElement): HTMLElement {
+  for (let p = el.parentElement; p; p = p.parentElement) {
+    const o = getComputedStyle(p).overflowY;
+    if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight) return p;
+  }
+  return (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
 }

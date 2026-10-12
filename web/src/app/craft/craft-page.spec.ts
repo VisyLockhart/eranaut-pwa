@@ -159,4 +159,42 @@ describe('CraftPage', () => {
     expect(el.querySelectorAll('.ct-row').length).toBe(total - done);
     expect(el.querySelector('.ct-stockbar')).toBeTruthy();
   });
+
+  for (const desktop of [false, true]) {
+    it(`排序切換:按名稱沒有分組標題,按種類有;切換鈕可見(${desktop ? '桌機' : '手機'})`, () => {
+      const { f, vm, el } = mount(desktop);
+      vm.setGrade('hull', 5);
+      f.detectChanges();
+      expect(el.querySelector('.ct-seg')).toBeTruthy();
+      expect(el.querySelectorAll('.ct-group-head').length).toBeGreaterThan(0);
+      el.querySelectorAll<HTMLButtonElement>('.ct-seg button')[1]!.click();
+      f.detectChanges();
+      expect(vm.view().sort).toBe('name');
+      expect(el.querySelector('.ct-group-head')).toBeNull();
+      expect(el.querySelector('.ct-row')).toBeTruthy();
+      el.querySelectorAll<HTMLButtonElement>('.ct-seg button')[0]!.click();
+      f.detectChanges();
+      expect(el.querySelectorAll('.ct-group-head').length).toBeGreaterThan(0);
+    });
+
+    it(`點一列追蹤:追蹤分類置頂、被點的列第一;取消追蹤恢復(${desktop ? '桌機' : '手機'})`, () => {
+      const { f, vm, el } = mount(desktop);
+      vm.setGrade('hull', 5);
+      vm.patchView({ tab: 'directs' });
+      f.detectChanges();
+      const pin = vm.result().directs.find((r) => r.group !== '碎晶')!.name;
+      const target = [...el.querySelectorAll<HTMLElement>('.ct-row')].find((r) => r.querySelector('.ct-name')!.textContent === pin)!;
+      target.click();
+      f.detectChanges();
+      const traces = [...el.querySelectorAll<HTMLElement>('.ct-group.trace')];
+      expect(traces.length).toBeGreaterThan(0);
+      // 每個追蹤分類都是該清單的第一組;被點的列在它所在清單的追蹤分類裡排第一
+      for (const t of traces) expect(t.previousElementSibling?.classList.contains('ct-group') ?? false).toBe(false);
+      expect(traces.some((t) => t.querySelector('.ct-row .ct-name')!.textContent === pin)).toBe(true);
+      el.querySelector<HTMLButtonElement>('.ct-trace .ct-x')!.click();
+      f.detectChanges();
+      expect(vm.pin()).toBeNull();
+      expect(el.querySelector('.ct-group.trace')).toBeNull();
+    });
+  }
 });
