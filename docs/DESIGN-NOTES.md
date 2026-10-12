@@ -69,6 +69,7 @@
 | D-157 | 本機開發轉發改用自製 Node 代理 `web/dev.mjs`:在 Windows 上 Vite 內建的 proxy 會間歇出現 `ECONNRESET`,自製版經實測沒有失敗。 |
 | D-164 | 介面大小(小 / 中 / 大)用 CSS `zoom` 整體縮放;`vh` / `vw` / safe-area 長度要除以另一個變數 `--vu-div`,因為 Safari 與 Chrome 對 `zoom` 下這些單位的處理不同。 |
 | D-166 | 手機留白縮小、統計區與桌機側欄可收合、手機總覽下拉重新整理。偏好只存在該裝置的 `localStorage`。 |
+| D-260 | 新版橫幅除了依賴 service worker 的通知,另外直接向伺服器要最新的 `index.html`、比對主程式檔名。起因是 Angular service worker 一旦因檔案雜湊對不上進入降級狀態(`EXISTING_CLIENTS_ONLY`),就永遠不再通知新版,常開著的桌面 App 會一直停在舊版而沒有任何提示。按「立即更新」時若沒有可啟用的新版,先解除 service worker 並清掉它的快取再重載。 |
 
 ## 慣例
 
