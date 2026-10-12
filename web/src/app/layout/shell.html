@@ -13,6 +13,9 @@
         @if (menuOpen()) {
           <div class="m-user-menu" role="menu" aria-label="帳號選單">
             <a class="m-user-item" role="menuitem" routerLink="/settings" (click)="closeMenu()"><app-icon name="settings" [size]="18" /><span>設定</span></a>
+            @if (up.supported) {
+              <button type="button" class="m-user-item" role="menuitem" [disabled]="up.checking()" (click)="checkUpdate($event)"><app-icon name="refresh" [size]="18" /><span>{{ up.checking() ? '檢查中…' : '檢查更新' }}</span></button>
+            }
             <button type="button" class="m-user-item danger" role="menuitem" (click)="closeMenu(); auth.logout()"><app-icon name="logout" [size]="18" /><span>登出</span></button>
           </div>
         }

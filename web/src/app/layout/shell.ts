@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
+import { AppUpdate } from '../core/app-update';
 import { Auth } from '../core/auth';
 import { InstallPrompt } from '../core/install-prompt';
 import { Layout } from '../core/layout';
@@ -34,6 +35,7 @@ export class Shell {
   protected readonly auth = inject(Auth);
   protected readonly layout = inject(Layout);
   protected readonly install = inject(InstallPrompt);
+  protected readonly up = inject(AppUpdate);
   protected readonly intro = INTRO_ENABLED;
   private readonly router = inject(Router);
 
@@ -51,6 +53,13 @@ export class Shell {
   protected toggleMenu(ev: Event): void {
     ev.stopPropagation();
     this.menuOpen.update((v) => !v);
+  }
+
+  /** 「檢查更新」:檢查時選單保持開著(顯示「檢查中…」),結果以提示呈現後再收起 */
+  protected async checkUpdate(ev: Event): Promise<void> {
+    ev.stopPropagation();
+    await this.up.checkAndNotify();
+    this.closeMenu();
   }
 
   protected closeMenu(): void {

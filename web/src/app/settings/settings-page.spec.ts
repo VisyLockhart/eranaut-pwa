@@ -1,7 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { SwUpdate } from '@angular/service-worker';
+import { Subject } from 'rxjs';
+import { AppUpdate } from '../core/app-update';
 import { Auth } from '../core/auth';
 import { Layout } from '../core/layout';
 import { PushVm } from '../core/push-vm';
@@ -130,5 +133,32 @@ describe('SettingsPage', () => {
       ({ el } = await withPush('unavailable', false, { dm: false, channel: false, push: true }));
       expect(el.textContent).not.toContain('不會收到任何潛艇提醒');
     });
+  });
+
+  it('有更新機制時顯示「檢查更新」按鈕,點了才檢查;沒有更新機制(開發模式)時不顯示', async () => {
+    const fixture = await render();
+    http.expectOne('/api/notify-prefs').flush({ dm: true, channel: false });
+    await settle();
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('檢查更新');
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: SwUpdate, useValue: { isEnabled: true, versionUpdates: new Subject(), unrecoverable: new Subject() } }],
+    });
+    http = TestBed.inject(HttpTestingController);
+    const auth = TestBed.inject(Auth);
+    auth.status.set('authenticated');
+    auth.user.set({ id: 'u1', displayName: '小艇長', avatarUrl: null } as never);
+    const spy = vi.spyOn(TestBed.inject(AppUpdate), 'checkAndNotify').mockResolvedValue('latest');
+    const f2 = await render();
+    http.expectOne('/api/notify-prefs').flush({ dm: true, channel: false });
+    await settle();
+    f2.detectChanges();
+    const btn = [...(f2.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent!.includes('檢查更新'))!;
+    expect(btn).toBeTruthy();
+    expect(spy).not.toHaveBeenCalled();
+    btn.click();
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 });

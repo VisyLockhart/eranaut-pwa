@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { SwUpdate } from '@angular/service-worker';
 import { Subject } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Toast } from './toast';
 import { AppUpdate, STARTUP_LIVE_CHECK_DELAY_MS, UPDATE_CHECK_INTERVAL_MS, UPDATE_CHECK_MIN_GAP_MS, mainScriptOf } from './app-update';
 
 type Reloader = { reloadPage: ReturnType<typeof vi.fn> };
@@ -114,6 +115,74 @@ describe('AppUpdate', () => {
     window.dispatchEvent(new Event('focus'));
     await vi.advanceTimersByTimeAsync(10);
     expect(update.ready()).toBe(true);
+  });
+
+  describe('手動檢查更新', () => {
+    it('SW 找到新版 → available,顯示橫幅;不清 service worker、不重新載入', async () => {
+      const update = setup();
+      sw.checkForUpdate.mockResolvedValue(true);
+      expect(await update.checkNow()).toBe('available');
+      expect(update.ready()).toBe(true);
+      expect((update as unknown as Internals).resetServiceWorker).not.toHaveBeenCalled();
+      expect((update as unknown as Reloader).reloadPage).not.toHaveBeenCalled();
+    });
+
+    it('SW 沒新版、伺服器主程式相同 → latest', async () => {
+      const update = setup();
+      expect(await update.checkNow()).toBe('latest');
+      expect(update.ready()).toBe(false);
+      expect(update.checking()).toBe(false);
+    });
+
+    it('SW 降級(丟錯)但伺服器已有新版 → available(直接問伺服器)', async () => {
+      const update = setup();
+      sw.checkForUpdate.mockRejectedValue(new Error('degraded'));
+      (update as unknown as Internals).fetchLiveIndex.mockResolvedValue('<script src="main-NEW1.js"></script>');
+      expect(await update.checkNow()).toBe('available');
+      expect(update.ready()).toBe(true);
+    });
+
+    it('連不上伺服器或回錯誤頁 → failed,不誤報新版', async () => {
+      const update = setup();
+      const f = (update as unknown as Internals).fetchLiveIndex;
+      f.mockResolvedValue('');
+      expect(await update.checkNow()).toBe('failed');
+      f.mockResolvedValue('<html>504 Gateway Timeout</html>');
+      expect(await update.checkNow()).toBe('failed');
+      expect(update.ready()).toBe(false);
+    });
+
+    it('已經有橫幅時直接回 available;檢查中連按只做一次', async () => {
+      const update = setup();
+      versions.next({ type: 'VERSION_READY' });
+      expect(await update.checkNow()).toBe('available');
+      expect(sw.checkForUpdate).not.toHaveBeenCalled();
+      const fresh = setup();
+      const [a, b] = [fresh.checkNow(), fresh.checkNow()];
+      expect(fresh.checking()).toBe(true);
+      await Promise.all([a, b]);
+      expect(sw.checkForUpdate).toHaveBeenCalledTimes(1);
+      expect(fresh.checking()).toBe(false);
+    });
+
+    it('checkAndNotify 依結果顯示提示', async () => {
+      const update = setup();
+      const toast = TestBed.inject(Toast);
+      await update.checkAndNotify();
+      expect(toast.items().at(-1)?.text).toBe('已是最新版本');
+      sw.checkForUpdate.mockResolvedValue(true);
+      await update.checkAndNotify();
+      expect(toast.items().at(-1)?.text).toContain('立即更新');
+      const other = setup();
+      (other as unknown as Internals).fetchLiveIndex.mockResolvedValue('');
+      await other.checkAndNotify();
+      expect(TestBed.inject(Toast).items().at(-1)).toMatchObject({ tone: 'warn' });
+    });
+
+    it('supported:service worker 啟用才為 true', () => {
+      expect(setup(true).supported).toBe(true);
+      expect(setup(false).supported).toBe(false);
+    });
   });
 
   it('從 index.html 或 src 取出主程式檔名', () => {

@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { AppUpdate } from '../core/app-update';
 import { Auth } from '../core/auth';
 import { Layout } from '../core/layout';
 import { PushVm } from '../core/push-vm';
@@ -22,6 +23,7 @@ export class SettingsPage {
   protected readonly auth = inject(Auth);
   protected readonly push = inject(PushVm);
   protected readonly scale = inject(UiScale);
+  protected readonly up = inject(AppUpdate);
   protected readonly sizes = UI_SIZES;
 
   constructor() {
