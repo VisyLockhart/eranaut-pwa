@@ -73,6 +73,7 @@
       <div class="rt-chips" role="group" aria-label="排序">
         <button type="button" class="rt-chip" [class.active]="b.sort() === 'time'" [attr.aria-pressed]="b.sort() === 'time'" (click)="b.setSort('time')">航行時間短優先</button>
         <button type="button" class="rt-chip" [class.active]="b.sort() === 'range'" [attr.aria-pressed]="b.sort() === 'range'" (click)="b.setSort('range')">距離高優先</button>
+        <button type="button" class="rt-chip" [class.active]="b.sort() === 'cost'" [attr.aria-pressed]="b.sort() === 'cost'" (click)="b.setSort('cost')">材料少優先</button>
       </div>
       @if (b.sort() === 'time' && b.ids().length === 0) { <div class="rt-note" style="margin-top: 6px">沒有選航點時,「航行時間短優先」改依巡航速度排序。</div> }
     </div>
@@ -125,6 +126,7 @@
         @for (l of c.lights; track l.label) { <span class="rt-light g-{{ l.grade }}"><i aria-hidden="true"></i>{{ l.text }}</span> }
       </div>
     }
+    <div class="rt-card-cost">{{ c.cost }}</div>
     <div class="rt-card-foot">
       @if (c.time) { <span>航行 {{ c.time }}</span> }
       @if (near) { <span>還差 {{ c.shortfall }}</span> }
@@ -138,6 +140,7 @@
           <button type="button" class="rt-save-btn primary" [disabled]="busyKey() !== null" (click)="save(c)">加入儲存</button>
         }
       }
+      <app-route-craft-btn [parts]="c.raw.build.parts" [name]="c.parts" />
     </div>
   </article>
 </ng-template>

@@ -2,9 +2,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import type { RouteSubDto } from '@eranaut/shared';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Auth } from '../core/auth';
+import { CraftLink } from '../core/craft-link';
 import { Layout } from '../core/layout';
+import { buildCost } from '../craft/core/craft-cost';
 import { SEA_INDEXES } from './core/data';
 import type { BuildGoal } from './core/buildfind';
 import { RouteBuildVm } from './route-build-vm';
@@ -127,6 +129,31 @@ describe('找配置子畫面(D-223)', () => {
     expect(b.open()).toBe(false);
     expect(vm.tab()).toBe('config');
     expect(el.querySelector('app-route-build')).toBeNull();
+  });
+
+  it('結果卡顯示材料量並有「製作素材」,按了把這組配件帶去配件製作(D-262)', async () => {
+    mount('collect');
+    click('AD');
+    await search();
+    const send = vi.spyOn(TestBed.inject(CraftLink), 'send').mockReturnValue(true);
+    const first = el.querySelector('app-route-build .rt-card')!;
+    const c = buildCost(b.result()!.hits[0]!.build.parts);
+    expect(first.querySelector('.rt-card-cost')!.textContent).toContain(`基礎素材約 ${c.total.toLocaleString('en-US')} 件`);
+    first.querySelector<HTMLButtonElement>('app-route-craft-btn button')!.click();
+    expect(send).toHaveBeenCalledWith(b.result()!.hits[0]!.build.parts, expect.any(String));
+  });
+
+  it('「材料少優先」:重找後第一組是材料量最小的,換排序要重新找(D-262)', async () => {
+    mount('collect');
+    click('AD');
+    await search();
+    btn('材料少優先').click();
+    f.detectChanges();
+    expect(el.textContent).toContain('下面的結果是舊的');
+    await search();
+    const hits = b.result()!.hits;
+    const totals = hits.map((h) => buildCost(h.build.parts).total);
+    expect(totals).toEqual([...totals].sort((x, y) => x - y));
   });
 
   it('切到點數較少的目標:只用最後選的點並提示,切回速度還原', () => {

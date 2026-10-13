@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, signal } from '@angular/core';
+import { CraftLink, pageScroller } from '../core/craft-link';
 import { Layout } from '../core/layout';
 import { IconComponent } from '../ui/icon';
 import type { CalcRow } from './core/craft-calc';
@@ -34,6 +35,12 @@ export class CraftPage {
 
   constructor() {
     this.layout.pageTitle.set('配件製作');
+    // 從航線帶入配置(D-262):套用後回到頁面最上面,讓發光的部位看得到
+    const imp = inject(CraftLink).take();
+    if (imp) {
+      this.vm.importParts(imp);
+      afterNextRender(() => pageScroller().scrollTo?.({ top: 0, behavior: 'auto' }), { injector: this.injector });
+    }
   }
 
   protected selOf(slot: SlotKey): SlotSel {

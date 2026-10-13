@@ -11,6 +11,7 @@ import { travelMinutes } from './core/route';
 import type { Build } from './core/types';
 import { ListView, PAGE_SIZE_DESKTOP, PAGE_SIZE_MOBILE } from './list-view';
 import { RouteBind } from './route-bind';
+import { RouteCraftBtn } from './route-craft-btn';
 import { RouteListTools, RoutePager, RouteStar } from './route-list-ui';
 import { formatTravel } from './route-format';
 import { normalizeSeq, subToBuild } from './route-state';
@@ -28,6 +29,8 @@ interface Card {
   title: string;
   sub: string;
   parts: string;
+  /** 四個配件(1~10),給「製作素材」帶入用 */
+  nums: readonly number[];
   level: number;
   chips: Chip[];
   overweight: boolean;
@@ -51,7 +54,7 @@ interface Card {
  */
 @Component({
   selector: 'app-route-subs',
-  imports: [NgTemplateOutlet, RouteBind, RouteListTools, RoutePager, RouteStar],
+  imports: [NgTemplateOutlet, RouteBind, RouteCraftBtn, RouteListTools, RoutePager, RouteStar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-subs.html',
 })
@@ -122,6 +125,7 @@ export class RouteSubs {
         title,
         sub,
         parts: b.parts.map(partLabel).join(' '),
+        nums: b.parts,
         level: b.level,
         chips: chips(j, has),
         overweight: stats.overweight,

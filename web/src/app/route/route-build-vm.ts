@@ -3,6 +3,7 @@ import { SEAS, SEA_INDEXES, TABLES } from './core/data';
 import { findBuilds, minsForGoal, minsFromNeed, NO_MINS, type BuildGoal, type BuildMins, type BuildResult, type BuildSort } from './core/buildfind';
 import { routeNeed, type RouteNeed } from './core/need';
 import { selectability, shortestOrder, type Selectability } from './core/route';
+import { buildCost } from '../craft/core/craft-cost';
 import { RouteVm } from './route-vm';
 
 /** 收集、恩惠看「同一個地點」(最多 1 個點);速度與自訂最多 5 個點 */
@@ -49,6 +50,8 @@ export class RouteBuildVm {
   readonly weightLimit = signal<number | null>(null);
   readonly sort = signal<BuildSort>('time');
   readonly busy = signal(false);
+  /** 結果顯示幾筆(換頁再回來不重設) */
+  readonly shown = signal(20);
   private readonly snapshot = signal<Snapshot | null>(null);
 
   readonly seaIdx = computed(() => SEA_INDEXES.find((s) => s.sea.sea === this.sea()) ?? SEA_INDEXES[0]!);
@@ -86,7 +89,7 @@ export class RouteBuildVm {
     const q = this.snapshot();
     if (!q) return null;
     const si = SEA_INDEXES.find((s) => s.sea.sea === q.sea)!;
-    return findBuilds(TABLES, si, { level: q.level, ids: q.ids, goal: q.goal, mins: q.mins, weightLimit: q.weightLimit, sort: q.sort });
+    return findBuilds(TABLES, si, { level: q.level, ids: q.ids, goal: q.goal, mins: q.mins, weightLimit: q.weightLimit, sort: q.sort, cost: q.sort === 'cost' ? (parts) => buildCost(parts).total : undefined });
   });
   readonly searched = computed(() => this.snapshot());
 

@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { CraftLink, pageScroller } from '../core/craft-link';
 import { Layout } from '../core/layout';
 import { IconComponent } from '../ui/icon';
 import { lootTiers } from './core/need';
@@ -123,6 +124,19 @@ export class RoutePage {
       this.vm.tab();
       this.toTop();
     });
+
+    // 從配件製作的提示按「回航線」回來:捲回離開時的位置(D-262)
+    const restoreTop = inject(CraftLink).takeRestore();
+    if (restoreTop) {
+      afterNextRender(
+        () => {
+          const go = (): void => pageScroller().scrollTo?.({ top: restoreTop, behavior: 'auto' });
+          go();
+          requestAnimationFrame(go);
+        },
+        { injector: inject(Injector) },
+      );
+    }
 
     // 分頁列離開捲動區可視範圍時顯示浮動鈕
     effect((onCleanup) => {

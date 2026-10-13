@@ -1,4 +1,6 @@
-import { Injectable, computed, effect, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { CraftLink, type CraftImport } from '../core/craft-link';
+import { Toast } from '../core/toast';
 import { CRAFT_KEY_SEL as KEY_SEL, CRAFT_KEY_STOCK as KEY_STOCK, CRAFT_KEY_VIEW as KEY_VIEW } from './craft-keys';
 import { calculate, type CalcResult, type CalcRow, type Selection } from './core/craft-calc';
 import { finalsProgress } from './core/craft-stock';
@@ -43,6 +45,14 @@ export class CraftVm {
   /** 「清除全部」第一次點擊後進入確認狀態(3 秒內再點才真的清除) */
   readonly confirmClear = signal(false);
   private confirmTimer: ReturnType<typeof setTimeout> | undefined;
+  private readonly link = inject(CraftLink);
+  private readonly toast = inject(Toast);
+  /** 剛從航線帶入的部位(短暫發光,不靠說明文字提示使用者哪裡變了) */
+  readonly flash = signal(false);
+  private flashTimer: ReturnType<typeof setTimeout> | undefined;
+  /** 帶入前的選擇,給「復原」用 */
+  private beforeImport: SelMap | null = null;
+  private importToast: number | null = null;
 
   readonly selections = computed<Selection[]>(() => {
     const s = this.sel();
@@ -97,6 +107,36 @@ export class CraftVm {
     effect(() => write(KEY_SEL, this.sel()));
     effect(() => write(KEY_VIEW, this.view()));
     effect(() => write(KEY_STOCK, this.stock()));
+  }
+
+  /**
+   * 從航線配置帶入(D-262):四個部位各設成該配置的配件、數量重設為 1;庫存不動。
+   * 不跳確認,改在提示上給「復原」(原本沒有選擇就不需要)與「回航線」。
+   */
+  importParts(imp: CraftImport): void {
+    const prev = this.sel();
+    const next = emptySel();
+    SLOT_KEYS.forEach((slot, i) => {
+      next[slot] = { gradeIndex: imp.parts[i]! - 1, qty: 1 };
+    });
+    this.beforeImport = this.hasSelection() ? prev : null;
+    this.sel.set(next);
+    this.pin.set(null);
+    this.flash.set(true);
+    clearTimeout(this.flashTimer);
+    this.flashTimer = setTimeout(() => this.flash.set(false), 1600);
+    if (this.importToast !== null) this.toast.dismiss(this.importToast);
+    const actions = [{ label: '回航線', run: () => this.link.back() }];
+    if (this.beforeImport) actions.unshift({ label: '復原', run: () => this.undoImport() });
+    this.importToast = this.toast.show(`已帶入「${imp.name}」`, { ms: 8000, actions });
+  }
+  undoImport(): void {
+    if (!this.beforeImport) return;
+    this.sel.set(this.beforeImport);
+    this.beforeImport = null;
+    this.pin.set(null);
+    clearTimeout(this.flashTimer);
+    this.flash.set(false);
   }
 
   /** 選等級;再點同一級 = 取消選擇 */

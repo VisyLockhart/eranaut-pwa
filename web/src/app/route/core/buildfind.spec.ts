@@ -162,4 +162,28 @@ describe('找配置 findBuilds', () => {
       expect(r.nearest).toHaveLength(NEAREST_COUNT);
     });
   });
+
+  describe('材料少優先(D-262)', () => {
+    const fake = (parts: readonly number[]): number => parts.reduce((n, p) => n + p * p, 0);
+    const q = { level: 130, ids: [] as number[], goal: 'custom' as const, mins: { ...NO_MINS, retrieval: 1 } };
+
+    it('依材料負擔由小到大,同分再看航行時間、重量', () => {
+      const r = findBuilds(TABLES, drowned, { ...q, sort: 'cost', cost: fake });
+      expect(r.hits.length).toBeGreaterThan(10);
+      for (let i = 1; i < r.hits.length; i++) expect(fake(r.hits[i - 1]!.build.parts)).toBeLessThanOrEqual(fake(r.hits[i]!.build.parts));
+    });
+
+    it('排序是在取前 300 筆之前套用:最省的那組一定在結果裡', () => {
+      const all = findBuilds(TABLES, drowned, { ...q, sort: 'cost', cost: fake, limit: 100000 });
+      const top = findBuilds(TABLES, drowned, { ...q, sort: 'cost', cost: fake });
+      expect(all.total).toBeGreaterThan(BUILD_LIMIT);
+      expect(top.hits[0]!.build.parts).toEqual(all.hits[0]!.build.parts);
+    });
+
+    it('沒給 cost 函式時退回航行時間優先', () => {
+      const a = findBuilds(TABLES, drowned, { ...q, sort: 'cost' });
+      const b = findBuilds(TABLES, drowned, { ...q, sort: 'time' });
+      expect(a.hits.map((h) => h.build.parts)).toEqual(b.hits.map((h) => h.build.parts));
+    });
+  });
 });

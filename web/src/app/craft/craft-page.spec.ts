@@ -1,6 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Router } from '@angular/router';
+import { CraftLink } from '../core/craft-link';
 import { Layout } from '../core/layout';
+import { Toast } from '../core/toast';
 import { CraftPage } from './craft-page';
 import { CraftVm } from './craft-vm';
 
@@ -197,4 +200,73 @@ describe('CraftPage', () => {
       expect(el.querySelector('.ct-group.trace')).toBeNull();
     });
   }
+});
+
+describe('從航線帶入配置(D-262)', () => {
+  const nav = vi.fn().mockResolvedValue(true);
+  function mountWith(desktop: boolean, parts?: [number, number, number, number], pre?: (vm: CraftVm) => void) {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [{ provide: Router, useValue: { navigateByUrl: nav } }] });
+    TestBed.inject(Layout).isDesktop.set(desktop);
+    const vm = TestBed.inject(CraftVm);
+    pre?.(vm);
+    if (parts) TestBed.inject(CraftLink).send(parts, '主力艇');
+    const f = TestBed.createComponent(CraftPage);
+    f.detectChanges();
+    return { f, vm, el: f.nativeElement as HTMLElement, toast: TestBed.inject(Toast) };
+  }
+  beforeEach(() => {
+    localStorage.clear();
+    nav.mockClear();
+  });
+
+  for (const desktop of [false, true]) {
+    it(`四個部位依配置設好、數量 1,部位發光,提示有「回航線」(${desktop ? '桌機' : '手機'})`, () => {
+      const { vm, el, toast } = mountWith(desktop, [3, 1, 10, 6]);
+      expect(vm.sel().hull).toEqual({ gradeIndex: 2, qty: 1 });
+      expect(vm.sel().stern).toEqual({ gradeIndex: 0, qty: 1 });
+      expect(vm.sel().bow).toEqual({ gradeIndex: 9, qty: 1 });
+      expect(vm.sel().bridge).toEqual({ gradeIndex: 5, qty: 1 });
+      expect(vm.hasSelection()).toBe(true);
+      expect(el.querySelectorAll(desktop ? '.ct-slot-card.flash' : '.ct-tile.flash').length).toBe(4);
+      const t = toast.items()[0]!;
+      expect(t.text).toContain('主力艇');
+      expect(t.actions.map((a) => a.label)).toEqual(['回航線']);
+    });
+  }
+
+  it('原本有選擇時多一個「復原」,按了還原帶入前的選擇與數量', () => {
+    const { vm, toast } = mountWith(false, [1, 1, 1, 1], (v) => {
+      v.setGrade('hull', 7);
+      v.setQty('hull', 4);
+    });
+    const t = toast.items()[0]!;
+    expect(t.actions.map((a) => a.label)).toEqual(['復原', '回航線']);
+    expect(vm.sel().hull).toEqual({ gradeIndex: 0, qty: 1 });
+    toast.act(t, t.actions[0]!);
+    expect(vm.sel().hull).toEqual({ gradeIndex: 7, qty: 4 });
+    expect(vm.sel().stern.gradeIndex).toBeNull();
+    expect(vm.flash()).toBe(false);
+  });
+
+  it('庫存不動;再帶一次會換掉上一則提示', () => {
+    const { vm, toast } = mountWith(false, [1, 1, 1, 1], (v) => v.setStock('白鋼錠', 12));
+    expect(vm.stock()['白鋼錠']).toBe(12);
+    vm.importParts({ parts: [2, 2, 2, 2], name: '第二組' });
+    expect(toast.items()).toHaveLength(1);
+    expect(toast.items()[0]!.text).toContain('第二組');
+  });
+
+  it('提示的「回航線」切回 /route', () => {
+    const { toast } = mountWith(false, [1, 1, 1, 1]);
+    const t = toast.items()[0]!;
+    toast.act(t, t.actions.find((a) => a.label === '回航線')!);
+    expect(nav).toHaveBeenLastCalledWith('/route');
+  });
+
+  it('沒有待帶入的配置時,什麼都不動、也不跳提示', () => {
+    const { vm, toast } = mountWith(false);
+    expect(vm.hasSelection()).toBe(false);
+    expect(toast.items()).toHaveLength(0);
+  });
 });

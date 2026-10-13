@@ -2,8 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import type { RouteSubDto } from '@eranaut/shared';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Auth } from '../core/auth';
+import { CraftLink } from '../core/craft-link';
 import { Layout } from '../core/layout';
 import { SEA_INDEXES } from './core/data';
 import { ids } from './core/test-helpers';
@@ -245,5 +246,32 @@ describe('RouteSubs', () => {
     expect(btn(card, '改用這組')).toBeDefined();
     expect(btn(card, '刪除')).toBeUndefined();
     expect(el.querySelector('app-route-bind')).toBeNull();
+  });
+
+  describe('製作素材(D-262)', () => {
+    it('每張卡片都有「製作素材」,按了把這組配件帶去配件製作,並收起查看性能彈窗', async () => {
+      await mount([dto({ id: 'a', name: '主力艇', hull: 3, stern: 1, bow: 2, bridge: 3 })]);
+      const send = vi.spyOn(TestBed.inject(CraftLink), 'send').mockReturnValue(true);
+      vm.perfOpen.set(true);
+      const cards = [...el.querySelectorAll('.rt-card')];
+      expect(cards.length).toBeGreaterThan(0);
+      for (const c of cards) expect(c.querySelector('app-route-craft-btn button')).toBeTruthy();
+      const saved = cards.find((c) => c.textContent?.includes('主力艇'))!;
+      saved.querySelector<HTMLButtonElement>('app-route-craft-btn button')!.click();
+      expect(send).toHaveBeenCalledWith([3, 1, 2, 3], '主力艇');
+      expect(vm.perfOpen()).toBe(false);
+    });
+
+    it('手機收合列只放圖示鈕(有名稱可讀),展開後是文字鈕', async () => {
+      await mount([dto()], false);
+      const quick = el.querySelector('.rt-card-quick')!;
+      const ic = quick.querySelector<HTMLButtonElement>('app-route-craft-btn button')!;
+      expect(ic.classList.contains('icon')).toBe(true);
+      expect(ic.getAttribute('aria-label')).toBe('製作素材:主力艇');
+      expect(ic.textContent?.trim()).toBe('');
+      expandAll();
+      const open = el.querySelector('.rt-card-actions app-route-craft-btn button')!;
+      expect(open.textContent?.trim()).toBe('製作素材');
+    });
   });
 });

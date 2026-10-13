@@ -6,12 +6,14 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Layout } from '../core/layout';
 import { Toast } from '../core/toast';
 import { IconComponent } from '../ui/icon';
+import { buildCost } from '../craft/core/craft-cost';
 import { partLabel } from './core/build';
 import { SEA_INDEXES } from './core/data';
 import type { BuildGoal, BuildHit } from './core/buildfind';
 import { judgeBuild, routeNeed, type BuildJudgement } from './core/need';
 import { formatTravel, offReason } from './route-format';
 import { MIN_KEYS, RouteBuildVm, type MinKey } from './route-build-vm';
+import { RouteCraftBtn } from './route-craft-btn';
 import { RouteMap } from './route-map';
 import { RouteSeaPager } from './route-sea-pager';
 import { sameBuild } from './route-state';
@@ -35,6 +37,8 @@ interface HitCard {
   parts: string;
   partList: { label: string; value: string }[];
   partsText: string;
+  /** 材料負擔:改款件數、基礎素材總件數 */
+  cost: string;
   weight: number;
   stats: { label: string; value: number }[];
   /** 沒選航點時為 null */
@@ -51,7 +55,7 @@ interface HitCard {
  */
 @Component({
   selector: 'app-route-build',
-  imports: [NgTemplateOutlet, CdkTrapFocus, IconComponent, RouteMap, RouteSeaPager],
+  imports: [NgTemplateOutlet, CdkTrapFocus, IconComponent, RouteCraftBtn, RouteMap, RouteSeaPager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-build.html',
   host: { '(document:keydown.escape)': 'onEscape($event)' },
@@ -64,7 +68,8 @@ export class RouteBuild {
 
   protected readonly goals = GOALS;
   protected readonly minKeys = MIN_KEYS;
-  protected readonly shown = signal(PAGE);
+  /** 目前顯示幾筆(放在 root 的 VM 裡,看完材料回來不會縮回前 20 筆) */
+  protected readonly shown = this.b.shown;
   protected readonly hint = signal('');
   protected readonly busyKey = signal<string | null>(null);
   protected downOnOverlay = false;
@@ -105,6 +110,12 @@ export class RouteBuild {
     return `${si.sea.name} ${q.ids.map((id) => si.byId.get(id)!.code).join('›')}`;
   });
 
+  /** 「改款 ×2 · 基礎素材約 3,420 件」 */
+  private costText(h: BuildHit): string {
+    const c = buildCost(h.build.parts);
+    return `${c.mods > 0 ? `改款 ×${c.mods} · ` : '全原版 · '}基礎素材約 ${c.total.toLocaleString('en-US')} 件`;
+  }
+
   private lights(j: BuildJudgement): Light[] {
     const l = (label: string, g: { grade: string; have: number; gapToTop: number }): Light => ({ label, grade: g.grade, text: `${label} ${g.have}${g.gapToTop > 0 ? `(差 ${g.gapToTop})` : ''}` });
     return [l('探索', j.surveillance), l('收集', j.retrieval), l('距離', j.range), l('恩惠', j.favor)];
@@ -118,6 +129,7 @@ export class RouteBuild {
       parts: h.build.parts.map(partLabel).join(' '),
       partList: h.build.parts.map((p, i) => ({ label: PART_NAMES[i]!, value: partLabel(p) })),
       partsText: h.build.parts.map((p, i) => `${PART_NAMES[i]} ${partLabel(p)}`).join('、'),
+      cost: this.costText(h),
       weight: h.stats.weight,
       stats: [
         { label: '探索', value: h.stats.surveillance },

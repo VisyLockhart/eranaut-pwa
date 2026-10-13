@@ -11,7 +11,7 @@
     } @else {
     <div class="ct-slots">
       @for (slot of vm.slots; track slot) {
-        <section class="ct-slot-card" [class.set]="vm.sel()[slot].gradeIndex !== null" [attr.aria-label]="slotLabel(slot)">
+        <section class="ct-slot-card" [class.set]="vm.sel()[slot].gradeIndex !== null" [class.flash]="vm.flash() && vm.sel()[slot].gradeIndex !== null" [attr.aria-label]="slotLabel(slot)">
           <div class="ct-slot-head">
             <b class="ct-slot-title">{{ slotLabel(slot) }}</b>
             @if (infoOf(slot); as i) {
@@ -53,7 +53,7 @@
     } @else {
     <div class="ct-tiles">
       @for (slot of vm.slots; track slot) {
-        <button type="button" class="ct-tile" [class.set]="vm.sel()[slot].gradeIndex !== null" (click)="openSheet(slot)" [attr.aria-label]="'選擇' + slotLabel(slot)">
+        <button type="button" class="ct-tile" [class.set]="vm.sel()[slot].gradeIndex !== null" [class.flash]="vm.flash() && vm.sel()[slot].gradeIndex !== null" (click)="openSheet(slot)" [attr.aria-label]="'選擇' + slotLabel(slot)">
           <span class="ct-tile-name">{{ slotLabel(slot) }}</span>
           @if (vm.sel()[slot].gradeIndex !== null) {
             <span class="ct-tile-val">{{ gradeLabel(vm.sel()[slot].gradeIndex!) }}<i> ×{{ vm.sel()[slot].qty }}</i></span>
@@ -115,7 +115,7 @@
 <ng-template #slotsSum>
   @for (slot of vm.slots; track slot) {
     @if (vm.sel()[slot].gradeIndex !== null) {
-      <div class="ct-sum-row" [class.tap]="!layout.isDesktop()" [attr.role]="layout.isDesktop() ? null : 'button'" [attr.tabindex]="layout.isDesktop() ? null : 0" (click)="!layout.isDesktop() && openSheet(slot)" (keydown.enter)="!layout.isDesktop() && openSheet(slot)">
+      <div class="ct-sum-row" [class.flash]="vm.flash()" [class.tap]="!layout.isDesktop()" [attr.role]="layout.isDesktop() ? null : 'button'" [attr.tabindex]="layout.isDesktop() ? null : 0" (click)="!layout.isDesktop() && openSheet(slot)" (keydown.enter)="!layout.isDesktop() && openSheet(slot)">
         <b class="ct-slot-title">{{ slotLabel(slot) }}</b>
         <span class="ct-sum-val">{{ gradeLabel(vm.sel()[slot].gradeIndex!) }}<i> ×{{ vm.sel()[slot].qty }}</i></span>
         @if (infoOf(slot); as i) {

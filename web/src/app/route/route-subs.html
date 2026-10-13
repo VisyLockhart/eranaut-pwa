@@ -43,6 +43,7 @@
         @if (c.overweight) { <span class="g-none">超重</span> }
         @if (c.id; as id) {
           <span class="rt-quick-act">
+            <app-route-craft-btn [parts]="c.nums" [name]="c.title" [icon]="true" />
             <button type="button" class="rt-save-btn" [disabled]="c.active" (click)="useSub(id, c.title)">{{ c.active ? '使用中' : '使用' }}</button>
             <button type="button" class="rt-link-btn" [attr.aria-expanded]="false" [attr.aria-label]="'展開 ' + c.title" (click)="toggleOpen(c)">展開</button>
           </span>
@@ -90,10 +91,12 @@
       <button type="button" class="rt-save-btn primary" [disabled]="c.active" (click)="useSub(id, c.title)">{{ c.active ? '使用中' : '改用這組' }}</button>
     }
     <button type="button" class="rt-save-btn" (click)="editSub(c.id)">{{ short ? '編輯' : '編輯配置' }}</button>
+    <app-route-craft-btn [parts]="c.nums" [name]="c.title" [icon]="short" />
   } @else {
     @if (c.id; as id) {
       <button type="button" class="rt-save-btn" [disabled]="c.active" (click)="useSub(id, c.title)">{{ c.active ? '使用中' : '使用' }}</button>
       <button type="button" class="rt-save-btn" (click)="editSub(id)">編輯</button>
+      <app-route-craft-btn [parts]="c.nums" [name]="c.title" [icon]="short" />
       @if (confirmDel() === id) {
         <button type="button" class="rt-save-btn danger" (click)="remove(id)">確定刪除</button>
       } @else {
@@ -102,6 +105,7 @@
     } @else {
       <button type="button" class="rt-save-btn" [class.primary]="!vm.canSave" (click)="editSub(null)">編輯</button>
       @if (vm.canSave) { <button type="button" class="rt-save-btn primary" (click)="saveTemp()">儲存</button> }
+      <app-route-craft-btn [parts]="c.nums" [name]="c.title" [icon]="short" />
     }
   }
 </ng-template>

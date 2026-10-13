@@ -8,7 +8,8 @@ import type { Build, BuildStats, Tables } from './types';
 // 取代 D-214 的 `findBuildsForTarget`(target.ts)與 D-219 前的 `searchBuilds`(search.ts)。
 
 export type BuildGoal = 'collect' | 'favor' | 'speed' | 'custom';
-export type BuildSort = 'time' | 'range';
+/** time = 航行時間短優先;range = 距離高優先;cost = 材料少優先(需要 BuildQuery.cost) */
+export type BuildSort = 'time' | 'range' | 'cost';
 
 export const BUILD_LIMIT = 300;
 export const NEAREST_COUNT = 3;
@@ -47,6 +48,8 @@ export interface BuildQuery {
   /** 重量上限;未給或超過該等級上限時取該等級上限 */
   weightLimit?: number | null;
   sort?: BuildSort;
+  /** 材料負擔(越小越省);sort = 'cost' 時用,放在這裡是為了不讓航線核心依賴配件製作的資料 */
+  cost?: (parts: readonly number[]) => number;
   limit?: number;
 }
 
@@ -133,10 +136,14 @@ export function findBuilds(tables: Tables, si: SeaIndex, q: BuildQuery): BuildRe
     return { ...empty, nearest };
   }
   // 時間短優先:航行時間(沒選航點時依巡航速度由快到慢);距離高優先:距離性能由大到小;同分重量輕者在前
+  const cost = q.cost;
+  const sort = q.sort === 'cost' && !cost ? 'time' : (q.sort ?? 'time');
   ok.sort(
-    (q.sort ?? 'time') === 'range'
+    sort === 'range'
       ? (x, y) => y.stats.range - x.stats.range || byWeight(x, y) || byParts(x, y)
-      : (x, y) => byTime(x, y) || byWeight(x, y) || byParts(x, y),
+      : sort === 'cost' && cost
+        ? (x, y) => cost(x.build.parts) - cost(y.build.parts) || byTime(x, y) || byWeight(x, y) || byParts(x, y)
+        : (x, y) => byTime(x, y) || byWeight(x, y) || byParts(x, y),
   );
   return { ...empty, total: ok.length, hits: ok.slice(0, q.limit ?? BUILD_LIMIT) };
 }
