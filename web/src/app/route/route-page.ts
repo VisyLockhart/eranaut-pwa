@@ -125,7 +125,7 @@ export class RoutePage {
       this.toTop();
     });
 
-    // 從配件製作的提示按「回航線」回來:捲回離開時的位置(D-262)
+    // 從配件製作的提示按「回配置」回來:捲回離開時的位置(D-262)
     const restoreTop = inject(CraftLink).takeRestore();
     if (restoreTop) {
       afterNextRender(

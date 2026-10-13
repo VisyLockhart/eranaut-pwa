@@ -51,7 +51,7 @@ describe('RouteSubs', () => {
     for (const c of ['D', 'G', 'F', 'K']) vm.toggle(ids(g(), c)[0]!);
     fixture.detectChanges();
   };
-  const btn = (card: Element, text: string) => [...card.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text)!;
+  const btn = (card: Element, text: string) => [...card.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text || b.title === text)!;
 
   beforeEach(() => localStorage.clear());
   afterEach(() => vm.stop());
@@ -262,16 +262,47 @@ describe('RouteSubs', () => {
       expect(vm.perfOpen()).toBe(false);
     });
 
-    it('手機收合列只放圖示鈕(有名稱可讀),展開後是文字鈕', async () => {
+    it('配置卡的使用 / 編輯 / 儲存 / 刪除 / 製作素材都是圖示鈕,名稱在 title 與 aria-label', async () => {
+      await mount([dto()]);
+      const saved = [...el.querySelectorAll('.rt-card')].find((c) => c.textContent?.includes('主力艇'))!;
+      for (const t of ['使用', '編輯', '製作素材', '刪除']) {
+        const b = btn(saved, t);
+        expect(b, t).toBeDefined();
+        expect(b.textContent?.trim()).toBe('');
+        expect(b.getAttribute('aria-label')).toBe(`${t}:主力艇`);
+        expect(b.querySelector('app-icon')).toBeTruthy();
+      }
+      const temp = el.querySelector('.rt-card')!;
+      expect(btn(temp, '儲存').querySelector('app-icon')).toBeTruthy();
+    });
+
+    it('使用:未使用是空心圓、使用中是實心圓(停用但不變淡)', async () => {
+      await mount([dto()]);
+      const card = [...el.querySelectorAll('.rt-card')].find((c) => c.textContent?.includes('主力艇'))!;
+      expect(btn(card, '使用').classList.contains('on')).toBe(false);
+      btn(card, '使用').click();
+      fixture.detectChanges();
+      const now = el.querySelector('.rt-card')!;
+      const on = btn(now, '使用中');
+      expect(on.classList.contains('on')).toBe(true);
+      expect(on.disabled).toBe(true);
+      expect(on.getAttribute('aria-label')).toBe('使用中:主力艇');
+    });
+
+    it('刪除要按兩次:第二次顯示「確定刪除」文字', async () => {
+      await mount([dto()]);
+      const card = [...el.querySelectorAll('.rt-card')].find((c) => c.textContent?.includes('主力艇'))!;
+      btn(card, '刪除').click();
+      fixture.detectChanges();
+      expect(btn(card, '確定刪除').textContent?.trim()).toBe('確定刪除');
+    });
+
+    it('手機收合列也是圖示鈕(使用、製作素材),展開後文字連結仍在', async () => {
       await mount([dto()], false);
       const quick = el.querySelector('.rt-card-quick')!;
-      const ic = quick.querySelector<HTMLButtonElement>('app-route-craft-btn button')!;
-      expect(ic.classList.contains('icon')).toBe(true);
-      expect(ic.getAttribute('aria-label')).toBe('製作素材:主力艇');
-      expect(ic.textContent?.trim()).toBe('');
-      expandAll();
-      const open = el.querySelector('.rt-card-actions app-route-craft-btn button')!;
-      expect(open.textContent?.trim()).toBe('製作素材');
+      expect(btn(quick, '製作素材').textContent?.trim()).toBe('');
+      expect(btn(quick, '使用').textContent?.trim()).toBe('');
+      expect(btn(quick, '展開').textContent?.trim()).toBe('展開');
     });
   });
 });

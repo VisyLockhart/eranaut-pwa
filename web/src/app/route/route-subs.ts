@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import type { RouteSubDto } from '@eranaut/shared';
 import { Layout } from '../core/layout';
 import { Toast } from '../core/toast';
+import { IconComponent } from '../ui/icon';
 import { buildStats, partLabel } from './core/build';
 import { TABLES } from './core/data';
 import { judgeBuild, type BuildJudgement, type Grade } from './core/need';
@@ -54,7 +55,7 @@ interface Card {
  */
 @Component({
   selector: 'app-route-subs',
-  imports: [NgTemplateOutlet, RouteBind, RouteCraftBtn, RouteListTools, RoutePager, RouteStar],
+  imports: [NgTemplateOutlet, IconComponent, RouteBind, RouteCraftBtn, RouteListTools, RoutePager, RouteStar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-subs.html',
 })

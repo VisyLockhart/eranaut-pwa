@@ -111,7 +111,7 @@ export class CraftVm {
 
   /**
    * 從航線配置帶入(D-262):四個部位各設成該配置的配件、數量重設為 1;庫存不動。
-   * 不跳確認,改在提示上給「復原」(原本沒有選擇就不需要)與「回航線」。
+   * 不跳確認,改在提示上給「復原」(原本沒有選擇就不需要)與「回配置」。
    */
   importParts(imp: CraftImport): void {
     const prev = this.sel();
@@ -126,9 +126,9 @@ export class CraftVm {
     clearTimeout(this.flashTimer);
     this.flashTimer = setTimeout(() => this.flash.set(false), 1600);
     if (this.importToast !== null) this.toast.dismiss(this.importToast);
-    const actions = [{ label: '回航線', run: () => this.link.back() }];
+    const actions = [{ label: '回配置', run: () => this.link.back() }];
     if (this.beforeImport) actions.unshift({ label: '復原', run: () => this.undoImport() });
-    this.importToast = this.toast.show(`已帶入「${imp.name}」`, { ms: 8000, actions });
+    this.importToast = this.toast.show(`已帶入「${imp.name}」`, { ms: 3000, actions });
   }
   undoImport(): void {
     if (!this.beforeImport) return;

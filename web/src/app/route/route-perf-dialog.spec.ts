@@ -42,7 +42,7 @@ describe('RoutePerfDialog', () => {
     [3, 1, 2, 3].forEach((p, i) => vm.setPart(i as 0 | 1 | 2 | 3, p));
     for (const c of ['D', 'G', 'F', 'K']) vm.toggle(ids(g(), c)[0]!);
   };
-  const btn = (root: ParentNode, text: string) => [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text)!;
+  const btn = (root: ParentNode, text: string) => [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text || b.title === text)!;
 
   beforeEach(() => localStorage.clear());
   afterEach(() => vm.stop());
@@ -111,7 +111,7 @@ describe('RoutePerfDialog', () => {
     cfg.detectChanges();
     vm.perfOpen.set(true);
     fixture.detectChanges();
-    btn(el.querySelectorAll('.rt-card')[1]!, '編輯配置').click();
+    btn(el.querySelectorAll('.rt-card')[1]!, '編輯').click();
     cfg.detectChanges();
     expect(vm.draft()?.mode).toBe('edit');
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));

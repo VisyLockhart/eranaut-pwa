@@ -13,7 +13,7 @@ import { RouteVm } from './route-vm';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { style: 'display: contents' },
   template: `
-    <button type="button" class="rt-save-btn rt-craft-btn" [class.icon]="icon()" [attr.aria-label]="'製作素材:' + name()" title="製作素材" (click)="go()">
+    <button type="button" class="rt-craft-btn" [class.rt-icon-btn]="icon()" [class.rt-save-btn]="!icon()" [attr.aria-label]="'製作素材:' + name()" title="製作素材" (click)="go()">
       <app-icon name="anvil" [size]="16" />@if (!icon()) {<span>製作素材</span>}
     </button>
   `,

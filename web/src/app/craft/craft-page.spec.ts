@@ -221,7 +221,7 @@ describe('從航線帶入配置(D-262)', () => {
   });
 
   for (const desktop of [false, true]) {
-    it(`四個部位依配置設好、數量 1,部位發光,提示有「回航線」(${desktop ? '桌機' : '手機'})`, () => {
+    it(`四個部位依配置設好、數量 1,部位發光,提示有「回配置」(${desktop ? '桌機' : '手機'})`, () => {
       const { vm, el, toast } = mountWith(desktop, [3, 1, 10, 6]);
       expect(vm.sel().hull).toEqual({ gradeIndex: 2, qty: 1 });
       expect(vm.sel().stern).toEqual({ gradeIndex: 0, qty: 1 });
@@ -231,7 +231,7 @@ describe('從航線帶入配置(D-262)', () => {
       expect(el.querySelectorAll(desktop ? '.ct-slot-card.flash' : '.ct-tile.flash').length).toBe(4);
       const t = toast.items()[0]!;
       expect(t.text).toContain('主力艇');
-      expect(t.actions.map((a) => a.label)).toEqual(['回航線']);
+      expect(t.actions.map((a) => a.label)).toEqual(['回配置']);
     });
   }
 
@@ -241,7 +241,7 @@ describe('從航線帶入配置(D-262)', () => {
       v.setQty('hull', 4);
     });
     const t = toast.items()[0]!;
-    expect(t.actions.map((a) => a.label)).toEqual(['復原', '回航線']);
+    expect(t.actions.map((a) => a.label)).toEqual(['復原', '回配置']);
     expect(vm.sel().hull).toEqual({ gradeIndex: 0, qty: 1 });
     toast.act(t, t.actions[0]!);
     expect(vm.sel().hull).toEqual({ gradeIndex: 7, qty: 4 });
@@ -257,11 +257,25 @@ describe('從航線帶入配置(D-262)', () => {
     expect(toast.items()[0]!.text).toContain('第二組');
   });
 
-  it('提示的「回航線」切回 /route', () => {
+  it('提示的「回配置」切回 /route', () => {
     const { toast } = mountWith(false, [1, 1, 1, 1]);
     const t = toast.items()[0]!;
-    toast.act(t, t.actions.find((a) => a.label === '回航線')!);
+    toast.act(t, t.actions.find((a) => a.label === '回配置')!);
     expect(nav).toHaveBeenLastCalledWith('/route');
+  });
+
+  it('提示 3 秒後自動消失', () => {
+    vi.useFakeTimers();
+    try {
+      const { toast } = mountWith(false, [1, 1, 1, 1]);
+      expect(toast.items()).toHaveLength(1);
+      vi.advanceTimersByTime(2900);
+      expect(toast.items()).toHaveLength(1);
+      vi.advanceTimersByTime(200);
+      expect(toast.items()).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('沒有待帶入的配置時,什麼都不動、也不跳提示', () => {

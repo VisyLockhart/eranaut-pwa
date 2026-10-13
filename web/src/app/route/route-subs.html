@@ -44,7 +44,7 @@
         @if (c.id; as id) {
           <span class="rt-quick-act">
             <app-route-craft-btn [parts]="c.nums" [name]="c.title" [icon]="true" />
-            <button type="button" class="rt-save-btn" [disabled]="c.active" (click)="useSub(id, c.title)">{{ c.active ? '使用中' : '使用' }}</button>
+            <button type="button" class="rt-icon-btn" [class.on]="c.active" [disabled]="c.active" [attr.title]="c.active ? '使用中' : '使用'" [attr.aria-label]="(c.active ? '使用中:' : '使用:') + c.title" (click)="useSub(id, c.title)"><app-icon [name]="c.active ? 'circleFilled' : 'circle'" [size]="16" /></button>
             <button type="button" class="rt-link-btn" [attr.aria-expanded]="false" [attr.aria-label]="'展開 ' + c.title" (click)="toggleOpen(c)">展開</button>
           </span>
         }
@@ -86,26 +86,19 @@
 <app-route-pager [page]="list.page()" [pages]="list.pages()" [count]="list.filtered().length" (pageChange)="goPage($event)" />
 
 <ng-template #acts let-c let-short="short">
-  @if (actions() === 'pick') {
-    @if (c.id; as id) {
-      <button type="button" class="rt-save-btn primary" [disabled]="c.active" (click)="useSub(id, c.title)">{{ c.active ? '使用中' : '改用這組' }}</button>
-    }
-    <button type="button" class="rt-save-btn" (click)="editSub(c.id)">{{ short ? '編輯' : '編輯配置' }}</button>
-    <app-route-craft-btn [parts]="c.nums" [name]="c.title" [icon]="short" />
-  } @else {
-    @if (c.id; as id) {
-      <button type="button" class="rt-save-btn" [disabled]="c.active" (click)="useSub(id, c.title)">{{ c.active ? '使用中' : '使用' }}</button>
-      <button type="button" class="rt-save-btn" (click)="editSub(id)">編輯</button>
-      <app-route-craft-btn [parts]="c.nums" [name]="c.title" [icon]="short" />
-      @if (confirmDel() === id) {
-        <button type="button" class="rt-save-btn danger" (click)="remove(id)">確定刪除</button>
-      } @else {
-        <button type="button" class="rt-save-btn" (click)="askDelete(id)">刪除</button>
-      }
+  @if (c.id; as id) {
+    <button type="button" class="rt-icon-btn" [class.on]="c.active" [disabled]="c.active" [attr.title]="c.active ? '使用中' : actions() === 'pick' ? '改用這組' : '使用'" [attr.aria-label]="(c.active ? '使用中:' : actions() === 'pick' ? '改用這組:' : '使用:') + c.title" (click)="useSub(id, c.title)"><app-icon [name]="c.active ? 'circleFilled' : 'circle'" [size]="16" /></button>
+  }
+  <button type="button" class="rt-icon-btn" [class.primary]="!c.id && !vm.canSave" title="編輯" [attr.aria-label]="'編輯:' + c.title" (click)="editSub(c.id)"><app-icon name="pencil" [size]="16" /></button>
+  @if (!c.id && vm.canSave) {
+    <button type="button" class="rt-icon-btn primary" title="儲存" [attr.aria-label]="'儲存:' + c.title" (click)="saveTemp()"><app-icon name="save" [size]="16" /></button>
+  }
+  <app-route-craft-btn [parts]="c.nums" [name]="c.title" [icon]="true" />
+  @if (actions() === 'manage' && c.id; as id) {
+    @if (confirmDel() === id) {
+      <button type="button" class="rt-icon-btn danger confirm" title="確定刪除" [attr.aria-label]="'確定刪除:' + c.title" (click)="remove(id)"><app-icon name="trash" [size]="16" /><span>確定刪除</span></button>
     } @else {
-      <button type="button" class="rt-save-btn" [class.primary]="!vm.canSave" (click)="editSub(null)">編輯</button>
-      @if (vm.canSave) { <button type="button" class="rt-save-btn primary" (click)="saveTemp()">儲存</button> }
-      <app-route-craft-btn [parts]="c.nums" [name]="c.title" [icon]="short" />
+      <button type="button" class="rt-icon-btn" title="刪除" [attr.aria-label]="'刪除:' + c.title" (click)="askDelete(id)"><app-icon name="trash" [size]="16" /></button>
     }
   }
 </ng-template>

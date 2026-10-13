@@ -32,7 +32,7 @@ describe('RouteEditor(配置頁)', () => {
     fixture.detectChanges();
     el = fixture.nativeElement as HTMLElement;
   }
-  const btn = (root: ParentNode, text: string) => [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text)!;
+  const btn = (root: ParentNode, text: string) => [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text || b.title === text)!;
 
   beforeEach(() => localStorage.clear());
   afterEach(() => vm.stop());
