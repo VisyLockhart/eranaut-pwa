@@ -45,6 +45,7 @@
       <button type="button" class="d-collapse-handle" (click)="layout.toggleSidebar()" [attr.aria-expanded]="!layout.sidebarCollapsed()" [attr.aria-label]="layout.sidebarCollapsed() ? '展開側欄' : '收合側欄'" [attr.title]="layout.sidebarCollapsed() ? '展開側欄' : '收合側欄'">
         <app-icon [name]="layout.sidebarCollapsed() ? 'chevronRight' : 'chevronLeft'" [size]="14" />
       </button>
+      <div class="d-side-scroll">
       <div class="d-brand">
         <div class="logo-mark"><app-icon name="logo" [size]="19" /></div>
         <div class="d-brand-text">
@@ -74,6 +75,7 @@
         <button class="ws-icon-btn" style="width: 28px; height: 28px; flex: 0 0 auto" (click)="auth.logout()" aria-label="登出"><app-icon name="logout" [size]="16" /></button>
       </div>
       <app-copyright variant="footer" />
+      </div>
     </div>
     <div class="d-main"><router-outlet /></div>
   </div>

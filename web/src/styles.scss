@@ -212,7 +212,10 @@
   .d-sidebar.collapsed .d-user-text, .d-sidebar.collapsed app-copyright { display: none; }
   .d-sidebar.collapsed .d-nav-item { justify-content: center; padding: 9px 0; }
   .d-sidebar.collapsed .d-user { flex-direction: column; padding: 8px 0; gap: 8px; }
-  .d-sidebar { position: relative; }
+  /* 側欄固定在視窗左側、不隨右邊內容捲動(D-268):整頁仍由文件捲動(其他頁面的捲動邏輯不變),側欄用 sticky 貼在視窗頂端、高度 = 視窗高。
+     內容比視窗高(視窗很矮、介面放大)時,只有 .d-side-scroll 內部捲動;收合把手在 .d-side-scroll 外面,不會被裁掉 */
+  .d-sidebar { position: sticky; top: 0; align-self: flex-start; height: calc(100vh / var(--vu-div)); box-sizing: border-box; }
+  .d-side-scroll { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
   .d-collapse-handle {
     position: absolute; top: 26px; right: -13px; z-index: 20; width: 26px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center;
     border-radius: 50%; border: 1px solid var(--border-strong); background: var(--bg-elevated); color: var(--text); cursor: pointer; opacity: 0.95;

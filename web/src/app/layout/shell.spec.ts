@@ -37,6 +37,24 @@ describe('Shell 導覽', () => {
     expect(hrefs).toEqual(['/', '/workshops', '/update', '/route', '/craft', '/settings']);
   });
 
+  it('桌機側欄結構(D-268):內容在可捲動的 .d-side-scroll 內,收合把手在它外面(不被裁掉);收合 / 展開照常', () => {
+    const { f, el } = mount(true);
+    const side = el.querySelector('.d-sidebar')!;
+    const scroll = side.querySelector('.d-side-scroll')!;
+    expect(scroll.querySelector('.d-brand')).toBeTruthy();
+    expect(scroll.querySelectorAll('a.d-nav-item')).toHaveLength(6);
+    expect(scroll.querySelector('.d-user')).toBeTruthy();
+    const handle = side.querySelector('.d-collapse-handle')!;
+    expect(handle.parentElement).toBe(side);
+    expect(scroll.contains(handle)).toBe(false);
+    (handle as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(side.classList.contains('collapsed')).toBe(true);
+    (handle as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(side.classList.contains('collapsed')).toBe(false);
+  });
+
   it('頭像按鈕開啟選單(設定 / 登出),Esc 與點外面可關閉', () => {
     const { f, el } = mount(false);
     const btn = el.querySelector<HTMLButtonElement>('.m-avatar-btn')!;
