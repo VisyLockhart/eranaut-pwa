@@ -203,6 +203,9 @@
   .ghost-btn { padding: 11px; border-radius: 10px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; }
 
   /* ---------- Desktop shell ---------- */
+  /* 分隔線不跳動(D-269):桌機版永遠預留捲軸的位置。頁面高度不同(有的比視窗高、有的不到),有捲軸的頁面會把置中的版面推開
+     半個捲軸寬,切換功能時側欄與內容之間的分隔線就左右跳;預留後所有頁面的可用寬度一致。只作用在桌機版外殼(:has),手機版不受影響 */
+  html:has(.d-wrap) { scrollbar-gutter: stable; }
   .d-wrap { max-width: 1280px; margin: 0 auto; display: flex; min-height: calc(100vh / var(--vu-div)); }
   .d-sidebar { width: 232px; flex: 0 0 auto; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 22px 14px; }
   .d-sidebar { transition: width 0.18s; }
