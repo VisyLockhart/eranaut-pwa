@@ -104,9 +104,11 @@
               <button type="button" class="rt-stop-toggle" [attr.aria-expanded]="openStops().has(s.point.id)" [attr.aria-controls]="'rt-loot-' + s.point.id" [attr.aria-label]="s.point.code + ' ' + s.point.name + ',打撈物'" (click)="toggleStop(s.point.id)">
                 <span class="rt-n">{{ s.n }}</span>
                 <span class="rt-pname"><b>{{ s.point.code }}</b> {{ s.point.name }}</span>
-                <span class="rt-tier-sum" aria-hidden="true">
-                  @for (t of s.tiers; track t.label) { <i [class.locked]="t.locked">{{ t.label }}@if (t.locked) {<em>🔒</em>}</i> }
-                </span>
+                @if (!openStops().has(s.point.id)) {
+                  <span class="rt-tier-sum" aria-hidden="true">
+                    @for (t of s.tiers; track t.label) { <i [class.locked]="t.locked">{{ t.label }}@if (t.locked) {<em>🔒</em>}</i> }
+                  </span>
+                }
                 <app-icon [name]="openStops().has(s.point.id) ? 'chevronUp' : 'chevronDown'" [size]="14" />
               </button>
               <button type="button" class="rt-x" (click)="pick(s.point.id)" [attr.aria-label]="'取消 ' + s.point.code"><app-icon name="close" [size]="13" /></button>

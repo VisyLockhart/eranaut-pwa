@@ -30,19 +30,24 @@
         <div class="modal-title" id="rt-items-title">可撈到 {{ r.items.length }} 種物品</div>
         <button type="button" class="modal-close" (click)="closeItems()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
       </div>
-      <div class="rt-perf-route">{{ routeTitle() }}</div>
+      <div class="rt-perf-route">{{ routeTitle() }}@if (basisSurveillance() !== null) { · 依搜尋時的配置,探索 {{ basisSurveillance() }} }</div>
       <div class="rt-dlg-body">
-        @for (g of groups(); track g.label) {
-          <section class="rt-items-group" [attr.aria-label]="g.label">
-            <div class="rt-block-title">{{ g.label }} · {{ g.items.length }} 種</div>
-            <ul class="rt-items-list">
-              @for (i of g.items; track i.id) {
-                <li [class.wanted]="i.wanted"><span>{{ i.name }}</span><i>{{ i.stops }}</i></li>
-              }
-            </ul>
+        @for (g of groups(); track g.id) {
+          <section class="rt-items-group" [class.locked]="g.locked" [attr.aria-label]="(g.locked ? '未解鎖 ' : '') + g.label">
+            <button type="button" class="rt-items-head" [attr.aria-expanded]="!f.isFolded(g.id)" (click)="f.toggleFold(g.id)">
+              <span class="rt-block-title t-{{ g.key }}">@if (g.locked) {<i role="img" aria-label="未解鎖">🔒</i> }{{ g.label }} · {{ g.items.length }} 種@if (g.locked) { · 未解鎖 }</span>
+              <app-icon [name]="f.isFolded(g.id) ? 'chevronDown' : 'chevronUp'" [size]="14" />
+            </button>
+            @if (!f.isFolded(g.id)) {
+              <ul class="rt-items-list">
+                @for (i of g.items; track i.id) {
+                  <li [class.wanted]="i.wanted"><span>{{ i.name }}</span><i>{{ i.stops.join('、') }}@if (g.locked) { · 差 {{ i.gap }} }</i></li>
+                }
+              </ul>
+            }
           </section>
         }
-        <div class="rt-note">右邊的字母是撈到它的航點。探索值不夠的階層不會列出。</div>
+        <div class="rt-note">右邊的字母是撈到它的航點。探索值不夠的階層列在最後的「未解鎖」(預設收合),「差 N」是探索還差多少。</div>
       </div>
       <div class="rt-dlg-foot"><div class="rt-save-actions"><button type="button" class="rt-save-btn primary" (click)="closeItems()">關閉</button></div></div>
     </div>

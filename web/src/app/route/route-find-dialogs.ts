@@ -4,15 +4,15 @@ import { FormsModule } from '@angular/forms';
 import { Layout } from '../core/layout';
 import { IconComponent } from '../ui/icon';
 import { SEA_INDEXES } from './core/data';
-import type { SeaPoint } from './core/types';
+import { aggregateLoot, type LootSection } from './core/loot-list';
 import { RouteFindVm } from './route-find-vm';
-import { itemName, RouteLootVm } from './route-loot-vm';
+import { RouteLootVm } from './route-loot-vm';
 
 const ITEM_PAGE = 40;
 
-interface ItemGroup {
-  label: string;
-  items: { id: number; name: string; stops: string; wanted: boolean }[];
+/** 「看全部」的一段;id 以 `o-`(已解鎖)/ `l-`(未解鎖)開頭,給展開收合記錄用 */
+interface ItemGroup extends LootSection {
+  id: string;
 }
 
 /**
@@ -36,35 +36,20 @@ export class RouteFindDialogs {
   protected readonly itemsShown = signal(ITEM_PAGE);
   protected readonly pickItems = computed(() => this.l.matches().slice(0, this.itemsShown()));
 
-  /** 「看全部」:這條路線拿得到的物品,依低 / 中 / 高階分組,並標出由哪幾站撈到 */
+  /**
+   * 「看全部」(D-263):高 → 中 → 低 分段,最後是「未解鎖」(預設收合,標出差多少);
+   * 段內依配件製作的名稱排序,指定的物品排最前。判定用搜尋當時的探索值。
+   */
   protected readonly groups = computed<ItemGroup[]>(() => {
     const r = this.f.itemsFor();
     const stats = this.f.searchedStats();
     if (!r || !stats) return [];
     const si = SEA_INDEXES.find((s) => s.sea.sea === r.sea)!;
-    const wanted = new Set(r.got);
-    const tiers: { label: string; get: (p: SeaPoint) => number[] }[] = [
-      { label: '低階', get: (p) => p.drop.low },
-      { label: '中階', get: (p) => (stats.surveillance >= p.statReq.surveillanceMid ? p.drop.mid : []) },
-      { label: '高階', get: (p) => (stats.surveillance >= p.statReq.surveillanceHigh ? p.drop.high : []) },
-    ];
-    const out: ItemGroup[] = [];
-    for (const t of tiers) {
-      const stops = new Map<number, string[]>();
-      for (const pid of r.order) {
-        const p = si.byId.get(pid)!;
-        for (const id of t.get(p)) stops.set(id, [...(stops.get(id) ?? []), p.code]);
-      }
-      if (stops.size === 0) continue;
-      out.push({
-        label: t.label,
-        items: [...stops]
-          .map(([id, codes]) => ({ id, name: itemName(id), stops: codes.join('、'), wanted: wanted.has(id) }))
-          .sort((a, b) => Number(b.wanted) - Number(a.wanted) || a.name.localeCompare(b.name, 'zh-Hant')),
-      });
-    }
-    return out;
+    const points = r.order.map((id) => si.byId.get(id)!);
+    return aggregateLoot(points, stats.surveillance, new Set(r.got)).map((g) => ({ ...g, id: `${g.locked ? 'l' : 'o'}-${g.key}` }));
   });
+  /** 判定依據:搜尋當時配置的探索值 */
+  protected readonly basisSurveillance = computed(() => this.f.searchedStats()?.surveillance ?? null);
   protected readonly routeTitle = computed(() => {
     const r = this.f.itemsFor();
     if (!r) return '';

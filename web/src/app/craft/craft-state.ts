@@ -1,4 +1,5 @@
 import partsJson from '../route/data/parts.json';
+import { compareNames } from '../core/name-sort';
 import { CRAFT_DATA, SLOT_KEYS } from './core/data';
 import { DIRECT_PREFIX, frameName, groupRank, type CalcRow } from './core/craft-calc';
 import type { CraftData, SlotKey } from './core/types';
@@ -112,22 +113,7 @@ export interface RowGroup {
 /** 追蹤分類的名稱 */
 export const TRACE_GROUP = '追蹤';
 
-const NAME_COLLATOR = new Intl.Collator('zh-Hant-u-co-stroke');
-/** 名稱排序時,前幾個字相同的視為同一群(白鋼錠、白鋼鉚釘、白鋼連接板) */
-const NAME_PREFIX = 2;
-
-/**
- * 名稱排序:① 前兩個字相同的聚成一群,群之間依筆畫;② 同群內字數少的先;③ 字數相同再依筆畫。
- * 例:白鋼板、白鋼釘、白鋼錠、白鋼鉚釘、白鋼連接板、鈷鐵板……
- */
-export function compareNames(a: string, b: string): number {
-  const ca = [...a];
-  const cb = [...b];
-  const k = NAME_COLLATOR.compare(ca.slice(0, NAME_PREFIX).join(''), cb.slice(0, NAME_PREFIX).join(''));
-  if (k !== 0) return k;
-  if (ca.length !== cb.length) return ca.length - cb.length;
-  return NAME_COLLATOR.compare(a, b);
-}
+export { compareNames };
 
 /** 碎晶 / 水晶 / 晶簇維持遊戲內的元素順序(不套名稱排序) */
 const ELEMENT_ORDER = ['火', '冰', '風', '土', '雷', '水'];

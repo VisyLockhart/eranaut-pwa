@@ -696,7 +696,11 @@ app-route-result, app-route-editor { display: flex; flex-direction: column; gap:
 .rt-loot-head b { color: var(--accent); margin-right: 4px; }
 .rt-loot-exp { margin-left: 8px; font-size: 11px; color: var(--text-dim); }
 .rt-tier { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: 12px; padding: 2px 0; }
-.rt-tier-label { flex: 0 0 34px; color: var(--text-dim); }
+.rt-tier-label { flex: 0 0 56px; color: var(--text-dim); white-space: nowrap; }
+.rt-tier.t-high .rt-tier-label { color: var(--amber); font-weight: 700; }
+.rt-tier.t-mid .rt-tier-label { color: var(--accent); }
+.rt-tier-lk { display: inline-block; width: 16px; margin-left: 2px; font-style: normal; font-size: 10px; text-align: center; }
+.rt-tier-lk i { font-style: normal; }
 .rt-tier-items { flex: 1 1 140px; min-width: 0; overflow-wrap: anywhere; }
 .rt-tier.locked { opacity: 0.45; }
 .rt-tier-lock { color: var(--amber); font-size: 11px; }
@@ -996,6 +1000,12 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .rt-help p { margin: 0; font-size: 13px; line-height: 1.65; color: var(--text-muted); }
 .rt-help b { color: var(--text); }
 .rt-items-group { display: flex; flex-direction: column; }
+.rt-items-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 36px; padding: 4px 0; margin-bottom: 4px; background: var(--bg-elevated); border: 0; border-bottom: 1px solid var(--border); color: var(--text-muted); font: inherit; text-align: left; cursor: pointer; }
+.rt-items-head .rt-block-title { margin: 0; }
+.rt-items-head .rt-block-title.t-high { color: var(--amber); }
+.rt-items-head .rt-block-title.t-mid { color: var(--accent); }
+.rt-items-head .rt-block-title i { font-style: normal; }
+.rt-items-group.locked .rt-items-list { opacity: 0.6; }
 .rt-items-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .rt-items-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 12.5px; overflow-wrap: anywhere; }
 .rt-items-list li i { flex: 0 0 auto; font-style: normal; font-size: 11px; color: var(--text-dim); }

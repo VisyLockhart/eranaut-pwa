@@ -310,6 +310,8 @@ describe('RoutePage', () => {
     expect(el.querySelectorAll('.rt-picked li')).toHaveLength(2);
     expect(el.querySelector('.rt-stop-loot')).toBeNull();
     expect(el.querySelectorAll('.rt-picked li')[0]!.querySelectorAll('.rt-tier-sum i')).toHaveLength(3);
+    // 收合時的小標記順序:高 → 中 → 低(D-263)
+    expect(el.querySelectorAll('.rt-picked li')[0]!.querySelector('.rt-tier-sum')!.textContent!.replace(/\s|🔒/g, '')).toBe('高中低');
     const toggle = () => el.querySelectorAll<HTMLButtonElement>('.rt-stop-toggle')[0]!;
     expect(toggle().getAttribute('aria-expanded')).toBe('false');
     toggle().click();
@@ -317,6 +319,14 @@ describe('RoutePage', () => {
     expect(toggle().getAttribute('aria-expanded')).toBe('true');
     expect(el.querySelectorAll('.rt-stop-loot')).toHaveLength(1);
     expect(el.querySelector('.rt-stop-loot')!.textContent).toContain('低階');
+    // 展開後標頭小標記隱藏,由打撈物列的標籤取代;列依 高 → 中 → 低,未解鎖排最後
+    expect(el.querySelectorAll('.rt-picked li')[0]!.querySelector('.rt-tier-sum')).toBeNull();
+    const rows = [...el.querySelectorAll('.rt-stop-loot .rt-tier')].map((r) => ({ key: ['high', 'mid', 'low'].find((k) => r.classList.contains(`t-${k}`))!, locked: r.classList.contains('locked') }));
+    expect(rows).toHaveLength(3);
+    const firstLocked = rows.findIndex((r) => r.locked);
+    if (firstLocked >= 0) expect(rows.slice(firstLocked).every((r) => r.locked)).toBe(true);
+    const open = rows.filter((r) => !r.locked).map((r) => r.key);
+    expect(open).toEqual(['high', 'mid', 'low'].filter((k) => open.includes(k as 'high')));
     toggle().click();
     f.detectChanges();
     expect(el.querySelector('.rt-stop-loot')).toBeNull();

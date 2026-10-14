@@ -57,6 +57,21 @@ export class RouteFindVm {
   readonly excluded = signal<ReadonlySet<number>>(new Set());
   /** 「看全部」物品視窗要顯示哪一條路線;null = 關 */
   readonly itemsFor = signal<FindRoute | null>(null);
+  /** 「看全部」各段的展開 / 收合(true = 收合);沒記錄的段:未解鎖預設收合、其餘展開(D-263)。放這裡,換版面重建元件時不丟 */
+  readonly itemsFold = signal<Readonly<Record<string, boolean>>>({});
+  /** 開啟「看全部」:換一條路線時各段回到預設展開狀態 */
+  openItems(r: FindRoute): void {
+    this.itemsFold.set({});
+    this.itemsFor.set(r);
+  }
+  /** 這一段目前是不是收合 */
+  isFolded(id: string): boolean {
+    return this.itemsFold()[id] ?? id.startsWith('l-');
+  }
+  toggleFold(id: string): void {
+    const now = this.isFolded(id);
+    this.itemsFold.update((m) => ({ ...m, [id]: !now }));
+  }
   /** 點了等級不足的點時顯示的提示(給 aria-live 與畫面) */
   readonly tapNote = signal('');
 

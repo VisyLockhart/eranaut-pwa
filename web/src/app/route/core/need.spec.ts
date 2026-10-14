@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildStats } from './build';
 import { TABLES } from './data';
-import { judgeBuild, lootTiers, routeNeed } from './need';
+import { judgeBuild, lootTiers, orderedTiers, routeNeed } from './need';
 import { SEA, ids, sea } from './test-helpers';
 import type { SeaPoint } from './types';
 
@@ -87,5 +87,27 @@ describe('打撈物階層', () => {
   it('剛好等於門檻就解鎖', () => {
     expect(lootTiers(p, 235).high.locked).toBe(false);
     expect(lootTiers(p, 205).mid.locked).toBe(false);
+  });
+});
+
+describe('打撈物顯示順序(D-263)', () => {
+  const p = {
+    statReq: { surveillanceMid: 205, surveillanceHigh: 235, retrievalNorm: 0, retrievalOptim: 0, favor: 0 },
+    drop: { low: [1], mid: [2, 3], high: [4] },
+  } as unknown as SeaPoint;
+  const order = (surveillance: number) => orderedTiers(lootTiers(p, surveillance)).map((t) => `${t.key}${t.locked ? '*' : ''}`);
+
+  it('全部解鎖:高 → 中 → 低', () => {
+    expect(order(300)).toEqual(['high', 'mid', 'low']);
+  });
+  it('高階鎖住:高階排最後', () => {
+    expect(order(230)).toEqual(['mid', 'low', 'high*']);
+  });
+  it('中、高都鎖:低階在最前,未解鎖依 高 → 中', () => {
+    expect(order(100)).toEqual(['low', 'high*', 'mid*']);
+  });
+  it('保留差值與物品', () => {
+    const t = orderedTiers(lootTiers(p, 230));
+    expect(t[2]).toMatchObject({ label: '高階', gap: 5, ids: [4] });
   });
 });

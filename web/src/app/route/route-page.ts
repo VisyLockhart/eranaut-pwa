@@ -52,7 +52,7 @@ export class RoutePage {
   /** 試著點了不能選的航點時顯示原因 */
   protected readonly hint = signal('');
 
-  /** 已選航點;`tiers` 是收合時列上顯示的三階摘要(高階 / 中階探索不足時加鎖頭) */
+  /** 已選航點;`tiers` 是收合時列上顯示的三階摘要(高 → 中 → 低,高階 / 中階探索不足時加鎖頭;展開後由打撈物列的標籤取代,D-263) */
   protected readonly picked = computed(() => {
     const surveillance = this.vm.stats().surveillance;
     return this.vm.seq().map((id, i) => {
@@ -62,9 +62,9 @@ export class RoutePage {
         n: i + 1,
         point,
         tiers: [
-          { label: '低', locked: t.low.locked },
-          { label: '中', locked: t.mid.locked },
           { label: '高', locked: t.high.locked },
+          { label: '中', locked: t.mid.locked },
+          { label: '低', locked: t.low.locked },
         ],
       };
     });

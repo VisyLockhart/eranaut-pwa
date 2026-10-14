@@ -249,6 +249,19 @@ describe('推薦頁(D-212、D-222)', () => {
       expect(el.querySelector('#rt-items-title')!.textContent).toContain(`可撈到 ${rs[0]!.items.length} 種物品`);
       expect(el.querySelectorAll('.rt-items-group').length).toBeGreaterThan(0);
       expect(el.querySelector('.rt-items-list li.wanted')!.textContent).toContain(target.name);
+      // 分段順序:已解鎖 高 → 中 → 低,未解鎖(預設收合)在最後(D-263)
+      const heads = [...el.querySelectorAll<HTMLButtonElement>('.rt-items-head')];
+      const rank = (h: HTMLElement) => ({ 高: 0, 中: 1, 低: 2 })[h.textContent!.replace(/🔒|\s/g, '')[0] as '高'];
+      const unlocked = heads.filter((h) => !h.textContent!.includes('未解鎖'));
+      expect(unlocked.map(rank)).toEqual([...unlocked.map(rank)].sort());
+      const lockedAt = heads.findIndex((h) => h.textContent!.includes('未解鎖'));
+      if (lockedAt >= 0) {
+        expect(heads.slice(lockedAt).every((h) => h.textContent!.includes('未解鎖'))).toBe(true);
+        expect(heads[lockedAt]!.getAttribute('aria-expanded')).toBe('false');
+        heads[lockedAt]!.click();
+        f.detectChanges();
+        expect(el.querySelectorAll<HTMLButtonElement>('.rt-items-head')[lockedAt]!.getAttribute('aria-expanded')).toBe('true');
+      }
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       f.detectChanges();
       expect(el.querySelector('#rt-items-title')).toBeNull();

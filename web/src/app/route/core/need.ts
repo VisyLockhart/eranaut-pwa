@@ -91,6 +91,28 @@ export interface LootTiers {
   high: { ids: number[]; locked: boolean; gap: number };
 }
 
+export type TierKey = 'high' | 'mid' | 'low';
+
+export const TIER_LABEL: Readonly<Record<TierKey, string>> = { high: '高階', mid: '中階', low: '低階' };
+
+export interface OrderedTier {
+  key: TierKey;
+  label: string;
+  locked: boolean;
+  /** locked 時為探索值還差多少 */
+  gap: number;
+  ids: number[];
+}
+
+/**
+ * 打撈物的顯示順序(D-263):已解鎖的依 高 → 中 → 低,未解鎖的排在最後(依 高 → 中;低階永遠解鎖)。
+ * 航點列、收合摘要之外的所有打撈物顯示共用這個順序。
+ */
+export function orderedTiers(t: LootTiers): OrderedTier[] {
+  const all = (['high', 'mid', 'low'] as const).map((key) => ({ key, label: TIER_LABEL[key], locked: t[key].locked, gap: t[key].gap, ids: t[key].ids }));
+  return [...all.filter((x) => !x.locked), ...all.filter((x) => x.locked)];
+}
+
 /** 該站探索值 ≥ mid 門檻才拿得到中階、≥ high 才拿得到高階(RS-14);locked 時 gap 為「差 N」 */
 export function lootTiers(point: SeaPoint, surveillance: number): LootTiers {
   const midGap = Math.max(0, point.statReq.surveillanceMid - surveillance);

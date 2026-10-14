@@ -198,6 +198,6 @@ export class RouteFind {
     this.vm.requestLoad(c.sea, c.order);
   }
   protected showAllItems(c: Card): void {
-    this.f.itemsFor.set(c.route);
+    this.f.openItems(c.route);
   }
 }
