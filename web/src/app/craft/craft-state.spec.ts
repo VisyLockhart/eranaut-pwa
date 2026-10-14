@@ -85,13 +85,13 @@ describe('名稱排序', () => {
 
   it('追蹤分類置頂:被點的列第一,關聯項目接著;其餘照排序;沒有命中的清單不出現追蹤分類', () => {
     const rows = [row('鈷鐵錠', '金屬'), row('白鋼錠', '金屬'), row('白鋼鉚釘', '金屬'), row('熊脂', '鍊金原料')];
-    const gs = listGroups(rows, 'group', '白鋼鉚釘', new Set(['白鋼錠', '熊脂']));
+    const gs = listGroups(rows, 'group', 'base:白鋼鉚釘', new Set(['base:白鋼錠', 'base:熊脂']));
     expect(gs[0]).toMatchObject({ group: '追蹤', trace: true });
     expect(gs[0]!.rows.map((r) => r.name)).toEqual(['白鋼鉚釘', '白鋼錠', '熊脂']);
     expect(gs.slice(1).map((g) => [g.group, g.rows.map((r) => r.name)])).toEqual([['金屬', ['鈷鐵錠']]]);
-    const flat = listGroups(rows, 'name', '白鋼鉚釘', new Set(['白鋼錠']));
+    const flat = listGroups(rows, 'name', 'base:白鋼鉚釘', new Set(['base:白鋼錠']));
     expect(flat.map((g) => g.group)).toEqual(['追蹤', '']);
-    expect(listGroups(rows, 'group', '不存在', new Set())).toEqual(groupRows(rows, 'group'));
+    expect(listGroups(rows, 'group', 'base:不存在', new Set())).toEqual(groupRows(rows, 'group'));
     expect(listGroups(rows, 'group', null, new Set())).toEqual(groupRows(rows, 'group'));
   });
 
@@ -250,14 +250,14 @@ describe('CraftVm', () => {
     const pin = vm.result().directs.find((r) => r.group !== '碎晶')!.name;
     for (const sort of ['group', 'name'] as const) {
       vm.patchView({ sort });
-      vm.togglePin(pin);
+      vm.togglePin(pin, 'direct');
       const g = vm.groups();
       expect(g.directs[0]).toMatchObject({ group: '追蹤', trace: true });
       expect(g.directs[0]!.rows[0]!.name).toBe(pin);
       const traced = g.directs[0]!.rows.map((r) => r.name);
       // 被移到追蹤分類的列不會在其他分組重複出現
       for (const x of g.directs.slice(1)) for (const r of x.rows) expect(traced).not.toContain(r.name);
-      vm.togglePin(pin);
+      vm.togglePin(pin, 'direct');
       expect(vm.groups().directs.some((x) => x.trace)).toBe(false);
     }
   });
@@ -269,7 +269,7 @@ describe('CraftVm', () => {
     expect(vm.groups().bases).toHaveLength(1);
     expect(vm.allCollapsed(['bases'])).toBe(false);
     vm.patchView({ sort: 'group' });
-    vm.togglePin(vm.result().directs.find((r) => r.group !== '碎晶')!.name);
+    vm.togglePin(vm.result().directs.find((r) => r.group !== '碎晶')!.name, 'direct');
     vm.toggleAllGroups(['directs']);
     expect([...vm.collapsed()].some((k) => k.includes('追蹤'))).toBe(false);
   });

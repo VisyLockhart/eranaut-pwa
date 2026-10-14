@@ -200,6 +200,22 @@ describe('CraftPage', () => {
       expect(el.querySelector('.ct-group.trace')).toBeNull();
     });
 
+    it(`追蹤交納素材的玄鋼錠:同為交納素材的玄鋼塊(配件直接要的)不被列入(D-265,${desktop ? '桌機' : '手機'})`, () => {
+      const { f, vm, el } = mount(desktop);
+      for (const slot of ['hull', 'stern', 'bow', 'bridge'] as const) vm.setGrade(slot, 0);
+      vm.patchView({ tab: 'finals' });
+      f.detectChanges();
+      const rows = () => [...el.querySelectorAll<HTMLElement>('.ct-row')];
+      const nameOf = (r: HTMLElement) => r.querySelector('.ct-name')!.textContent;
+      rows().find((r) => nameOf(r) === '玄鋼錠')!.click();
+      f.detectChanges();
+      const traced = [...el.querySelectorAll<HTMLElement>('.ct-group.trace')].flatMap((g) => [...g.querySelectorAll('.ct-row .ct-name')].map((n) => n.textContent));
+      expect(traced).toContain('玄鋼錠');
+      // 交納素材欄的追蹤分類只有被點的那一列
+      expect(el.querySelector('.ct-group.trace')!.querySelectorAll('.ct-row').length).toBe(desktop ? 1 : 1);
+      expect(rows().find((r) => nameOf(r) === '玄鋼塊')!.classList.contains('rel')).toBe(false);
+    });
+
     it(`第二次點已追蹤的可製作品開配方樹;取消追蹤關視窗(${desktop ? '桌機' : '手機'})`, () => {
       const { f, vm, el } = mount(desktop);
       vm.setGrade('hull', 5);
@@ -229,7 +245,7 @@ describe('CraftPage', () => {
       vm.patchView({ tab: 'directs' });
       f.detectChanges();
       const pin = vm.result().directs.find((r) => r.group !== '碎晶' && vm.hasTree(r.name))!.name;
-      vm.togglePin(pin);
+      vm.togglePin(pin, 'direct');
       vm.openTree(pin);
       f.detectChanges();
       expect(el.querySelector('.ct-tree-dlg')).toBeTruthy();

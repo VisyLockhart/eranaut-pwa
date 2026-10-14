@@ -1,7 +1,7 @@
 import partsJson from '../route/data/parts.json';
 import { compareNames } from '../core/name-sort';
 import { CRAFT_DATA, SLOT_KEYS } from './core/data';
-import { DIRECT_PREFIX, frameName, groupRank, type CalcRow } from './core/craft-calc';
+import { DIRECT_PREFIX, frameName, groupRank, type CalcResult, type CalcRow, type RowKind } from './core/craft-calc';
 import type { CraftData, SlotKey } from './core/types';
 
 /** 單一部位的選擇:gradeIndex 0~9(0~4 = 1~5 級,5~9 = 1改~5改),null = 沒選 */
@@ -134,11 +134,41 @@ export function groupRows(rows: readonly CalcRow[], sort: CraftSort = 'group'): 
     .map(([group, rs]) => ({ group, rows: [...rs].sort(ELEMENT_GROUPS.has(group) ? (a, b) => elementRank(a.name) - elementRank(b.name) || byName(a, b) : byName) }));
 }
 
-/** 加上追蹤分類:被追蹤的列與它的關聯項目移到最上面(被點的列排第一),其餘照排序方式 */
+/** 列的識別:同一個名稱可以同時是交納素材、直接素材、基礎素材的不同列,追蹤要分得出是哪一列 */
+export const rowId = (r: { kind: RowKind; name: string }): string => `${r.kind}:${r.name}`;
+
+const LAYER: Record<RowKind, number> = { final: 0, direct: 1, base: 2 };
+
+/**
+ * 追蹤的關聯列(D-265):被點的那一列 + 它「下一層」的成分 + 用到它的「上一層」品項,依層級比對、不只看名稱。
+ * - 成分只會落在比它更下層的欄:交納素材 → 直接素材(含基礎素材欄中同名的原料);直接素材 → 基礎素材。
+ * - 原料(直接素材欄的原料與基礎素材欄同名那列)是同一個東西,互為對應。
+ *   同欄同名的列是別的來源(例:配件直接要的玄鋼塊,與玄鋼錠的成分玄鋼塊),不算。
+ * - 用到它的品項只會落在更上層的欄:基礎素材 ← 直接素材、交納素材;直接素材 ← 交納素材。
+ */
+export function relatedIds(result: CalcResult, pin: { name: string; kind: RowKind } | null): Set<string> {
+  const out = new Set<string>();
+  if (!pin) return out;
+  const all = [...result.finals, ...result.directs, ...result.bases];
+  const me = all.find((r) => r.kind === pin.kind && r.name === pin.name);
+  if (!me) return out;
+  const k = LAYER[me.kind];
+  const inputs = new Set(Object.keys(me.inputs));
+  for (const r of all) {
+    const l = LAYER[r.kind];
+    // 原料在直接素材與基礎素材欄各有一列(同一個東西,基礎素材是總量):點其中一列,另一列一起亮
+    if (r !== me && r.name === me.name && l + k === 3 && l * k === 2) out.add(rowId(r));
+    else if (l > k && inputs.has(r.name)) out.add(rowId(r));
+    else if (l < k && Object.hasOwn(r.inputs, me.name)) out.add(rowId(r));
+  }
+  return out;
+}
+
+/** 加上追蹤分類:被追蹤的列與它的關聯項目移到最上面(被點的列排第一),其餘照排序方式。pin / related 都是 rowId */
 export function listGroups(rows: readonly CalcRow[], sort: CraftSort, pin: string | null, related: ReadonlySet<string>): RowGroup[] {
   if (!pin) return groupRows(rows, sort);
-  const hit = (r: CalcRow) => r.name === pin || related.has(r.name);
-  const traced = rows.filter(hit).sort((a, b) => Number(b.name === pin) - Number(a.name === pin) || compareNames(a.name, b.name));
+  const hit = (r: CalcRow) => rowId(r) === pin || related.has(rowId(r));
+  const traced = rows.filter(hit).sort((a, b) => Number(rowId(b) === pin) - Number(rowId(a) === pin) || compareNames(a.name, b.name));
   const rest = groupRows(rows.filter((r) => !hit(r)), sort);
   return traced.length > 0 ? [{ group: TRACE_GROUP, rows: traced, trace: true }, ...rest] : rest;
 }

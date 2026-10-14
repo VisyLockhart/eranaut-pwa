@@ -2,13 +2,13 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { CraftLink, type CraftImport } from '../core/craft-link';
 import { Toast } from '../core/toast';
 import { CRAFT_KEY_SEL as KEY_SEL, CRAFT_KEY_STOCK as KEY_STOCK, CRAFT_KEY_VIEW as KEY_VIEW } from './craft-keys';
-import { calculate, type CalcResult, type CalcRow, type Selection } from './core/craft-calc';
+import { calculate, type CalcResult, type CalcRow, type RowKind, type Selection } from './core/craft-calc';
 import { buildTree, hasTree, type TreeNode } from './core/craft-tree';
 import { finalsProgress } from './core/craft-stock';
 import { CRAFT_DATA, SLOT_KEYS } from './core/data';
 import type { SlotKey } from './core/types';
 import {
-  DEFAULT_VIEW, MAX_QTY, TAB_LABEL, TABS, clampQty, copyLines, emptySel, listGroups, missing, sanitizeSel, sanitizeStock, sanitizeView,
+  DEFAULT_VIEW, MAX_QTY, TAB_LABEL, TABS, clampQty, copyLines, emptySel, listGroups, missing, relatedIds, rowId, sanitizeSel, sanitizeStock, sanitizeView,
   type CraftTab, type CraftView, type SelMap,
 } from './craft-state';
 
@@ -38,6 +38,8 @@ export class CraftVm {
   readonly stock = signal<Record<string, number>>(sanitizeStock(read(KEY_STOCK)));
   /** 追蹤中的列(點一列:看它用到什麼、被誰用) */
   readonly pin = signal<string | null>(null);
+  /** 被追蹤的列在哪一欄(同名的列可在不同欄,D-265) */
+  readonly pinKind = signal<RowKind | null>(null);
   /** 開著配方樹的品項名稱(已追蹤的品項再點一次才開,D-264);null = 關。放這裡,換版面重建頁面時不丟 */
   readonly treeFor = signal<string | null>(null);
   readonly tree = computed<TreeNode | null>(() => {
@@ -83,7 +85,7 @@ export class CraftVm {
   readonly groups = computed(() => {
     const v = this.visible();
     const sort = this.view().sort;
-    const pin = this.pin();
+    const pin = this.pinId();
     const rel = this.related();
     return { finals: listGroups(v.finals, sort, pin, rel), directs: listGroups(v.directs, sort, pin, rel), bases: listGroups(v.bases, sort, pin, rel) };
   });
@@ -100,15 +102,18 @@ export class CraftVm {
   /** 追蹤:被點的列 + 它的成分 + 用到它的品項 */
   readonly related = computed<ReadonlySet<string>>(() => {
     const p = this.pin();
-    if (!p) return new Set();
-    const r = this.result();
-    const out = new Set<string>();
-    for (const row of [...r.finals, ...r.directs, ...r.bases]) {
-      if (row.name !== p) continue;
-      for (const n of [...Object.keys(row.inputs), ...row.usedBy]) out.add(n);
-    }
-    return out;
+    const k = this.pinKind();
+    return p && k ? relatedIds(this.result(), { name: p, kind: k }) : new Set<string>();
   });
+  /** 被追蹤的那一列的識別(同名可能有多列,見 rowId) */
+  readonly pinId = computed(() => {
+    const p = this.pin();
+    const k = this.pinKind();
+    return p && k ? rowId({ name: p, kind: k }) : null;
+  });
+  isPinned(r: { kind: RowKind; name: string }): boolean {
+    return this.pinId() === rowId(r);
+  }
 
   constructor() {
     effect(() => write(KEY_SEL, this.sel()));
@@ -215,8 +220,14 @@ export class CraftVm {
     this.treeFor.set(null);
   }
 
-  togglePin(name: string): void {
-    this.pin.update((p) => (p === name ? null : name));
+  togglePin(name: string, kind: RowKind): void {
+    if (this.pin() === name && this.pinKind() === kind) {
+      this.pin.set(null);
+      this.pinKind.set(null);
+    } else {
+      this.pin.set(name);
+      this.pinKind.set(kind);
+    }
   }
 
   isCollapsed(tab: CraftTab, group: string): boolean {

@@ -9,7 +9,7 @@ import type { CalcRow } from './core/craft-calc';
 import type { SlotKey } from './core/types';
 import { CrystalIcon } from './crystal-icon';
 import { CraftVm } from './craft-vm';
-import { GRADE_INDEXES, MAX_QTY, TAB_LABEL, TABS, gradeInfo, gradeLabel, missing, type CraftTab, type GradeInfo, type RowGroup, type SlotSel } from './craft-state';
+import { GRADE_INDEXES, MAX_QTY, TAB_LABEL, TABS, gradeInfo, gradeLabel, missing, rowId, type CraftTab, type GradeInfo, type RowGroup, type SlotSel } from './craft-state';
 import { CRAFT_DATA } from './core/data';
 
 /** 配件製作:選潛艇配件等級,算出所需交納素材 / 直接素材 / 基礎素材(D-239、D-240、D-258) */
@@ -91,9 +91,10 @@ export class CraftPage implements OnDestroy {
   protected unpinFromTree(): void {
     const sp = scrollParent(this.host.nativeElement.querySelector<HTMLElement>('.ct-cols, .ct-m-body, .ct-trace') ?? this.host.nativeElement);
     const p = this.vm.pin();
+    const k = this.vm.pinKind();
     this.vm.closeTree();
-    if (p === null) return;
-    this.vm.togglePin(p);
+    if (p === null || k === null) return;
+    this.vm.togglePin(p, k);
     this.afterPinChange(sp);
   }
   protected qtyInput(slot: SlotKey, ev: Event): void {
@@ -113,22 +114,23 @@ export class CraftPage implements OnDestroy {
    * 已追蹤的品項有配方時,再點一次改為開配方樹(D-264);沒有配方的基礎素材再點仍是取消追蹤,
    * 取消追蹤也可以用上方的追蹤列 ✕ 或配方樹視窗的「取消追蹤」。
    */
-  protected pinRow(name: string, ev: Event): void {
-    if (this.vm.pin() === name && this.vm.hasTree(name)) {
-      this.vm.openTree(name);
+  protected pinRow(r: CalcRow, ev: Event): void {
+    if (this.vm.isPinned(r) && this.vm.hasTree(r.name)) {
+      this.vm.openTree(r.name);
       return;
     }
     const was = this.vm.pin() !== null;
     const sp = scrollParent(ev.currentTarget as HTMLElement);
     if (!was) this.savedTop = sp.scrollTop;
-    this.vm.togglePin(name);
+    this.vm.togglePin(r.name, r.kind);
     this.afterPinChange(sp);
   }
   protected unpin(ev: Event): void {
     const p = this.vm.pin();
-    if (p === null) return;
+    const k = this.vm.pinKind();
+    if (p === null || k === null) return;
     const sp = scrollParent(ev.currentTarget as HTMLElement);
-    this.vm.togglePin(p);
+    this.vm.togglePin(p, k);
     this.afterPinChange(sp);
   }
   private afterPinChange(sp: HTMLElement): void {
@@ -151,8 +153,8 @@ export class CraftPage implements OnDestroy {
   }
   protected rowState(r: CalcRow): string {
     const parts: string[] = [];
-    if (this.vm.pin() === r.name) parts.push('pin');
-    else if (this.vm.related().has(r.name)) parts.push('rel');
+    if (this.vm.isPinned(r)) parts.push('pin');
+    else if (this.vm.related().has(rowId(r))) parts.push('rel');
     else if (this.vm.pin()) parts.push('dim');
     if (this.vm.view().stockMode && missing(r, this.vm.stock()) === 0) parts.push('done');
     return parts.join(' ');
