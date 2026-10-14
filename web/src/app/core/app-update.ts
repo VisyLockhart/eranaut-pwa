@@ -11,6 +11,29 @@ export const UPDATE_CHECK_MIN_GAP_MS = 5 * 60 * 1000;
 /** 啟動後多久做第一次「直接問伺服器」的檢查(D-260) */
 export const STARTUP_LIVE_CHECK_DELAY_MS = 5000;
 
+/**
+ * 等 service worker 回覆的上限(D-266)。service worker 進入 SAFE_MODE(初始化失敗)時,收到「檢查 / 啟用」訊息會直接不回覆,
+ * Angular 的 `checkForUpdate()` / `activateUpdate()` 沒有逾時,會永遠不結束;超過這個時間就當作沒回應。
+ * 這只是一次性的逾時計時器(結束就清掉),不是輪詢,不增加任何檢查頻率。
+ */
+export const SW_CALL_TIMEOUT_MS = 8000;
+/** 直接問伺服器(index.html)的逾時上限(D-266);超過就中止這次請求,視為抓不到 */
+export const LIVE_FETCH_TIMEOUT_MS = 8000;
+
+const TIMED_OUT = Symbol('timed-out');
+/** 等 promise 最多 ms 毫秒;逾時回傳 TIMED_OUT。計時器一定會清掉 */
+async function within<T>(p: Promise<T>, ms: number): Promise<T | typeof TIMED_OUT> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([p, new Promise<typeof TIMED_OUT>((resolve) => (timer = setTimeout(() => resolve(TIMED_OUT), ms)))]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Angular service worker 不攔截帶這個參數的請求 */
+const BYPASS_PARAM = 'ngsw-bypass';
+
 const MAIN_SCRIPT = /\bmain-[\w-]+\.js\b/;
 /** 從 index.html 的內容(或 script 的 src)取出主程式檔名,例如 main-XG5FWGKL.js;取不到回傳 null */
 export function mainScriptOf(text: string): string | null {
@@ -42,6 +65,10 @@ export class AppUpdate {
   /** 手動檢查進行中 */
   readonly checking = signal(false);
   private inflight: Promise<CheckResult> | null = null;
+  /** 自動檢查進行中:同時最多一次,不會疊(D-266) */
+  private autoInflight = false;
+  /** service worker 沒回應過(SAFE_MODE 等):之後的檢查不再等它,只問伺服器;收到它的任何事件就恢復(D-266) */
+  private swUnresponsive = false;
   private lastCheck = Date.now();
 
   /** 這個環境有沒有更新機制(正式建置、瀏覽器支援 service worker);沒有時不顯示「檢查更新」 */
@@ -50,7 +77,18 @@ export class AppUpdate {
   }
 
   start(): void {
+    // 「立即更新」略過 service worker 重載時帶的參數,載入後從網址拿掉(App 視窗沒有網址列,瀏覽器分頁才看得到)
+    try {
+      const u = new URL(location.href);
+      if (u.searchParams.has(BYPASS_PARAM)) {
+        u.searchParams.delete(BYPASS_PARAM);
+        history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+      }
+    } catch {
+      /* 拿不掉也無妨 */
+    }
     if (!this.sw?.isEnabled) return;
+    this.sw.versionUpdates.subscribe(() => (this.swUnresponsive = false));
     this.sw.versionUpdates.pipe(filter((e) => e.type === 'VERSION_READY')).subscribe(() => this.ready.set(true));
     // 新舊檔案對不上、快取壞掉:同樣請使用者按更新(重載後會取得完整的新版)
     this.sw.unrecoverable.subscribe(() => this.ready.set(true));
@@ -91,17 +129,13 @@ export class AppUpdate {
     this.checking.set(true);
     this.lastCheck = Date.now();
     if (this.ready()) return 'available';
-    let found = false;
-    try {
-      found = (await this.sw?.checkForUpdate()) === true;
-    } catch {
-      // service worker 降級或失敗:改靠下面直接問伺服器
-    }
-    if (found || this.ready()) {
+    // service worker 與伺服器各自獨立、同時問,互不等待:service worker 卡住(逾時)也不會擋住直接問伺服器的結果(D-266)
+    const [swFound, liveText] = await Promise.all([this.swCheck(), this.fetchLiveIndex()]);
+    if (swFound || this.ready()) {
       this.ready.set(true);
       return 'available';
     }
-    const live = mainScriptOf(await this.fetchLiveIndex());
+    const live = mainScriptOf(liveText);
     if (!live) return 'failed';
     if (this.loadedMain && live !== this.loadedMain) {
       this.ready.set(true);
@@ -110,19 +144,35 @@ export class AppUpdate {
     return 'latest';
   }
 
+  /** 問 service worker 有沒有新版:丟錯 = 沒有;超過上限沒回應 = 標記為沒回應,之後不再等它(D-266) */
+  private async swCheck(): Promise<boolean> {
+    if (!this.sw || this.swUnresponsive) return false;
+    try {
+      const r = await within(this.sw.checkForUpdate(), SW_CALL_TIMEOUT_MS);
+      if (r === TIMED_OUT) {
+        this.swUnresponsive = true;
+        return false;
+      }
+      return r === true;
+    } catch {
+      return false;
+    }
+  }
+
   /** 按「立即更新」:啟用已下載好的新版本,再重新載入頁面 */
   async apply(): Promise<void> {
     if (this.applying()) return;
     this.applying.set(true);
     let activated = false;
     try {
-      activated = (await this.sw?.activateUpdate()) === true;
+      // service worker 沒回應(SAFE_MODE)時 activateUpdate() 也不會結束:逾時就當作沒有可啟用的新版,走下面的重設(D-266)
+      activated = (await within(this.sw?.activateUpdate() ?? Promise.resolve(false), SW_CALL_TIMEOUT_MS)) === true;
     } catch {
       activated = false;
     }
     // 沒有可啟用的新版(service worker 降級、快取壞掉):解除註冊並清掉它的快取,重載才會直接從伺服器取得最新的檔案
     if (!activated) await this.resetServiceWorker();
-    this.reloadPage();
+    this.reloadPage(!activated);
   }
 
   /** 解除 service worker 並清掉它的快取;失敗也不擋重載 */
@@ -137,19 +187,31 @@ export class AppUpdate {
     }
   }
 
-  protected reloadPage(): void {
-    location.reload();
+  /**
+   * 重新載入。重設 service worker 之後要用「略過 service worker」的方式載入(D-266):
+   * 剛解除註冊的 service worker 在這個視窗關閉前仍會控制它,普通重載會被它用(已清掉或舊的)內容服務,
+   * 實測要重載兩次才會換成新版;帶 `ngsw-bypass` 的導覽不會被 service worker 攔截,一次就取得伺服器上的最新檔案。
+   */
+  protected reloadPage(bypassServiceWorker = false): void {
+    if (!bypassServiceWorker) {
+      location.reload();
+      return;
+    }
+    const u = new URL(location.href);
+    u.searchParams.set(BYPASS_PARAM, '1');
+    location.replace(u.href);
   }
 
   private checkIfStale(): void {
     if (Date.now() - this.lastCheck >= UPDATE_CHECK_MIN_GAP_MS) this.check();
   }
 
+  /** 自動檢查(定時 / 回前景 / 取得焦點):service worker 與直接問伺服器同時進行,同時最多一次;兩者都有逾時,一定會結束(D-266) */
   private check(): void {
+    if (this.autoInflight) return;
+    this.autoInflight = true;
     this.lastCheck = Date.now();
-    const swCheck = this.sw?.checkForUpdate().catch(() => undefined) ?? Promise.resolve();
-    // service worker 的檢查結束後,再直接問伺服器一次當作備援
-    void swCheck.then(() => this.checkLive());
+    void Promise.all([this.swCheck(), this.checkLive()]).finally(() => (this.autoInflight = false));
   }
 
   /**
@@ -163,11 +225,15 @@ export class AppUpdate {
   }
 
   protected async fetchLiveIndex(): Promise<string> {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), LIVE_FETCH_TIMEOUT_MS);
     try {
-      const res = await fetch(new URL(`index.html?ngsw-bypass=1&t=${Date.now()}`, document.baseURI), { cache: 'no-store' });
+      const res = await fetch(new URL(`index.html?ngsw-bypass=1&t=${Date.now()}`, document.baseURI), { cache: 'no-store', signal: ctrl.signal });
       return res.ok ? await res.text() : '';
     } catch {
       return '';
+    } finally {
+      clearTimeout(timer);
     }
   }
 }

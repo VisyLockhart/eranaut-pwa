@@ -3,7 +3,7 @@ import { SwUpdate } from '@angular/service-worker';
 import { Subject } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Toast } from './toast';
-import { AppUpdate, STARTUP_LIVE_CHECK_DELAY_MS, UPDATE_CHECK_INTERVAL_MS, UPDATE_CHECK_MIN_GAP_MS, mainScriptOf } from './app-update';
+import { AppUpdate, LIVE_FETCH_TIMEOUT_MS, STARTUP_LIVE_CHECK_DELAY_MS, SW_CALL_TIMEOUT_MS, UPDATE_CHECK_INTERVAL_MS, UPDATE_CHECK_MIN_GAP_MS, mainScriptOf } from './app-update';
 
 type Reloader = { reloadPage: ReturnType<typeof vi.fn> };
 type Internals = { loadedMain: string | null; fetchLiveIndex: ReturnType<typeof vi.fn>; resetServiceWorker: ReturnType<typeof vi.fn> };
@@ -70,6 +70,23 @@ describe('AppUpdate', () => {
     await update.apply();
     expect((update as unknown as Internals).resetServiceWorker).toHaveBeenCalledTimes(1);
     expect((update as unknown as Reloader).reloadPage).toHaveBeenCalledTimes(1);
+  });
+
+  it('重設 service worker 後用略過 service worker 的方式重載;新版已啟用時普通重載(D-266)', async () => {
+    const reset = setup();
+    sw.activateUpdate.mockResolvedValue(false);
+    await reset.apply();
+    expect((reset as unknown as Reloader).reloadPage).toHaveBeenCalledWith(true);
+    const ok = setup();
+    await ok.apply();
+    expect((ok as unknown as Reloader).reloadPage).toHaveBeenCalledWith(false);
+  });
+
+  it('載入後把略過 service worker 的參數從網址拿掉(D-266)', () => {
+    history.replaceState(null, '', '/craft?ngsw-bypass=1&x=2#h');
+    setup();
+    expect(location.pathname + location.search + location.hash).toBe('/craft?x=2#h');
+    history.replaceState(null, '', '/');
   });
 
   it('新版已啟用時不清 service worker', async () => {
@@ -192,11 +209,11 @@ describe('AppUpdate', () => {
     expect(mainScriptOf('')).toBeNull();
   });
 
-  it('App 開著時定時檢查新版', () => {
+  it('App 開著時定時檢查新版', async () => {
     setup();
-    vi.advanceTimersByTime(UPDATE_CHECK_INTERVAL_MS);
+    await vi.advanceTimersByTimeAsync(UPDATE_CHECK_INTERVAL_MS);
     expect(sw.checkForUpdate).toHaveBeenCalledTimes(1);
-    vi.advanceTimersByTime(UPDATE_CHECK_INTERVAL_MS);
+    await vi.advanceTimersByTimeAsync(UPDATE_CHECK_INTERVAL_MS);
     expect(sw.checkForUpdate).toHaveBeenCalledTimes(2);
   });
 
@@ -221,5 +238,109 @@ describe('AppUpdate', () => {
     window.dispatchEvent(new Event('focus'));
     document.dispatchEvent(new Event('visibilitychange'));
     expect(sw.checkForUpdate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('service worker 沒回應(SAFE_MODE)時不會卡住(D-266)', () => {
+  let versions: Subject<{ type: string }>;
+  let sw: { isEnabled: boolean; versionUpdates: Subject<{ type: string }>; unrecoverable: Subject<unknown>; activateUpdate: ReturnType<typeof vi.fn>; checkForUpdate: ReturnType<typeof vi.fn> };
+  const never = () => new Promise<boolean>(() => undefined);
+
+  function setup(live = '<script src="main-AAAA.js"></script>'): AppUpdate {
+    versions = new Subject();
+    // 模擬 SAFE_MODE:檢查與啟用都永遠不回覆
+    sw = { isEnabled: true, versionUpdates: versions, unrecoverable: new Subject(), activateUpdate: vi.fn(never), checkForUpdate: vi.fn(never) };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [{ provide: SwUpdate, useValue: sw }] });
+    const update = TestBed.inject(AppUpdate);
+    vi.spyOn(update as unknown as Reloader, 'reloadPage').mockImplementation(() => undefined);
+    const inner = update as unknown as Internals;
+    inner.loadedMain = 'main-AAAA.js';
+    inner.fetchLiveIndex = vi.fn().mockResolvedValue(live);
+    inner.resetServiceWorker = vi.fn().mockResolvedValue(undefined);
+    update.start();
+    return update;
+  }
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('手動檢查:逾時後仍以伺服器為準;伺服器有新版 → 橫幅,按鈕恢復', async () => {
+    const update = setup('<script src="main-BBBB.js"></script>');
+    const p = update.checkNow();
+    expect(update.checking()).toBe(true);
+    await vi.advanceTimersByTimeAsync(SW_CALL_TIMEOUT_MS);
+    expect(await p).toBe('available');
+    expect(update.ready()).toBe(true);
+    expect(update.checking()).toBe(false);
+  });
+
+  it('手動檢查:伺服器沒有新版 → latest,按鈕恢復;之後不再等沒回應的 service worker', async () => {
+    const update = setup();
+    const p = update.checkNow();
+    await vi.advanceTimersByTimeAsync(SW_CALL_TIMEOUT_MS);
+    expect(await p).toBe('latest');
+    expect(update.checking()).toBe(false);
+    expect(sw.checkForUpdate).toHaveBeenCalledTimes(1);
+    // 第二次:不再呼叫 service worker,立刻就有結果(不必再等逾時)
+    expect(await update.checkNow()).toBe('latest');
+    expect(sw.checkForUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('service worker 之後有事件(恢復運作),就再問它', async () => {
+    const update = setup();
+    const p = update.checkNow();
+    await vi.advanceTimersByTimeAsync(SW_CALL_TIMEOUT_MS);
+    await p;
+    versions.next({ type: 'NO_NEW_VERSION_DETECTED' });
+    const p2 = update.checkNow();
+    await vi.advanceTimersByTimeAsync(SW_CALL_TIMEOUT_MS);
+    await p2;
+    expect(sw.checkForUpdate).toHaveBeenCalledTimes(2);
+  });
+
+  it('「立即更新」:啟用沒回應 → 逾時後解除 service worker 並重新載入', async () => {
+    const update = setup();
+    const p = update.apply();
+    await vi.advanceTimersByTimeAsync(SW_CALL_TIMEOUT_MS);
+    await p;
+    expect((update as unknown as Internals).resetServiceWorker).toHaveBeenCalledTimes(1);
+    expect((update as unknown as Reloader).reloadPage).toHaveBeenCalledTimes(1);
+  });
+
+  it('自動檢查不會疊:service worker 沒回應時,同時湧入的事件只問一次', async () => {
+    const update = setup();
+    vi.setSystemTime(Date.now() + UPDATE_CHECK_MIN_GAP_MS + 1000);
+    window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(1000);
+    vi.setSystemTime(Date.now() + UPDATE_CHECK_MIN_GAP_MS + 1000);
+    window.dispatchEvent(new Event('focus'));
+    expect(sw.checkForUpdate).toHaveBeenCalledTimes(1);
+    expect(update.ready()).toBe(false);
+  });
+
+  it('負載:service worker 沒回應時,放一整天,對 service worker 只問 1 次、對伺服器的請求次數 = 啟動 1 次 + 定時檢查次數', async () => {
+    const update = setup();
+    await vi.advanceTimersByTimeAsync(24 * 60 * 60 * 1000);
+    const f = (update as unknown as Internals).fetchLiveIndex;
+    const intervals = Math.floor((24 * 60 * 60 * 1000) / UPDATE_CHECK_INTERVAL_MS);
+    expect(sw.checkForUpdate).toHaveBeenCalledTimes(1);
+    expect(f).toHaveBeenCalledTimes(1 + intervals);
+    // 計時器都已清掉,只剩定時檢查那一個
+    expect(vi.getTimerCount()).toBe(1);
+  });
+
+  it('直接問伺服器卡住 → 超過上限就中止,視為抓不到', async () => {
+    const update = setup();
+    const aborted = vi.fn();
+    vi.stubGlobal('fetch', (_u: unknown, init: RequestInit) => new Promise((_res, rej) => init.signal!.addEventListener('abort', () => (aborted(), rej(new DOMException('x', 'AbortError'))))));
+    const real = (AppUpdate.prototype as unknown as { fetchLiveIndex(): Promise<string> }).fetchLiveIndex;
+    const p = real.call(update);
+    await vi.advanceTimersByTimeAsync(LIVE_FETCH_TIMEOUT_MS);
+    expect(await p).toBe('');
+    expect(aborted).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
   });
 });
