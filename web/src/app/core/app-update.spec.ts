@@ -343,4 +343,32 @@ describe('service worker 沒回應(SAFE_MODE)時不會卡住(D-266)', () => {
     expect(aborted).toHaveBeenCalledTimes(1);
     vi.unstubAllGlobals();
   });
+
+  it('service worker 沒回應 → broken;之後有事件就恢復(D-267)', async () => {
+    const update = setup();
+    expect(update.broken()).toBe(false);
+    const p = update.checkNow();
+    await vi.advanceTimersByTimeAsync(SW_CALL_TIMEOUT_MS);
+    await p;
+    expect(update.broken()).toBe(true);
+    versions.next({ type: 'NO_NEW_VERSION_DETECTED' });
+    expect(update.broken()).toBe(false);
+  });
+
+  it('「修復」:解除 service worker、清快取、略過 service worker 重載,連按只做一次;「稍後」收起、再手動檢查會重新顯示', async () => {
+    const update = setup();
+    const p = update.checkNow();
+    await vi.advanceTimersByTimeAsync(SW_CALL_TIMEOUT_MS);
+    await p;
+    update.dismissBroken();
+    expect(update.brokenDismissed()).toBe(true);
+    const p2 = update.checkNow();
+    expect(update.brokenDismissed()).toBe(false);
+    await vi.advanceTimersByTimeAsync(1000);
+    await p2;
+    await Promise.all([update.repair(), update.repair()]);
+    expect((update as unknown as Internals).resetServiceWorker).toHaveBeenCalledTimes(1);
+    expect((update as unknown as Reloader).reloadPage).toHaveBeenCalledTimes(1);
+    expect((update as unknown as Reloader).reloadPage).toHaveBeenCalledWith(true);
+  });
 });

@@ -69,6 +69,10 @@ export class AppUpdate {
   private autoInflight = false;
   /** service worker 沒回應過(SAFE_MODE 等):之後的檢查不再等它,只問伺服器;收到它的任何事件就恢復(D-266) */
   private swUnresponsive = false;
+  /** service worker 沒回應(逾時過)、尚未恢復:橫幅顯示「更新機制異常 / 修復」(D-267) */
+  readonly broken = signal(false);
+  /** 使用者按了「稍後」:這個頁面載入期間不再顯示異常橫幅(再手動檢查更新會重新顯示) */
+  readonly brokenDismissed = signal(false);
   private lastCheck = Date.now();
 
   /** 這個環境有沒有更新機制(正式建置、瀏覽器支援 service worker);沒有時不顯示「檢查更新」 */
@@ -88,7 +92,10 @@ export class AppUpdate {
       /* 拿不掉也無妨 */
     }
     if (!this.sw?.isEnabled) return;
-    this.sw.versionUpdates.subscribe(() => (this.swUnresponsive = false));
+    this.sw.versionUpdates.subscribe(() => {
+      this.swUnresponsive = false;
+      this.broken.set(false);
+    });
     this.sw.versionUpdates.pipe(filter((e) => e.type === 'VERSION_READY')).subscribe(() => this.ready.set(true));
     // 新舊檔案對不上、快取壞掉:同樣請使用者按更新(重載後會取得完整的新版)
     this.sw.unrecoverable.subscribe(() => this.ready.set(true));
@@ -109,6 +116,7 @@ export class AppUpdate {
    * 所以檢查本身不動 service worker 與快取,也不重新載入頁面(不會弄丟填到一半的表單)。連按只做一次。
    */
   checkNow(): Promise<CheckResult> {
+    this.brokenDismissed.set(false);
     this.inflight ??= this.runCheck().finally(() => {
       this.inflight = null;
       this.checking.set(false);
@@ -151,6 +159,7 @@ export class AppUpdate {
       const r = await within(this.sw.checkForUpdate(), SW_CALL_TIMEOUT_MS);
       if (r === TIMED_OUT) {
         this.swUnresponsive = true;
+        this.broken.set(true);
         return false;
       }
       return r === true;
@@ -173,6 +182,22 @@ export class AppUpdate {
     // 沒有可啟用的新版(service worker 降級、快取壞掉):解除註冊並清掉它的快取,重載才會直接從伺服器取得最新的檔案
     if (!activated) await this.resetServiceWorker();
     this.reloadPage(!activated);
+  }
+
+  /**
+   * 「修復」(D-267):service worker 沒回應時,使用者按下才執行——解除註冊、清快取,再用略過 service worker 的方式重載。
+   * 不自動執行(不自動重載,D-236 ③)。重載後 service worker 會重新註冊。
+   */
+  async repair(): Promise<void> {
+    if (this.applying()) return;
+    this.applying.set(true);
+    await this.resetServiceWorker();
+    this.reloadPage(true);
+  }
+
+  /** 使用者按「稍後」:先收起異常橫幅 */
+  dismissBroken(): void {
+    this.brokenDismissed.set(true);
   }
 
   /** 解除 service worker 並清掉它的快取;失敗也不擋重載 */
