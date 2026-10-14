@@ -238,6 +238,8 @@
   .d-user-sub { font-size: 10.5px; color: var(--text-dim); }
 
   .d-main { flex-grow: 1; padding: 26px 32px; overflow-y: auto; min-width: 0; }
+  /* 加入海域(展示版):子頁切換列要 sticky 在視窗上緣,.d-main 不能是捲動容器(它本來就不會自己捲) */
+  .d-main:has(.sea-desktop) { overflow: visible; }
   .d-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 16px; flex-wrap: wrap; }
   .d-title { font-size: 20px; font-weight: 700; }
   .d-subtitle { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }

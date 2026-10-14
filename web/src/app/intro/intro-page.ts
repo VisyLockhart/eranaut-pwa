@@ -71,7 +71,12 @@ export class IntroPage {
 
   protected show(id: TabId): void {
     this.tab.set(id);
-    this.doc.querySelector('.sea')?.scrollIntoView({ block: 'nearest' });
+    // 子頁切換列固定在上方(sticky)時,新子頁要從頭讀:把 .sea 頂端捲回可視範圍。沒固定(還在頁首)就不動。
+    const sea = this.doc.querySelector('.sea');
+    const bar = this.doc.querySelector('.sea .tabs-bar');
+    if (sea && bar && bar.getBoundingClientRect().top - sea.getBoundingClientRect().top > 1) {
+      sea.scrollIntoView({ block: 'start' });
+    }
   }
 
   protected async copyName(): Promise<void> {

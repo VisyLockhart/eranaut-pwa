@@ -6,10 +6,12 @@
 
 <ng-template #body>
   <div class="sea">
-    <div class="tabs" role="tablist" aria-label="海域介紹子頁">
-      @for (t of tabs; track t.id) {
-        <button type="button" role="tab" [id]="'sea-t-' + t.id" [attr.aria-controls]="'sea-p-' + t.id" [attr.aria-selected]="tab() === t.id" (click)="show(t.id)">{{ t.label }}</button>
-      }
+    <div class="tabs-bar">
+      <div class="tabs" role="tablist" aria-label="海域介紹子頁">
+        @for (t of tabs; track t.id) {
+          <button type="button" role="tab" [id]="'sea-t-' + t.id" [attr.aria-controls]="'sea-p-' + t.id" [attr.aria-selected]="tab() === t.id" (click)="show(t.id)">{{ t.label }}</button>
+        }
+      </div>
     </div>
 
     @switch (tab()) {
