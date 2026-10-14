@@ -10,8 +10,8 @@
   max-width: 960px; margin: 0 auto; color: var(--silver); font-family: var(--sans); font-size: 15px; line-height: 1.75;
 }
 /* 子頁切換列 sticky;字體不變,只縮小內距與行高 */
-.tabs-bar { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 6px 0 4px; }
-.tabs { display: flex; gap: 4px; background: var(--deep); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.tabs-bar { position: sticky; top: 0; z-index: 5; margin-top: 6px; }
+.tabs { display: flex; gap: 4px; background: var(--deep); border: 1px solid var(--line); border-radius: 10px; padding: 3px; box-shadow: 0 6px 10px -4px rgba(0, 0, 0, 0.55); }
 .tabs button { flex: 1; min-width: 0; font: inherit; line-height: 1.4; font-weight: 500; color: var(--mist); background: none; border: 0; border-radius: 7px; padding: 5px 6px; white-space: nowrap; cursor: pointer; }
 .tabs button[aria-selected='true'] { background: var(--water); color: var(--ink); font-weight: 700; }
 .tabs button:focus-visible, .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
