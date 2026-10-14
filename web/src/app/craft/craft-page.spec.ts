@@ -199,6 +199,51 @@ describe('CraftPage', () => {
       expect(vm.pin()).toBeNull();
       expect(el.querySelector('.ct-group.trace')).toBeNull();
     });
+
+    it(`第二次點已追蹤的可製作品開配方樹;取消追蹤關視窗(${desktop ? '桌機' : '手機'})`, () => {
+      const { f, vm, el } = mount(desktop);
+      vm.setGrade('hull', 5);
+      vm.patchView({ tab: 'directs' });
+      f.detectChanges();
+      const pin = vm.result().directs.find((r) => r.group !== '碎晶' && vm.hasTree(r.name))!.name;
+      const rowOf = () => [...el.querySelectorAll<HTMLElement>('.ct-row')].find((r) => r.querySelector('.ct-name')!.textContent === pin)!;
+      rowOf().click();
+      f.detectChanges();
+      expect(vm.pin()).toBe(pin);
+      expect(el.querySelector('.ct-tree-dlg')).toBeNull();
+      expect(el.querySelector('.ct-tree-cue')).toBeTruthy();
+      rowOf().click();
+      f.detectChanges();
+      expect(vm.pin()).toBe(pin);
+      expect(el.querySelector('.ct-tree-dlg')).toBeTruthy();
+      expect(el.querySelector('.ct-tree-dlg .ct-tree-list')).toBeTruthy();
+      [...el.querySelectorAll<HTMLButtonElement>('.ct-tree-dlg .rt-dlg-foot button')].find((b) => b.textContent!.includes('取消追蹤'))!.click();
+      f.detectChanges();
+      expect(vm.pin()).toBeNull();
+      expect(el.querySelector('.ct-tree-dlg')).toBeNull();
+    });
+
+    it(`配方樹:Esc 關閉但保留追蹤;換版面不丟(${desktop ? '桌機' : '手機'})`, () => {
+      const { f, vm, el } = mount(desktop);
+      vm.setGrade('hull', 5);
+      vm.patchView({ tab: 'directs' });
+      f.detectChanges();
+      const pin = vm.result().directs.find((r) => r.group !== '碎晶' && vm.hasTree(r.name))!.name;
+      vm.togglePin(pin);
+      vm.openTree(pin);
+      f.detectChanges();
+      expect(el.querySelector('.ct-tree-dlg')).toBeTruthy();
+      vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/craft');
+      f.destroy();
+      const f2 = TestBed.createComponent(CraftPage);
+      f2.detectChanges();
+      expect(vm.treeFor()).toBe(pin);
+      expect((f2.nativeElement as HTMLElement).querySelector('.ct-tree-dlg')).toBeTruthy();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      f2.detectChanges();
+      expect(vm.pin()).toBe(pin);
+      expect((f2.nativeElement as HTMLElement).querySelector('.ct-tree-dlg')).toBeNull();
+    });
   }
 });
 

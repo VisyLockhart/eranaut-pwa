@@ -201,8 +201,11 @@
       }
       @if (g.trace || !g.group || !vm.isCollapsed(tab, g.group)) {
         @for (r of g.rows; track r.name) {
-          <div class="ct-row" [class]="'ct-row ' + rowState(r)" role="button" tabindex="0" (click)="pinRow(r.name, $event)" (keydown.enter)="pinRow(r.name, $event)" (keydown.space)="$event.preventDefault(); pinRow(r.name, $event)">
+          <div class="ct-row" [class]="'ct-row ' + rowState(r)" [attr.title]="vm.pin() === r.name && vm.hasTree(r.name) ? '再點一次查看配方' : null" role="button" tabindex="0" (click)="pinRow(r.name, $event)" (keydown.enter)="pinRow(r.name, $event)" (keydown.space)="$event.preventDefault(); pinRow(r.name, $event)">
             <span class="ct-name">{{ r.name }}</span>
+            @if (vm.pin() === r.name && vm.hasTree(r.name)) {
+              <app-icon class="ct-tree-cue" name="tree" [size]="16" />
+            }
             @if (vm.view().stockMode) {
               <span class="ct-need">{{ r.need }}</span>
               <input class="ct-have" type="number" inputmode="numeric" min="0" placeholder="0" [value]="vm.stock()[r.key] ?? ''" (click)="stop($event)" (keydown)="stop($event)" (input)="stockInput(r, $event)" [attr.aria-label]="r.name + ' 已有'" />
@@ -217,4 +220,42 @@
   } @empty {
     <div class="ct-none"><app-icon name="check" [size]="22" /></div>
   }
+</ng-template>
+
+@if (vm.tree(); as t) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
+    <div class="modal-box rt-dlg ct-tree-dlg" role="dialog" aria-modal="true" aria-labelledby="ct-tree-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <div class="rt-dlg-head">
+        <div class="modal-title" id="ct-tree-title">{{ t.name }}@if (t.yield > 1) {<span class="ct-yield">一次做 {{ t.yield }} 個</span>}</div>
+        <button type="button" class="modal-close" (click)="vm.closeTree()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+      </div>
+      <div class="rt-dlg-body ct-tree-body">
+        <ng-container *ngTemplateOutlet="treeNode; context: { n: t }" />
+      </div>
+      <div class="rt-dlg-foot"><div class="rt-save-actions">
+        <button type="button" class="rt-save-btn" (click)="unpinFromTree()">取消追蹤</button>
+        <button type="button" class="rt-save-btn primary" (click)="vm.closeTree()">關閉</button>
+      </div></div>
+    </div>
+  </div>
+}
+
+<ng-template #treeNode let-n="n">
+  @if (n.crystals.length > 0) {
+    <div class="ct-tree-cry" role="list" aria-label="晶類">
+      @for (c of n.crystals; track c.name) {
+        <span class="ct-cry" role="listitem"><app-crystal-icon [element]="c.element" [tier]="c.tier" [size]="22" /><span class="ct-cry-name">{{ c.name }}</span><b>{{ c.qty }}</b></span>
+      }
+    </div>
+  }
+  <ul class="ct-tree-list">
+    @for (it of n.items; track it.name) {
+      <li>
+        <div class="ct-tree-item"><b class="ct-tree-qty">{{ it.qty }}</b><span class="ct-tree-name">{{ it.name }}</span>@if (it.child && it.child.yield > 1) {<span class="ct-yield">一次做 {{ it.child.yield }} 個</span>}</div>
+        @if (it.child) {
+          <div class="ct-tree-sub"><ng-container *ngTemplateOutlet="treeNode; context: { n: it.child }" /></div>
+        }
+      </li>
+    }
+  </ul>
 </ng-template>

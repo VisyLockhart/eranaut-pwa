@@ -3,6 +3,7 @@ import { CraftLink, type CraftImport } from '../core/craft-link';
 import { Toast } from '../core/toast';
 import { CRAFT_KEY_SEL as KEY_SEL, CRAFT_KEY_STOCK as KEY_STOCK, CRAFT_KEY_VIEW as KEY_VIEW } from './craft-keys';
 import { calculate, type CalcResult, type CalcRow, type Selection } from './core/craft-calc';
+import { buildTree, hasTree, type TreeNode } from './core/craft-tree';
 import { finalsProgress } from './core/craft-stock';
 import { CRAFT_DATA, SLOT_KEYS } from './core/data';
 import type { SlotKey } from './core/types';
@@ -37,6 +38,12 @@ export class CraftVm {
   readonly stock = signal<Record<string, number>>(sanitizeStock(read(KEY_STOCK)));
   /** 追蹤中的列(點一列:看它用到什麼、被誰用) */
   readonly pin = signal<string | null>(null);
+  /** 開著配方樹的品項名稱(已追蹤的品項再點一次才開,D-264);null = 關。放這裡,換版面重建頁面時不丟 */
+  readonly treeFor = signal<string | null>(null);
+  readonly tree = computed<TreeNode | null>(() => {
+    const n = this.treeFor();
+    return n ? buildTree(n) : null;
+  });
   /** 收合的分組,key = `${tab}:${group}` */
   readonly collapsed = signal<ReadonlySet<string>>(new Set());
   /** 剛複製完的提示(1.5 秒) */
@@ -170,6 +177,7 @@ export class CraftVm {
   clearAll(): void {
     this.sel.set(emptySel());
     this.pin.set(null);
+    this.treeFor.set(null);
   }
 
   toggleSlots(): void {
@@ -194,6 +202,17 @@ export class CraftVm {
   }
   clearStock(): void {
     this.stock.set({});
+  }
+
+  /** 這個品項有沒有配方樹(基礎素材沒有) */
+  hasTree(name: string): boolean {
+    return hasTree(name);
+  }
+  openTree(name: string): void {
+    if (hasTree(name)) this.treeFor.set(name);
+  }
+  closeTree(): void {
+    this.treeFor.set(null);
   }
 
   togglePin(name: string): void {
