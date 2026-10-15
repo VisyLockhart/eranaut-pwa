@@ -31,7 +31,9 @@ jobs:
         working-directory: web
       - name: SPA fallback and custom domain
         run: |
-          cp web/dist/demo/browser/index.html web/dist/demo/browser/404.html
+          # 404.html 只會在「沒有對應檔案的網址」時被送出(SPA 備援),不讓搜尋引擎收錄、也不帶首頁的 canonical
+          sed -e 's|<meta name="robots" content="[^"]*">|<meta name="robots" content="noindex,follow">|' -e '/<link rel="canonical"/d' web/dist/demo/browser/index.html > web/dist/demo/browser/404.html
+          grep -q 'content="noindex,follow"' web/dist/demo/browser/404.html
           echo "demo.eranaut.aequoreranos.com" > web/dist/demo/browser/CNAME
       - name: Link preview page for /intro
         run: node tools/make-intro-html.mjs web/dist/demo/browser
