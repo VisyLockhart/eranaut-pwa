@@ -26,7 +26,7 @@ const INTRO_BODY = `<main style="max-width:720px;margin:0 auto;padding:32px 20px
 <p>專為單人公會設立的同好會:增加交流,以及潛水艇打撈物與裝備的跨服買賣與支援。在遊戲內的同好會搜尋「純水與銀礦之詩, 靜謐海域交換所」即可。</p>
 <h2>Eranaut:潛水艇返航追蹤工具</h2>
 <p>Eranaut 是同好會自行開發的工具,同時支援手機與桌機。線上展示版可試玩潛艇總覽與工坊管理、航線模擬器、配件製作。</p>
-<p><a href="/">Eranaut 線上展示</a> ・ <a href="/route">潛水艇航線模擬器</a></p>
+<p><a href="/">Eranaut 線上展示</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/craft">潛水艇配件製作</a></p>
 </main>`;
 
 const ld = (obj) => obj;
@@ -34,7 +34,7 @@ const ld = (obj) => obj;
 const PAGES = [
   {
     path: 'intro',
-    title: '靜謐海域交換所(Aequor Eranos)・FFXIV 繁中潛水艇同好會',
+    title: '靜謐海域交換所 Aequor Eranos・同好會介紹',
     description: '純水與銀礦之詩,靜謐海域交換所(Aequor Eranos):FFXIV 繁體中文版的潛水艇同好會。單人玩潛艇的孤狼,來這裡收艇不誤點,結識其他潛艇玩家、擁有強力的資源後盾。',
     image: 'og/intro.png',
     imageAlt: '靜謐海域交換所 Aequor Eranos:FFXIV 繁體中文版潛水艇同好會',
@@ -54,13 +54,13 @@ const PAGES = [
         name: '靜謐海域交換所(Aequor Eranos)',
         url: `${ORIGIN}/intro`,
         inLanguage: 'zh-Hant',
-        isPartOf: { '@type': 'WebSite', name: 'Aequor Eranos', url: `${ORIGIN}/` },
+        isPartOf: { '@type': 'WebSite', name: '靜謐海域交換所 Aequor Eranos', url: `${ORIGIN}/` },
       },
     ],
   },
   {
     path: 'route',
-    title: '潛水艇航線模擬器 + 配件製作 ・ Aequor Eranos Eranaut 線上展示',
+    title: '潛水艇航線模擬器・靜謐海域交換所 Aequor Eranos',
     description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:選航點、配配件,算出航行時間、燃料與經驗;選好配件,列出完整材料表、記錄庫存。展示版直接試玩。',
     image: 'og/route-2.png',
     imageAlt: 'Eranaut 潛水艇航線模擬器與配件製作畫面',
@@ -71,6 +71,26 @@ const PAGES = [
         name: 'Eranaut 潛水艇航線模擬器',
         alternateName: 'Aequor Eranos',
         url: `${ORIGIN}/route`,
+        applicationCategory: 'GameApplication',
+        operatingSystem: 'Web',
+        inLanguage: 'zh-Hant',
+        isAccessibleForFree: true,
+      },
+    ],
+  },
+  {
+    path: 'craft',
+    title: '潛水艇配件製作・靜謐海域交換所 Aequor Eranos',
+    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:選好潛水艇配件,列出完整的材料表、記錄庫存。FFXIV 潛水艇配件製作工具的線上展示,資料只存在你的瀏覽器。',
+    image: 'og/route-2.png',
+    imageAlt: 'Eranaut 潛水艇配件製作畫面',
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: 'Eranaut 潛水艇配件製作',
+        alternateName: 'Aequor Eranos',
+        url: `${ORIGIN}/craft`,
         applicationCategory: 'GameApplication',
         operatingSystem: 'Web',
         inLanguage: 'zh-Hant',
