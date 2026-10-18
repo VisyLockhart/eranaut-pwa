@@ -17,6 +17,7 @@ import { RouteListTools, RoutePager, RouteStar } from './route-list-ui';
 import { formatTravel } from './route-format';
 import { normalizeSeq, subToBuild } from './route-state';
 import { RouteVm } from './route-vm';
+import { Tip } from '../ui/tip';
 
 interface Chip {
   label: string;
@@ -55,7 +56,7 @@ interface Card {
  */
 @Component({
   selector: 'app-route-subs',
-  imports: [NgTemplateOutlet, IconComponent, RouteBind, RouteCraftBtn, RouteListTools, RoutePager, RouteStar],
+  imports: [Tip, NgTemplateOutlet, IconComponent, RouteBind, RouteCraftBtn, RouteListTools, RoutePager, RouteStar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-subs.html',
 })

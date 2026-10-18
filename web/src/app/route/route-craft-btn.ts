@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core
 import { CraftLink } from '../core/craft-link';
 import { IconComponent } from '../ui/icon';
 import { RouteVm } from './route-vm';
+import { Tip } from '../ui/tip';
 
 /**
  * 「製作素材」(D-262):把這組配件帶到配件製作頁。
@@ -9,11 +10,11 @@ import { RouteVm } from './route-vm';
  */
 @Component({
   selector: 'app-route-craft-btn',
-  imports: [IconComponent],
+  imports: [Tip, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { style: 'display: contents' },
   template: `
-    <button type="button" class="rt-craft-btn" [class.rt-icon-btn]="icon()" [class.rt-save-btn]="!icon()" [attr.aria-label]="'製作素材:' + name()" title="製作素材" (click)="go()">
+    <button type="button" class="rt-craft-btn" [class.rt-icon-btn]="icon()" [class.rt-save-btn]="!icon()" [attr.aria-label]="'製作素材:' + name()" tip="製作素材" (click)="go()">
       <app-icon name="anvil" [size]="16" />@if (!icon()) {<span>製作素材</span>}
     </button>
   `,

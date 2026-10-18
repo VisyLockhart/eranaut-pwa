@@ -14,6 +14,7 @@ import { itemName } from './route-loot-vm';
 import { RouteMap } from './route-map';
 import { RouteSeaPager } from './route-sea-pager';
 import { RouteVm } from './route-vm';
+import { Tip } from '../ui/tip';
 
 const PAGE = 20;
 /** 結果卡上最多直接列出幾個指定物品,其餘折成「+N」 */
@@ -56,7 +57,7 @@ interface Card {
  */
 @Component({
   selector: 'app-route-find',
-  imports: [SelectField, RouteMap, RouteSeaPager, RouteFindDialogs],
+  imports: [Tip, SelectField, RouteMap, RouteSeaPager, RouteFindDialogs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-find.html',
 })

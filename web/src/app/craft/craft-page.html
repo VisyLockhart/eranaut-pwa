@@ -201,7 +201,7 @@
       }
       @if (g.trace || !g.group || !vm.isCollapsed(tab, g.group)) {
         @for (r of g.rows; track r.name) {
-          <div class="ct-row" [class]="'ct-row ' + rowState(r)" [attr.title]="vm.isPinned(r) && vm.hasTree(r.name) ? '再點一次查看配方' : null" role="button" tabindex="0" (click)="pinRow(r, $event)" (keydown.enter)="pinRow(r, $event)" (keydown.space)="$event.preventDefault(); pinRow(r, $event)">
+          <div class="ct-row" [class]="'ct-row ' + rowState(r)" [tip]="vm.isPinned(r) && vm.hasTree(r.name) ? '再點一次查看配方' : null" role="button" tabindex="0" (click)="pinRow(r, $event)" (keydown.enter)="pinRow(r, $event)" (keydown.space)="$event.preventDefault(); pinRow(r, $event)">
             <span class="ct-name">{{ r.name }}</span>
             @if (vm.isPinned(r) && vm.hasTree(r.name)) {
               <app-icon class="ct-tree-cue" name="tree" [size]="16" />

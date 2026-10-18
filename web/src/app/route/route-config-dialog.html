@@ -59,7 +59,7 @@
               </div>
               @for (g of grades; track g) {
                 <div class="rt-parts-row">
-                  <span class="rt-parts-type" [attr.title]="partInfo('hull', g).name"><b>{{ partInfo('hull', g).code }}</b>{{ g }}</span>
+                  <span class="rt-parts-type" [tip]="partInfo('hull', g).name"><b>{{ partInfo('hull', g).code }}</b>{{ g }}</span>
                   @for (k of partKeys; track k; let i = $index) {
                     <span class="rt-pair">
                       <button type="button" class="rt-part" [class.active]="d.parts[i] === g" [attr.aria-pressed]="d.parts[i] === g" [attr.aria-label]="partName(k) + ' ' + label(g)" (click)="setPart(i, g)">{{ g }}</button>

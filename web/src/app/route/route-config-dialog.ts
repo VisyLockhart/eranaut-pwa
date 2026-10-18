@@ -12,6 +12,7 @@ import { TABLES } from './core/data';
 import { judgeBuild } from './core/need';
 import { PART_KEYS, type PartKey } from './core/types';
 import { RouteVm } from './route-vm';
+import { Tip } from '../ui/tip';
 
 /** 等級滑桿最小值(繁中服最低可用等級) */
 export const SLIDER_MIN_LEVEL = 51;
@@ -38,7 +39,7 @@ const GRADES = [1, 2, 3, 4, 5] as const;
  */
 @Component({
   selector: 'app-route-config-dialog',
-  imports: [CdkTrapFocus, IconComponent, RouteListTools, RouteStar],
+  imports: [Tip, CdkTrapFocus, IconComponent, RouteListTools, RouteStar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-config-dialog.html',
   host: { '(document:keydown.escape)': 'onEscape($event)' },

@@ -11,11 +11,12 @@ import { CrystalIcon } from './crystal-icon';
 import { CraftVm } from './craft-vm';
 import { GRADE_INDEXES, MAX_QTY, TAB_LABEL, TABS, gradeInfo, gradeLabel, missing, rowId, type CraftTab, type GradeInfo, type RowGroup, type SlotSel } from './craft-state';
 import { CRAFT_DATA } from './core/data';
+import { Tip } from '../ui/tip';
 
 /** 配件製作:選潛艇配件等級,算出所需交納素材 / 直接素材 / 基礎素材(D-239、D-240、D-258) */
 @Component({
   selector: 'app-craft-page',
-  imports: [NgTemplateOutlet, CdkTrapFocus, IconComponent, CrystalIcon],
+  imports: [Tip, NgTemplateOutlet, CdkTrapFocus, IconComponent, CrystalIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './craft-page.html',
   host: { style: 'display: contents', '(document:keydown.escape)': 'onEscape($event)' },

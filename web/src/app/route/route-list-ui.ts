@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { IconComponent } from '../ui/icon';
 import { SelectField, type SelectOption, type SelectValue } from '../ui/select';
 import type { ListToolsState } from './list-view';
+import { Tip } from '../ui/tip';
 
 /**
  * 清單工具列(D-237):名稱搜尋 + 「★ 常用」篩選晶片 + 符合筆數。
@@ -42,6 +43,7 @@ export class RouteListTools {
 /** 星號按鈕(常用):在列表每一列使用;切換由外層處理 */
 @Component({
   selector: 'app-route-star',
+  imports: [Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { style: 'display: inline-flex' },
   template: `
@@ -51,7 +53,7 @@ export class RouteListTools {
       [class.on]="on()"
       [attr.aria-pressed]="on()"
       [attr.aria-label]="(on() ? '取消常用 ' : '加入常用 ') + name()"
-      [attr.title]="on() ? '取消常用' : '加入常用'"
+      [tip]="on() ? '取消常用' : '加入常用'"
       (click)="toggle.emit(); $event.stopPropagation()"
     >{{ on() ? '★' : '☆' }}</button>
   `,

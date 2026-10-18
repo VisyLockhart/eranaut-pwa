@@ -51,7 +51,7 @@ describe('RouteSubs', () => {
     for (const c of ['D', 'G', 'F', 'K']) vm.toggle(ids(g(), c)[0]!);
     fixture.detectChanges();
   };
-  const btn = (card: Element, text: string) => [...card.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text || b.title === text)!;
+  const btn = (card: Element, text: string) => [...card.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text || b.getAttribute('data-tip') === text)!;
 
   beforeEach(() => localStorage.clear());
   afterEach(() => vm.stop());

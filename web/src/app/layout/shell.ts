@@ -10,11 +10,12 @@ import { INTRO_ENABLED } from '../demo/demo-routes';
 import { AvatarComponent } from '../ui/avatar';
 import { CopyrightComponent } from '../ui/copyright';
 import { IconComponent } from '../ui/icon';
+import { Tip } from '../ui/tip';
 
 /** 登入後的外殼:手機 = 標頭 + 內容 + 底部導覽;桌機 = 側邊欄 + 內容(D-93、D-102) */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, AvatarComponent, CopyrightComponent],
+  imports: [Tip, RouterOutlet, RouterLink, RouterLinkActive, IconComponent, AvatarComponent, CopyrightComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
   host: { '(document:click)': 'closeMenu()', '(document:keydown.escape)': 'closeMenu()' },

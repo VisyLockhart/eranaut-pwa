@@ -107,7 +107,7 @@
     <span class="rt-find-label">排序</span>
     <div class="rt-chips" role="group" aria-label="排序">
       @for (s of sorts; track s.id) {
-        <button type="button" class="rt-chip" [class.active]="f.sort() === s.id" [attr.aria-pressed]="f.sort() === s.id" [attr.title]="s.title" (click)="f.setSort(s.id)">{{ s.label }}</button>
+        <button type="button" class="rt-chip" [class.active]="f.sort() === s.id" [attr.aria-pressed]="f.sort() === s.id" [tip]="s.title" (click)="f.setSort(s.id)">{{ s.label }}</button>
       }
     </div>
     @if (f.sort() === 'opens') {

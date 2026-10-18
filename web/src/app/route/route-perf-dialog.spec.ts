@@ -42,7 +42,7 @@ describe('RoutePerfDialog', () => {
     [3, 1, 2, 3].forEach((p, i) => vm.setPart(i as 0 | 1 | 2 | 3, p));
     for (const c of ['D', 'G', 'F', 'K']) vm.toggle(ids(g(), c)[0]!);
   };
-  const btn = (root: ParentNode, text: string) => [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text || b.title === text)!;
+  const btn = (root: ParentNode, text: string) => [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text || b.getAttribute('data-tip') === text)!;
 
   beforeEach(() => localStorage.clear());
   afterEach(() => vm.stop());

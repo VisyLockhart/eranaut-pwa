@@ -1211,3 +1211,24 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .theme-sw i { display: block; width: 18px; height: 18px; border-radius: calc(5px * var(--rs)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 40%, transparent); }
 .theme-nm { font-size: 13px; font-weight: 600; }
 .theme-sub { font-size: 11px; color: var(--text-dim); min-height: 15px; }
+
+/* ---------- Phase 3:自繪控制項(不使用瀏覽器預設外觀;各主題以 token 改形狀) ---------- */
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), textarea { -webkit-appearance: none; appearance: none; font-family: inherit; }
+input[type=search]::-webkit-search-decoration, input[type=search]::-webkit-search-cancel-button, input[type=search]::-webkit-search-results-button, input[type=search]::-webkit-search-results-decoration { -webkit-appearance: none; display: none; }
+input::placeholder, textarea::placeholder { color: var(--text-faint); opacity: 1; }
+input::selection, textarea::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); color: var(--text); }
+/* 瀏覽器自動填入會把輸入框塗成預設色,用 inset 陰影蓋回主題底色 */
+input:-webkit-autofill, input:-webkit-autofill:focus { -webkit-text-fill-color: var(--text); caret-color: var(--text); box-shadow: 0 0 0 100px var(--bg-elevated) inset; transition: background-color 9999s; }
+.rt-text-input:focus-visible, .rt-level-input:focus-visible, .ct-qty input:focus-visible, .ct-have:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.rt-text-input, .rt-level-input { caret-color: var(--accent); }
+.modal-input { caret-color: var(--accent); }
+
+/* 自製提示(ui/tip.ts):單一浮層,fixed 定位 */
+.tip-bubble { position: fixed; left: 0; top: 0; z-index: 2000; max-width: min(280px, calc(100vw - 8px)); padding: 6px 10px; border-radius: calc(8px * var(--rs)); background: var(--bg-elevated-2); border: var(--bw) solid var(--border-strong); color: var(--text); font-size: 12px; line-height: 1.4; font-weight: 500; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .1s; box-shadow: 0 8px 22px color-mix(in srgb, var(--shade) 45%, transparent); }
+.tip-bubble.show { opacity: 1; visibility: visible; }
+@media (hover: none) { .tip-bubble { display: none; } }
+/* details / summary:隱藏瀏覽器的三角形,改用 token 色的箭頭 */
+.rt-details > summary, .rt-about > summary { list-style: none; gap: 8px; }
+.rt-details > summary::-webkit-details-marker, .rt-about > summary::-webkit-details-marker { display: none; }
+.rt-details > summary::before, .rt-about > summary::before { content: ''; flex: 0 0 auto; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .12s; margin: 0 2px 0 1px; }
+.rt-details[open] > summary::before, .rt-about[open] > summary::before { transform: rotate(45deg); }
