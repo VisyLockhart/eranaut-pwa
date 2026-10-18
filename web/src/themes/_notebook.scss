@@ -221,6 +221,7 @@ html[data-theme='notebook'] {
   .d-user .avatar { border-color: var(--cover-ink); color: var(--cover-ink); background: transparent; }
   .d-user .ws-icon-btn { color: var(--cover-ink); border-color: var(--cover-ink); }
   .d-sidebar app-copyright { color: var(--text-dim); }
+  .d-sidebar .copyright-name { color: #f0dc9c; font-weight: 700; }
   .d-main { position: relative; }
   .d-main::before { content: ''; position: absolute; left: 54px; top: 0; bottom: 0; border-left: 1.5px solid color-mix(in srgb, var(--rose) 55%, transparent); pointer-events: none; z-index: 0; }
   .d-main > * { position: relative; z-index: 1; }
