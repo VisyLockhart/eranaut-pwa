@@ -107,10 +107,9 @@ html[data-theme='notebook'] {
   .modal-input.error, .modal-input.error:focus { border-color: var(--danger); box-shadow: none; }
 
   /* 按鈕:一般 = 縫線補丁(虛線);主要 = 苔綠實心 + 內縮縫線 */
-  .ghost-btn, .btn-secondary, .rt-chip, .rt-icon-btn, .rt-save-btn, .pager-btn, .ws-arrow-btn, .ws-icon-btn, .d-collapse-handle, .rt-lv-step, .modal-close, .ct-tool, .ct-step, .camera-btn {
+  .ghost-btn, .btn-secondary, .rt-chip, .rt-icon-btn, .rt-save-btn, .pager-btn, .ws-arrow-btn, .ws-icon-btn, .rt-lv-step, .modal-close, .ct-tool, .ct-step, .camera-btn {
     border: var(--bw) dashed var(--text-muted); border-radius: var(--w2); background: transparent; color: var(--text); box-shadow: none; }
   .ct-step { border-style: solid; border-color: var(--line); border-radius: var(--blob); background: var(--bg); font-family: var(--font-mono); font-size: 22px; }
-  .d-collapse-handle { background: var(--bg-elevated); border-radius: var(--blob); border-style: solid; border-color: var(--line); }
   .primary-btn, .btn-primary-modal, .rt-save-btn.primary, .rt-icon-btn.primary, .rt-chip.active, .ct-done, .pill-toggle .on {
     background: var(--accent); color: var(--on-accent); border: var(--bw) solid var(--line); border-radius: var(--w2); box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 3px color-mix(in srgb, var(--bg-elevated) 60%, transparent); }
   .btn-danger, .ct-tool.danger, .ct-tool.danger:hover { color: var(--danger); border-color: var(--danger); background: transparent; }
@@ -222,8 +221,15 @@ html[data-theme='notebook'] {
   .d-user .ws-icon-btn { color: var(--cover-ink); border-color: var(--cover-ink); }
   .d-sidebar app-copyright { color: var(--text-dim); }
   .d-sidebar .copyright-name { color: #f0dc9c; font-weight: 700; }
+  /* 側欄展開/收合:書籤式索引標籤,卡在封面右緣;疊在紅邊線之上 */
+  .d-sidebar { z-index: 3; }
+  .d-collapse-handle { right: -22px; top: 24px; width: 30px; height: 46px; border-radius: 3px 14px 12px 4px; border: var(--bw) solid var(--line); border-left-width: 0; background: var(--mus-p); color: var(--mus-d); opacity: 1; box-shadow: 2px 2px 0 color-mix(in srgb, var(--line) 70%, transparent); transform: rotate(1.5deg); }
+  .d-collapse-handle::before { content: ''; position: absolute; left: 3px; top: 5px; bottom: 5px; border-left: 1.5px dashed color-mix(in srgb, var(--mus-d) 55%, transparent); }
+  .d-collapse-handle app-icon { margin-left: 4px; }
+  .d-collapse-handle:hover, .d-collapse-handle:focus-visible { background: var(--sage); color: var(--text); border-color: var(--line); }
+  .d-collapse-handle:focus-visible { outline: 2px solid var(--rose-d); outline-offset: 2px; }
   .d-main { position: relative; }
-  .d-main::before { content: ''; position: absolute; left: 54px; top: 0; bottom: 0; border-left: 1.5px solid color-mix(in srgb, var(--rose) 55%, transparent); pointer-events: none; z-index: 0; }
+  .d-main::before { content: ''; position: absolute; left: 76px; top: 0; bottom: 0; border-left: 1.5px solid color-mix(in srgb, var(--rose) 55%, transparent); pointer-events: none; z-index: 0; }
   .d-main > * { position: relative; z-index: 1; }
 
   /* 設定頁主題選擇:迷你筆記本封面(色票依序是 書脊、封面、標籤) */
