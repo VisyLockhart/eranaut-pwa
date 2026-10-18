@@ -229,8 +229,6 @@ html[data-theme='notebook'] {
   .d-collapse-handle:hover, .d-collapse-handle:focus-visible { background: var(--sage); color: var(--text); border-color: var(--line); }
   .d-collapse-handle:focus-visible { outline: 2px solid var(--rose-d); outline-offset: 2px; }
   .d-main { position: relative; }
-  .d-main::before { content: ''; position: absolute; left: 76px; top: 0; bottom: 0; border-left: 1.5px solid color-mix(in srgb, var(--rose) 55%, transparent); pointer-events: none; z-index: 0; }
-  .d-main > * { position: relative; z-index: 1; }
 
   /* 設定頁主題選擇:迷你筆記本封面(色票依序是 書脊、封面、標籤) */
   .theme-opts { gap: 10px; justify-content: space-between; }
