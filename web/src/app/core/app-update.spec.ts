@@ -102,6 +102,24 @@ describe('AppUpdate', () => {
     expect((update as unknown as Internals).resetServiceWorker).toHaveBeenCalledTimes(1);
   });
 
+  it('橫幅是「問伺服器」先發現的、service worker 還沒下載好:先請它下載並啟用,不解除註冊(推播訂閱綁在註冊上)', async () => {
+    const update = setup();
+    sw.activateUpdate.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    const mine = versions; // 抓住這個測試的 Subject:之後別的測試的 focus 事件也會呼叫這個 mock,不能讓它推到別人的 Subject
+    let first = true;
+    sw.checkForUpdate.mockImplementation(async () => {
+      if (first) setTimeout(() => mine.next({ type: 'VERSION_READY' }), 10);
+      first = false;
+      return true;
+    });
+    const p = update.apply();
+    await vi.advanceTimersByTimeAsync(50);
+    await p;
+    expect(sw.activateUpdate).toHaveBeenCalledTimes(2);
+    expect((update as unknown as Internals).resetServiceWorker).not.toHaveBeenCalled();
+    expect((update as unknown as Reloader).reloadPage).toHaveBeenCalledWith(false);
+  });
+
   it('備援:伺服器的主程式檔名和目前不同 → 顯示橫幅(service worker 降級時也能發現新版)', async () => {
     const update = setup();
     (update as unknown as Internals).fetchLiveIndex.mockResolvedValue('<script src="main-BBBB.js" type="module"></script>');

@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { Api } from './api';
 import { PushEnv } from './push-env';
 import { SettingsVm } from './settings-vm';
+import { readJson, removeKey, writeJson } from './storage';
 
 /**
  * 這台裝置的推播狀態(D-165):
@@ -24,6 +25,14 @@ export interface PushMessage {
 }
 
 const SUBSCRIPTION_WAIT_MS = 5000;
+/** 開機自動檢查時等 service worker 就緒的上限:它在頁面穩定後最多 30 秒才註冊(registerWhenStable:30000) */
+const SYNC_WAIT_MS = 45000;
+/**
+ * 「這台裝置要收推播」的意願,存在 localStorage(不會被解除註冊 service worker / 清快取影響)。
+ * 瀏覽器的推播訂閱綁在 service worker 註冊上:更新流程在 service worker 卡住時會解除註冊並重設(AppUpdate.apply / repair),
+ * 訂閱就跟著消失,設定頁看起來「裝置不見了」、也收不到通知。有這個意願旗標,開機時 `sync()` 就能在權限仍是「已允許」時自動重新訂閱並登記。
+ */
+export const PUSH_INTENT_KEY = 'eranaut.push-on';
 
 @Injectable({ providedIn: 'root' })
 export class PushVm {
@@ -39,6 +48,7 @@ export class PushVm {
   readonly busy = signal(false);
   readonly message = signal<PushMessage | null>(null);
   private publicKey: string | null = null;
+  private syncing = false;
 
   async load(): Promise<void> {
     this.message.set(null);
@@ -59,6 +69,7 @@ export class PushVm {
       }
       const [sub, list] = await Promise.all([this.currentSubscription(), this.api.pushSubscriptions()]);
       this.enabled.set(sub !== null && list.endpoints.includes(sub.endpoint));
+      if (this.enabled()) writeJson(PUSH_INTENT_KEY, true);
       this.state.set(this.env.permission() === 'denied' && !this.enabled() ? 'blocked' : 'ready');
     } catch {
       // 401 由 interceptor 轉成 session 過期畫面;其他錯誤顯示重試
@@ -87,7 +98,7 @@ export class PushVm {
         await this.sw.unsubscribe().catch(() => undefined); // 伺服器沒登記成功就不留下孤兒訂閱
         throw e;
       }
-      this.enabled.set(true);
+      this.markOn();
       this.message.set({ kind: 'ok', text: '已在這台裝置開啟推播通知。' });
       void this.settings.load();
     } catch {
@@ -106,6 +117,7 @@ export class PushVm {
       const sub = await this.currentSubscription();
       if (sub) await this.api.unregisterPush(sub.endpoint);
       await this.sw.unsubscribe().catch(() => undefined);
+      removeKey(PUSH_INTENT_KEY);
       this.enabled.set(false);
       void this.settings.load();
     } catch {
@@ -142,6 +154,7 @@ export class PushVm {
 
   /** 登出時順手移除這台裝置(盡力而為,失敗不影響登出):避免登出後這台還收到上一個帳號的通知 */
   async releaseThisDevice(): Promise<void> {
+    removeKey(PUSH_INTENT_KEY); // 登出就是不要了,不能讓下次開機又自動訂閱
     if (!this.sw?.isEnabled || !this.env.hasPushApi()) return;
     try {
       const sub = await this.currentSubscription();
@@ -154,10 +167,51 @@ export class PushVm {
     this.enabled.set(false);
   }
 
+  /**
+   * 開機(登入後)自動對帳,不需要使用者進設定頁:
+   * - 這台已有訂閱且伺服器有登記 → 記下「要收推播」的意願(讓之前就開啟的裝置也受保護)。
+   * - 意願旗標在、權限仍是「已允許」,但訂閱不見了(service worker 被重設)或伺服器沒登記 → 靜默重新訂閱並登記。
+   * 不會跳出權限詢問(權限不是「已允許」就什麼都不做);任何失敗都吞掉,下次開機再試。
+   */
+  async sync(): Promise<void> {
+    if (this.syncing || !this.sw?.isEnabled || !this.env.hasPushApi()) return;
+    if (this.env.isIos() && !this.env.isStandalone()) return;
+    const granted = this.env.permission() === 'granted';
+    const intended = readJson<boolean>(PUSH_INTENT_KEY) === true;
+    if (!granted && !intended) return;
+    this.syncing = true;
+    try {
+      const publicKey = this.publicKey ?? (await this.api.pushConfig()).publicKey;
+      if (publicKey === null) return;
+      this.publicKey = publicKey;
+      const [sub, list] = await Promise.all([this.currentSubscription(SYNC_WAIT_MS), this.api.pushSubscriptions()]);
+      if (sub && list.endpoints.includes(sub.endpoint)) {
+        this.markOn();
+        return;
+      }
+      if (!intended || !granted) return;
+      const fresh = sub ?? (await this.sw.requestSubscription({ serverPublicKey: publicKey }));
+      const json = fresh.toJSON();
+      if (!json.endpoint || !json.keys?.['p256dh'] || !json.keys['auth']) return;
+      await this.api.registerPush({ endpoint: json.endpoint, keys: { p256dh: json.keys['p256dh'], auth: json.keys['auth'] } });
+      this.markOn();
+      void this.settings.load();
+    } catch {
+      /* 盡力而為:下次開機再試 */
+    } finally {
+      this.syncing = false;
+    }
+  }
+
+  private markOn(): void {
+    this.enabled.set(true);
+    writeJson(PUSH_INTENT_KEY, true);
+  }
+
   /** 瀏覽器目前的訂閱;service worker 還沒就緒時最多等 5 秒,逾時當作沒有 */
-  private async currentSubscription(): Promise<PushSubscription | null> {
+  private async currentSubscription(waitMs = SUBSCRIPTION_WAIT_MS): Promise<PushSubscription | null> {
     if (!this.sw) return null;
-    const wait = new Promise<null>((resolve) => setTimeout(() => resolve(null), SUBSCRIPTION_WAIT_MS));
+    const wait = new Promise<null>((resolve) => setTimeout(() => resolve(null), waitMs));
     return Promise.race([firstValueFrom(this.sw.subscription, { defaultValue: null }), wait]);
   }
 }

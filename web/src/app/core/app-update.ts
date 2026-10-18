@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { SwUpdate } from '@angular/service-worker';
-import { filter } from 'rxjs';
+import { filter, firstValueFrom } from 'rxjs';
 import { Toast } from './toast';
 
 /** App 開著時,每隔多久問一次有沒有新版(Angular 預設只在啟動與換頁時檢查,安裝成 App 長時間開著就不會發現新版) */
@@ -175,13 +175,32 @@ export class AppUpdate {
     let activated = false;
     try {
       // service worker 沒回應(SAFE_MODE)時 activateUpdate() 也不會結束:逾時就當作沒有可啟用的新版,走下面的重設(D-266)
-      activated = (await within(this.sw?.activateUpdate() ?? Promise.resolve(false), SW_CALL_TIMEOUT_MS)) === true;
+      const r = await within(this.sw?.activateUpdate() ?? Promise.resolve(false), SW_CALL_TIMEOUT_MS);
+      if (r === TIMED_OUT) this.swUnresponsive = true; // 沒回應:不要再去問它,直接走重設
+      activated = r === true;
     } catch {
       activated = false;
     }
+    // 橫幅可能是「直接問伺服器」先發現新版,service worker 還沒下載完:先請它現在下載並等一下,能啟用就不必解除註冊。
+    // 解除註冊會連推播訂閱一起刪掉(訂閱綁在 service worker 註冊上),使用者就得重新綁定裝置、也收不到通知。
+    if (!activated && !this.swUnresponsive) activated = await this.downloadAndActivate();
     // 沒有可啟用的新版(service worker 降級、快取壞掉):解除註冊並清掉它的快取,重載才會直接從伺服器取得最新的檔案
     if (!activated) await this.resetServiceWorker();
     this.reloadPage(!activated);
+  }
+
+  /** 請 service worker 現在檢查並下載新版,等它準備好(上限各 8 秒)後啟用;任何一步失敗或逾時回傳 false */
+  protected async downloadAndActivate(): Promise<boolean> {
+    if (!this.sw) return false;
+    try {
+      const ready = firstValueFrom(this.sw.versionUpdates.pipe(filter((e) => e.type === 'VERSION_READY'))).then(() => true);
+      const found = await within(this.sw.checkForUpdate(), SW_CALL_TIMEOUT_MS);
+      if (found !== true) return false;
+      if ((await within(ready, SW_CALL_TIMEOUT_MS)) !== true) return false;
+      return (await within(this.sw.activateUpdate(), SW_CALL_TIMEOUT_MS)) === true;
+    } catch {
+      return false;
+    }
   }
 
   /**

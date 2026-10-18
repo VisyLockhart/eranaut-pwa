@@ -3,6 +3,7 @@ import { AuthScreen } from './auth/auth-screen';
 import { Auth } from './core/auth';
 import { DataStore } from './core/data-store';
 import { InstallPrompt } from './core/install-prompt';
+import { PushVm } from './core/push-vm';
 import { ThemeService } from './core/theme';
 import { UiScale } from './core/ui-scale';
 import { clearRouteCache } from './route/route-cache';
@@ -20,6 +21,7 @@ import { ToastHost } from './ui/toast-host';
 export class App {
   protected readonly auth = inject(Auth);
   private readonly store = inject(DataStore);
+  private readonly push = inject(PushVm);
   /** 開機就建立,讓儲存的介面大小在第一次繪製前套用(D-164) */
   private readonly uiScale = inject(UiScale);
   /** 開機就建立,讓主題(D-277)在第一次繪製前套用 */
@@ -32,7 +34,10 @@ export class App {
     effect(() => {
       const authenticated = this.auth.status() === 'authenticated';
       untracked(() => {
-        if (authenticated) this.store.start();
+        if (authenticated) {
+          this.store.start();
+          void this.push.sync(); // 推播訂閱不見(service worker 被重設)時自動補回,不必重新綁定
+        }
         else {
           this.store.stop();
           // 航線儲存潛艇的離線快照(RouteVm 還沒建立也要清;檢視狀態保留)。啟動中('loading')與離線('unreachable')不清

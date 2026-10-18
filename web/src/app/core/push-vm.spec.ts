@@ -6,7 +6,7 @@ import { BehaviorSubject } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Auth } from './auth';
 import { PushEnv } from './push-env';
-import { PushVm } from './push-vm';
+import { PUSH_INTENT_KEY, PushVm } from './push-vm';
 
 const settle = (): Promise<void> => new Promise((r) => setTimeout(r));
 const EP = 'https://push.example.com/send/aaa';
@@ -240,5 +240,63 @@ describe('PushVm(D-165)', () => {
     const vm2 = setup({ sw: false });
     await vm2.releaseThisDevice();
     http.expectNone('/api/push/subscription');
+  });
+
+  describe('sync():service worker 被重設後自動補回訂閱', () => {
+    const flush = async (endpoints: string[]): Promise<void> => {
+      await settle();
+      http.expectOne('/api/push/config').flush({ publicKey: 'PUBKEY' });
+      await settle();
+      http.expectOne('/api/push/subscriptions').flush({ endpoints });
+      await settle();
+    };
+
+    beforeEach(() => localStorage.removeItem(PUSH_INTENT_KEY));
+
+    it('訂閱還在而且伺服器有登記:只記下意願,不重複登記', async () => {
+      const vm = setup();
+      env.perm = 'granted';
+      sw.subscription.next(fakeSub());
+      const p = vm.sync();
+      await flush([EP]);
+      await p;
+      expect(vm.enabled()).toBe(true);
+      expect(localStorage.getItem(PUSH_INTENT_KEY)).toBe('true');
+      http.expectNone('/api/push/subscription');
+      expect(sw.requestSubscription).not.toHaveBeenCalled();
+    });
+
+    it('有意願、權限仍允許、但訂閱不見了:靜默重新訂閱並登記', async () => {
+      const vm = setup();
+      env.perm = 'granted';
+      localStorage.setItem(PUSH_INTENT_KEY, 'true');
+      const p = vm.sync();
+      await flush([]);
+      // 訂閱為 null → 要等 5 秒的上限太久,改由 service worker 回報訂閱
+      sw.subscription.next(null);
+      await vi.waitFor(() => expect(sw.requestSubscription).toHaveBeenCalledWith({ serverPublicKey: 'PUBKEY' }), { timeout: 3000 });
+      await settle();
+      const put = http.expectOne('/api/push/subscription');
+      expect(put.request.method).toBe('PUT');
+      expect(put.request.body).toEqual({ endpoint: EP, keys: { p256dh: 'pk', auth: 'au' } });
+      put.flush({});
+      await p;
+      expect(vm.enabled()).toBe(true);
+      expect(env.requestPermission).not.toHaveBeenCalled();
+    }, 60000);
+
+    it('沒有意願、權限也不是已允許:完全不打 API(不會跳權限詢問)', async () => {
+      const vm = setup();
+      await vm.sync();
+      http.expectNone('/api/push/config');
+      expect(env.requestPermission).not.toHaveBeenCalled();
+    });
+
+    it('關閉與登出會清掉意願,之後開機不會自動再訂閱', async () => {
+      const vm = setup();
+      localStorage.setItem(PUSH_INTENT_KEY, 'true');
+      await vm.releaseThisDevice();
+      expect(localStorage.getItem(PUSH_INTENT_KEY)).toBeNull();
+    });
   });
 });
