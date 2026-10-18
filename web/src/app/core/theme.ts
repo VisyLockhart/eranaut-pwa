@@ -1,8 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 import { readJson, writeJson } from './storage';
 
-/** 主題(D-277):經典(原本的深色)、淺色(像素風)、深色(鐵灰藍・中世紀)。只有這三個,不做「跟隨系統」第四項。 */
-export type ThemeId = 'classic' | 'light' | 'dark';
+/** 主題(D-277、D-279):經典(原本的深色)、淺色(像素風)、深色(鐵灰藍・中世紀)、手札(莫蘭迪・手寫筆記)。不做「跟隨系統」這一項;新使用者首次只在淺色/深色之間依系統決定。
+ *  切換主題只改 data-theme、字型與 meta,絕不碰 service worker 與推播訂閱(推播綁在 service worker 註冊上,見 push-vm.ts)。 */
+export type ThemeId = 'classic' | 'light' | 'dark' | 'notebook';
 
 export interface ThemeInfo {
   readonly id: ThemeId;
@@ -21,6 +22,9 @@ export const THEMES: readonly ThemeInfo[] = [
     fonts: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DotGothic16&family=Silkscreen:wght@400;700&display=swap' },
   { id: 'dark', label: '深色', swatch: ['#111923', '#263446', '#c9a85c'], chrome: '#111923',
     fonts: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700;900&family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@1,600&display=swap' },
+  /* 手札:色票依序是「書脊、封面、標籤」(設定頁把它畫成一本筆記本);chrome 是頂端苔綠色帶 */
+  { id: 'notebook', label: '手札', swatch: ['#4a5f42', '#a8b79b', '#faf7ef'], chrome: '#4a5f42',
+    fonts: 'https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Caveat:wght@500;700&family=Patrick+Hand&display=swap' },
 ];
 
 /** localStorage 鍵;index.html 的開機前小腳本也讀這個鍵(並做同一個「全新使用者」判斷),兩處要一起改 */

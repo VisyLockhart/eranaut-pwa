@@ -3,6 +3,7 @@
    多主題(D-277)::root 是「經典」的 token;淺色與深色在 themes/ 底下用 html[data-theme] 重新定義同名 token。 */
 @use './themes/light';
 @use './themes/dark';
+@use './themes/notebook';
   :root {
     --accent: #2dd4bf;
     --accent-dark: #0e7490;

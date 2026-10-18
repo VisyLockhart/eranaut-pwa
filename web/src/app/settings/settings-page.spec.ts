@@ -66,7 +66,7 @@ describe('SettingsPage', () => {
     expect(JSON.parse(localStorage.getItem('eranaut.ui-scale') ?? '""')).toBe('large');
   });
 
-  it('主題:三個選項(經典 / 淺色 / 深色,沒有「跟隨系統」),點了立即切換、不需要網路', async () => {
+  it('主題:四個選項(經典 / 淺色 / 深色 / 手札,沒有「跟隨系統」),點了立即切換、不需要網路', async () => {
     localStorage.clear();
     localStorage.setItem('eranaut.ui-scale', JSON.stringify('small')); // 既有使用者 → 經典
     const fixture = await render();
@@ -75,14 +75,14 @@ describe('SettingsPage', () => {
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     const opts = Array.from(el.querySelectorAll<HTMLButtonElement>('.theme-opt'));
-    expect(opts.map((b) => b.querySelector('.theme-nm')?.textContent?.trim())).toEqual(['經典', '淺色', '深色']);
-    expect(opts.map((b) => b.getAttribute('aria-checked'))).toEqual(['true', 'false', 'false']);
+    expect(opts.map((b) => b.querySelector('.theme-nm')?.textContent?.trim())).toEqual(['經典', '淺色', '深色', '手札']);
+    expect(opts.map((b) => b.getAttribute('aria-checked'))).toEqual(['true', 'false', 'false', 'false']);
 
     opts[1].click();
     fixture.detectChanges();
     expect(TestBed.inject(ThemeService).theme()).toBe('light');
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
-    expect(opts.map((b) => b.getAttribute('aria-checked'))).toEqual(['false', 'true', 'false']);
+    expect(opts.map((b) => b.getAttribute('aria-checked'))).toEqual(['false', 'true', 'false', 'false']);
     expect(opts[1].classList.contains('active')).toBe(true);
     http.expectNone('/api/notify-prefs');
     expect(JSON.parse(localStorage.getItem('eranaut.theme') ?? '""')).toBe('light');

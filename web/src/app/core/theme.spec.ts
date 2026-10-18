@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { THEME_KEY, ThemeService, resolveInitialTheme } from './theme';
+import { PUSH_INTENT_KEY } from './push-vm';
+import { THEMES, THEME_KEY, ThemeService, resolveInitialTheme } from './theme';
 
 describe('resolveInitialTheme(D-277)', () => {
   it('已存的主題優先,不管有沒有其他設定或系統配色', () => {
@@ -68,5 +69,32 @@ describe('ThemeService(D-277)', () => {
     mockSystem(true);
     localStorage.setItem(THEME_KEY, JSON.stringify('dark'));
     expect(TestBed.inject(ThemeService).theme()).toBe('dark');
+  });
+
+  it('手札:存的主題可還原,theme-color 與字型連結都套用', () => {
+    mockSystem(false);
+    localStorage.setItem(THEME_KEY, JSON.stringify('notebook'));
+    expect(TestBed.inject(ThemeService).theme()).toBe('notebook');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('notebook');
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#4a5f42');
+    expect(document.querySelector('link[data-theme-fonts*="LXGW"]')).not.toBeNull();
+  });
+
+  it('切換任何主題都不會碰推播:意願旗標保留、不解除註冊 service worker、不清快取', () => {
+    mockSystem(true);
+    const reg = { unregister: vi.fn() };
+    const sw = { getRegistrations: vi.fn(async () => [reg]), getRegistration: vi.fn(async () => reg), register: vi.fn() };
+    const caches = { keys: vi.fn(async () => ['ngsw:x']), delete: vi.fn() };
+    vi.stubGlobal('caches', caches);
+    Object.defineProperty(navigator, 'serviceWorker', { value: sw, configurable: true });
+    localStorage.setItem(PUSH_INTENT_KEY, 'true');
+    const s = TestBed.inject(ThemeService);
+    for (const t of THEMES) s.set(t.id);
+    for (const t of [...THEMES].reverse()) s.set(t.id);
+    expect(localStorage.getItem(PUSH_INTENT_KEY)).toBe('true');
+    expect(reg.unregister).not.toHaveBeenCalled();
+    expect(sw.register).not.toHaveBeenCalled();
+    expect(caches.delete).not.toHaveBeenCalled();
+    Reflect.deleteProperty(navigator, 'serviceWorker');
   });
 });

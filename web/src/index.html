@@ -41,7 +41,7 @@
     /* 主題(D-277):在畫面出現前先套用,避免第一幀閃錯色。鍵與判斷要和 core/theme.ts 一致:
        已存 → 用它;沒存過但已有其他 eranaut. 設定(既有使用者)→ 經典;全新使用者 → 依系統配色(淺色系統用淺色,其他用深色)。 */
     try {
-      var ids = { classic: '#070a14', light: '#eef4fc', dark: '#111923' };
+      var ids = { classic: '#070a14', light: '#eef4fc', dark: '#111923', notebook: '#4a5f42' };
       var th = null;
       try { th = JSON.parse(localStorage.getItem('eranaut.theme')); } catch (e) {}
       if (!ids[th]) {
@@ -53,7 +53,7 @@
       document.documentElement.setAttribute('data-theme', th);
       var m = document.querySelector('meta[name="theme-color"]');
       if (m) m.setAttribute('content', ids[th]);
-      var fonts = { light: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DotGothic16&family=Silkscreen:wght@400;700&display=swap', dark: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700;900&family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@1,600&display=swap' }[th];
+      var fonts = { light: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DotGothic16&family=Silkscreen:wght@400;700&display=swap', dark: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700;900&family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@1,600&display=swap', notebook: 'https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Caveat:wght@500;700&family=Patrick+Hand&display=swap' }[th];
       if (fonts) { var fl = document.createElement('link'); fl.rel = 'stylesheet'; fl.href = fonts; fl.setAttribute('data-theme-fonts', fonts); document.head.appendChild(fl); }
     } catch (e) { document.documentElement.setAttribute('data-theme', 'classic'); }
   </script>
