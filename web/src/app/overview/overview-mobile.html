@@ -16,9 +16,9 @@
 
 <div class="pager">
   <div class="pager-row">
-    <button class="pager-btn icon-btn" style="border-radius: 10px" (click)="vm.prev()" aria-label="上一間工坊"><app-icon name="chevronLeft" /></button>
+    <button class="pager-btn icon-btn" style="border-radius: calc(10px * var(--rs))" (click)="vm.prev()" aria-label="上一間工坊"><app-icon name="chevronLeft" /></button>
     <div class="pager-label" [style.color]="vm.index() === 0 ? 'var(--text)' : 'var(--accent)'">{{ vm.pagerLabels()[vm.index()] }}</div>
-    <button class="pager-btn icon-btn" style="border-radius: 10px" (click)="vm.next()" aria-label="下一間工坊"><app-icon name="chevronRight" /></button>
+    <button class="pager-btn icon-btn" style="border-radius: calc(10px * var(--rs))" (click)="vm.next()" aria-label="下一間工坊"><app-icon name="chevronRight" /></button>
   </div>
   <div class="pager-dots">
     @for (label of vm.pagerLabels(); track $index) {

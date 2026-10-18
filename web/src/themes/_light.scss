@@ -20,4 +20,103 @@ html[data-theme='light'] {
   --grad-accent: var(--accent); --grad-cta: var(--amber); --grad-meter: var(--accent);
   /* 形狀:直角、粗邊框 */
   --rs: 0; --r-pill: 0; --r-round: 0; --bw: 2px;
+  /* 字型:內文維持清晰黑體;標題用 Silkscreen,數字用 DotGothic16(只有一種字重,不可假粗體) */
+  --font-ui: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+  --font-mono: 'DotGothic16', 'Noto Sans TC', monospace;
+  --font-cap: 'Silkscreen', 'DotGothic16', monospace;
+  /* 像素立體感:凹凸邊緣(bevel)、按下時的內陰影、浮層的硬陰影 */
+  --line: #002050; --bevel: color-mix(in srgb, #002050 14%, transparent); --lift: color-mix(in srgb, #fff 38%, transparent);
+  --drop: color-mix(in srgb, #002050 25%, transparent);
+  --raise: inset -3px -3px 0 0 var(--bevel);
+  --press: inset -3px -3px 0 0 color-mix(in srgb, #002050 30%, transparent), inset 3px 3px 0 0 var(--lift);
+  --hard: 6px 6px 0 0 var(--drop);
+  /* 待收艇:暖黃底配深棕字(對比 8.3:1) */
+  --ready-bg: #ffe08a; --ready-ink: #5a3600; --ready-dot: #ff9f1a;
 }
+
+/* ------------------------------------------------------------------ */
+/* 元件外觀(階段 4)。只讀 token;顏色一律來自上面的色盤。                */
+/* ------------------------------------------------------------------ */
+html[data-theme='light'] {
+  body { font-synthesis-weight: none; }
+  svg { shape-rendering: crispEdges; }
+  ::selection { background: var(--border); }
+
+  /* 像素數字:DotGothic16 只有一種字重,數字一律用它並取消粗體(避免假粗體糊掉) */
+  .mono, .m-stat .num, .d-stat .num, .row-time, .card-time, .t-time, .t-eta, .d-card-time, .d-card-eta, .d-card-eta-full,
+  .uf-time, .uf-eta, .rt-stat .num, .rt-ret-time, .rt-count, .rt-pg-count, .ct-tile-val, .ct-pct, .ct-sum-val, .ct-qty-num, .ct-need, .ct-lack { font-family: var(--font-mono); font-weight: 400; font-variant-numeric: normal; }
+  .m-stat .num, .d-stat .num { font-size: 1.25em; }
+  .d-brand-name, .m-header .m-brand { font-family: var(--font-cap); font-weight: 400; letter-spacing: 0.08em; }
+  .d-title, .modal-title, .set-title { font-weight: 700; }
+
+  /* 實心面板:直角、3px 邊框、右下凹凸陰影 */
+  .m-stat, .card, .d-stat, .d-card, .ws-row, .ws-browse-item, .uf-row, .rt-card, .rt-block, .auth-card, .d-user, .rt-cfgbar, .rt-needbox, .up-empty, .dropzone, .rt-baseline, .row, .table, .d-pager,
+  .pill-toggle, .up-tabs, .ocr-busy, .copyright-panel, .modal-toggle-row { border-width: 3px; border-color: var(--line); box-shadow: var(--raise); }
+  .row { border-width: 3px; }
+  /* 內層小元件:只加粗邊框、換成墨色,不加陰影(避免畫面太擁擠) */
+  .ct-slot-card, .ct-tile, .ct-col, .ct-sum-row, .rt-meter, .rt-picked li, .rt-part, .rt-pick, .ct-chip, .ct-tool, .ct-seg, .ct-yield, .rt-chip5, .rt-stat { border-width: 2px; border-color: var(--line); }
+  .ct-slot-card:not(.set), .ct-tile:not(.set) { border-style: dashed; }
+  .row.ready, .card.ready, .m-stat.ready, .d-stat.ready, .d-card.ready, .uf-row.ready, .table-row.ready { background: var(--ready-bg); border-color: var(--line); color: var(--ready-ink); }
+  .row.ready .row-name, .row.ready .row-ws, .row.ready .row-time, .row.ready .row-status,
+  .card.ready *, .d-card.ready *, .table-row.ready *, .m-stat.ready .num, .m-stat.ready .label, .d-stat.ready .num, .d-stat.ready .label { color: var(--ready-ink); }
+  .table-row.ready { box-shadow: none; }
+  .table-wrap { border: 3px solid var(--line); box-shadow: var(--raise); }
+  .table-head { background: var(--border); color: var(--text); border-bottom: 3px solid var(--line); font-weight: 700; }
+  .table-row { border-top: 2px solid var(--bg-elevated-2); }
+  .table-row.ready { border-top-color: var(--line); }
+  .status-pill.ready { background: var(--bg-elevated); color: var(--ready-ink); box-shadow: 0 0 0 2px var(--line); }
+
+  /* 浮層:硬陰影 */
+  .modal-box, .sel-panel, .toast, .install-prompt, .update-banner, .tip-bubble, .ws-tooltip-bubble, .m-user-menu, .rt-fab-menu { border: 3px solid var(--line); box-shadow: var(--hard); }
+  .modal-box { border-radius: 0; }
+  .install-prompt, .update-banner { border-color: var(--line); background: var(--bg-elevated); }
+  .tip-bubble { border-width: 2px; box-shadow: 3px 3px 0 0 var(--drop); background: var(--line); color: var(--bg-elevated); }
+  .toast { background: var(--line); color: var(--bg-elevated); }
+  .toast-stack .toast.warn { background: var(--ready-bg); color: var(--ready-ink); border-color: var(--line); }
+  .toast-stack .toast-act { color: inherit; text-decoration: underline; }
+  .toast-stack .toast-act:hover { background: color-mix(in srgb, currentColor 14%, transparent); }
+
+  /* 欄位:凹入 */
+  .modal-input, .rt-text-input, .rt-level-input, .uf-name, .field-select, .sel-trigger, .ct-qty input, .ct-have { border-width: 3px; border-color: var(--line); box-shadow: inset 3px 3px 0 0 var(--bevel); background: var(--bg-elevated); }
+  .uf-num { border-width: 3px; }
+  .modal-input:focus, .modal-input:focus-visible, .rt-text-input:focus-visible, .rt-level-input:focus-visible, .uf-name:focus-visible,
+  .ct-qty input:focus-visible, .ct-have:focus-visible, .sel-trigger:focus-visible, .sel-trigger.open { border-color: var(--accent); box-shadow: 0 0 0 3px var(--line), inset 3px 3px 0 0 var(--bevel); outline: none; }
+  .modal-input.error, .modal-input.error:focus { border-color: var(--danger); box-shadow: inset 3px 3px 0 0 var(--bevel); }
+
+  /* 按鈕 */
+  .primary-btn, .btn-primary-modal, .rt-save-btn.primary, .rt-icon-btn.primary, .rt-chip.active, .pill-toggle .on { border: 3px solid var(--line); box-shadow: var(--press); background: var(--accent); color: var(--on-accent); }
+  .ghost-btn, .btn-secondary, .rt-chip, .rt-icon-btn, .rt-save-btn, .pager-btn, .ws-arrow-btn, .ws-icon-btn, .d-collapse-handle, .rt-lv-step, .modal-close { border: 3px solid var(--line); box-shadow: var(--raise); background: var(--bg-elevated); color: var(--text); }
+  .btn-danger { border: 3px solid var(--line); box-shadow: var(--raise); }
+  .rt-cta { background: var(--ready-bg); color: var(--ready-ink); border: 3px solid var(--line); box-shadow: var(--raise); animation: none; }
+  .primary-btn:active:not(:disabled), .btn-primary-modal:active:not(:disabled), .ghost-btn:active:not(:disabled), .btn-secondary:active:not(:disabled), .rt-chip:active, .rt-icon-btn:active:not(:disabled), .pager-btn:active, .rt-cta:active { transform: translate(2px, 2px); box-shadow: inset 3px 3px 0 0 color-mix(in srgb, var(--line) 30%, transparent); }
+  button:focus-visible, a:focus-visible, [role=button]:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  button:disabled, .primary-btn:disabled { box-shadow: none; }
+
+  /* 開關:方形滑軌 */
+  .switch { width: 52px; height: 28px; }
+  .switch .slider { border: 3px solid var(--line); background: var(--bg-locked); }
+  .switch .slider:before { height: 14px; width: 14px; left: 3px; top: 3px; background: var(--bg-elevated); box-shadow: 0 0 0 2px var(--line); }
+  .switch input:checked + .slider { background: var(--accent); border-color: var(--line); }
+  .switch input:checked + .slider:before { transform: translateX(24px); background: var(--bg-elevated); }
+  .switch input:focus-visible + .slider { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+  /* 導覽 */
+  .m-header { border-bottom: 3px solid var(--line); background: var(--bg-elevated); }
+  .m-nav { border-top: 3px solid var(--line); }
+  .d-sidebar { border-right: 3px solid var(--line); background: var(--bg-elevated); }
+  .nav-item.active { color: var(--text); background: var(--border); box-shadow: 0 0 0 3px var(--line); }
+  .d-nav-item.active { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 0 3px var(--line), var(--press); }
+  .nav-upload-fab { background: var(--accent); color: var(--on-accent); border: 3px solid var(--line); box-shadow: var(--press); }
+  .d-install { border: 3px dashed var(--line); background: var(--bg-elevated-2); color: var(--text); }
+  .d-install:hover { background: var(--border); }
+  .install-prompt .ip-share { color: var(--accent); }
+
+  /* 設定頁主題選擇 */
+  .theme-opt { border-width: 3px; border-color: var(--line); box-shadow: none; }
+  .theme-opt.active { background: var(--bg-elevated-2); box-shadow: 0 0 0 3px var(--accent), 0 0 0 6px var(--line); }
+  .theme-sw i { border-radius: 0; box-shadow: 0 0 0 2px var(--line); }
+}
+
+/* iOS 主畫面 App 的狀態列是 black-translucent(執行中無法改):淺色底配白色狀態列文字會看不見,
+   所以在最上方補一條墨色安全區色帶(非 iOS / 沒有瀏覽器列的環境 env() 為 0,不會出現) */
+html[data-theme='light']::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: calc(env(safe-area-inset-top) / var(--vu-div)); background: var(--line); z-index: 2147483000; pointer-events: none; }

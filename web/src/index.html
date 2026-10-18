@@ -53,6 +53,8 @@
       document.documentElement.setAttribute('data-theme', th);
       var m = document.querySelector('meta[name="theme-color"]');
       if (m) m.setAttribute('content', ids[th]);
+      var fonts = { light: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DotGothic16&family=Silkscreen:wght@400;700&display=swap', dark: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700;900&family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@1,600&display=swap' }[th];
+      if (fonts) { var fl = document.createElement('link'); fl.rel = 'stylesheet'; fl.href = fonts; fl.setAttribute('data-theme-fonts', fonts); document.head.appendChild(fl); }
     } catch (e) { document.documentElement.setAttribute('data-theme', 'classic'); }
   </script>
   <script>

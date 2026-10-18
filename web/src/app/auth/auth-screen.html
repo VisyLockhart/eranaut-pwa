@@ -97,7 +97,7 @@
     @case ('fail') {
       <div class="auth-page-d" style="justify-content: center">
         <div class="auth-card" style="max-width: 480px; padding: 48px">
-          <div class="auth-card-icon" style="width: 72px; height: 72px; border-radius: 18px; margin-bottom: 26px"><ng-container *ngTemplateOutlet="failIcon" /></div>
+          <div class="auth-card-icon" style="width: 72px; height: 72px; border-radius: calc(18px * var(--rs)); margin-bottom: 26px"><ng-container *ngTemplateOutlet="failIcon" /></div>
           <div class="auth-card-title" style="font-size: 20px">{{ failCopy().title }}</div>
           <div class="auth-card-desc" style="font-size: 14px; margin-bottom: 32px">{{ failCopy().desc }}</div>
           <button class="auth-card-btn" style="padding: 14px; font-size: 14.5px" (click)="retry()">{{ failCopy().button }}</button>

@@ -483,7 +483,7 @@ app-root { display: block; }
    所以拖曳清單的列(與拖曳預覽)自己抵銷 zoom,淨倍率回到 1,數字就正確;內容再用 zoom 放大回來,
    列本身的間距、圓角手動乘上倍率,外觀與其他地方一致。 */
 .ws-list.ws-cdk, .ws-row.cdk-drag-preview { zoom: calc(1 / var(--ui-scale)); }
-.ws-list.ws-cdk .ws-row, .ws-row.cdk-drag-preview { padding: calc(12px * var(--ui-scale)); gap: calc(10px * var(--ui-scale)); border-radius: calc(14px * var(--ui-scale)); }
+.ws-list.ws-cdk .ws-row, .ws-row.cdk-drag-preview { padding: calc(12px * var(--ui-scale)); gap: calc(10px * var(--ui-scale)); border-radius: calc(14px * var(--ui-scale) * var(--rs)); }
 .ws-list.ws-cdk .ws-row.ws-row-desktop, .ws-row.ws-row-desktop.cdk-drag-preview { padding: calc(14px * var(--ui-scale)) calc(16px * var(--ui-scale)); }
 .ws-wrap .ws-list.ws-cdk { gap: calc(10px * var(--ui-scale)); }
 .ws-wrap.desktop .ws-list.ws-cdk { gap: calc(8px * var(--ui-scale)); }

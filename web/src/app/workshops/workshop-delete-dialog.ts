@@ -15,7 +15,7 @@ import { IconComponent } from '../ui/icon';
       <div class="modal-overlay" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
         <div class="modal-box danger" role="alertdialog" aria-modal="true" aria-labelledby="wsd-title" aria-describedby="wsd-desc" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
           @if (count() > 0) {
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: color-mix(in srgb, var(--danger) 12%, transparent); display: flex; align-items: center; justify-content: center; margin-bottom: 16px">
+            <div style="width: 48px; height: 48px; border-radius: calc(12px * var(--rs)); background: color-mix(in srgb, var(--danger) 12%, transparent); display: flex; align-items: center; justify-content: center; margin-bottom: 16px">
               <app-icon name="warning" [size]="24" />
             </div>
           }

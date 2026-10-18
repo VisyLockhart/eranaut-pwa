@@ -12,12 +12,16 @@ export interface ThemeInfo {
   readonly swatch: readonly [string, string, string];
   /** 瀏覽器網址列 / 狀態列顏色(meta theme-color);index.html 的開機前小腳本有同一組,兩處要一起改 */
   readonly chrome: string;
+  /** 這個主題額外需要的網頁字型(Google Fonts);經典沿用原本字型,不載入。index.html 的開機前小腳本有同一組網址 */
+  readonly fonts?: string;
 }
 
 export const THEMES: readonly ThemeInfo[] = [
   { id: 'classic', label: '經典', sub: '原本的深色', swatch: ['#070a14', '#0f1526', '#2dd4bf'], chrome: '#070a14' },
-  { id: 'light', label: '淺色', sub: '像素風', swatch: ['#eef4fc', '#ffffff', '#0a6cc8'], chrome: '#eef4fc' },
-  { id: 'dark', label: '深色', sub: '鐵灰藍・金屬', swatch: ['#111923', '#263446', '#c9a85c'], chrome: '#111923' },
+  { id: 'light', label: '淺色', sub: '像素風', swatch: ['#eef4fc', '#ffffff', '#0a6cc8'], chrome: '#eef4fc',
+    fonts: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DotGothic16&family=Silkscreen:wght@400;700&display=swap' },
+  { id: 'dark', label: '深色', sub: '鐵灰藍・金屬', swatch: ['#111923', '#263446', '#c9a85c'], chrome: '#111923',
+    fonts: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700;900&family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@1,600&display=swap' },
 ];
 
 /** localStorage 鍵;index.html 的開機前小腳本也讀這個鍵(並做同一個「全新使用者」判斷),兩處要一起改 */
@@ -100,5 +104,16 @@ export class ThemeService {
     root.setAttribute('data-theme', this.theme());
     const info = THEMES.find((t) => t.id === this.theme())!;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', info.chrome);
+    loadThemeFonts(info.fonts);
   }
+}
+
+/** 載入主題字型:同一個網址只加一次 <link>;切回經典不移除(已載入的字型留著,下次切換不必重抓) */
+function loadThemeFonts(href: string | undefined): void {
+  if (!href || document.querySelector(`link[data-theme-fonts="${href}"]`)) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = href;
+  link.setAttribute('data-theme-fonts', href);
+  document.head.appendChild(link);
 }
