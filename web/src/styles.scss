@@ -1,5 +1,8 @@
 /* 由 Eranaut-demo 的樣式移植(純深色主題,D-93);共用 class 名稱與 demo 相同,方便對照。
-   手機/桌機以 768px 的 media query 切換版面(Angular 端用 matchMedia 只渲染其中一個外殼)。 */
+   手機/桌機以 768px 的 media query 切換版面(Angular 端用 matchMedia 只渲染其中一個外殼)。
+   多主題(D-277)::root 是「經典」的 token;淺色與深色在 themes/ 底下用 html[data-theme] 重新定義同名 token。 */
+@use './themes/light';
+@use './themes/dark';
   :root {
     --accent: #2dd4bf;
     --accent-dark: #0e7490;
@@ -39,6 +42,7 @@
     --grad-accent: linear-gradient(155deg, var(--accent), var(--accent-dark));
     --grad-cta: linear-gradient(155deg, var(--amber-light), var(--amber-strong));
     --grad-page: radial-gradient(120% 70% at 15% -10%, #10213a 0%, var(--bg) 55%);
+    --bg-page: var(--grad-page), var(--bg); /* body 背景(整條簡寫);淺色與深色改成單色 var(--bg) */
     --grad-page-auth: radial-gradient(circle at 50% -10%, #10213a 0%, var(--bg) 55%);
     --grad-chart: radial-gradient(circle at 50% 40%, #0f1d33 0%, #0a1020 70%);
     --grad-meter: linear-gradient(90deg, var(--accent-dark), var(--accent));
@@ -49,7 +53,7 @@
   body {
     font-family: var(--font-ui);
     color: var(--text);
-    background: var(--grad-page), var(--bg);
+    background: var(--bg-page);
     min-height: calc(100vh / var(--vu-div));
   }
   button, select, input { font-family: inherit; }
@@ -530,6 +534,8 @@ body:has(app-demo-bar) .install-prompt { bottom: calc(136px + env(safe-area-inse
 
 /* ---------- 瀏覽器原生元件的主題化 ---------- */
 :root { color-scheme: dark; }
+/* 切換主題的瞬間(ThemeService 加上 theme-switching)暫停所有 transition / animation,避免整個畫面慢慢漸變或各元件不同步 */
+html.theme-switching *, html.theme-switching *::before, html.theme-switching *::after { transition: none !important; animation: none !important; }
 /* 捲軸:細、半透明,配合深色主題(Chrome 121+/Firefox/Safari 18.2+ 用標準屬性,舊版 WebKit 用 -webkit- 備援) */
 * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--tone) 32%, transparent) transparent; }
 @supports not (scrollbar-color: auto) {
@@ -1192,3 +1198,16 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-sum-val { flex: 0 0 auto; font-size: 14px; font-weight: 700; color: var(--amber); font-family: var(--font-mono); white-space: nowrap; }
 .ct-sum-val i { font-style: normal; font-size: 12px; color: var(--text-muted); }
 .ct-sum-row .ct-sel-part { display: none; }
+
+/* ---------- 設定頁:主題選擇(D-277)——三個主題各有自己的選項外觀,見各主題檔 ---------- */
+.set-title { font-size: 13px; font-weight: 600; }
+.set-desc { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+.set-hr { height: 0; border-top: var(--bw) solid var(--border); margin: 14px 0; }
+.theme-opts { display: flex; gap: 8px; margin-top: 10px; }
+.theme-opt { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px 9px; background: var(--bg-elevated-2); border: var(--bw) solid var(--border); border-radius: calc(11px * var(--rs)); color: var(--text-dim); font: inherit; cursor: pointer; }
+.theme-opt.active { border-color: var(--accent); color: var(--text); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.theme-opt:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+.theme-sw { display: flex; gap: 3px; margin-bottom: 2px; }
+.theme-sw i { display: block; width: 18px; height: 18px; border-radius: calc(5px * var(--rs)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 40%, transparent); }
+.theme-nm { font-size: 13px; font-weight: 600; }
+.theme-sub { font-size: 11px; color: var(--text-dim); min-height: 15px; }

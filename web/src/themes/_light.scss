@@ -1,0 +1,23 @@
+/* 淺色主題(D-277):像素風。色盤取自 portfolio 淺色。
+   只重新定義 token(顏色、形狀、字型);元件規則一律寫在 styles.scss,只讀 token。
+   此檔目前是階段 2 的色盤骨架,階段 4 再補像素風的形狀與裝飾。 */
+html[data-theme='light'] {
+  color-scheme: light;
+  --bg: #eef4fc; --bg-elevated: #ffffff; --bg-elevated-2: #e1edfa; --bg-bar: #ffffff; --bg-locked: #dbe7f5;
+  --border: #a8d4f4; --border-strong: #002050;
+  --text: #002050; --text-muted: #3a5a8a; --text-dim: #42628f; --text-faint: #567494;
+  --text-strong: #002050; --text-nav: #42628f; --text-locked: #5f7ea6; --text-none: #4d6b92;
+  --accent: #0a6cc8; --accent-dark: #084f94; --on-accent: #ffffff; --on-accent-deep: #ffffff;
+  --amber: #9a5600; --amber-strong: #9a5600; --amber-light: #b86a00; --amber-text: #7a4300; --amber-text-2: #6b3b00;
+  --on-amber: #ffffff; --on-amber-cta: #ffffff;
+  --danger: #b3261e; --on-danger: #ffffff;
+  --ok: #1b7a3a; --ok-2: #1b7a3a; --pink: #b0206a; --pink-text: #9b175a;
+  --discord: #5865f2; --discord-dark: #4752c4;
+  --tone: #002050; --shade: #002050; --scrim: #002050; --white: #ffffff;
+  --surface-avatar: #a8d4f4; --surface-raise: #e1edfa; --surface-meter: #cfe6fa; --track: #a8d4f4; --link-line: #7d9cc4;
+  /* 不使用漸層:原本的漸層 token 全部改單色 */
+  --bg-page: var(--bg); --grad-page-auth: var(--bg); --grad-chart: var(--bg-elevated-2);
+  --grad-accent: var(--accent); --grad-cta: var(--amber); --grad-meter: var(--accent);
+  /* 形狀:直角、粗邊框 */
+  --rs: 0; --r-pill: 0; --r-round: 0; --bw: 2px;
+}

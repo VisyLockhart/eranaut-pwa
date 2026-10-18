@@ -23,6 +23,20 @@
 
   <div class="modal-section-label">顯示</div>
   <div class="modal-toggle-row" style="display: block; margin-top: 0">
+    <div id="set-theme-label" class="set-title">主題</div>
+    <div class="set-desc">切換整體配色與外觀，立即套用；只影響這台裝置</div>
+    <div class="theme-opts" role="radiogroup" aria-labelledby="set-theme-label">
+      @for (th of themes; track th.id) {
+        <button type="button" class="theme-opt" role="radio" [class.active]="theme.theme() === th.id" [attr.aria-checked]="theme.theme() === th.id" (click)="theme.set(th.id)">
+          <span class="theme-sw" aria-hidden="true">
+            <i [style.background]="th.swatch[0]"></i><i [style.background]="th.swatch[1]"></i><i [style.background]="th.swatch[2]"></i>
+          </span>
+          <span class="theme-nm">{{ th.label }}</span>
+          <span class="theme-sub">{{ theme.theme() === th.id ? '使用中' : th.sub }}</span>
+        </button>
+      }
+    </div>
+    <div class="set-hr"></div>
     <div id="set-size-label" style="font-size: 13px; font-weight: 600">介面大小</div>
     <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">放大文字與按鈕，立即套用；只影響這台裝置</div>
     <div class="up-tabs" role="radiogroup" aria-labelledby="set-size-label" style="margin: 10px 0 0">

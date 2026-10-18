@@ -5,11 +5,12 @@ import { Auth } from '../core/auth';
 import { Layout } from '../core/layout';
 import { PushVm } from '../core/push-vm';
 import { SettingsVm } from '../core/settings-vm';
+import { THEMES, ThemeService } from '../core/theme';
 import { UI_SIZES, UiScale } from '../core/ui-scale';
 import { AvatarComponent } from '../ui/avatar';
 import { IconComponent } from '../ui/icon';
 
-/** 設定頁:帳號(登出入口,D-108)、顯示(介面大小,D-164)與提醒方式(D-72;含這台裝置的瀏覽器推播,D-165)。手機的「我的」分頁、桌機側欄的「設定」 */
+/** 設定頁:帳號(登出入口,D-108)、顯示(主題 D-277、介面大小 D-164)與提醒方式(D-72;含這台裝置的瀏覽器推播,D-165)。手機的「我的」分頁、桌機側欄的「設定」 */
 @Component({
   selector: 'app-settings-page',
   imports: [NgTemplateOutlet, IconComponent, AvatarComponent],
@@ -23,6 +24,8 @@ export class SettingsPage {
   protected readonly auth = inject(Auth);
   protected readonly push = inject(PushVm);
   protected readonly scale = inject(UiScale);
+  protected readonly themes = THEMES;
+  protected readonly theme = inject(ThemeService);
   protected readonly up = inject(AppUpdate);
   protected readonly sizes = UI_SIZES;
 

@@ -3,6 +3,7 @@ import { AuthScreen } from './auth/auth-screen';
 import { Auth } from './core/auth';
 import { DataStore } from './core/data-store';
 import { InstallPrompt } from './core/install-prompt';
+import { ThemeService } from './core/theme';
 import { UiScale } from './core/ui-scale';
 import { clearRouteCache } from './route/route-cache';
 import { Shell } from './layout/shell';
@@ -21,6 +22,8 @@ export class App {
   private readonly store = inject(DataStore);
   /** 開機就建立,讓儲存的介面大小在第一次繪製前套用(D-164) */
   private readonly uiScale = inject(UiScale);
+  /** 開機就建立,讓主題(D-277)在第一次繪製前套用 */
+  private readonly theme = inject(ThemeService);
   /** 開機就建立,才收得到瀏覽器很早送出的 `beforeinstallprompt` */
   private readonly installPrompt = inject(InstallPrompt);
 

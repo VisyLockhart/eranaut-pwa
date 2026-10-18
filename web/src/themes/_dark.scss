@@ -1,0 +1,20 @@
+/* 深色主題(D-277):鐵灰藍 × 金屬金 × 中世紀奇幻;風格參考 FFXIV 中文公會頁。
+   只重新定義 token;元件規則在 styles.scss。此檔目前是階段 2 的色盤骨架,階段 5 再補雙線框、菱形寶石等裝飾。 */
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #111923; --bg-elevated: #1a2431; --bg-elevated-2: #0c121a; --bg-bar: #0c121a; --bg-locked: #0c121a;
+  --border: rgba(201, 168, 92, 0.28); --border-strong: #5f7692;
+  --text: #e8edf3; --text-muted: #b7c4d4; --text-dim: #a3b3c6; --text-faint: #8798ad;
+  --text-strong: #f1dca0; --text-nav: #b7c4d4; --text-locked: #8798ad; --text-none: #a3b3c6;
+  --accent: #8cb8e6; --accent-dark: #5f8fc0; --on-accent: #0c1520; --on-accent-deep: #0c1520;
+  --amber: #e8b84a; --amber-strong: #e8b84a; --amber-light: #f1dca0; --amber-text: #e8b84a; --amber-text-2: #f1dca0;
+  --on-amber: #1a1304; --on-amber-cta: #1a1304;
+  --danger: #ff8f86; --on-danger: #2a0a0a;
+  --ok: #7dd99a; --ok-2: #7dd99a; --pink: #f08fc0; --pink-text: #f5b3d4;
+  --discord: #5865f2; --discord-dark: #4752c4;
+  --tone: #8da2bd; --shade: #000000; --scrim: #05090e; --white: #ffffff;
+  --surface-avatar: #263446; --surface-raise: #263446; --surface-meter: #263446; --track: #34475d; --link-line: #5f7692;
+  --bg-page: var(--bg); --grad-page-auth: var(--bg); --grad-chart: var(--bg-elevated-2);
+  --grad-accent: var(--accent); --grad-cta: var(--amber); --grad-meter: var(--accent);
+  --rs: 0; --r-pill: 0; --r-round: 50%; --bw: 1px;
+}
