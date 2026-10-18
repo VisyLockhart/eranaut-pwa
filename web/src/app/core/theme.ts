@@ -7,7 +7,6 @@ export type ThemeId = 'classic' | 'light' | 'dark';
 export interface ThemeInfo {
   readonly id: ThemeId;
   readonly label: string;
-  readonly sub: string;
   /** 設定頁色票(背景、面板、強調色);色票是主題的「樣品」,不隨目前主題改變 */
   readonly swatch: readonly [string, string, string];
   /** 瀏覽器網址列 / 狀態列顏色(meta theme-color);index.html 的開機前小腳本有同一組,兩處要一起改 */
@@ -17,10 +16,10 @@ export interface ThemeInfo {
 }
 
 export const THEMES: readonly ThemeInfo[] = [
-  { id: 'classic', label: '經典', sub: '原本的深色', swatch: ['#070a14', '#0f1526', '#2dd4bf'], chrome: '#070a14' },
-  { id: 'light', label: '淺色', sub: '像素風', swatch: ['#eef4fc', '#ffffff', '#0a6cc8'], chrome: '#eef4fc',
+  { id: 'classic', label: '經典', swatch: ['#070a14', '#0f1526', '#2dd4bf'], chrome: '#070a14' },
+  { id: 'light', label: '淺色', swatch: ['#eef4fc', '#ffffff', '#0a6cc8'], chrome: '#eef4fc',
     fonts: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DotGothic16&family=Silkscreen:wght@400;700&display=swap' },
-  { id: 'dark', label: '深色', sub: '鐵灰藍・金屬', swatch: ['#111923', '#263446', '#c9a85c'], chrome: '#111923',
+  { id: 'dark', label: '深色', swatch: ['#111923', '#263446', '#c9a85c'], chrome: '#111923',
     fonts: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700;900&family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@1,600&display=swap' },
 ];
 

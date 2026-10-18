@@ -1211,7 +1211,6 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .theme-sw { display: flex; gap: 3px; margin-bottom: 2px; }
 .theme-sw i { display: block; width: 18px; height: 18px; border-radius: calc(5px * var(--rs)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 40%, transparent); }
 .theme-nm { font-size: 13px; font-weight: 600; }
-.theme-sub { font-size: 11px; color: var(--text-dim); min-height: 15px; }
 
 /* ---------- Phase 3:自繪控制項(不使用瀏覽器預設外觀;各主題以 token 改形狀) ---------- */
 input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), textarea { -webkit-appearance: none; appearance: none; font-family: inherit; }

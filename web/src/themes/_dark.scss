@@ -88,6 +88,8 @@ html[data-theme='dark'] {
   .ghost-btn, .btn-secondary, .rt-save-btn { font-family: var(--font-head); font-weight: 700; letter-spacing: 0.1em; }
   .primary-btn, .btn-primary-modal, .rt-save-btn.primary, .rt-icon-btn.primary, .rt-chip.active, .rt-cta { background: var(--gold); color: var(--on-accent); border: 1px solid var(--gold-b); box-shadow: inset 0 0 0 2px var(--gold), inset 0 0 0 3px color-mix(in srgb, #1a1304 33%, transparent); font-family: var(--font-head); font-weight: 700; letter-spacing: 0.1em; animation: none; }
   .btn-danger, .rt-icon-btn.danger { border-color: var(--danger); color: var(--danger); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px color-mix(in srgb, var(--danger) 40%, transparent); background: transparent; }
+  /* 收合把手壓在側欄分隔線上:要有實底,否則分隔線會從圓鈕中間穿過去 */
+  .d-collapse-handle { background: var(--bg-elevated); }
   .ghost-btn:active:not(:disabled), .btn-secondary:active:not(:disabled), .rt-chip:active { background: var(--surface-raise); }
   button:disabled { color: var(--text-dim); border-color: var(--surface-raise); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px var(--surface-raise); background: transparent; }
   button:focus-visible, a:focus-visible, [role=button]:focus-visible, summary:focus-visible { outline: 1px solid var(--steel); outline-offset: 4px; }
