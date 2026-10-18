@@ -120,18 +120,18 @@ html[data-theme='dark'] {
   /* 導覽 */
   .m-header { background: var(--bg-bar); border-bottom: 1px solid var(--gold-d); }
   .m-nav { position: relative; background: var(--bg-bar); border-top: 1px solid var(--gold-d); }
-  .nav-item { position: relative; font-family: var(--font-head); }
-  .nav-item span { font-family: var(--font-head); font-weight: 700; letter-spacing: 0.08em; }
-  .nav-item.active { color: var(--gold-b); }
-  .nav-item.active::after { content: ''; position: absolute; bottom: 1px; left: 50%; width: 6px; height: 6px; margin-left: -3px; background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 8px var(--glow); }
+  .nav-item:not(.m-intro) { position: relative; font-family: var(--font-head); }
+  .nav-item:not(.m-intro) span { font-family: var(--font-head); font-weight: 700; letter-spacing: 0.08em; }
+  .nav-item:not(.m-intro).active { color: var(--gold-b); }
+  .nav-item:not(.m-intro).active::after { content: ''; position: absolute; bottom: 1px; left: 50%; width: 6px; height: 6px; margin-left: -3px; background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 8px var(--glow); }
   .nav-upload-fab { transform: rotate(45deg); background: var(--surface-raise); color: var(--gold-b); border: 1px solid var(--gold); box-shadow: inset 0 0 0 3px var(--bg-bar), inset 0 0 0 4px var(--gold-d), 0 0 14px var(--glow); border-radius: 0; }
   .nav-upload-fab > * { transform: rotate(-45deg); }
   .d-sidebar { background: var(--bg-bar); border-right: 1px solid var(--gold-d); }
-  .d-nav-item { position: relative; border-radius: 0; padding-left: 20px; font-family: var(--font-head); font-weight: 900; font-size: 14px; letter-spacing: 0.12em; }
-  .d-nav-item::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; background: var(--steel-d); opacity: 0.5; }
-  .d-nav-item.active { background: var(--bg-elevated); color: var(--gold-b); text-shadow: 0 0 12px var(--glow); }
-  .d-nav-item.active::before { background: var(--gold); opacity: 1; box-shadow: 0 0 12px var(--glow); }
-  .d-sidebar.collapsed .d-nav-item { padding-left: 0; }
+  .d-nav-item:not(.intro-link) { position: relative; border-radius: 0; padding-left: 20px; font-family: var(--font-head); font-weight: 900; font-size: 14px; letter-spacing: 0.12em; }
+  .d-nav-item:not(.intro-link)::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; background: var(--steel-d); opacity: 0.5; }
+  .d-nav-item:not(.intro-link).active { background: var(--bg-elevated); color: var(--gold-b); text-shadow: 0 0 12px var(--glow); }
+  .d-nav-item:not(.intro-link).active::before { background: var(--gold); opacity: 1; box-shadow: 0 0 12px var(--glow); }
+  .d-sidebar.collapsed .d-nav-item:not(.intro-link) { padding-left: 0; }
   .d-install { border: 1px dashed var(--gold-d); background: transparent; color: var(--gold-b); font-family: var(--font-head); letter-spacing: 0.08em; }
   .d-install:hover { background: color-mix(in srgb, var(--gold) 12%, transparent); }
   .avatar { border: 1px solid var(--gold-d); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px var(--gl); color: var(--gold-b); font-family: var(--font-mono); font-weight: 700; background: var(--surface-raise); }

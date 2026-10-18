@@ -7,7 +7,8 @@
     "start:ng": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "lint:theme": "node src/themes/lint-theme.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.8",

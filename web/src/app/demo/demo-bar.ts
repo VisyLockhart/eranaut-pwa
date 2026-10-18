@@ -34,14 +34,21 @@ const LOGIN_ERRORS = [
     :host { position: fixed; bottom: 10px; right: 10px; z-index: 2000; display: block; }
     /* 手機版底部有導覽列與版權列,浮在它們上方 */
     @media (max-width: 767px) { :host { bottom: calc(100px + env(safe-area-inset-bottom)); right: 8px; } }
-    .demo-tag { font: 600 11px/1 inherit; letter-spacing: 0.06em; color: #0b1020; background: #f5b942; border: 0; border-radius: 999px; padding: 5px 10px; cursor: pointer; opacity: 0.92; }
+    .demo-tag { font: 600 11px/1 inherit; letter-spacing: 0.06em; color: var(--on-amber); background: var(--amber); border: 0; border-radius: var(--r-pill); padding: 5px 10px; cursor: pointer; opacity: 0.92; }
     .demo-tag:hover { opacity: 1; }
-    .demo-panel { position: absolute; bottom: 32px; right: 0; width: min(300px, calc(100vw - 20px)); box-sizing: border-box; padding: 14px; border-radius: 12px; background: #131a2e; color: #e8ecf8; border: 1px solid #2b3556; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
-    .demo-lead { margin: 0 0 12px; font-size: 12px; line-height: 1.6; color: #c4cce4; }
-    .demo-sub { margin: 12px 0 6px; font-size: 11px; color: #8e99bd; }
+    .demo-panel { position: absolute; bottom: 32px; right: 0; width: min(300px, calc(100vw - 20px)); box-sizing: border-box; padding: 14px; border-radius: calc(12px * var(--rs)); background: var(--bg-elevated-2); color: var(--text); border: var(--bw) solid var(--border-strong); box-shadow: 0 10px 30px color-mix(in srgb, var(--shade) 50%, transparent); }
+    .demo-lead { margin: 0 0 12px; font-size: 12px; line-height: 1.6; color: var(--text-muted); }
+    .demo-sub { margin: 12px 0 6px; font-size: 11px; color: var(--text-dim); }
     .demo-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-    .demo-actions button { font: 500 12px/1 inherit; color: #e8ecf8; background: #1d2742; border: 1px solid #34406a; border-radius: 8px; padding: 8px 10px; cursor: pointer; }
-    .demo-actions button:hover { background: #26335a; }
+    .demo-actions button { font: 500 12px/1 inherit; color: var(--text); background: var(--bg-elevated); border: var(--bw) solid var(--border-strong); border-radius: calc(8px * var(--rs)); padding: 8px 10px; cursor: pointer; }
+    .demo-actions button:hover { background: var(--surface-raise); }
+    /* 淺色:像素風粗框 + 硬陰影、標籤直角有框;深色:金框 */
+    :host-context(html[data-theme='light']) .demo-tag { border: 2px solid var(--line); opacity: 1; font-family: var(--font-cap); font-weight: 400; }
+    :host-context(html[data-theme='light']) .demo-panel { border: 3px solid var(--line); box-shadow: 6px 6px 0 0 var(--drop); background: var(--bg-elevated); }
+    :host-context(html[data-theme='light']) .demo-actions button { border: 2px solid var(--line); }
+    :host-context(html[data-theme='dark']) .demo-tag { border: 1px solid var(--gold-b); font-family: var(--font-head); letter-spacing: 0.1em; }
+    :host-context(html[data-theme='dark']) .demo-panel { border: 1px solid var(--gold-d); box-shadow: inset 0 0 0 3px var(--bg-elevated-2), inset 0 0 0 4px var(--gl), 0 12px 24px color-mix(in srgb, var(--shade) 50%, transparent); }
+    :host-context(html[data-theme='dark']) .demo-actions button { border-color: var(--gold-d); color: var(--gold-b); font-family: var(--font-head); }
   `,
 })
 export class DemoBar {
