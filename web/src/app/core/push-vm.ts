@@ -27,6 +27,8 @@ export interface PushMessage {
 const SUBSCRIPTION_WAIT_MS = 5000;
 /** 開機自動檢查時等 service worker 就緒的上限:它在頁面穩定後最多 30 秒才註冊(registerWhenStable:30000) */
 const SYNC_WAIT_MS = 45000;
+/** 回到前景時的檢查最小間隔:只在使用者實際切回 App 時才會跑,而且只讀本機,不是計時輪詢 */
+const FOREGROUND_MIN_GAP_MS = 15 * 60 * 1000;
 /**
  * 「這台裝置要收推播」的意願,存在 localStorage(不會被解除註冊 service worker / 清快取影響)。
  * 瀏覽器的推播訂閱綁在 service worker 註冊上:更新流程在 service worker 卡住時會解除註冊並重設(AppUpdate.apply / repair),
@@ -49,6 +51,10 @@ export class PushVm {
   readonly message = signal<PushMessage | null>(null);
   private publicKey: string | null = null;
   private syncing = false;
+  private lastForeground = 0;
+  private foregroundHandler: (() => void) | null = null;
+  /** 這台裝置「本來有開推播」但現在沒有可用的訂閱(例如 service worker 被重設後補綁失敗):設定頁據此顯示提示與重新連線 */
+  readonly lost = signal(false);
 
   async load(): Promise<void> {
     this.message.set(null);
@@ -70,6 +76,7 @@ export class PushVm {
       const [sub, list] = await Promise.all([this.currentSubscription(), this.api.pushSubscriptions()]);
       this.enabled.set(sub !== null && list.endpoints.includes(sub.endpoint));
       if (this.enabled()) writeJson(PUSH_INTENT_KEY, true);
+      this.lost.set(!this.enabled() && this.wantsPush() && this.env.permission() === 'granted');
       this.state.set(this.env.permission() === 'denied' && !this.enabled() ? 'blocked' : 'ready');
     } catch {
       // 401 由 interceptor 轉成 session 過期畫面;其他錯誤顯示重試
@@ -119,6 +126,7 @@ export class PushVm {
       await this.sw.unsubscribe().catch(() => undefined);
       removeKey(PUSH_INTENT_KEY);
       this.enabled.set(false);
+      this.lost.set(false);
       void this.settings.load();
     } catch {
       this.message.set({ kind: 'error', text: '無法關閉推播通知，請稍後再試。' });
@@ -155,6 +163,7 @@ export class PushVm {
   /** 登出時順手移除這台裝置(盡力而為,失敗不影響登出):避免登出後這台還收到上一個帳號的通知 */
   async releaseThisDevice(): Promise<void> {
     removeKey(PUSH_INTENT_KEY); // 登出就是不要了,不能讓下次開機又自動訂閱
+    this.lost.set(false);
     if (!this.sw?.isEnabled || !this.env.hasPushApi()) return;
     try {
       const sub = await this.currentSubscription();
@@ -173,7 +182,7 @@ export class PushVm {
    * - 意願旗標在、權限仍是「已允許」,但訂閱不見了(service worker 被重設)或伺服器沒登記 → 靜默重新訂閱並登記。
    * 不會跳出權限詢問(權限不是「已允許」就什麼都不做);任何失敗都吞掉,下次開機再試。
    */
-  async sync(): Promise<void> {
+  async sync(light = false): Promise<void> {
     if (this.syncing || !this.sw?.isEnabled || !this.env.hasPushApi()) return;
     if (this.env.isIos() && !this.env.isStandalone()) return;
     const granted = this.env.permission() === 'granted';
@@ -181,12 +190,19 @@ export class PushVm {
     if (!granted && !intended) return;
     this.syncing = true;
     try {
+      if (light) {
+        // 回到前景的輕量檢查:只讀瀏覽器本機的訂閱(不連網);訂閱還在就結束,不耗電、不耗流量
+        const local = await this.currentSubscription();
+        if (local) return;
+        if (!intended || !granted) return;
+      }
       const publicKey = this.publicKey ?? (await this.api.pushConfig()).publicKey;
       if (publicKey === null) return;
       this.publicKey = publicKey;
-      const [sub, list] = await Promise.all([this.currentSubscription(SYNC_WAIT_MS), this.api.pushSubscriptions()]);
+      const [sub, list] = await Promise.all([this.currentSubscription(light ? SUBSCRIPTION_WAIT_MS : SYNC_WAIT_MS), this.api.pushSubscriptions()]);
       if (sub && list.endpoints.includes(sub.endpoint)) {
         this.markOn();
+        this.lost.set(false);
         return;
       }
       if (!intended || !granted) return;
@@ -195,16 +211,45 @@ export class PushVm {
       if (!json.endpoint || !json.keys?.['p256dh'] || !json.keys['auth']) return;
       await this.api.registerPush({ endpoint: json.endpoint, keys: { p256dh: json.keys['p256dh'], auth: json.keys['auth'] } });
       this.markOn();
+      this.lost.set(false);
       void this.settings.load();
     } catch {
-      /* 盡力而為:下次開機再試 */
+      /* 盡力而為:下次開機或回到前景再試;設定頁會提示可手動重新連線 */
+      if (this.wantsPush() && this.env.permission() === 'granted' && !this.enabled()) this.lost.set(true);
     } finally {
       this.syncing = false;
     }
   }
 
+  /** 登入後呼叫:使用者切回 App(visibilitychange / focus)時做一次輕量檢查,最短間隔 15 分鐘;不新增任何計時器 */
+  startForegroundSync(): void {
+    if (this.foregroundHandler) return;
+    this.foregroundHandler = () => {
+      if (document.visibilityState !== 'visible' || !this.wantsPush()) return;
+      const now = Date.now();
+      if (now - this.lastForeground < FOREGROUND_MIN_GAP_MS) return;
+      this.lastForeground = now;
+      void this.sync(true);
+    };
+    document.addEventListener('visibilitychange', this.foregroundHandler);
+    window.addEventListener('focus', this.foregroundHandler);
+  }
+
+  /** 登出時移除監聽 */
+  stopForegroundSync(): void {
+    if (!this.foregroundHandler) return;
+    document.removeEventListener('visibilitychange', this.foregroundHandler);
+    window.removeEventListener('focus', this.foregroundHandler);
+    this.foregroundHandler = null;
+  }
+
+  private wantsPush(): boolean {
+    return readJson<boolean>(PUSH_INTENT_KEY) === true;
+  }
+
   private markOn(): void {
     this.enabled.set(true);
+    this.lost.set(false);
     writeJson(PUSH_INTENT_KEY, true);
   }
 

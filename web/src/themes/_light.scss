@@ -95,7 +95,7 @@ html[data-theme='light'] {
   /* 開關:方形滑軌 */
   .switch { width: 52px; height: 28px; }
   .switch .slider { border: 3px solid var(--line); background: var(--bg-locked); }
-  .switch .slider:before { height: 14px; width: 14px; left: 3px; top: 3px; background: var(--bg-elevated); box-shadow: 0 0 0 2px var(--line); }
+  .switch .slider:before { height: 14px; width: 14px; left: 4px; top: 4px; background: var(--bg-elevated); box-shadow: 0 0 0 2px var(--line); }
   .switch input:checked + .slider { background: var(--accent); border-color: var(--line); }
   .switch input:checked + .slider:before { transform: translateX(24px); background: var(--bg-elevated); }
   .switch input:focus-visible + .slider { outline: 3px solid var(--accent); outline-offset: 3px; }

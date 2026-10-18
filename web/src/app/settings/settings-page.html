@@ -85,6 +85,8 @@
         </div>
         @if (push.enabled()) {
           <button type="button" class="ghost-btn" style="margin-top: 10px; width: auto; padding: 8px 14px" [disabled]="push.busy()" (click)="push.test()">傳送測試通知</button>
+        } @else if (push.lost()) {
+          <div class="uf-note push-lost" style="margin-top: 10px" role="status">這台裝置的推播連線中斷了（常見於更新後），目前收不到通知。按「重新連線」即可恢復，不會再詢問權限。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" [disabled]="push.busy()" (click)="push.enable()">重新連線</button></div>
         }
       }
       @case ('blocked') {

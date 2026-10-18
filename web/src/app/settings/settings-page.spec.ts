@@ -138,6 +138,17 @@ describe('SettingsPage', () => {
       expect(el.textContent).toContain('傳送測試通知');
     });
 
+    it('連線中斷(lost):顯示提示與「重新連線」,按下呼叫 enable()', async () => {
+      const { el, push, fixture } = await withPush('ready', false);
+      expect(el.textContent).not.toContain('重新連線');
+      push.lost.set(true);
+      fixture.detectChanges();
+      expect(el.textContent).toContain('推播連線中斷');
+      const enable = vi.spyOn(push, 'enable').mockResolvedValue();
+      Array.from(el.querySelectorAll<HTMLButtonElement>('.push-lost button')).find((b) => b.textContent?.includes('重新連線'))!.click();
+      expect(enable).toHaveBeenCalled();
+    });
+
     it('其他狀態各有說明、沒有推播開關;伺服器沒設定時整項不顯示', async () => {
       let { el } = await withPush('ios-install');
       expect(el.querySelectorAll('.switch input').length).toBe(2);

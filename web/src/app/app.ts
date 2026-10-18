@@ -37,8 +37,9 @@ export class App {
         if (authenticated) {
           this.store.start();
           void this.push.sync(); // 推播訂閱不見(service worker 被重設)時自動補回,不必重新綁定
-        }
-        else {
+          this.push.startForegroundSync();
+        } else {
+          this.push.stopForegroundSync();
           this.store.stop();
           // 航線儲存潛艇的離線快照(RouteVm 還沒建立也要清;檢視狀態保留)。啟動中('loading')與離線('unreachable')不清
           const status = this.auth.status();

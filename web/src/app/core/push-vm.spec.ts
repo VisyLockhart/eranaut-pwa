@@ -292,6 +292,73 @@ describe('PushVm(D-165)', () => {
       expect(env.requestPermission).not.toHaveBeenCalled();
     });
 
+    it('輕量檢查(回到前景):訂閱還在就完全不連網', async () => {
+      const vm = setup();
+      env.perm = 'granted';
+      localStorage.setItem(PUSH_INTENT_KEY, 'true');
+      sw.subscription.next(fakeSub());
+      await vm.sync(true);
+      http.expectNone('/api/push/config');
+      http.expectNone('/api/push/subscriptions');
+      expect(vm.lost()).toBe(false);
+    });
+
+    it('輕量檢查:訂閱不見了才連網補回', async () => {
+      const vm = setup();
+      env.perm = 'granted';
+      localStorage.setItem(PUSH_INTENT_KEY, 'true');
+      const p = vm.sync(true);
+      await flush([]);
+      await vi.waitFor(() => expect(sw.requestSubscription).toHaveBeenCalled(), { timeout: 3000 });
+      await settle();
+      http.expectOne('/api/push/subscription').flush({});
+      await p;
+      expect(vm.enabled()).toBe(true);
+      expect(vm.lost()).toBe(false);
+    });
+
+    it('補回失敗:lost 為 true(設定頁顯示重新連線);load() 也會判斷', async () => {
+      const vm = setup();
+      env.perm = 'granted';
+      localStorage.setItem(PUSH_INTENT_KEY, 'true');
+      const p = vm.sync();
+      await flush([]);
+      await vi.waitFor(() => expect(sw.requestSubscription).toHaveBeenCalled(), { timeout: 3000 });
+      await settle();
+      http.expectOne('/api/push/subscription').flush({}, { status: 500, statusText: 'err' });
+      await p;
+      expect(vm.enabled()).toBe(false);
+      expect(vm.lost()).toBe(true);
+
+      const vm2 = setup();
+      env.perm = 'granted';
+      localStorage.setItem(PUSH_INTENT_KEY, 'true');
+      await load(vm2);
+      expect(vm2.lost()).toBe(true);
+    }, 60000);
+
+    it('回到前景:沒有意願不做事;有意願做一次,15 分鐘內不重複;登出後移除監聽', async () => {
+      const vm = setup();
+      env.perm = 'granted';
+      sw.subscription.next(fakeSub());
+      const spy = vi.spyOn(vm, 'sync');
+      vm.startForegroundSync();
+      vm.startForegroundSync(); // 重複呼叫不會重複掛監聽
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(spy).not.toHaveBeenCalled();
+      localStorage.setItem(PUSH_INTENT_KEY, 'true');
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('focus'));
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy).toHaveBeenCalledWith(true);
+      vm.stopForegroundSync();
+      vi.useFakeTimers();
+      vi.setSystemTime(Date.now() + 16 * 60 * 1000);
+      document.dispatchEvent(new Event('visibilitychange'));
+      vi.useRealTimers();
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
     it('關閉與登出會清掉意願,之後開機不會自動再訂閱', async () => {
       const vm = setup();
       localStorage.setItem(PUSH_INTENT_KEY, 'true');
