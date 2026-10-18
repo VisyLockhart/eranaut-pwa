@@ -64,7 +64,7 @@
       <div class="qe row" [class.ready]="item.ready" role="button" tabindex="0" [attr.aria-label]="'快速修改 ' + item.name" (click)="vm.openQuickEdit(item)" (keydown.enter)="vm.openQuickEdit(item)">
         <div class="row-dot-wrap">
           @if (!item.ready) { <span class="row-ring pulse-ring" style="border-color: var(--accent)"></span> }
-          <span class="row-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--accent)'"></span>
+          <span class="row-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--progress)'"></span>
         </div>
         <div class="row-main">
           <div class="row-sub">{{ item.name }}</div>
@@ -86,7 +86,7 @@
           <div class="status-pill" [class.ready]="item.ready">
             <span class="pill-dot-wrap">
               @if (!item.ready) { <span class="pill-ring pulse-ring" style="border-color: var(--accent)"></span> }
-              <span class="pill-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--accent)'"></span>
+              <span class="pill-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--progress)'"></span>
             </span>
             {{ item.display.label }}
           </div>

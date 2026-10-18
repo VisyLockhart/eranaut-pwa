@@ -1,12 +1,12 @@
 /* 深色主題(D-277):鐵灰藍 × 金屬金 × 中世紀奇幻;風格參考 FFXIV 中文公會頁。
-   只重新定義 token;元件規則在 styles.scss。此檔目前是階段 2 的色盤骨架,階段 5 再補雙線框、菱形寶石等裝飾。 */
+   只重新定義 token;元件規則在 styles.scss。下半部是階段 5 的元件外觀:雙線框、菱形寶石、金色左側長條、旋轉菱形按鈕等,全部只讀 token。 */
 html[data-theme='dark'] {
   color-scheme: dark;
   --bg: #111923; --bg-elevated: #1a2431; --bg-elevated-2: #0c121a; --bg-bar: #0c121a; --bg-locked: #0c121a;
   --border: rgba(201, 168, 92, 0.28); --border-strong: #5f7692;
   --text: #e8edf3; --text-muted: #b7c4d4; --text-dim: #a3b3c6; --text-faint: #8798ad;
   --text-strong: #f1dca0; --text-nav: #b7c4d4; --text-locked: #8798ad; --text-none: #a3b3c6;
-  --accent: #8cb8e6; --accent-dark: #5f8fc0; --on-accent: #0c1520; --on-accent-deep: #0c1520;
+  --accent: #c9a85c; --accent-dark: #8a6d3b; --on-accent: #1a1304; --on-accent-deep: #1a1304; --progress: #8cb8e6;
   --amber: #e8b84a; --amber-strong: #e8b84a; --amber-light: #f1dca0; --amber-text: #e8b84a; --amber-text-2: #f1dca0;
   --on-amber: #1a1304; --on-amber-cta: #1a1304;
   --danger: #ff8f86; --on-danger: #2a0a0a;
@@ -17,4 +17,141 @@ html[data-theme='dark'] {
   --bg-page: var(--bg); --grad-page-auth: var(--bg); --grad-chart: var(--bg-elevated-2);
   --grad-accent: var(--accent); --grad-cta: var(--amber); --grad-meter: var(--accent);
   --rs: 0; --r-pill: 0; --r-round: 50%; --bw: 1px;
+  /* 字型:內文黑體;標題襯線;數字 Cinzel;品牌 Cinzel Decorative;小標籤 Cormorant Garamond 斜體 */
+  --font-ui: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+  --font-head: 'Noto Serif TC', 'Songti TC', serif;
+  --font-mono: 'Cinzel', 'Noto Serif TC', serif;
+  --font-deco: 'Cinzel Decorative', 'Cinzel', serif;
+  --font-it: 'Cormorant Garamond', 'Cinzel', serif;
+  /* 金屬金色階與光暈:gold 一般、gold-b 亮(標題/數字)、gold-d 暗(邊框);gl 細線;glow 文字光暈 */
+  --gold: #c9a85c; --gold-b: #f1dca0; --gold-d: #8a6d3b; --steel: #8cb8e6; --steel-d: #5f7692;
+  --gl: color-mix(in srgb, #c9a85c 34%, transparent); --glow: color-mix(in srgb, #c9a85c 38%, transparent);
+  /* 待收艇:深琥珀底、琥珀框 */
+  --ready-bg: #2b2412; --ready-ink: #f1dca0; --ready-edge: #e8b84a; --ready-glow: color-mix(in srgb, #e8b84a 60%, transparent);
+  /* 雙線框:外框 1px 金暗線 + 內縮 1px 金細線(以 inset 陰影畫,不佔版面) */
+  --frame: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px var(--gl);
+  --frame-deep: inset 0 0 0 3px var(--bg-elevated-2), inset 0 0 0 4px var(--gl);
+  --float: 0 12px 24px color-mix(in srgb, #000 50%, transparent);
+}
+
+/* ------------------------------------------------------------------ */
+/* 共用裝飾:菱形寶石(frame 頂端)。要加新卡片只要放進 $frames 清單,不必另寫三份樣式。 */
+/* ------------------------------------------------------------------ */
+@mixin gem($top: -6px) {
+  position: relative;
+  &::after { content: ''; position: absolute; left: 50%; top: $top; width: 9px; height: 9px; margin-left: -5px; background: var(--bg); border: 1px solid var(--gold); transform: rotate(45deg); pointer-events: none; }
+}
+@mixin title-gold { font-family: var(--font-head); font-weight: 900; letter-spacing: 0.12em; color: var(--gold-b); text-shadow: 0 0 14px var(--glow); }
+
+html[data-theme='dark'] {
+  body { font-synthesis-weight: none; }
+  ::selection { background: color-mix(in srgb, var(--gold) 35%, transparent); color: var(--text); }
+  /* 線條圖示改成「雕刻」感:較細、直角收尾 */
+  app-icon svg { stroke-width: 1.6; stroke-linecap: butt; stroke-linejoin: miter; }
+
+  /* 標題與數字 */
+  .d-title, .modal-title, .set-title, .rt-block-title, .pager-label, .d-pager-label { @include title-gold; }
+  .d-title { font-size: 24px; }
+  .modal-title { text-align: center; font-size: 20px; }
+  .d-brand-name, .m-brand { font-family: var(--font-deco); font-weight: 700; letter-spacing: 0.12em; color: var(--gold-b); text-shadow: 0 0 14px var(--glow); }
+  .d-brand-sub, .m-header .m-sub { font-family: var(--font-it); font-style: italic; font-weight: 600; letter-spacing: 0.2em; color: var(--gold); }
+  .mono, .m-stat .num, .d-stat .num, .row-time, .card-time, .t-time, .t-eta, .d-card-time, .d-card-eta, .d-card-eta-full, .uf-time, .uf-eta, .rt-stat .num,
+  .rt-ret-time, .rt-count, .rt-pg-count, .ct-tile-val, .ct-pct, .ct-sum-val, .ct-qty-num, .ct-need, .ct-lack { font-family: var(--font-mono); font-weight: 700; font-variant-numeric: lining-nums; }
+  .m-stat .num, .d-stat .num, .card-time, .d-card-time, .row-time, .t-time { color: var(--gold-b); text-shadow: 0 0 12px var(--glow); }
+  .m-stat .label, .d-stat .label { font-family: var(--font-head); letter-spacing: 0.1em; }
+  .modal-section-label, .sec-title { font-family: var(--font-head); font-weight: 900; letter-spacing: 0.16em; color: var(--gold); }
+
+  /* 雙線框面板(金暗外框 + 內縮細線) */
+  .m-stat, .card, .d-stat, .d-card, .auth-card, .ws-row, .ws-browse-item, .uf-row, .rt-card, .rt-block, .d-user, .rt-cfgbar, .rt-needbox,
+  .copyright-panel, .modal-toggle-row, .up-empty, .table-wrap, .d-pager, .rt-baseline, .ct-col { border: 1px solid var(--gold-d); background: var(--bg-elevated); box-shadow: var(--frame); }
+  .rt-block, .rt-cfgbar, .rt-baseline { background: var(--bg-elevated-2); box-shadow: var(--frame-deep); }
+  .d-stat, .m-stat, .d-card, .card, .auth-card { @include gem; }
+  .m-stat::after { top: -5px; }
+  .modal-box { border: 1px solid var(--gold-d); background: var(--bg-elevated); box-shadow: var(--frame), var(--float); border-radius: 0; }
+  .modal-box.danger { border-color: var(--danger); }
+  .m-stat.ready, .d-stat.ready, .card.ready, .d-card.ready { background: var(--ready-bg); border-color: var(--ready-edge); box-shadow: inset 0 0 0 3px var(--ready-bg), inset 0 0 0 4px color-mix(in srgb, var(--ready-edge) 34%, transparent); }
+  .m-stat.ready .num, .d-stat.ready .num, .card.ready .card-time, .d-card.ready .d-card-time, .m-stat.ready .label, .d-stat.ready .label { color: var(--amber); text-shadow: 0 0 12px var(--ready-glow); }
+
+  /* 羊皮卷式列表:金色細線分隔,左側長條(進行中=鋼藍、待收=琥珀發光) */
+  .row, .table-row { position: relative; border: 0; border-bottom: 1px solid var(--gl); border-radius: 0; background: var(--bg-elevated-2); padding-left: 20px; margin-bottom: 0; }
+  .row::before, .table-row::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; background: var(--steel-d); }
+  .row.ready, .table-row.ready { background: var(--ready-bg); }
+  .row.ready::before, .table-row.ready::before { background: var(--amber); box-shadow: 0 0 10px var(--ready-glow); }
+  .row-dot, .pill-dot { border-radius: 0; transform: rotate(45deg) scale(0.8); }
+  .row-name, .card-name, .d-card-name, .t-name { font-family: var(--font-head); font-weight: 700; }
+  .table-head { background: transparent; color: var(--gold); border-bottom: 1px solid var(--gold-d); font-family: var(--font-head); font-weight: 900; letter-spacing: 0.2em; }
+  .table-wrap { box-shadow: none; }
+
+  /* 按鈕:一般 = 金暗框 + 內縮細線、金色襯線字;主要 = 實心金 */
+  .ghost-btn, .btn-secondary, .rt-save-btn, .rt-icon-btn, .rt-chip, .modal-close, .ws-arrow-btn, .ws-icon-btn, .d-collapse-handle, .rt-lv-step, .camera-btn {
+    border: 1px solid var(--gold-d); background: transparent; color: var(--gold-b); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px var(--gl); }
+  .ghost-btn, .btn-secondary, .rt-save-btn { font-family: var(--font-head); font-weight: 700; letter-spacing: 0.1em; }
+  .primary-btn, .btn-primary-modal, .rt-save-btn.primary, .rt-icon-btn.primary, .rt-chip.active, .rt-cta { background: var(--gold); color: var(--on-accent); border: 1px solid var(--gold-b); box-shadow: inset 0 0 0 2px var(--gold), inset 0 0 0 3px color-mix(in srgb, #1a1304 33%, transparent); font-family: var(--font-head); font-weight: 700; letter-spacing: 0.1em; animation: none; }
+  .btn-danger, .rt-icon-btn.danger { border-color: var(--danger); color: var(--danger); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px color-mix(in srgb, var(--danger) 40%, transparent); background: transparent; }
+  .ghost-btn:active:not(:disabled), .btn-secondary:active:not(:disabled), .rt-chip:active { background: var(--surface-raise); }
+  button:disabled { color: var(--text-dim); border-color: var(--surface-raise); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px var(--surface-raise); background: transparent; }
+  button:focus-visible, a:focus-visible, [role=button]:focus-visible, summary:focus-visible { outline: 1px solid var(--steel); outline-offset: 4px; }
+  .pager-btn { width: 32px; height: 32px; margin: 6px; padding: 0; transform: rotate(45deg); border: 1px solid var(--gold-d); background: var(--bg-elevated); color: var(--gold); box-shadow: inset 0 0 0 2px var(--bg), inset 0 0 0 3px var(--gl); }
+  .pager-btn > * { transform: rotate(-45deg); }
+
+  /* 欄位:深底、鋼色框 + 較粗的底線;聚焦時金色光暈 */
+  .modal-input, .rt-text-input, .rt-level-input, .uf-name, .field-select, .sel-trigger, .ct-qty input, .ct-have { background: var(--bg-elevated-2); border: 1px solid var(--steel-d); border-bottom-width: 2px; box-shadow: none; }
+  .modal-input:focus, .modal-input:focus-visible, .rt-text-input:focus-visible, .rt-level-input:focus-visible, .uf-name:focus-visible,
+  .ct-qty input:focus-visible, .ct-have:focus-visible, .sel-trigger:focus-visible, .sel-trigger.open { border-color: var(--gold); border-bottom-color: var(--gold-b); box-shadow: 0 0 12px var(--glow); outline: none; }
+  .modal-input.error, .modal-input.error:focus { border-color: var(--danger); border-bottom-color: var(--danger); box-shadow: none; }
+  .sel-panel { background: var(--bg-elevated-2); border: 1px solid var(--gold-d); box-shadow: var(--float); }
+  .sel-opt, .sel-group { font-family: var(--font-head); }
+
+  /* 符文撥桿開關:方形滑軌 + 菱形滑塊 */
+  .switch { width: 54px; height: 26px; }
+  .switch .slider { background: var(--bg-elevated-2); border: 1px solid var(--steel-d); }
+  .switch .slider:before { width: 12px; height: 12px; left: 7px; top: 6px; background: var(--text-dim); transform: rotate(45deg); }
+  .switch input:checked + .slider { background: var(--surface-raise); border-color: var(--gold); box-shadow: 0 0 10px var(--glow); }
+  .switch input:checked + .slider:before { transform: translateX(26px) rotate(45deg); background: var(--gold-b); }
+  .switch input:focus-visible + .slider { outline: 1px solid var(--steel); outline-offset: 4px; }
+
+  /* 分頁 / 符文分段:上下細線,選中的下方一顆金色菱形 */
+  .up-tabs { background: transparent; border: 0; border-top: 1px solid var(--gl); border-bottom: 1px solid var(--gl); padding: 8px 0 6px; box-shadow: none; }
+  .up-tab { position: relative; background: transparent; border: 0; box-shadow: none; color: var(--text-dim); font-family: var(--font-head); font-weight: 700; letter-spacing: 0.12em; }
+  .up-tab.active { background: transparent; color: var(--gold-b); }
+  .up-tab.active::after { content: ''; position: absolute; left: 50%; bottom: -2px; width: 7px; height: 7px; margin-left: -3px; background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 8px var(--glow); }
+  .size-aa { font-family: var(--font-mono); }
+
+  /* 導覽 */
+  .m-header { background: var(--bg-bar); border-bottom: 1px solid var(--gold-d); }
+  .m-nav { position: relative; background: var(--bg-bar); border-top: 1px solid var(--gold-d); }
+  .nav-item { position: relative; font-family: var(--font-head); }
+  .nav-item span { font-family: var(--font-head); font-weight: 700; letter-spacing: 0.08em; }
+  .nav-item.active { color: var(--gold-b); }
+  .nav-item.active::after { content: ''; position: absolute; bottom: 1px; left: 50%; width: 6px; height: 6px; margin-left: -3px; background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 8px var(--glow); }
+  .nav-upload-fab { transform: rotate(45deg); background: var(--surface-raise); color: var(--gold-b); border: 1px solid var(--gold); box-shadow: inset 0 0 0 3px var(--bg-bar), inset 0 0 0 4px var(--gold-d), 0 0 14px var(--glow); border-radius: 0; }
+  .nav-upload-fab > * { transform: rotate(-45deg); }
+  .d-sidebar { background: var(--bg-bar); border-right: 1px solid var(--gold-d); }
+  .d-nav-item { position: relative; border-radius: 0; padding-left: 20px; font-family: var(--font-head); font-weight: 900; font-size: 14px; letter-spacing: 0.12em; }
+  .d-nav-item::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; background: var(--steel-d); opacity: 0.5; }
+  .d-nav-item.active { background: var(--bg-elevated); color: var(--gold-b); text-shadow: 0 0 12px var(--glow); }
+  .d-nav-item.active::before { background: var(--gold); opacity: 1; box-shadow: 0 0 12px var(--glow); }
+  .d-sidebar.collapsed .d-nav-item { padding-left: 0; }
+  .d-install { border: 1px dashed var(--gold-d); background: transparent; color: var(--gold-b); font-family: var(--font-head); letter-spacing: 0.08em; }
+  .d-install:hover { background: color-mix(in srgb, var(--gold) 12%, transparent); }
+  .avatar { border: 1px solid var(--gold-d); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px var(--gl); color: var(--gold-b); font-family: var(--font-mono); font-weight: 700; background: var(--surface-raise); }
+  .dot { width: 6px; height: 6px; border-radius: 0; transform: rotate(45deg); }
+  .dot.active { width: 9px; height: 9px; background: var(--gold); box-shadow: 0 0 8px var(--glow); }
+
+  /* 浮層:金框 + 內縮細線 + 深色投影 */
+  .toast { background: var(--surface-raise); border: 1px solid var(--gold); box-shadow: inset 0 0 0 3px var(--surface-raise), inset 0 0 0 4px var(--gl), var(--float); font-family: var(--font-head); font-weight: 700; color: var(--gold-b); }
+  .toast-stack .toast.warn { border-color: var(--amber); color: var(--amber-text-2); }
+  .install-prompt, .update-banner { background: var(--bg-elevated); border: 1px solid var(--gold); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px var(--gl), var(--float); }
+  .update-banner { font-family: var(--font-head); color: var(--gold-b); }
+  .tip-bubble, .ws-tooltip-bubble, .m-user-menu, .rt-fab-menu { background: var(--bg-elevated-2); border: 1px solid var(--gold-d); box-shadow: var(--float); color: var(--text); }
+
+  /* 設定頁主題選擇:徽印(圓形三色章) */
+  .theme-opt { background: transparent; border: 0; box-shadow: none; gap: 6px; padding: 6px 2px; }
+  .theme-sw { width: 62px; height: 62px; gap: 0; border-radius: 50%; overflow: hidden; border: 1px solid var(--steel-d); position: relative; margin-bottom: 4px; }
+  .theme-sw i { flex: 1; width: auto; height: 100%; border-radius: 0; box-shadow: none; }
+  .theme-sw::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 3px var(--bg-elevated); }
+  .theme-nm { font-family: var(--font-head); font-weight: 700; letter-spacing: 0.1em; }
+  .theme-opt.active { background: transparent; }
+  .theme-opt.active .theme-nm { color: var(--gold-b); }
+  .theme-opt.active .theme-sw { border-color: var(--gold); box-shadow: 0 0 0 3px var(--bg-elevated), 0 0 0 4px var(--gold), 0 0 14px var(--glow); }
 }
