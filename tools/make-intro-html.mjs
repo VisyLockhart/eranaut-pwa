@@ -25,8 +25,17 @@ const INTRO_BODY = `<main style="max-width:720px;margin:0 auto;padding:32px 20px
 <h2>加入靜謐海域交換所</h2>
 <p>專為單人公會設立的同好會:增加交流,以及潛水艇打撈物與裝備的跨服買賣與支援。在遊戲內的同好會搜尋「純水與銀礦之詩, 靜謐海域交換所」即可。</p>
 <h2>Eranaut:潛水艇返航追蹤工具</h2>
-<p>Eranaut 是同好會自行開發的工具,同時支援手機與桌機。線上展示版可試玩潛艇總覽與工坊管理、航線模擬器、配件製作。</p>
-<p><a href="/">Eranaut 線上展示</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/craft">潛水艇配件製作</a></p>
+<p>Eranaut 是同好會自行開發的工具,同時支援手機與桌機。可直接使用潛艇總覽與工坊管理、航線模擬器、配件製作。</p>
+<h2>Eranaut 能幫潛水艇玩家做什麼</h2>
+<p>在 FFXIV 經營潛水艇(也常被叫做潛艇)的人,最麻煩的是記不清每艘什麼時候返航、航線該怎麼配。Eranaut 把這些整理在同一個地方:</p>
+<ul>
+<li>返航倒數:多個工坊、多艘潛水艇的返航時間一覽,不必逐艘回遊戲確認。</li>
+<li>航線模擬:選航點、配配件,出航前先算出航行時間、燃料與經驗。</li>
+<li>配件製作:選好要做的潛艇配件,列出完整材料表並記錄庫存。</li>
+<li>截圖辨識:用潛水艇狀態截圖帶入資料。</li>
+</ul>
+<p>提供 APP 應用程式模式,可加入手機與桌機主畫面,並且能跨裝置推播通知,方便使用。</p>
+<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/craft">潛水艇配件製作</a></p>
 </main>`;
 
 const ld = (obj) => obj;
@@ -35,7 +44,7 @@ const PAGES = [
   {
     path: 'intro',
     title: '靜謐海域交換所 Aequor Eranos・同好會介紹',
-    description: '純水與銀礦之詩,靜謐海域交換所(Aequor Eranos):FFXIV 繁體中文版的潛水艇同好會。單人玩潛艇的孤狼,來這裡收艇不誤點,結識其他潛艇玩家、擁有強力的資源後盾。',
+    description: '純水與銀礦之詩,靜謐海域交換所(Aequor Eranos):FFXIV 繁體中文版的潛水艇(潛艇)同好會。單人玩潛艇的孤狼,來這裡收艇不誤點,結識其他潛艇玩家、擁有強力的資源後盾。',
     image: 'og/intro.png',
     imageAlt: '靜謐海域交換所 Aequor Eranos:FFXIV 繁體中文版潛水艇同好會',
     body: INTRO_BODY,
@@ -60,10 +69,15 @@ const PAGES = [
   },
   {
     path: 'route',
-    title: '潛水艇航線模擬器・靜謐海域交換所 Aequor Eranos',
-    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:選航點、配配件,算出航行時間、燃料與經驗;選好配件,列出完整材料表、記錄庫存。展示版直接試玩。',
+    title: 'FFXIV 潛水艇航線模擬器・靜謐海域交換所 Aequor Eranos',
+    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:FFXIV 潛艇航線模擬器，選航點、配配件，算出航行時間、燃料與經驗；選好配件，列出完整材料表、記錄庫存。',
     image: 'og/route-2.png',
     imageAlt: 'Eranaut 潛水艇航線模擬器與配件製作畫面',
+    body: `<main style="max-width:720px;margin:0 auto;padding:32px 20px;line-height:1.8">
+<h1>FFXIV 潛水艇航線模擬器</h1>
+<p>選擇航點、配置潛艇配件,先算出航行時間、燃料消耗與經驗值,出航前就能比較不同航線與配置。Eranaut 是靜謐海域交換所(Aequor Eranos)同好會自行開發的潛水艇返航追蹤工具。</p>
+<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/craft">潛水艇配件製作</a> ・ <a href="/intro">靜謐海域交換所介紹</a></p>
+</main>`,
     jsonLd: [
       {
         '@context': 'https://schema.org',
@@ -80,10 +94,15 @@ const PAGES = [
   },
   {
     path: 'craft',
-    title: '潛水艇配件製作・靜謐海域交換所 Aequor Eranos',
-    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:選好潛水艇配件,列出完整的材料表、記錄庫存。FFXIV 潛水艇配件製作工具的線上展示,資料只存在你的瀏覽器。',
+    title: 'FFXIV 潛水艇配件製作・靜謐海域交換所 Aequor Eranos',
+    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:選好潛水艇(潛艇)配件，列出完整的材料表、記錄庫存。FFXIV 潛水艇配件製作工具，手機與桌機都能使用。',
     image: 'og/route-2.png',
     imageAlt: 'Eranaut 潛水艇配件製作畫面',
+    body: `<main style="max-width:720px;margin:0 auto;padding:32px 20px;line-height:1.8">
+<h1>FFXIV 潛水艇配件製作</h1>
+<p>選好想做的潛艇配件,列出完整的材料表,並記錄手上的庫存,一眼看出還缺什麼。Eranaut 是靜謐海域交換所(Aequor Eranos)同好會自行開發的潛水艇返航追蹤工具。</p>
+<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/intro">靜謐海域交換所介紹</a></p>
+</main>`,
     jsonLd: [
       {
         '@context': 'https://schema.org',
