@@ -1,10 +1,13 @@
-// 部署用:從建置好的 index.html 為幾個 SPA 路由各產生一份靜態 HTML(`<路由>/index.html`)。
+// 部署用:從建置好的 index.html 為幾個 SPA 路由各產生一份靜態 HTML(`<路由>.html`)。
+// 注意:一定要是 `intro.html` 而不是 `intro/index.html`——GitHub Pages 對資料夾網址 `/intro` 會 301 轉到 `/intro/`,
+// 而 sitemap 與 canonical 都是不帶結尾 `/` 的 `/intro`,Search Console 會判成「重新導向錯誤」而不收錄(2026-10-20)。
+// 單一檔案 `intro.html` 則由 Pages 直接以 200 回應 `/intro`,不轉址。
 // 社群平台與搜尋引擎的爬蟲不一定執行 JavaScript,SPA 路由又沒有自己的檔案,所以每頁要有靜態 HTML 才能帶出
 // 各頁專用的 title / description / canonical / 連結預覽卡(Open Graph、Twitter)/ 結構化資料(JSON-LD)。
 // `/intro` 另外把主要文案放進 <app-root>(Angular 啟動後會取代它),讓不跑 JS 的爬蟲也讀得到。
 // 要新增頁面:在 PAGES 加一筆,並把 1200×630 的預覽圖放到 web/public/og/,再把網址加進 web/public/sitemap.xml。
 // 用法:node tools/make-intro-html.mjs <建置輸出資料夾>
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ORIGIN = 'https://demo.eranaut.aequoreranos.com';
@@ -167,7 +170,6 @@ function render(page) {
 }
 
 for (const page of PAGES) {
-  mkdirSync(join(dir, page.path), { recursive: true });
-  writeFileSync(join(dir, page.path, 'index.html'), render(page));
-  console.log(`已產生 ${page.path}/index.html`);
+  writeFileSync(join(dir, `${page.path}.html`), render(page));
+  console.log(`已產生 ${page.path}.html`);
 }
