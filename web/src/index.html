@@ -51,6 +51,19 @@
         try { localStorage.setItem('eranaut.theme', JSON.stringify(th)); } catch (e) {}
       }
       document.documentElement.setAttribute('data-theme', th);
+      /* 分頁圖示(D-280):非經典主題換成該主題的 favicon;core/theme.ts 的 applyFavicon 切換時做同一件事,屬性鍵要一致 */
+      if (th !== 'classic') {
+        var ics = document.querySelectorAll('link[rel="icon"]');
+        for (var j = 0; j < ics.length; j++) {
+          var lk = ics[j];
+          lk.setAttribute('data-orig-href', lk.getAttribute('href') || '');
+          lk.setAttribute('data-orig-type', lk.getAttribute('type') || '');
+          lk.setAttribute('data-orig-sizes', lk.getAttribute('sizes') || '');
+          lk.setAttribute('href', 'icons/fav-' + th + '.png');
+          lk.setAttribute('type', 'image/png');
+          lk.setAttribute('sizes', '64x64');
+        }
+      }
       var m = document.querySelector('meta[name="theme-color"]');
       if (m) m.setAttribute('content', ids[th]);
       var fonts = { light: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DotGothic16&family=Silkscreen:wght@400;700&display=swap', dark: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700;900&family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@1,600&display=swap', notebook: 'https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Caveat:wght@500;700&family=Patrick+Hand&display=swap' }[th];

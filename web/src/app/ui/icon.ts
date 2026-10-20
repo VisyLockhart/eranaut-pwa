@@ -27,6 +27,10 @@ export class IconComponent {
   protected readonly html = computed(() => {
     const n = this.name();
     const t = this.theme();
+    // 品牌 logo(D-280):四個主題各一張全彩 SVG(自帶底色),以 <img> 載入 public/icons/logo-<主題>.svg;不隨 CSS 顏色變化
+    if (n === 'logo') {
+      return this.sanitizer.bypassSecurityTrustHtml(`<img src="icons/logo-${t}.svg" alt="" draggable="false" style="display:block;width:100%;height:100%">`);
+    }
     const svg = (t === 'light' ? PIXEL_ICONS[n] : t === 'notebook' ? NOTEBOOK_ICONS[n] : undefined) ?? ICONS[n];
     return this.sanitizer.bypassSecurityTrustHtml(svg);
   });

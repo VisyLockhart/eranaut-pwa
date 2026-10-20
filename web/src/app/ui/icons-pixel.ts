@@ -25,7 +25,6 @@ const CHEV_UP = ['....##....', '...####...', '..##..##..', '.##....##.', '##....
  * 導覽用的圖示取自已核准的草稿,其餘照同一風格畫在 10 格的方格上。
  */
 export const PIXEL_ICONS: Partial<Record<IconName, string>> = {
-  logo: raw(14, 7, 'M8 0h2v1h-2z M5 1h5v2h-5z M1 3h12v3h-12z M4 4h2v1h-2z M8 4h2v1h-2z M0 4h1v1h-1z M13 3h1v3h-1z', 'style="fill:var(--on-accent)"'),
   home: raw(10, 10, 'M4 0h2v1h-2z M3 1h4v1h-4z M2 2h6v1h-6z M1 3h8v1h-8z M0 4h10v1h-10z M1 5h8v2h-8z M1 7h3v3h-3z M6 7h3v3h-3z'),
   workshops: raw(10, 10, 'M0 0h10v10h-10z M2 2h6v6h-6z M4 4h2v2h-2z'),
   camera: raw(10, 10, 'M0 3h10v7h-10z M3 4h4v4h-4z M4 5h2v2h-2z M3 1h4v2h-4z'),

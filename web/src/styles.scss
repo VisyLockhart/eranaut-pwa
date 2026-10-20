@@ -74,8 +74,7 @@
   .pulse-ring { animation: pulse-ring 2.2s ease-out infinite; }
 
   .logo-mark {
-    width: 34px; height: 34px; border-radius: calc(9px * var(--rs)); flex: 0 0 auto;
-    background: var(--grad-accent);
+    width: 34px; height: 34px; border-radius: calc(9px * var(--rs)); flex: 0 0 auto; overflow: hidden;
     display: flex; align-items: center; justify-content: center;
   }
   .avatar {
@@ -396,7 +395,7 @@
   .auth-feature-title { font-size: 14.5px; font-weight: 600; margin-bottom: 5px; }
   .auth-feature-desc { font-size: 12.5px; color: var(--text-dim); line-height: 1.6; }
   .auth-pulse-wrap { position: relative; width: 88px; height: 88px; display: flex; align-items: center; justify-content: center; margin-bottom: 28px; }
-  .auth-pulse-core { width: 76px; height: 76px; border-radius: calc(20px * var(--rs)); background: var(--grad-accent); display: flex; align-items: center; justify-content: center; }
+  .auth-pulse-core { width: 76px; height: 76px; border-radius: calc(20px * var(--rs)); overflow: hidden; display: flex; align-items: center; justify-content: center; }
   .auth-pulse-ring { position: absolute; width: 76px; height: 76px; border-radius: var(--r-round); border: 1.5px solid var(--accent); }
   .auth-page-m.centered, .auth-page-d.centered { justify-content: center; }
   .auth-card { width: 100%; max-width: 400px; background: var(--bg-elevated); border: var(--bw) solid var(--border); border-radius: calc(18px * var(--rs)); padding: 32px 26px; display: flex; flex-direction: column; align-items: center; text-align: center; }

@@ -80,6 +80,22 @@ describe('ThemeService(D-277)', () => {
     expect(document.querySelector('link[data-theme-fonts*="LXGW"]')).not.toBeNull();
   });
 
+  it('分頁圖示(D-280):非經典主題換成該主題的 favicon,切回經典還原原本的宣告', () => {
+    mockSystem(false);
+    document.head.insertAdjacentHTML('beforeend', '<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">');
+    localStorage.setItem(THEME_KEY, JSON.stringify('classic'));
+    const s = TestBed.inject(ThemeService);
+    const link = () => document.querySelector('link[rel="icon"]')!;
+    expect(link().getAttribute('href')).toBe('icons/favicon-32.png');
+    s.set('notebook');
+    expect(link().getAttribute('href')).toBe('icons/fav-notebook.png');
+    s.set('light');
+    expect(link().getAttribute('href')).toBe('icons/fav-light.png');
+    s.set('classic');
+    expect(link().getAttribute('href')).toBe('icons/favicon-32.png');
+    expect(link().getAttribute('sizes')).toBe('32x32');
+  });
+
   it('切換任何主題都不會碰推播:意願旗標保留、不解除註冊 service worker、不清快取', () => {
     mockSystem(true);
     const reg = { unregister: vi.fn() };

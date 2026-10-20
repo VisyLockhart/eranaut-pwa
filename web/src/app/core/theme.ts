@@ -108,6 +108,32 @@ export class ThemeService {
     const info = THEMES.find((t) => t.id === this.theme())!;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', info.chrome);
     loadThemeFonts(info.fonts);
+    applyFavicon(this.theme());
+  }
+}
+
+/**
+ * 分頁圖示(D-280):非經典主題把 <link rel="icon"> 換成該主題的 favicon(public/icons/fav-<主題>.png),經典還原 index.html 原本的宣告。
+ * 只影響目前這個分頁;主畫面圖示、安裝後的 App 圖示由 manifest 與 apple-touch-icon 決定,不隨主題變。index.html 的開機前小腳本做同一件事。
+ */
+function applyFavicon(id: ThemeId): void {
+  for (const link of Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="icon"]'))) {
+    const d = link.dataset;
+    if (d['origHref'] === undefined) {
+      d['origHref'] = link.getAttribute('href') ?? '';
+      d['origType'] = link.getAttribute('type') ?? '';
+      d['origSizes'] = link.getAttribute('sizes') ?? '';
+    }
+    const set = (name: string, value: string): void => (value ? link.setAttribute(name, value) : link.removeAttribute(name));
+    if (id === 'classic') {
+      set('href', d['origHref']);
+      set('type', d['origType'] ?? '');
+      set('sizes', d['origSizes'] ?? '');
+    } else {
+      set('href', `icons/fav-${id}.png`);
+      set('type', 'image/png');
+      set('sizes', '64x64');
+    }
   }
 }
 

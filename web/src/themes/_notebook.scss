@@ -187,7 +187,7 @@ html[data-theme='notebook'] {
   .switch input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 3px; }
 
   /* 導覽:手機 = 書籤緞帶;桌機 = 筆記本封面 + 側邊索引標籤 + 裝訂環 */
-  .logo-mark { background: var(--accent); border: var(--bw) solid var(--line); border-radius: var(--blob); }
+  .logo-mark { border: var(--bw) solid var(--line); border-radius: var(--blob); }
   .avatar { border: var(--bw) solid var(--rose-d); color: var(--rose-d); background: transparent; border-radius: var(--blob); font-family: var(--font-mono); font-size: 17px; font-weight: 400; }
   .m-avatar-btn.on .avatar { background: var(--rose-p); box-shadow: none; }
   .m-header { background: var(--bg); border-bottom: var(--bw) solid var(--line); }
