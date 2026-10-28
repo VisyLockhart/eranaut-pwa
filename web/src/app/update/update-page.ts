@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, inject, signal, untracked, viewChild, type TemplateRef } from '@angular/core';
+import type { SubmarineDto, WorkshopWithSubmarines } from '@eranaut/shared';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationStart, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs';
@@ -7,16 +8,19 @@ import { DataStore } from '../core/data-store';
 import { ImageTools, clipboardImage, isCaptureCancelled, isTextTarget, pasteShortcut } from '../core/image-input';
 import { Layout } from '../core/layout';
 import { wsMeta } from '../core/overview-vm';
-import { flagText } from '../core/submarine-form';
+import { flagText, isTimeBlank, rowMinutes, type SubRow } from '../core/submarine-form';
+import { DispatchVm } from '../core/dispatch-vm';
 import { OCR_MAX_BYTES, UpdateVm } from '../core/update-vm';
 import { IconComponent } from '../ui/icon';
 import { SelectField, type SelectValue } from '../ui/select';
 import { SubRowEditor } from './sub-row-editor';
+import { DispatchLine } from './dispatch-line';
+import { DispatchPanel } from './dispatch-panel';
 
 /** 更新潛艇(D-117):選工坊 → 截圖辨識或手動輸入 → 整個工坊一次更新;D-124 每分鐘自動補正 */
 @Component({
   selector: 'app-update-page',
-  imports: [NgTemplateOutlet, RouterLink, IconComponent, SelectField, SubRowEditor],
+  imports: [NgTemplateOutlet, RouterLink, IconComponent, SelectField, SubRowEditor, DispatchLine, DispatchPanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './update-page.html',
   host: { style: 'display: contents', '(document:paste)': 'onPaste($event)' },
@@ -37,6 +41,18 @@ export class UpdatePage implements OnDestroy {
   protected readonly captureSupported = this.tools.canCapture();
   private pasteTimer: ReturnType<typeof setTimeout> | undefined;
   protected readonly wsOptions = computed(() => this.store.workshops().map((w) => ({ value: w.id, label: w.name })));
+  private readonly dispatch = inject(DispatchVm);
+  /** 這間工坊有練級輔助開著(且未滿 85 級)的艇:截圖辨識等上傳時顯示派出建議(D-291) */
+  private readonly hasPlan = computed(() => {
+    const ws = this.vm.workshop();
+    const now = this.store.now();
+    return !!ws && ws.submarines.some((s) => {
+      const i = this.dispatch.info(s, now);
+      return i !== null && !i.start.over;
+    });
+  });
+  protected readonly split = computed(() => this.vm.mode() === 'ocr' && this.vm.ocrPhase() !== 'review' && this.hasPlan());
+  private readonly wsHeader = viewChild<TemplateRef<unknown>>('wsHeader');
 
   constructor() {
     this.layout.pageTitle.set('更新潛水艇');
@@ -51,6 +67,12 @@ export class UpdatePage implements OnDestroy {
       .subscribe((e) => {
         if (!e.url.startsWith('/update')) this.vm.close();
       });
+    // 手機版:工坊選擇放到標題列右側(D-291 ⑧)
+    effect(() => {
+      const tpl = this.wsHeader();
+      const show = !this.layout.isDesktop() && this.store.workshops().length > 0 ? (tpl ?? null) : null;
+      untracked(() => this.layout.headerTool.set(show));
+    });
     // 資料晚到(直接開此頁、尚無快照)或選的工坊被刪掉時,補選一間
     effect(() => {
       this.store.workshops();
@@ -61,6 +83,20 @@ export class UpdatePage implements OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.pasteTimer);
+    this.layout.headerTool.set(null);
+  }
+
+  protected subAt(ws: WorkshopWithSubmarines, position: number): SubmarineDto | undefined {
+    return ws.submarines.find((s) => s.position === position);
+  }
+
+  /** 剩餘時間已填(手動輸入時,填了才出現「這次派出」) */
+  protected filled(row: SubRow): boolean {
+    return row.status !== 'exploring' || (!isTimeBlank(row) && (rowMinutes(row) ?? 0) > 0);
+  }
+
+  protected minutesOf(row: SubRow): number | null {
+    return row.status === 'exploring' ? rowMinutes(row) : null;
   }
 
   protected onSelect(value: SelectValue): void {

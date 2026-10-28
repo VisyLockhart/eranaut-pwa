@@ -40,7 +40,16 @@ import type { SubRow, TimeField } from '../core/submarine-form';
           }
         </div>
       }
+      @if (row().ocrLevel !== undefined) {
+        <label class="uf-lv" [class.flagged]="flagLevel()">
+          <span>辨識到的等級</span>
+          <span class="uf-lv-in">Lv <input type="text" inputmode="numeric" maxlength="3" placeholder="不採用" [value]="row().ocrLevel ?? ''" (input)="onLevel($event)" data-field="level" aria-label="辨識到的等級" /></span>
+          <small>等級以辨識為準；清空就不更新等級</small>
+        </label>
+      }
       <div class="uf-eta mono">{{ eta() }}</div>
+      <!-- 練級輔助的「這次派出」(D-291)由父層放進來 -->
+      <ng-content />
       @if (flagText(); as text) { <div class="uf-flag-msg" role="status">{{ text }}</div> }
       @if (error(); as message) { <div class="uf-err" role="alert">{{ message }}</div> }
     </div>
@@ -55,6 +64,7 @@ export class SubRowEditor {
   readonly flagName = input(false);
   readonly flagTime = input(false);
   readonly flagText = input<string | null>(null);
+  readonly flagLevel = input(false);
 
   readonly nameChange = output<string>();
   readonly statusChange = output<SubmarineStatus>();
@@ -64,6 +74,8 @@ export class SubRowEditor {
   /** 離開這一列的時間欄位:以目前的值重新起算(焦點只是移到同一列的其他時間欄位時不發出) */
   readonly timeLeave = output<void>();
   readonly remove = output<void>();
+  /** 修正辨識到的等級(D-289);清空 = null */
+  readonly levelChange = output<number | null>();
 
   protected readonly circled = circled;
   protected readonly fields: { key: TimeField; unit: string }[] = [
@@ -85,9 +97,17 @@ export class SubRowEditor {
     this.timeChange.emit({ field, value: clean });
   }
 
+  protected onLevel(event: Event): void {
+    const el = event.target as HTMLInputElement;
+    const clean = el.value.replace(/\D/g, '');
+    if (clean !== el.value) el.value = clean;
+    const n = parseInt(clean, 10);
+    this.levelChange.emit(Number.isFinite(n) && n >= 1 && n <= 130 ? n : null);
+  }
+
   protected onBlur(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
-    const sameRowTime = next !== null && this.host.nativeElement.contains(next) && next.dataset['field'] !== undefined && next.dataset['field'] !== 'name';
+    const sameRowTime = next !== null && this.host.nativeElement.contains(next) && ['d', 'h', 'm'].includes(next.dataset['field'] ?? '');
     if (!sameRowTime) this.timeLeave.emit();
   }
 }

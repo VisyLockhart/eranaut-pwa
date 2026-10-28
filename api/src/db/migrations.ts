@@ -170,4 +170,67 @@ ALTER TABLE route_subs ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE route_filters ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0;
 `,
   },
+  {
+    version: 7,
+    name: 'server_maintenance',
+    // 遊戲伺服器維護的目前狀態(D-283):Eranarch 抓到官網公告後通知內部端點,以文章 ID upsert(冪等);
+    // 前端橫幅讀這張表。官網維護不會進來。過期資料在寫入時順手刪,不另開清理排程。
+    sql: `
+CREATE TABLE server_maintenance (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  url TEXT NOT NULL,
+  start_at TEXT NOT NULL,
+  end_at TEXT NOT NULL,
+  finished_at TEXT,
+  updated_at TEXT NOT NULL
+);
+`,
+  },
+  {
+    version: 8,
+    name: 'submarine_upkeep',
+    // 配件維修提醒(D-288):每艘潛艇最多一列(列存在 = 已開啟)。獨立一張表,不放進 route_sub_bindings——
+    // 儲存航線配置時綁定會整組重寫,維修進度會被洗掉。潛艇刪除時連帶刪除,不需清理排程。
+    // route_points 為有順序的航點代碼(JSON 文字);limit_voyages 是開啟當下的快照(可手改);
+    // parts_sig 為開啟時的零件組合(例如 `3,1,2,4`),用來偵測配置被改過。路線與趟數的驗證在 API。
+    sql: `
+CREATE TABLE submarine_upkeep (
+  submarine_id TEXT PRIMARY KEY REFERENCES submarines(id) ON DELETE CASCADE,
+  route_key TEXT NOT NULL,
+  route_sea INTEGER NOT NULL,
+  route_points TEXT NOT NULL,
+  voyages_done INTEGER NOT NULL,
+  limit_voyages INTEGER NOT NULL,
+  parts_sig TEXT NOT NULL,
+  repaired_at TEXT,
+  updated_at TEXT NOT NULL
+);
+`,
+  },
+  {
+    version: 9,
+    name: 'submarine_progress',
+    // 潛艇等級與練級輔助(D-289):每艘潛艇最多一列(列存在 = 有填等級,沒填就沒有列、畫面不顯示)。
+    // 放在潛艇身上而不是配置:同一組配置常綁多艘、各艘等級不同。不動 submarines 表;潛艇刪除時連帶刪除。
+    // pending_*:派出時記下的路線與它的經驗,返航後(下一次讀取或更新時)才加進等級,不需要排程。
+    // last_*:最近一次記下的路線(結算後也保留),讓下次一鍵「跟上次一樣」。
+    // level 可記到 130(截圖辨識可能讀到);練級輔助只算到 85。驗證在 API。
+    sql: `
+CREATE TABLE submarine_progress (
+  submarine_id TEXT PRIMARY KEY REFERENCES submarines(id) ON DELETE CASCADE,
+  level INTEGER NOT NULL,
+  exp_in_level INTEGER NOT NULL DEFAULT 0,
+  source TEXT NOT NULL DEFAULT 'manual',
+  sim_on INTEGER NOT NULL DEFAULT 0,
+  school TEXT,
+  pending_sea INTEGER,
+  pending_points TEXT,
+  pending_exp INTEGER,
+  last_sea INTEGER,
+  last_points TEXT,
+  updated_at TEXT NOT NULL
+);
+`,
+  },
 ];

@@ -10,7 +10,7 @@ import { loginWith, makeApp, member, ORIGIN, sessionCookie, type TestApp } from 
 const RESULT: OcrResultDto = {
   format: 'menu',
   warnings: [],
-  submarines: [{ position: 1, name: '潛水艇-1', status: 'exploring', days: 0, hours: 8, minutes: 52, remaining_minutes: 532, suspect: { name: false, time: false }, reasons: [] }],
+  submarines: [{ position: 1, name: '潛水艇-1', status: 'exploring', days: 0, hours: 8, minutes: 52, remaining_minutes: 532, level: 94, suspect: { name: false, time: false }, reasons: [] }],
 };
 
 function fakeOcr(impl: (image: Buffer) => Promise<OcrResultDto | null> = async () => RESULT) {

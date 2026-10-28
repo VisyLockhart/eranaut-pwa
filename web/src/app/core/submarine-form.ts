@@ -8,6 +8,7 @@ import {
   type SubmarineInput,
   type SubmarineStatus,
 } from '@eranaut/shared';
+import type { RouteSel } from './dispatch-vm';
 import { displayFor } from './format';
 import { charCount } from './workshop-form';
 
@@ -19,6 +20,8 @@ export type TimeField = 'd' | 'h' | 'm';
 export interface RowFlag {
   name: boolean;
   time: boolean;
+  /** 辨識到的等級信心偏低(D-289) */
+  level?: boolean;
   reasons: OcrSuspectReason[];
 }
 
@@ -44,6 +47,10 @@ export interface SubRow {
   paused: boolean;
   /** 截圖辨識的「請核對」標示(D-119);手動輸入的列沒有 */
   flag?: RowFlag;
+  /** 截圖辨識到的等級(D-289,只有潛艇選單視窗的截圖有);undefined = 沒讀到,null = 使用者決定不採用。有值時以它為準 */
+  ocrLevel?: number | null;
+  /** 練級輔助「這次派出」的路線(D-291);沒有這個欄位 = 用預設建議 */
+  route?: RouteSel;
 }
 
 export function newRow(key: number, position: number, name: string, status: SubmarineStatus, added: boolean): SubRow {
@@ -105,14 +112,29 @@ export function etaText(row: SubRow, now: number): string {
 /** 轉成 API 請求的一艘。名稱空白 = 清空(D-146);探索完成不送剩餘時間 */
 export function toSubmarineInput(row: SubRow, remainingMinutes: number | null): SubmarineInput {
   const name = row.name.trim();
-  return row.status === 'complete'
-    ? { position: row.position, name: name === '' ? null : name, status: 'complete' }
-    : { position: row.position, name: name === '' ? null : name, status: 'exploring', remaining_minutes: remainingMinutes };
+  const base: SubmarineInput =
+    row.status === 'complete'
+      ? { position: row.position, name: name === '' ? null : name, status: 'complete' }
+      : { position: row.position, name: name === '' ? null : name, status: 'exploring', remaining_minutes: remainingMinutes };
+  // 截圖辨識到的等級以辨識為準(D-289):伺服器清掉待結算的路線,同等級保留經驗、換等級歸 0
+  return typeof row.ocrLevel === 'number' ? { ...base, progress: { level: row.ocrLevel, source: 'ocr' } } : base;
 }
 
 /** 從既有潛艇建立一列:名稱與狀態沿用,時間讓使用者重填(對照遊戲畫面,與 demo 一致) */
 export function rowFromSubmarine(key: number, sub: SubmarineDto): SubRow {
   return newRow(key, sub.position, sub.name ?? '', sub.status, false);
+}
+
+/**
+ * 快速修改用:同 `rowFromSubmarine`,但探索中的艇把「目前剩下的時間」帶進日/時/分(無條件進位到分鐘,與總覽倒數一致)。
+ * 已可收艇(探索完成,或預計返航時間已到)的艇不帶時間,維持空白(視為 0)。
+ */
+export function rowWithRemaining(key: number, sub: SubmarineDto, now: number): SubRow {
+  const row = rowFromSubmarine(key, sub);
+  if (sub.status !== 'exploring' || sub.expected_return_at === null) return row;
+  const mins = Math.ceil((Date.parse(sub.expected_return_at) - now) / 60_000);
+  if (!Number.isFinite(mins) || mins <= 0) return row;
+  return { ...row, d: String(Math.floor(mins / 1440)), h: String(Math.floor((mins % 1440) / 60)), m: String(mins % 60) };
 }
 
 /** 下一個沒用到的位置(1~4);都用完回 null */
@@ -132,6 +154,8 @@ export function serverRowMessage(fields: SubmarineFieldErrors): string {
   if (fields.name) return `潛艇名稱最多 ${LIMITS.submarineName} 字`;
   if (fields.remaining_minutes) return fields.remaining_minutes === 'required' ? '請填寫剩餘時間' : '剩餘時間不正確（需大於 0，最多 99 天 23 時 59 分）';
   if (fields.status) return '狀態不正確';
+  if (fields.progress) return '等級資料不正確：等級需介於 1~130，經驗需小於這一級升級所需。';
+  if (fields.upkeep) return '無法開啟維修提醒：請確認這艘已綁定配置，且趟數設定合理。';
   return '這一艘的資料不正確';
 }
 
@@ -147,23 +171,24 @@ export function batchFieldMessage(code: FieldErrorCode): string {
  */
 export function rowFromOcr(key: number, dto: OcrSubmarineDto, existing: Pick<SubmarineDto, 'name'> | undefined, now: number): SubRow {
   const exploring = dto.status === 'exploring';
-  const flag: RowFlag = { name: dto.suspect.name, time: exploring && dto.suspect.time, reasons: dto.reasons };
+  const flag: RowFlag = { name: dto.suspect.name, time: exploring && dto.suspect.time, ...(dto.suspect.level ? { level: true } : {}), reasons: dto.reasons };
   const row: SubRow = {
     ...newRow(key, dto.position, dto.name ?? existing?.name ?? defaultName(dto.position), dto.status, existing === undefined),
     ...(exploring && dto.remaining_minutes !== null
       ? { d: String(dto.days ?? 0), h: String(dto.hours ?? 0), m: String(dto.minutes ?? 0) }
       : {}),
-    ...(flag.name || flag.time ? { flag } : {}),
+    ...(flag.name || flag.time || flag.level ? { flag } : {}),
+    ...(typeof dto.level === 'number' ? { ocrLevel: dto.level } : {}),
   };
   return rebase(row, now);
 }
 
 /** 使用者修改了某一欄:清掉那一欄的核對標示;兩欄都清掉就整個移除 */
-export function clearFlag(row: SubRow, field: 'name' | 'time'): SubRow {
+export function clearFlag(row: SubRow, field: 'name' | 'time' | 'level'): SubRow {
   if (!row.flag || !row.flag[field]) return row;
   const flag = { ...row.flag, [field]: false };
   const { flag: _old, ...rest } = row;
-  return flag.name || flag.time ? { ...rest, flag } : rest;
+  return flag.name || flag.time || flag.level ? { ...rest, flag } : rest;
 }
 
 const REASON_TEXT: Record<OcrSuspectReason, string> = {
@@ -178,7 +203,7 @@ const REASON_TEXT: Record<OcrSuspectReason, string> = {
 /** 這一列還在核對中時顯示的說明;沒有標示回 null */
 export function flagText(row: Pick<SubRow, 'flag'>): string | null {
   const flag = row.flag;
-  if (!flag || (!flag.name && !flag.time)) return null;
+  if (!flag || (!flag.name && !flag.time && !flag.level)) return null;
   const reasons = [...new Set(flag.reasons.map((r) => REASON_TEXT[r]))];
   return `請核對：${reasons.length > 0 ? reasons.join('、') : '辨識結果可能不準'}（修改後標示會消失）`;
 }

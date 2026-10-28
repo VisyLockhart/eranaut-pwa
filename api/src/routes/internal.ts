@@ -1,9 +1,11 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { resolveProfile, type DiscordGuildMember } from '../discord/client.js';
+import { applyMaintenanceEvent } from '../repo/maintenance.js';
 import { getOverview } from '../repo/submarines.js';
 import { clearSuspension, findUserByDiscordId } from '../repo/users.js';
 import { isGuildAdministrator, type GuildCache } from '../services/guild-cache.js';
+import { validateMaintenanceEvent } from '../services/maintenance.js';
 import { suspendUser } from '../services/suspension.js';
 import type { AppDeps } from '../server.js';
 
@@ -193,6 +195,15 @@ export function registerInternalRoutes(app: FastifyInstance, deps: AppDeps, guil
   });
 
   // 呼叫者本人的工坊與潛艇(D-71)。無記錄或已停用一律 404「無資料」,不透露停用狀態(D-143 ④ c)
+  // Eranarch 通知遊戲伺服器維護狀態(D-283):只有 Bearer 密鑰、不帶呼叫者(與使用者無關);冪等,重送沒有副作用
+  app.post('/maintenance', async (req, reply) => {
+    const parsed = validateMaintenanceEvent(req.body);
+    if (!parsed.ok) return reply.code(400).send({ error: 'validation_failed', field: parsed.field });
+    applyMaintenanceEvent(db, parsed.value, deps.now());
+    req.log.info({ event: 'maintenance_event', kind: parsed.value.event, id: parsed.value.id });
+    return { ok: true };
+  });
+
   app.get('/me/submarines', async (req, reply) => {
     const caller = await authorize(req, reply, 'member');
     if (!caller) return;

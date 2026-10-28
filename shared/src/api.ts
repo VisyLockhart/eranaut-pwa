@@ -1,3 +1,4 @@
+import type { LevelingSchool } from './leveling-data.js';
 import type { District, NotifyLeadMinutes, RouteFilterSort, Server, SubmarineStatus } from './constants.js';
 
 // 公開 API 的請求/回應型別(D-140)。JSON 欄位沿用資料表的 snake_case(SCHEMA §8)。
@@ -48,6 +49,95 @@ export interface SubmarineDto {
   status: SubmarineStatus;
   expected_return_at: string | null;
   last_synced_at: string;
+  /** 配件維修提醒(D-288);沒開啟時整個欄位省略 */
+  upkeep?: UpkeepDto;
+  /** 等級與練級輔助(D-289);沒填等級時整個欄位省略 */
+  progress?: ProgressDto;
+}
+
+// ---- 等級與練級輔助(D-289) ----
+
+/** 等級來源:手動輸入、截圖辨識、練級輔助推算 */
+export type ProgressSource = 'manual' | 'ocr' | 'sim';
+
+/** 派出時記下的路線(練級輔助);返航後才把經驗加進等級 */
+export interface ProgressRoute {
+  sea: number;
+  /** 有順序的航點代碼 */
+  points: string[];
+}
+
+/** 潛艇等級的目前狀態。列存在 = 有填等級(沒填就沒有,畫面不顯示任何東西) */
+export interface ProgressDto {
+  /** 已確定的等級與這一級的經驗(不含待結算的路線) */
+  level: number;
+  exp_in_level: number;
+  source: ProgressSource;
+  /** 練級輔助(每次手動更新後詢問路線、推算經驗)是否開啟 */
+  sim_on: boolean;
+  /** 偏好的收艇方式,推薦路線的預設 */
+  school: LevelingSchool | null;
+  /** 派出後還沒結算的路線與它的經驗;沒有為 null */
+  pending: (ProgressRoute & { exp: number }) | null;
+  /** 最近一次記下的路線(結算後也保留),下次可一鍵「跟上次一樣」;沒記過為 null */
+  last_route: ProgressRoute | null;
+  /** 已返航則把待結算的經驗加進去之後的等級與經驗(沒有待結算或還沒返航 = 同上面兩個) */
+  effective_level: number;
+  effective_exp: number;
+  updated_at: string;
+}
+
+/** 設定等級(隨更新潛艇一起送,或用 `PUT /api/submarines/:id/progress`) */
+export interface ProgressInput {
+  /** 1~130;省略 = 不改 */
+  level?: number;
+  /** 這一級的目前經驗;省略 = 換等級則歸 0、同等級則不改 */
+  exp_in_level?: number;
+  /** 預設 manual;截圖辨識帶 ocr(等級以辨識為準,並清掉待結算的路線) */
+  source?: 'manual' | 'ocr';
+  sim_on?: boolean;
+  school?: LevelingSchool | null;
+  /** 這次剛派出的路線(練級輔助);null = 清掉待結算的路線;省略 = 不變 */
+  route?: ProgressRoute | null;
+}
+
+/** 配件維修提醒的目前狀態(D-288)。列存在 = 已開啟 */
+export interface UpkeepDto {
+  /** 資料集的路線 key(例如 `1:OJ`) */
+  route_key: string;
+  route_sea: number;
+  /** 有順序的航點代碼 */
+  route_points: string[];
+  /** 已跑幾趟(開啟的那次更新算第 1 趟) */
+  voyages_done: number;
+  /** 可跑趟數上限(開啟當下由資料集算出的快照,可手動修改) */
+  limit_voyages: number;
+  /** 開啟時的零件簽名,例如 `3,1,2,4` */
+  parts_sig: string;
+  /** 目前綁定的配置零件簽名;沒有綁定為 null。和 `parts_sig` 不同表示配置被改過 */
+  current_sig: string | null;
+  repaired_at: string | null;
+  updated_at: string;
+}
+
+/** 開啟維修提醒(隨更新潛艇一起送,同一個交易) */
+export interface UpkeepInput {
+  route_key: string;
+  /** 省略 = 依資料集計算 */
+  limit_voyages?: number;
+  /** 開啟前已經跑過幾趟(省略 = 0,代表剛維修完、滿耐久) */
+  already_done?: number;
+}
+
+/** `PUT /api/submarines/:id/upkeep`:調整已開啟的維修提醒 */
+export interface UpkeepPatch {
+  voyages_done?: number;
+  limit_voyages?: number;
+}
+
+/** `POST /api/workshops/:id/upkeep/repaired` */
+export interface UpkeepRepairedInput {
+  submarine_ids: string[];
 }
 
 /**
@@ -60,6 +150,10 @@ export interface SubmarineInput {
   name?: string | null;
   status: SubmarineStatus;
   remaining_minutes?: number | null;
+  /** 維修提醒:物件 = 開啟;null = 關閉;省略 = 不變(D-288) */
+  upkeep?: UpkeepInput | null;
+  /** 等級與練級輔助:物件 = 設定;null = 清除等級;省略 = 不變(D-289) */
+  progress?: ProgressInput | null;
 }
 
 /** 整個工坊一次更新:只對有列出的位置做 UPSERT,沒列出的位置不動(D-40、D-122) */
@@ -88,9 +182,28 @@ export interface WorkshopWithSubmarines extends WorkshopDto {
   submarines: SubmarineDto[];
 }
 
-/** `GET /api/overview`:前端總覽一次取得所有工坊與潛艇(D-146) */
+/**
+ * 伺服器維護橫幅(D-283)。時間為 UTC ISO 8601。
+ * 只在「未完成、開始前 24 小時起、預計結束後 6 小時內」回傳;官網維護不會出現。
+ */
+export interface MaintenanceDto {
+  id: string;
+  title: string;
+  url: string;
+  start_at: string;
+  end_at: string;
+}
+
+/** `GET /api/maintenance`:橫幅顯示期間的輕量重抓(回應很小);沒有維護時 `maintenance` 為 null */
+export interface MaintenanceResponse {
+  maintenance: MaintenanceDto | null;
+}
+
+/** `GET /api/overview`:前端總覽一次取得所有工坊與潛艇(D-146);`maintenance` 順便帶回,不增加請求(D-283) */
 export interface OverviewDto {
   workshops: WorkshopWithSubmarines[];
+  /** 內部端點(Eranarch)的回應不帶這個欄位 */
+  maintenance?: MaintenanceDto | null;
 }
 
 /**
@@ -145,8 +258,11 @@ export interface OcrSubmarineDto {
   minutes: number | null;
   /** 天/時/分換算成的分鐘,與 `SubmarineInput.remaining_minutes` 同單位;讀不出為 null */
   remaining_minutes: number | null;
+  /** 潛艇選單視窗才有「N級」;情報頁沒有,讀不到為 null(D-289) */
+  level: number | null;
   /** 需要使用者核對的欄位(D-119):前端標琥珀色「請核對」,使用者修改該欄後消失 */
-  suspect: { name: boolean; time: boolean };
+  /** `level` 只有讀到等級而且該行信心低時才出現(= true) */
+  suspect: { name: boolean; time: boolean; level?: boolean };
   reasons: OcrSuspectReason[];
 }
 

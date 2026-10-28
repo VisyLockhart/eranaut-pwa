@@ -1,23 +1,59 @@
-<button type="button" class="m-stats-toggle" [class.open]="vm.statsOpen()" (click)="vm.toggleStats()" [attr.aria-expanded]="vm.statsOpen()" [attr.aria-label]="vm.statsOpen() ? '收合統計' : '展開統計'">
+<div class="m-ovpanel" [class.open]="vm.statsOpen()">
+  <button type="button" class="m-stats-toggle ov-toggle" [class.open]="vm.statsOpen()" (click)="vm.toggleStats()" [attr.aria-expanded]="vm.statsOpen()" [attr.aria-label]="vm.statsOpen() ? '收合統計與排序' : '展開統計與排序'">
+    @if (vm.statsOpen()) {
+      <span class="summary ov-s-long">{{ vm.sortSummary().long }}</span>
+    } @else {
+      <span class="summary">
+        <b class="mono" [class.amber]="vm.stats().ready > 0">{{ vm.stats().ready }}</b>待收<span class="ov-s-of">/ {{ vm.stats().submarines }}</span>
+        @if (vm.upkeepSummary(); as u) {
+          @if (u.state === 'alert') { <span>·</span><span class="ov-s-uk" [attr.data-phase]="u.repairNow > 0 ? 'repair_now' : 'repair_after_return'">維修 {{ u.total }}</span> }
+          @else if (u.state === 'ok') { <span>·</span><span class="ov-s-ok">配件良好</span> }
+        }
+        <span>·</span>
+        @if (vm.nextReturn(); as n) { <span class="ov-s-next mono">{{ n.display.time }}</span> } @else { <span>－</span> }
+        <span class="ov-s-sort">· {{ vm.sortSummary().short }}</span>
+      </span>
+    }
+    <span class="chev"><app-icon name="chevronRight" [size]="14" /></span>
+  </button>
   @if (vm.statsOpen()) {
-    <span class="summary">統計</span>
-  } @else {
-    <span class="summary"><b class="mono">{{ vm.stats().workshops }}</b>工坊<span>·</span><b class="mono">{{ vm.stats().submarines }}</b>潛水艇<span>·</span><b class="mono amber">{{ vm.stats().ready }}</b>艘待收艇</span>
+    <div class="m-stats ov-mstats">
+      <div class="m-stat ov-fleet" [class.ready]="vm.stats().ready > 0">
+        <div class="label">潛水艇</div>
+        <div class="ov-mval"><span class="num mono">{{ vm.stats().ready }}</span><span class="ov-mval-t">待收</span><span class="ov-fleet-of">/ <span class="mono">{{ vm.stats().submarines }}</span></span></div>
+      </div>
+      @if (vm.upkeepSummary(); as u) {
+        @if (u.state === 'alert') {
+          <button type="button" class="m-stat ov-uk" data-state="alert" [attr.data-phase]="u.repairNow > 0 ? 'repair_now' : 'repair_after_return'" (click)="openUpkeep()" [attr.aria-label]="'配件維修：' + upkeepText(u.repairNow, u.afterReturn) + '，開啟維修面板'">
+            <div class="label">配件維修</div>
+            <div class="ov-mval"><app-icon name="wrench" [size]="13" /><span class="ov-mval-t">{{ u.total }} 艘</span><app-icon name="chevronRight" [size]="12" /></div>
+          </button>
+        } @else if (u.state === 'ok') {
+          <div class="m-stat ov-uk" data-state="ok">
+            <div class="label">配件維修</div>
+            <div class="ov-mval"><span class="ov-mval-t">良好</span></div>
+          </div>
+        }
+      }
+      <div class="m-stat ov-next">
+        <div class="label">下一艘返航</div>
+        <div class="ov-mval"><span class="ov-mval-t mono">{{ vm.nextReturn()?.display?.time ?? '－' }}</span></div>
+      </div>
+    </div>
+    <div class="ov-mtools">
+      <app-overview-sort />
+      <div class="pill-toggle">
+        <button class="icon-btn" [class.active]="store.view() === 'list'" style="width: 32px; height: 32px" (click)="store.setView('list')" aria-label="切換為列表檢視" [attr.aria-pressed]="store.view() === 'list'"><app-icon name="list" [size]="15" /></button>
+        <button class="icon-btn" [class.active]="store.view() === 'card'" style="width: 32px; height: 32px" (click)="store.setView('card')" aria-label="切換為卡片檢視" [attr.aria-pressed]="store.view() === 'card'"><app-icon name="grid" [size]="15" /></button>
+      </div>
+    </div>
   }
-  <span class="chev"><app-icon name="chevronRight" [size]="14" /></span>
-</button>
-@if (vm.statsOpen()) {
-  <div class="m-stats">
-    <div class="m-stat"><div class="num mono">{{ vm.stats().workshops }}</div><div class="label">工坊</div></div>
-    <div class="m-stat"><div class="num mono">{{ vm.stats().submarines }}</div><div class="label">潛水艇</div></div>
-    <div class="m-stat ready"><div class="num mono">{{ vm.stats().ready }}</div><div class="label">艘待收艇</div></div>
-  </div>
-}
+</div>
 
-<div class="pager">
+<div class="pager ov-mpager">
   <div class="pager-row">
     <button class="pager-btn icon-btn" style="border-radius: calc(10px * var(--rs))" (click)="vm.prev()" aria-label="上一間工坊"><app-icon name="chevronLeft" /></button>
-    <div class="pager-label" [style.color]="vm.index() === 0 ? 'var(--text)' : 'var(--accent)'">{{ vm.pagerLabels()[vm.index()] }}</div>
+    <app-select size="pager" ariaLabel="選擇工坊" [listMax]="380" [options]="vm.workshopOptions()" [value]="vm.index()" (valueChange)="vm.goTo(+$event)" />
     <button class="pager-btn icon-btn" style="border-radius: calc(10px * var(--rs))" (click)="vm.next()" aria-label="下一間工坊"><app-icon name="chevronRight" /></button>
   </div>
   <div class="pager-dots">
@@ -32,16 +68,6 @@
     <app-icon name="server" [size]="12" />{{ ws.server || '未設定伺服器' }}<span style="color: var(--text-faint)">·</span>{{ ws.captain || '未設定代表角色' }}
   </div>
 }
-
-<div class="m-viewswitch">
-  <div class="sort-label">
-    {{ vm.index() === 0 ? '依返航時間排序' : vm.pagerLabels()[vm.index()] + ' · 依返航時間排序' }}
-  </div>
-  <div class="pill-toggle">
-    <button class="icon-btn" [class.active]="store.view() === 'list'" style="width: 30px; height: 30px" (click)="store.setView('list')" aria-label="切換為列表檢視"><app-icon name="list" [size]="15" /></button>
-    <button class="icon-btn" [class.active]="store.view() === 'card'" style="width: 30px; height: 30px" (click)="store.setView('card')" aria-label="切換為卡片檢視"><app-icon name="grid" [size]="15" /></button>
-  </div>
-</div>
 
 @if (ptrHeight() > 0) {
   <div class="ptr" [style.height.px]="ptrHeight()" aria-live="polite"><span>{{ ptrLabel() }}</span></div>
@@ -60,44 +86,99 @@
   </div>
 } @else if (store.view() === 'list') {
   <div class="m-list" appPullRefresh (pullChange)="onPull($event)" (refreshRequested)="onRefresh()">
-    @for (item of vm.items(); track item.id) {
-      <div class="qe row" [class.ready]="item.ready" role="button" tabindex="0" [attr.aria-label]="'快速修改 ' + item.name" (click)="vm.openQuickEdit(item)" (keydown.enter)="vm.openQuickEdit(item)">
-        <div class="row-dot-wrap">
-          @if (!item.ready) { <span class="row-ring pulse-ring" style="border-color: var(--accent)"></span> }
-          <span class="row-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--progress)'"></span>
+    @for (g of vm.sections(); track g.key) {
+      @if (g.group; as grp) {
+        <div class="ov-ghead m-ghead">
+          <b>{{ grp.workshop.name }}</b>
+          <span class="ov-g-rest">
+            @if (wsInfo(grp.workshop)) { <span>{{ wsInfo(grp.workshop) }}</span> }
+            @if (grp.upkeep > 0) { <span class="ov-g-uk">維修 {{ grp.upkeep }}</span> }
+            @if (grp.ready > 0) { <span class="ov-g-ready">{{ grp.ready }} 待收</span> }
+            <span>{{ grp.ready > 0 ? '/ ' : '' }}{{ grp.items.length }} 艘</span>
+          </span>
         </div>
-        <div class="row-main">
-          <div class="row-sub">{{ item.name }}</div>
-          <div class="row-ws">{{ item.workshop.name }} {{ circled(item.position) }}{{ wsMeta(item.workshop) }}</div>
+      }
+      @for (item of g.items; track item.id) {
+        <div class="qe row" [class.ready]="item.ready" [class.ov-grouped]="g.group" role="button" tabindex="0" [attr.aria-label]="'快速修改 ' + item.name" (click)="vm.openQuickEdit(item)" (keydown.enter)="vm.openQuickEdit(item)">
+          <span class="row-pos sub-no">{{ circled(item.position) }}</span>
+          <div class="row-main">
+            <div class="row-sub">{{ item.name }}<app-level-badge [item]="item.level" /></div>
+            <app-next-route [item]="item.next" />
+            @if (showWs()) { <div class="row-ws">{{ item.workshop.name }}{{ wsMeta(item.workshop) }}</div> }
+            @if (item.upkeep) { <div class="row-uk"><app-upkeep-tag [item]="item.upkeep" /></div> }
+            @if (item.level) { <div class="row-lv"><app-level-tag [item]="item.level" /></div> }
+          </div>
+          <div class="row-right">
+            <div class="row-time mono" [style.color]="item.ready ? 'var(--amber)' : null">{{ item.display.time }}</div>
+            <div class="row-status" [style.color]="item.ready ? 'var(--amber-text)' : null">{{ item.display.label }}</div>
+          </div>
         </div>
-        <div class="row-right">
-          <div class="row-time mono" [style.color]="item.ready ? 'var(--amber)' : null">{{ item.display.time }}</div>
-          <div class="row-status" [style.color]="item.ready ? 'var(--amber-text)' : null">{{ item.display.label }}</div>
-        </div>
-      </div>
+      }
     }
   </div>
 } @else {
   <div class="m-cards" appPullRefresh (pullChange)="onPull($event)" (refreshRequested)="onRefresh()">
-    @for (item of vm.items(); track item.id) {
-      <div class="qe card" [class.ready]="item.ready" role="button" tabindex="0" [attr.aria-label]="'快速修改 ' + item.name" (click)="vm.openQuickEdit(item)" (keydown.enter)="vm.openQuickEdit(item)">
-        <div class="card-top">
-          <div class="card-ws">{{ item.workshop.name }}</div>
-          <div class="status-pill" [class.ready]="item.ready">
-            <span class="pill-dot-wrap">
-              @if (!item.ready) { <span class="pill-ring pulse-ring" style="border-color: var(--accent)"></span> }
-              <span class="pill-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--progress)'"></span>
-            </span>
-            {{ item.display.label }}
+    @for (g of vm.sections(); track g.key) {
+      @if (g.group; as grp) {
+        <div class="ov-ghead m-ghead">
+          <b>{{ grp.workshop.name }}</b>
+          <span class="ov-g-rest">
+            @if (wsInfo(grp.workshop)) { <span>{{ wsInfo(grp.workshop) }}</span> }
+            @if (grp.upkeep > 0) { <span class="ov-g-uk">維修 {{ grp.upkeep }}</span> }
+            @if (grp.ready > 0) { <span class="ov-g-ready">{{ grp.ready }} 待收</span> }
+            <span>{{ grp.ready > 0 ? '/ ' : '' }}{{ grp.items.length }} 艘</span>
+          </span>
+        </div>
+        <div class="m-cardgrid">
+          @for (item of g.items; track item.id) {
+            <div class="qe card mini" [class.ready]="item.ready" role="button" tabindex="0" [attr.aria-label]="'快速修改 ' + item.name" (click)="vm.openQuickEdit(item)" (keydown.enter)="vm.openQuickEdit(item)">
+              <div class="card-top">
+                <span class="card-pos sub-no">{{ circled(item.position) }}</span>
+                <div class="status-pill" [class.ready]="item.ready">
+                  <span class="pill-dot-wrap">
+                    @if (!item.ready) { <span class="pill-ring pulse-ring" style="border-color: var(--accent)"></span> }
+                    <span class="pill-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--progress)'"></span>
+                  </span>
+                  {{ item.display.label }}
+                </div>
+              </div>
+              <div class="card-sub">{{ item.name }}<app-level-badge [item]="item.level" /></div>
+              <app-next-route [item]="item.next" />
+              @if (item.upkeep) { <div class="card-uk"><app-upkeep-tag [item]="item.upkeep" /></div> }
+              @if (item.level) { <div class="card-lv"><app-level-tag [item]="item.level" /></div> }
+              <div class="card-fill"></div>
+              <div class="card-bottom">
+                <div class="card-time mono" [style.color]="item.ready ? 'var(--amber)' : null">{{ item.display.shortTime }}</div>
+              </div>
+              <div class="card-hint">{{ item.display.hint }}</div>
+            </div>
+          }
+        </div>
+      } @else {
+        @for (item of g.items; track item.id) {
+          <div class="qe card" [class.ready]="item.ready" role="button" tabindex="0" [attr.aria-label]="'快速修改 ' + item.name" (click)="vm.openQuickEdit(item)" (keydown.enter)="vm.openQuickEdit(item)">
+            <div class="card-top">
+              <div class="card-head"><span class="card-pos sub-no">{{ circled(item.position) }}</span>@if (showWs()) { <span class="card-ws">{{ item.workshop.name }}</span> }</div>
+              <div class="status-pill" [class.ready]="item.ready">
+                <span class="pill-dot-wrap">
+                  @if (!item.ready) { <span class="pill-ring pulse-ring" style="border-color: var(--accent)"></span> }
+                  <span class="pill-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--progress)'"></span>
+                </span>
+                {{ item.display.label }}
+              </div>
+            </div>
+            @if (showWs() && wsInfo(item.workshop)) { <div class="card-meta">{{ wsInfo(item.workshop) }}</div> }
+            <div class="card-sub">{{ item.name }}<app-level-badge [item]="item.level" /></div>
+              <app-next-route [item]="item.next" />
+            @if (item.upkeep) { <div class="card-uk"><app-upkeep-tag [item]="item.upkeep" /></div> }
+            @if (item.level) { <div class="card-lv"><app-level-tag [item]="item.level" /></div> }
+            <div class="card-bottom">
+              <div class="card-time mono" [style.color]="item.ready ? 'var(--amber)' : null">{{ item.display.shortTime }}</div>
+              <div class="card-hint">{{ item.display.hint }}</div>
+            </div>
           </div>
-        </div>
-        <div style="font-size: 10.5px; color: var(--text-faint); margin-bottom: 8px">{{ circled(item.position) }}{{ wsMeta(item.workshop) }}</div>
-        <div class="card-sub">{{ item.name }}</div>
-        <div class="card-bottom">
-          <div class="card-time mono" [style.color]="item.ready ? 'var(--amber)' : null">{{ item.display.shortTime }}</div>
-          <div class="card-hint">{{ item.display.hint }}</div>
-        </div>
-      </div>
+        }
+      }
     }
   </div>
 }

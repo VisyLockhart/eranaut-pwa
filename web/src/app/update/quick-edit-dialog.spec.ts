@@ -73,6 +73,14 @@ describe('QuickEditDialog', () => {
     expect(el.textContent).toContain('貝殼工坊');
   });
 
+  it('探索中且還沒返航的艇:帶入目前剩下的時間', () => {
+    const ws = workshop();
+    ws.submarines[0] = { ...ws.submarines[0]!, expected_return_at: new Date(Date.now() + (2 * 60 + 30) * 60_000 - 5_000).toISOString() };
+    store.fetched.set([ws]);
+    const { el } = open(1);
+    expect(['d', 'h', 'm'].map((f) => el.querySelector<HTMLInputElement>(`[data-field="${f}"]`)!.value)).toEqual(['0', '2', '30']);
+  });
+
   it('送出:單艘端點(位置取自網址),成功後提示並關閉;沒有等待時間補正,送的就是填的數字', async () => {
     const { type, save, closed, fixture } = open(1);
     type('d', '0');

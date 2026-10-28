@@ -7,6 +7,7 @@ import { Subject } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { AppUpdate } from '../core/app-update';
 import { Auth } from '../core/auth';
+import { DataStore } from '../core/data-store';
 import { Layout } from '../core/layout';
 import { Shell } from './shell';
 
@@ -102,5 +103,51 @@ describe('Shell 導覽', () => {
     f.detectChanges();
     expect(spy).toHaveBeenCalled();
     expect(el.querySelector('.m-user-menu')).toBeNull();
+  });
+
+  describe('伺服器維護橫幅(D-283)', () => {
+    const START = Date.UTC(2026, 8, 29, 5, 0);
+    const info = {
+      id: 'MAINT00001',
+      title: '09/29 維護更新作業',
+      url: 'https://www.ffxiv.com.tw/web/news/news_content.aspx?id=MAINT00001',
+      start_at: new Date(START).toISOString(),
+      end_at: new Date(START + 5 * 3_600_000).toISOString(),
+    };
+    function withMaintenance(desktop: boolean) {
+      const m = mount(desktop);
+      TestBed.inject(DataStore).now.set(START - 3_600_000);
+      TestBed.inject(DataStore).maintenance.set(info);
+      m.f.detectChanges();
+      return m;
+    }
+
+    it('沒有維護:手機底部仍是聲明,不出現橫幅', () => {
+      const { el } = mount(false);
+      expect(el.querySelector('.copyright-bar')).toBeTruthy();
+      expect(el.querySelector('.mn')).toBeNull();
+    });
+
+    it('手機:橫幅暫時取代底部聲明;維護結束(已開機)後聲明恢復', () => {
+      const { f, el } = withMaintenance(false);
+      expect(el.querySelector('.mn-line')).toBeTruthy();
+      expect(el.querySelector('.copyright-bar')).toBeNull();
+      TestBed.inject(DataStore).maintenance.set(null);
+      f.detectChanges();
+      expect(el.querySelector('.mn-line')).toBeNull();
+      expect(el.querySelector('.copyright-bar')).toBeTruthy();
+    });
+
+    it('桌機側欄展開 = 卡片;收合 = 圖示', () => {
+      const { f, el } = withMaintenance(true);
+      TestBed.inject(Layout).sidebarCollapsed.set(false);
+      f.detectChanges();
+      expect(el.querySelector('.d-sidebar .mn-card')).toBeTruthy();
+      expect(el.querySelector('.d-sidebar .mn-icon-btn')).toBeNull();
+      TestBed.inject(Layout).sidebarCollapsed.set(true);
+      f.detectChanges();
+      expect(el.querySelector('.d-sidebar .mn-icon-btn')).toBeTruthy();
+      expect(el.querySelector('.d-sidebar .mn-card')).toBeNull();
+    });
   });
 });

@@ -130,7 +130,7 @@ test(`信心低於 ${LOW_CONFIDENCE} 的行,名稱與時間都標可疑,數字�
   const lines = [L('請選擇潛水艇。'), L('探索機體數:1/4'), L(row(1, '8小時52分鐘'), LOW_CONFIDENCE - 0.01), L('取消')];
   const s = parseOcrLines(lines)!.submarines[0]!;
   assert.equal(s.remaining_minutes, 532);
-  assert.deepEqual(s.suspect, { name: true, time: true });
+  assert.deepEqual(s.suspect, { name: true, time: true, level: true }, '這一列有等級,等級也要核對');
   assert.deepEqual(s.reasons, ['low_confidence']);
   const ok = [L('請選擇潛水艇。'), L('探索機體數:1/4'), L(row(1, '8小時52分鐘'), LOW_CONFIDENCE), L('取消')];
   assert.deepEqual(parseOcrLines(ok)!.submarines[0]!.suspect, { name: false, time: false }, '剛好等於門檻不算低');
@@ -182,4 +182,47 @@ test('不是這兩種截圖(沒有標題、沒有潛艇列)回 null', () => {
   assert.equal(parseOcrLines([L('今天天氣很好'), L('聊天 3小時前')]), null);
   assert.equal(parseOcrLines(info()), null, '有標題沒有列');
   assert.equal(parseOcrLines([L('請選擇潛水艇。'), L('探索機體數:0/4'), L('取消')]), null);
+});
+
+test('遊戲內「縮放視窗」選單的百分比被併進潛艇列時,忽略百分比(D-226)', () => {
+  const lines = [
+    { text: '請選擇潛水艇。', mean: 0.95, box: [[10, 10]] },
+    { text: '探索機體數:2/2 200%', mean: 0.95, box: [[10, 40]] },
+    { text: '潛水艇-1 [94級] [正在探索:剩餘時間 22小時10分鐘] 140%', mean: 0.95, box: [[10, 100]] },
+    { text: '潛水艇-2 [94級] [正在探索:剩餘時間 22小時17分鐘] 120%', mean: 0.95, box: [[10, 140]] },
+    { text: '取消 90%', mean: 0.99, box: [[10, 180]] },
+  ];
+  const r = parseOcrLines(lines)!;
+  assert.deepEqual(r.submarines.map((s) => [s.remaining_minutes, s.suspect.time]), [[1330, false], [1337, false]]);
+});
+
+// ---- 等級(D-289):選單視窗每列有「[N級]」,情報頁沒有 ----
+
+test('選單視窗:讀出每列的等級;情報頁沒有等級', () => {
+  const m = parseOcrLines(menu(row(1, '8小時52分鐘'), '潛水艇-2 [92級] [正在探索:剩餘時間 8小時51分鐘]', '潛水艇-3 [探索完成]'))!;
+  assert.deepEqual(m.submarines.map((s) => s.level), [94, 92, null]);
+  assert.deepEqual(m.submarines.map((s) => s.suspect.time), [false, false, false], '加了等級也不影響時間的判斷');
+  const i = parseOcrLines(info('潛水艇-1 8小時48分鐘'))!;
+  assert.deepEqual(i.submarines.map((s) => s.level), [null]);
+  assert.equal('level' in i.submarines[0]!.suspect, false);
+});
+
+test('等級:簡體「级」、全形括號、等級黏在名稱後面都讀得到;範圍外視為沒讀到', () => {
+  const r = parseOcrLines(menu('潘水艇-1［75级］-[正在探索:剩餘時間 22小時7分鐘]', '潘水艇-2[0級] [正在探索:剩餘時間 22小時6分鐘]', '潘水艇-3[999級] [正在探索:剩餘時間 22小時5分鐘]'))!;
+  assert.deepEqual(r.submarines.map((s) => s.level), [75, null, null]);
+  assert.deepEqual(r.submarines.map((s) => s.remaining_minutes), [1327, 1326, 1325]);
+});
+
+test('等級:該行信心低時標「請核對」(suspect.level),信心高則不標', () => {
+  const lines = [L('請選擇潛水艇。'), L('探索機體數:2/4'), L('所持燃料數:桶裝青磷水 64桶'), L(row(1, '8小時52分鐘'), 0.7), L(row(2, '8小時51分鐘'), 0.95), L('取消')];
+  const r = parseOcrLines(lines)!;
+  assert.deepEqual(r.submarines.map((s) => s.suspect.level === true), [true, false]);
+});
+
+test('真實截圖(選單視窗):每列都讀到 1~130 的等級', () => {
+  for (const [file, fx] of Object.entries(fixtures)) {
+    if (fx.format !== 'menu') continue;
+    const r = parseOcrLines(fx.lines)!;
+    assert.ok(r.submarines.every((s) => s.level !== null && s.level >= 1 && s.level <= 130), `${file}: ${r.submarines.map((s) => s.level)}`);
+  }
 });

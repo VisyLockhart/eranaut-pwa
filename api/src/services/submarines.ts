@@ -1,6 +1,13 @@
 import {
   LIMITS,
   SUBMARINE_STATUSES,
+  LEVELING_SCHOOLS,
+  MAX_RECORDED_LEVEL,
+  UPKEEP_LIMITS,
+  routeExp,
+  upkeepRoute,
+  type ProgressInput,
+  type UpkeepInput,
   type SubmarineFieldErrors,
   type SubmarineStatus,
   type SubmarinesBatchValidationErrorBody,
@@ -15,6 +22,10 @@ export interface ValidSubmarine {
   status: SubmarineStatus;
   /** 只有探索中才有值 */
   remaining_minutes: number | null;
+  /** 維修提醒(D-288):物件 = 開啟;null = 關閉;undefined = 不變 */
+  upkeep?: UpkeepInput | null;
+  /** 等級與練級輔助(D-289):物件 = 設定;null = 清除;undefined = 不變 */
+  progress?: ProgressInput | null;
 }
 
 export type ItemResult = { ok: true; value: ValidSubmarine } | { ok: false; fields: SubmarineFieldErrors };
@@ -62,8 +73,78 @@ export function validateSubmarineInput(input: unknown): ItemResult {
     else remaining = r;
   }
 
+  // 維修提醒:省略 = 不變;null = 關閉;物件 = 開啟(路線必須是資料集支援的、趟數在合理範圍;能不能開由 API 依綁定配置再判斷)
+  let upkeep: UpkeepInput | null | undefined;
+  if (b.upkeep === null) upkeep = null;
+  else if (b.upkeep !== undefined) {
+    const u = b.upkeep;
+    const int = (v: unknown, min: number, max: number) => typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
+    if (typeof u !== 'object' || Array.isArray(u)) errors.upkeep = 'invalid_type';
+    else {
+      const o = u as Record<string, unknown>;
+      if (typeof o.route_key !== 'string' || !upkeepRoute(o.route_key)) errors.upkeep = 'invalid_value';
+      else if (o.limit_voyages !== undefined && !int(o.limit_voyages, UPKEEP_LIMITS.minVoyages, UPKEEP_LIMITS.maxVoyages)) errors.upkeep = 'invalid_value';
+      else if (o.already_done !== undefined && !int(o.already_done, 0, UPKEEP_LIMITS.maxVoyages)) errors.upkeep = 'invalid_value';
+      else {
+        upkeep = { route_key: o.route_key };
+        if (o.limit_voyages !== undefined) upkeep.limit_voyages = o.limit_voyages as number;
+        if (o.already_done !== undefined) upkeep.already_done = o.already_done as number;
+      }
+    }
+  }
+
+  // 等級:省略 = 不變;null = 清除;物件 = 設定(欄位範圍在這裡驗,「沒有等級卻想記路線」等情況在寫入時判斷)
+  let progress: ProgressInput | null | undefined;
+  if (b.progress === null) progress = null;
+  else if (b.progress !== undefined) {
+    const r = validateProgressInput(b.progress);
+    if (r === 'invalid_type' || r === 'invalid_value') errors.progress = r;
+    else progress = r;
+  }
+
   if (Object.keys(errors).length > 0 || status === null) return { ok: false, fields: errors };
-  return { ok: true, value: { position, name, status, remaining_minutes: remaining } };
+  return {
+    ok: true,
+    value: { position, name, status, remaining_minutes: remaining, ...(upkeep !== undefined ? { upkeep } : {}), ...(progress !== undefined ? { progress } : {}) },
+  };
+}
+
+/** 等級資料的欄位驗證(更新潛艇與 `PUT /api/submarines/:id/progress` 共用) */
+export function validateProgressInput(u: unknown): ProgressInput | 'invalid_type' | 'invalid_value' {
+  if (typeof u !== 'object' || u === null || Array.isArray(u)) return 'invalid_type';
+  const o = u as Record<string, unknown>;
+  const int = (v: unknown, min: number, max: number) => typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
+  const out: ProgressInput = {};
+  if (o.level !== undefined) {
+    if (!int(o.level, 1, MAX_RECORDED_LEVEL)) return 'invalid_value';
+    out.level = o.level as number;
+  }
+  if (o.exp_in_level !== undefined) {
+    if (!int(o.exp_in_level, 0, 100_000_000)) return 'invalid_value';
+    out.exp_in_level = o.exp_in_level as number;
+  }
+  if (o.source !== undefined) {
+    if (o.source !== 'manual' && o.source !== 'ocr') return 'invalid_value';
+    out.source = o.source;
+  }
+  if (o.sim_on !== undefined) {
+    if (typeof o.sim_on !== 'boolean') return 'invalid_value';
+    out.sim_on = o.sim_on;
+  }
+  if (o.school !== undefined) {
+    if (o.school !== null && !(LEVELING_SCHOOLS as readonly unknown[]).includes(o.school)) return 'invalid_value';
+    out.school = o.school as ProgressInput['school'];
+  }
+  if (o.route !== undefined) {
+    if (o.route === null) out.route = null;
+    else {
+      const r = o.route as Record<string, unknown>;
+      if (typeof r !== 'object' || Array.isArray(r) || !int(r.sea, 1, 2) || !Array.isArray(r.points) || r.points.some((c) => typeof c !== 'string')) return 'invalid_value';
+      if (r.points.length > 5 || routeExp(r.sea as number, r.points as string[]) === null) return 'invalid_value';
+      out.route = { sea: r.sea as number, points: [...(r.points as string[])] };
+    }
+  }
+  return out;
 }
 
 export type BatchResult = { ok: true; items: ValidSubmarine[] } | { ok: false; body: SubmarinesBatchValidationErrorBody };

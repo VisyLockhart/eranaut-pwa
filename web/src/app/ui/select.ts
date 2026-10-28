@@ -4,11 +4,22 @@ import { UiScale } from '../core/ui-scale';
 import { IconComponent } from './icon';
 
 export type SelectValue = string | number;
+/** 選項右側的小計數(例:`2 待收`);tone 決定顏色 */
+export interface SelectMeta {
+  text: string;
+  tone?: 'amber' | 'danger';
+}
 export interface SelectOption {
   value: SelectValue;
   label: string;
   /** 群組標題:與前一項不同時,在這一項前面顯示一列標題(不可選取) */
   group?: string;
+  /** 按鈕上顯示的文字(省略時用 label),例:清單裡是「全部」,按鈕上是「全部 (5)」 */
+  display?: string;
+  /** 名稱下方的一行次要文字 */
+  hint?: string;
+  /** 右側計數 */
+  meta?: readonly SelectMeta[];
 }
 
 let nextId = 1;
@@ -39,6 +50,7 @@ const GROUP_MEMORY = new Map<string, Map<string, boolean>>();
       [class.open]="open()"
       [class.lg]="size() === 'lg'"
       [class.compact]="size() === 'compact'"
+      [class.sel-pager]="size() === 'pager'"
       [class.error-select]="invalid()"
       [attr.id]="inputId() || null"
       role="combobox"
@@ -84,8 +96,16 @@ const GROUP_MEMORY = new Map<string, Map<string, boolean>>();
               (pointerdown)="$event.preventDefault()"
               (click)="$event.preventDefault(); choose(r.option)"
             >
-              <span>{{ r.option.label }}</span>
-              @if (r.option.value === value()) { <app-icon name="check" [size]="14" /> }
+              @if (r.option.hint || r.option.meta) {
+                <span class="sel-opt-main"><span>{{ r.option.label }}</span>@if (r.option.hint) { <small class="sel-hint">{{ r.option.hint }}</small> }</span>
+                @if (r.option.meta) {
+                  <span class="sel-meta">@for (m of r.option.meta; track $index) { <span [attr.data-tone]="m.tone ?? null">{{ m.text }}</span> }</span>
+                }
+                <span class="sel-check">@if (r.option.value === value()) { <app-icon name="check" [size]="14" /> }</span>
+              } @else {
+                <span>{{ r.option.label }}</span>
+                @if (r.option.value === value()) { <app-icon name="check" [size]="14" /> }
+              }
             </li>
           }
         }
@@ -100,8 +120,10 @@ export class SelectField implements ControlValueAccessor {
   readonly inputId = input('');
   readonly ariaLabel = input('');
   readonly invalid = input(false);
-  /** `lg` 對話框內的表單欄位;`compact` 設定列旁的小選單 */
-  readonly size = input<'md' | 'lg' | 'compact'>('md');
+  /** `lg` 對話框內的表單欄位;`compact` 設定列旁的小選單;`pager` 總覽的工坊切換(置中、粗體,D-290) */
+  readonly size = input<'md' | 'lg' | 'compact' | 'pager'>('md');
+  /** 清單最大高度(px);選項有次要文字時可調高 */
+  readonly listMax = input(260);
   /** 群組標題可收合:第一組預設展開、其餘預設收合(目前選取的項目所在的組打開時會自動展開) */
   readonly collapsible = input(false);
   /** 記住收合狀態的鍵(同一次使用期間,不同畫面的同一個下拉共用);空字串就只在這次開啟內有效 */
@@ -131,7 +153,10 @@ export class SelectField implements ControlValueAccessor {
     return out;
   });
   protected readonly listId = `sel-list-${nextId++}`;
-  protected readonly selectedLabel = computed(() => this.options().find((o) => o.value === this.value())?.label ?? this.options()[0]?.label ?? '');
+  protected readonly selectedLabel = computed(() => {
+    const o = this.options().find((x) => x.value === this.value()) ?? this.options()[0];
+    return o ? (o.display ?? o.label) : '';
+  });
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
@@ -195,15 +220,17 @@ export class SelectField implements ControlValueAccessor {
     const below = viewport.height - rect.bottom - 8;
     const above = rect.top - 8;
     if (this.collapsible()) this.prepareGroups();
-    const wanted = Math.min(260, this.rows().length * 38 + 8);
+    const max = this.listMax();
+    const rowH = this.options().some((o) => o.hint) ? 54 : 38;
+    const wanted = Math.min(max, this.rows().length * rowH + 8);
     const up = below < Math.min(wanted, 160) && above > below;
-    const width = Math.max(rect.width, 120);
+    const width = Math.max(rect.width, this.size() === 'pager' ? 280 : 120);
     this.pos.set({
       left: Math.max(8, Math.min(rect.left, viewport.width - width - 8)),
       top: up ? null : rect.bottom + 4,
       bottom: up ? viewport.height - rect.top + 4 : null,
       width,
-      maxHeight: Math.max(96, Math.min(260, up ? above - 4 : below - 4)),
+      maxHeight: Math.max(96, Math.min(max, up ? above - 4 : below - 4)),
     });
     const rows = this.rows();
     const at = rows.findIndex((r) => r.kind === 'opt' && r.option.value === this.value());

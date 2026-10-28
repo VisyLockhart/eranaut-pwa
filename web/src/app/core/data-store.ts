@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { OverviewDto, SubmarineDto, SubmarineInput, SubmarinesUpdateResult, WorkshopDto, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
+import type { MaintenanceDto, OverviewDto, ProgressInput, SubmarineDto, SubmarineInput, UpkeepPatch, SubmarinesUpdateResult, WorkshopDto, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
 import { Api } from './api';
 import { Auth } from './auth';
 import { isReady } from './format';
@@ -39,6 +39,8 @@ export class DataStore {
   readonly loaded = signal(false);
   readonly loadError = signal(false);
   readonly now = signal(Date.now());
+  /** 伺服器維護橫幅的資料(D-283):隨總覽一起重抓,不增加請求;沒有維護時為 null */
+  readonly maintenance = signal<MaintenanceDto | null>(null);
   readonly view = signal<ViewMode>(readJson<ViewMode>(VIEW_KEY) === 'card' ? 'card' : 'list');
 
   readonly submarineCount = computed(() => this.fetched().reduce((n, w) => n + w.submarines.length, 0));
@@ -66,6 +68,7 @@ export class DataStore {
     const snapshot = readJson<OverviewDto>(SNAPSHOT_KEY);
     if (snapshot && Array.isArray(snapshot.workshops)) {
       this.fetched.set(snapshot.workshops);
+      this.maintenance.set(snapshot.maintenance ?? null);
       this.loaded.set(true);
     }
     this.now.set(Date.now());
@@ -80,6 +83,7 @@ export class DataStore {
     this.timer = null;
     document.removeEventListener('visibilitychange', this.visibilityHandler);
     this.fetched.set([]);
+    this.maintenance.set(null);
     this.loaded.set(false);
     this.loadError.set(false);
     removeKey(SNAPSHOT_KEY);
@@ -89,6 +93,7 @@ export class DataStore {
     try {
       const overview = await this.api.overview();
       this.fetched.set(overview.workshops);
+      this.maintenance.set(overview.maintenance ?? null);
       this.loadError.set(false);
       this.loaded.set(true);
       writeJson(SNAPSHOT_KEY, overview);
@@ -146,6 +151,41 @@ export class DataStore {
     return result;
   }
 
+  // ---- 配件維修提醒(D-288) ----
+
+  /** 標示已維修(面板):趟數歸 0 */
+  async markUpkeepRepaired(workshopId: string, submarineIds: string[]): Promise<void> {
+    const result = await this.api.markUpkeepRepaired(workshopId, submarineIds);
+    this.applySubmarines(workshopId, result.submarines);
+  }
+
+  /** 手動調整已跑趟數 / 可跑趟數 */
+  async adjustUpkeep(submarineId: string, patch: UpkeepPatch): Promise<void> {
+    const sub = await this.api.adjustUpkeep(submarineId, patch);
+    this.applySubmarines(sub.workshop_id, [sub]);
+  }
+
+  /** 關閉這艘的維修提醒 */
+  async disableUpkeep(submarineId: string): Promise<void> {
+    const sub = await this.api.disableUpkeep(submarineId);
+    this.applySubmarines(sub.workshop_id, [sub]);
+  }
+
+  // ---- 潛艇等級與練級輔助(D-289) ----
+
+  /** 單獨儲存等級設定(練級輔助詢問路線後、輪流調整等);回傳更新後的潛艇 */
+  async setProgress(submarineId: string, input: ProgressInput): Promise<SubmarineDto> {
+    const sub = await this.api.setProgress(submarineId, input);
+    this.applySubmarines(sub.workshop_id, [sub]);
+    return sub;
+  }
+
+  /** 清除這艘的等級(總覽不再顯示) */
+  async clearProgress(submarineId: string): Promise<void> {
+    const sub = await this.api.clearProgress(submarineId);
+    this.applySubmarines(sub.workshop_id, [sub]);
+  }
+
   /** 以位置為鍵合併回應裡的潛艇(整坊回應含全部、單艘回應只有一艘,合併後都正確),存快照並在背景重抓確認 */
   private applySubmarines(workshopId: string, updated: SubmarineDto[]): void {
     this.fetched.update((list) =>
@@ -181,6 +221,6 @@ export class DataStore {
   }
 
   private persist(): void {
-    writeJson(SNAPSHOT_KEY, { workshops: this.fetched() } satisfies OverviewDto);
+    writeJson(SNAPSHOT_KEY, { workshops: this.fetched(), maintenance: this.maintenance() } satisfies OverviewDto);
   }
 }

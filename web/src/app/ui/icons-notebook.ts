@@ -37,4 +37,6 @@ export const NOTEBOOK_ICONS: Partial<Record<IconName, string>> = {
   clockAmber: svg('<path d="M12 3.2c4.8-.1 8.9 3.7 8.8 8.8-.1 4.8-3.9 8.9-8.9 8.8C7 20.7 3.1 16.9 3.2 11.9 3.3 7.1 7.2 3.1 12 3.2z"/><path d="M12 7.4c.1 1.5-.1 3 0 4.6 1 .9 2 1.9 3 3"/>', 'var(--amber)'),
   warning: svg('<path d="M12 9.2c0 1.3-.1 2.6 0 3.9"/><path d="M12 16.8h.01"/><path d="M10.5 4.2L2.4 18.3c-.5 1 .2 2.2 1.4 2.3 5.4.3 10.9.3 16.4 0 1.2-.1 1.9-1.3 1.4-2.3L13.5 4.2c-.6-1-2.4-1-3 0z"/>', 'var(--danger)'),
   dragDots: `<svg width="100%" height="100%" viewBox="0 0 16 24" style="fill:var(--text-faint)"><circle cx="4" cy="5" r="1.7"/><circle cx="12" cy="5.3" r="1.6"/><circle cx="4" cy="12" r="1.6"/><circle cx="12" cy="12.2" r="1.7"/><circle cx="4" cy="19" r="1.7"/><circle cx="12" cy="18.8" r="1.6"/></svg>`,
+  sortAsc: svg('<path d="M12.1 19.3c-.2-4.6-.1-9.3.1-14"/><path d="M6.4 10.4c2-1.6 3.8-3.4 5.7-5.4 1.8 2 3.6 3.7 5.6 5.2"/>'),
+  sortDesc: svg('<path d="M11.9 4.7c.2 4.6.1 9.3-.1 14"/><path d="M6.4 13.6c2 1.6 3.8 3.4 5.7 5.4 1.8-2 3.6-3.7 5.6-5.2"/>'),
 };

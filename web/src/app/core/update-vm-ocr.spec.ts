@@ -50,6 +50,7 @@ const dto = (position: number, minutes: number | null, over: Partial<OcrSubmarin
   hours: minutes === null ? null : Math.floor((minutes % 1440) / 60),
   minutes: minutes === null ? null : minutes % 60,
   remaining_minutes: minutes,
+  level: null,
   suspect: { name: false, time: false },
   reasons: [],
   ...over,
@@ -178,6 +179,23 @@ describe('UpdateVm 截圖辨識', () => {
         { position: 2, name: '潛水艇-2', status: 'complete' },
       ],
     });
+    req.flush({ submarines: [], reminder_skipped_positions: [] });
+    await settle();
+    http.match('/api/overview').forEach((r) => r.flush({ workshops: store.fetched() }));
+    expect(await submit).toBe('ok');
+  });
+
+  it('D-289:辨識到等級 → 帶入並隨送出以辨識為準(source: ocr);不採用(清空)就不送;沒讀到等級的艇不帶 progress', async () => {
+    await upload(result([dto(1, 100, { level: 94 }), dto(2, 50, { level: 40, suspect: { name: false, time: false, level: true }, reasons: ['low_confidence'] })]));
+    expect(row(1).ocrLevel).toBe(94);
+    expect(row(2).flag?.level).toBe(true);
+    vm.setOcrLevel(row(2).key, null); // 使用者不採用
+    expect(row(2).flag).toBeUndefined();
+    const submit = vm.submit();
+    const req = http.expectOne('/api/workshops/w1/submarines');
+    const [a, b] = req.request.body.submarines;
+    expect(a.progress).toEqual({ level: 94, source: 'ocr' });
+    expect('progress' in b).toBe(false);
     req.flush({ submarines: [], reminder_skipped_positions: [] });
     await settle();
     http.match('/api/overview').forEach((r) => r.flush({ workshops: store.fetched() }));

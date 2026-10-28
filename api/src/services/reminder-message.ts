@@ -13,6 +13,16 @@ export interface ReminderMessageInput {
   returnAt: Date | null;
   /** 頻道版:第一行最前面加 `<@id>`;DM 為 null */
   mentionDiscordUserId: string | null;
+  /** 配件維修提醒(D-288):趟數已用盡、需要維修的潛艇。沒有或空陣列 = 不加這一行 */
+  repair?: RepairNote[];
+}
+
+export interface RepairNote {
+  position: number;
+  voyagesDone: number;
+  limit: number;
+  /** 預估魔導機械修理材(整艘四個零件);算不出來為 null */
+  materials: number | null;
 }
 
 const CIRCLED = ['①', '②', '③', '④'];
@@ -37,7 +47,24 @@ export function buildReminderMessage(m: ReminderMessageInput): string {
     const unix = Math.floor(m.returnAt.getTime() / 1000);
     lines.push(`預計 <t:${unix}:t> 返航(<t:${unix}:R>)`);
   }
+  const repair = repairLine(m);
+  if (repair) lines.push(repair);
   return lines.join('\n');
+}
+
+/** 維修提醒那一行(D-288);預先提醒(lead)時說「返航後」,返航提醒說「出航前」 */
+function repairLine(m: ReminderMessageInput): string | null {
+  const list = m.repair ?? [];
+  if (list.length === 0) return null;
+  const when = m.lead ? '返航後' : '出航前';
+  const known = list.filter((r) => r.materials !== null);
+  const total = known.reduce((sum, r) => sum + r.materials!, 0);
+  const materials = known.length > 0 ? `(修理材料約 ${total} 個)` : '';
+  if (m.scope.kind === 'submarine' && list.length === 1) {
+    const r = list[0]!;
+    return `🔧 配件已用滿 ${r.voyagesDone}/${r.limit} 趟,${when}需先維修${materials}。`;
+  }
+  return `🔧 ${when}需先維修:${list.map((r) => `${circled(r.position)}(${r.voyagesDone}/${r.limit} 趟)`).join('、')}${materials}。`;
 }
 
 const TAIPEI_TIME = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });

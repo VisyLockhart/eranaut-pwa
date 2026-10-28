@@ -56,10 +56,20 @@ html[data-theme='light'] {
   /* 內層小元件:只加粗邊框、換成墨色,不加陰影(避免畫面太擁擠) */
   .ct-slot-card, .ct-tile, .ct-col, .ct-sum-row, .rt-meter, .rt-picked li, .rt-part, .rt-pick, .ct-chip, .ct-tool, .ct-seg, .ct-yield, .rt-chip5, .rt-stat { border-width: 2px; border-color: var(--line); }
   .ct-slot-card:not(.set), .ct-tile:not(.set) { border-style: dashed; }
-  .row.ready, .card.ready, .m-stat.ready, .d-stat.ready, .d-card.ready, .uf-row.ready, .table-row.ready { background: var(--ready-bg); border-color: var(--line); color: var(--ready-ink); }
-  .row.ready .row-name, .row.ready .row-ws, .row.ready .row-time, .row.ready .row-status,
-  .card.ready *, .d-card.ready *, .table-row.ready *, .m-stat.ready .num, .m-stat.ready .label, .d-stat.ready .num, .d-stat.ready .label { color: var(--ready-ink); }
-  .table-row.ready { box-shadow: none; }
+  /* 摘要格維持整格黃底(只有大數字,不影響閱讀) */
+  .m-stat.ready, .d-stat.ready { background: var(--ready-bg); border-color: var(--line); color: var(--ready-ink); }
+  .m-stat.ready .num, .m-stat.ready .label, .d-stat.ready .num, .d-stat.ready .label { color: var(--ready-ink); }
+  /* 待收艇的列與卡片(D-291 後續):整列滿黃底會蓋過路線、維修、經驗等小字,改成淡黃底 + 左側粗色條,
+     內文維持各自的顏色;「可收艇」改成黃底墨框小標籤 */
+  .row.ready, .card.ready, .d-card.ready, .uf-row.ready, .table-row.ready {
+    background: color-mix(in srgb, var(--ready-bg) 28%, var(--bg-elevated)); border-color: var(--line); color: var(--text);
+    box-shadow: inset 6px 0 0 var(--ready-dot);
+  }
+  .table-row.ready .t-time, .row.ready .row-time, .card.ready .card-time, .d-card.ready .d-card-time {
+    justify-self: start; align-self: center; width: fit-content; padding: 2px 10px; background: var(--ready-bg); color: var(--ready-ink) !important;
+    box-shadow: 0 0 0 2px var(--line); font-weight: 700;
+  }
+  .table-row.ready .t-status, .row.ready .row-status { color: var(--ready-ink) !important; font-weight: 700; }
   .table-wrap { border: 3px solid var(--line); box-shadow: var(--raise); }
   .table-head { background: var(--border); color: var(--text); border-bottom: 3px solid var(--line); font-weight: 700; }
   .table-row { border-top: 2px solid var(--bg-elevated-2); }
@@ -110,6 +120,18 @@ html[data-theme='light'] {
   .d-install { border: 3px dashed var(--line); background: var(--bg-elevated-2); color: var(--text); }
   .d-install:hover { background: var(--border); }
   .install-prompt .ip-share { color: var(--accent); }
+
+  /* 總覽(D-290):像素直角、墨色粗框;手機收合區塊是凸起面板 */
+  .m-ovpanel.open { border: 3px solid var(--line); background: var(--bg-elevated-2); box-shadow: var(--raise); }
+  .m-stats-toggle.ov-toggle { border: 3px solid var(--line); background: var(--bg-elevated); box-shadow: var(--raise); }
+  .m-ovpanel.open .ov-toggle { box-shadow: none; }
+  .ct-seg.ov-sort button.on { box-shadow: var(--press); }
+  .ov-sort-n { border-radius: 0; box-shadow: 0 0 0 2px var(--line); }
+  .ov-uk-chip { border: 2px solid var(--line); box-shadow: 2px 2px 0 0 var(--drop); }
+  .ov-meter { height: 6px; border: 2px solid var(--line); background: var(--bg-elevated); }
+  .ov-ghead { border-bottom: 3px solid var(--line); margin-bottom: 6px; }
+  .table-ghead { background: var(--border); border-top: 3px solid var(--line); border-bottom: 0; margin-bottom: 0; }
+  .d-stat.ov-uk[data-state="alert"], .m-stat.ov-uk[data-state="alert"] { border-color: var(--line); }
 
   /* 設定頁主題選擇 */
   .theme-opt { border-width: 3px; border-color: var(--line); box-shadow: none; }

@@ -1,5 +1,6 @@
+import type { SubmarineDto } from '@eranaut/shared';
 import { describe, expect, it } from 'vitest';
-import { defaultName, etaText, fillBlanks, newRow, nextFreePosition, rebase, rowError, rowMinutes, serverRowMessage, toSubmarineInput, type SubRow } from './submarine-form';
+import { defaultName, etaText, fillBlanks, newRow, nextFreePosition, rebase, rowError, rowMinutes, rowWithRemaining, serverRowMessage, toSubmarineInput, type SubRow } from './submarine-form';
 
 const row = (over: Partial<SubRow> = {}): SubRow => ({ ...newRow(1, 1, '潛水艇-1', 'exploring', false), d: '0', h: '3', m: '41', ...over });
 
@@ -98,5 +99,20 @@ describe('serverRowMessage', () => {
     expect(serverRowMessage({ remaining_minutes: 'required' })).toContain('請填寫');
     expect(serverRowMessage({ remaining_minutes: 'invalid_value' })).toContain('不正確');
     expect(serverRowMessage({})).toContain('資料不正確');
+  });
+});
+
+describe('rowWithRemaining(快速修改帶入剩餘時間)', () => {
+  const NOW = Date.parse('2026-10-26T02:00:00Z');
+  const sub = (over: Partial<SubmarineDto>): SubmarineDto => ({ id: 's', workshop_id: 'w', position: 1, name: 'A', status: 'exploring', expected_return_at: null, last_synced_at: '2026-10-26T00:00:00Z', ...over });
+
+  it('探索中:帶入目前剩下的日/時/分(不滿一分鐘進位)', () => {
+    const r = rowWithRemaining(1, sub({ expected_return_at: new Date(NOW + (1440 + 125) * 60_000 - 5_000).toISOString() }), NOW);
+    expect([r.status, r.d, r.h, r.m]).toEqual(['exploring', '1', '2', '5']);
+  });
+
+  it('可收艇(探索完成,或返航時間已到)不帶時間', () => {
+    expect(rowWithRemaining(1, sub({ status: 'complete' }), NOW)).toMatchObject({ status: 'complete', d: '', h: '', m: '' });
+    expect(rowWithRemaining(1, sub({ expected_return_at: new Date(NOW - 60_000).toISOString() }), NOW)).toMatchObject({ d: '', h: '', m: '' });
   });
 });

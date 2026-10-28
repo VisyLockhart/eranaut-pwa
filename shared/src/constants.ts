@@ -64,3 +64,9 @@ export const ROUTE_FILTER_LIMITS = {
   maxExcluded: 128,
   maxItems: 50,
 } as const;
+
+// ---- 伺服器維護橫幅(D-283) ----
+/** 維護開始前多久開始顯示橫幅 */
+export const MAINTENANCE_SHOW_BEFORE_MS = 24 * 60 * 60 * 1000;
+/** 超過預計結束時間後,官方仍沒改標題「已開機」時,橫幅最多再顯示多久 */
+export const MAINTENANCE_SHOW_AFTER_MS = 6 * 60 * 60 * 1000;

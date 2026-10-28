@@ -64,6 +64,7 @@ describe('UpdatePage', () => {
   }
 
   it('列出所選工坊的潛艇;工坊下拉選單依畫面順序', () => {
+    TestBed.inject(Layout).isDesktop.set(true);
     const { el, fixture } = open();
     expect([...el.querySelectorAll('.uf-row')].length).toBe(2);
     el.querySelector<HTMLButtonElement>('#uf-ws')!.click();
@@ -71,7 +72,17 @@ describe('UpdatePage', () => {
     expect([...el.querySelectorAll('.sel-opt')].map((o) => o.textContent!.trim())).toEqual(['貝殼工坊', '鋼鐵之心']);
   });
 
+  it('手機版:工坊選擇放到標題列(D-291),頁面內不重複;離開頁面時清掉', () => {
+    const { el, fixture } = open();
+    const layout = TestBed.inject(Layout);
+    expect(el.querySelector('#uf-ws')).toBeNull();
+    expect(layout.headerTool()).not.toBeNull();
+    fixture.destroy();
+    expect(layout.headerTool()).toBeNull();
+  });
+
   it('切換工坊:以該工坊的潛艇重建表單', () => {
+    TestBed.inject(Layout).isDesktop.set(true);
     const { el, fixture } = open();
     el.querySelector<HTMLButtonElement>('#uf-ws')!.click();
     fixture.detectChanges();
@@ -450,6 +461,83 @@ describe('UpdatePage', () => {
         expect(el.querySelector('.uf-err')!.textContent).toContain('擷取畫面失敗');
         http.expectNone('/api/ocr');
       });
+    });
+  });
+
+  describe('練級輔助:出發前的派出建議(D-291)', () => {
+    const NOW = Date.now();
+    const prog = (over: object) => ({ level: 42, exp_in_level: 0, source: 'manual', sim_on: true, school: 'snap', pending: null, last_route: null, effective_level: 42, effective_exp: 0, updated_at: '2026-10-01T00:00:00Z', ...over });
+    const leveled = (): WorkshopWithSubmarines => {
+      // 4 艘 = 欄位都已解鎖,建議照偏好攻略(解鎖優先另有測試)
+      const w = workshop('w1', '貝殼工坊', 4);
+      w.submarines[0] = { ...w.submarines[0]!, status: 'complete', expected_return_at: null, progress: prog({}) as never };
+      w.submarines[1] = {
+        ...w.submarines[1]!,
+        expected_return_at: new Date(NOW + 2 * 3_600_000).toISOString(),
+        progress: prog({ level: 40, exp_in_level: 120_000, effective_level: 40, effective_exp: 120_000, pending: { sea: 1, points: ['I', 'P', 'Q'], exp: 613_630 } }) as never,
+      };
+      return w;
+    };
+    const openPage = () => {
+      store.now.set(NOW);
+      store.fetched.set([leveled()]);
+      const fixture = TestBed.createComponent(UpdatePage);
+      const el = fixture.nativeElement as HTMLElement;
+      document.body.appendChild(el);
+      fixture.detectChanges();
+      return { fixture, el };
+    };
+
+    it('等上傳時就列出每艘下一趟的建議;可暫時切換流派檢視', () => {
+      const { el, fixture } = openPage();
+      const cards = el.querySelectorAll('.dp-card');
+      expect(cards.length).toBe(2);
+      expect(cards[0]!.textContent).toContain('I → P → Q');
+      expect(cards[0]!.textContent).toContain('可收');
+      // 還在航行的:加上那一趟 → 返航後 Lv 42
+      expect(cards[1]!.textContent).toContain('40');
+      expect(cards[1]!.textContent).toContain('42');
+      [...el.querySelectorAll<HTMLButtonElement>('.dp-seg button')].find((b) => b.textContent?.trim() === '整日')!.click();
+      fixture.detectChanges();
+      expect(el.querySelectorAll('.dp-card')[0]!.textContent).toContain('U → S → P → Q');
+    });
+
+    it('沒有任何一艘開練級輔助:不顯示建議,上傳區維持原樣', () => {
+      store.now.set(NOW);
+      const fixture = TestBed.createComponent(UpdatePage);
+      const el = fixture.nativeElement as HTMLElement;
+      fixture.detectChanges();
+      expect(el.querySelector('.dp-panel')).toBeNull();
+      expect(el.querySelector('.dropzone.compact')).toBeNull();
+    });
+
+    it('辨識後送出:已返航又派出的艇帶上預設路線;還在航行、等級相同的艇不送等級也不記路線', async () => {
+      const { el, fixture } = openPage();
+      const input = el.querySelector<HTMLInputElement>('[data-field="ocr-file"]')!;
+      Object.defineProperty(input, 'files', { value: [new File(['x'], 'a.png', { type: 'image/png' })], configurable: true });
+      input.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+      http.expectOne('/api/ocr').flush({
+        format: 'menu',
+        warnings: [],
+        submarines: [
+          { position: 1, name: '潛水艇-1', status: 'exploring', days: 0, hours: 18, minutes: 30, remaining_minutes: 1110, level: 42, suspect: { name: false, time: false }, reasons: [] },
+          { position: 2, name: '潛水艇-2', status: 'exploring', days: 0, hours: 1, minutes: 59, remaining_minutes: 119, level: 40, suspect: { name: false, time: false }, reasons: [] },
+        ],
+      });
+      await settle();
+      fixture.detectChanges();
+      expect(el.querySelector('[data-row="1"] .dp-line')).not.toBeNull();
+      expect(el.querySelector('[data-row="2"] .dp-line')).toBeNull();
+      expect(el.querySelector('[data-row="2"]')!.textContent).toContain('還在航行中');
+      el.querySelector<HTMLButtonElement>('.uf-actions-m .primary-btn')!.click();
+      fixture.detectChanges();
+      const req = http.expectOne('/api/workshops/w1/submarines');
+      const body = req.request.body as { submarines: { progress?: object }[] };
+      expect(body.submarines[0]!.progress).toEqual({ level: 42, source: 'ocr', route: { sea: 1, points: ['I', 'P', 'Q'] } });
+      expect(body.submarines[1]!.progress).toBeUndefined();
+      req.flush({ submarines: leveled().submarines, reminder_skipped_positions: [] });
+      await settle();
     });
   });
 });

@@ -4,6 +4,8 @@ import { PushSendError, type PushSender } from '../push/sender.js';
 import { deletePushSubscriptionById, listPushSubscriptions } from '../repo/push.js';
 import { buildPushMessage, buildReminderMessage, type PushMessageInput } from './reminder-message.js';
 import { clearPushIfNoSubscriptions } from './push-subscriptions.js';
+import { listExhausted } from '../repo/upkeep.js';
+import { repairMaterialsForSig } from '@eranaut/shared';
 
 // 提醒的輪詢與發送(D-128、D-129)。
 // - 只查 `status = 'pending'` 且 `next_attempt_at` 已到的 delivery(D-139)
@@ -181,10 +183,12 @@ function composeFacts(db: Db, row: DueRow): Omit<PushMessageInput, 'now' | 'tag'
     const s = db.prepare('SELECT position, name, expected_return_at FROM submarines WHERE id = ?').get(row.submarine_id) as
       | { position: number; name: string | null; expected_return_at: string | null }
       | undefined;
+    const position = s?.position ?? 1;
     return {
       ...common,
-      scope: { kind: 'submarine', position: s?.position ?? 1, name: s?.name ?? null },
+      scope: { kind: 'submarine', position, name: s?.name ?? null },
       returnAt: s?.expected_return_at ? new Date(s.expected_return_at) : null,
+      repair: repairNotes(db, row.workshop_id, (n) => n.position === position),
     };
   }
   const exploring = db.prepare("SELECT expected_return_at FROM submarines WHERE workshop_id = ? AND status = 'exploring'").all(row.workshop_id) as { expected_return_at: string | null }[];
@@ -193,7 +197,15 @@ function composeFacts(db: Db, row: DueRow): Omit<PushMessageInput, 'now' | 'tag'
     ...common,
     scope: { kind: 'batch', count: exploring.length },
     returnAt: times.length ? new Date(Math.max(...times)) : null,
+    repair: repairNotes(db, row.workshop_id, () => true),
   };
+}
+
+/** 趟數已用盡的潛艇(D-288),發送當下即時讀取,所以手動改趟數或標示已維修後,提醒內容也跟著變 */
+function repairNotes(db: Db, workshopId: string, pick: (n: { position: number }) => boolean) {
+  return listExhausted(db, workshopId)
+    .filter(pick)
+    .map((n) => ({ position: n.position, voyagesDone: n.voyages_done, limit: n.limit_voyages, materials: repairMaterialsForSig(n.parts_sig) }));
 }
 
 /** DM / 頻道的文案(D-147):在共用事實上加提及 */

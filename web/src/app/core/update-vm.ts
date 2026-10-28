@@ -7,6 +7,8 @@ import { MINUTE_MS, compensated, displayMinutes, submitMinutes, toParts } from '
 import { DataStore } from './data-store';
 import { circled } from './format';
 import { ImageTools, isImageFile } from './image-input';
+import { hasReturned, nextStart } from './dispatch';
+import { DispatchVm, rowProgress, type RouteSel } from './dispatch-vm';
 import { OverviewVm } from './overview-vm';
 import {
   batchFieldMessage,
@@ -89,6 +91,7 @@ export class UpdateVm {
   private readonly toast = inject(Toast);
   private readonly api = inject(Api);
   private readonly tools = inject(ImageTools);
+  private readonly dispatch = inject(DispatchVm);
 
   readonly workshopId = signal<string | null>(null);
   readonly rows = signal<SubRow[]>([]);
@@ -280,6 +283,17 @@ export class UpdateVm {
     this.clearError(key);
   }
 
+  /** 辨識到的等級:使用者可修正;清空 = 不採用(之後只更新時間,不動等級,D-289) */
+  setOcrLevel(key: number, level: number | null): void {
+    this.patch(key, (r) => clearFlag({ ...r, ocrLevel: level }, 'level'));
+    this.clearError(key);
+  }
+
+  /** 「這次派出」的路線(D-291) */
+  setRoute(key: number, route: RouteSel): void {
+    this.patch(key, (r) => ({ ...r, route }));
+  }
+
   setStatus(key: number, status: SubRow['status']): void {
     this.patch(key, (r) => rebase(clearFlag({ ...r, status }, 'time'), Date.now()));
     this.clearError(key);
@@ -390,19 +404,37 @@ export class UpdateVm {
       }
     }
 
+    const before = new Map(ws.submarines.map((s) => [s.position, s]));
+    // 等級與這次派出的路線(D-291):截圖等級 + 預設建議(或使用者改選的路線)一起送
+    const dnow = this.store.now();
+    const inputs = rows.map((r) => {
+      const { progress: _ocr, ...base } = toSubmarineInput(r, minutes.get(r.key) ?? null);
+      const sub = before.get(r.position);
+      const progress = rowProgress(r, sub, sub ? this.dispatch.info(sub, dnow) : null, dnow);
+      return progress ? { ...base, progress } : base;
+    });
+    const starts = new Map(rows.map((r) => [r.position, expectedLevel(before.get(r.position), dnow)]));
     this.submitting.set(true);
     try {
-      const result = await this.store.updateSubmarines(
-        workshopId,
-        rows.map((r) => toSubmarineInput(r, minutes.get(r.key) ?? null)),
-      );
+      const result = await this.store.updateSubmarines(workshopId, inputs);
       this.announce(ws.name, ws.notify_batched, rows.length, result);
+      this.afterLevels(rows, starts);
       this.overview.select(workshopId);
       return 'ok';
     } catch (error) {
       return this.handleError(error, rows);
     } finally {
       this.submitting.set(false);
+    }
+  }
+
+  /** 截圖辨識到的等級與練級推算不同:以辨識為準,提示一聲(D-289、D-291) */
+  private afterLevels(rows: SubRow[], starts: Map<number, number | undefined>): void {
+    for (const r of rows) {
+      const predicted = starts.get(r.position);
+      if (typeof r.ocrLevel !== 'number' || predicted === undefined || predicted === r.ocrLevel) continue;
+      const name = r.name.trim() || `潛水艇 ${r.position}`;
+      this.toast.show(`已用截圖更新等級：${name} Lv ${r.ocrLevel}（原本推算為 Lv ${predicted}），之後以這個等級為準。`, { ms: 6000 });
     }
   }
 
@@ -437,6 +469,12 @@ export class UpdateVm {
     this.toast.show(`已更新「${workshopName}」${count} 艘潛水艇`);
     announceSkippedReminders(this.toast, batched, result.reminder_skipped_positions);
   }
+}
+
+/** 截圖這時應該看到的等級(練級輔助開著才有):還在航行 = 記錄的等級;已返航 = 加上那一趟之後的等級 */
+function expectedLevel(sub: SubmarinesUpdateResult['submarines'][number] | undefined, now: number): number | undefined {
+  if (!sub?.progress?.sim_on) return undefined;
+  return hasReturned(sub, now) ? nextStart(sub, now)?.level : sub.progress.level;
 }
 
 /** D-135 ②b:預先提醒時間已過的潛艇不會收到提醒,更新後提示使用者。整批模式整間工坊只有一則提醒 */

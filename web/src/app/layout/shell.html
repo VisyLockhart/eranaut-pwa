@@ -6,6 +6,7 @@
         <div class="m-brand" style="font-size: 14px; font-weight: 700; letter-spacing: 0.06em">AEQUOR ERANOS</div>
         <div style="font-size: 11px; color: var(--text-dim); margin-top: 1px">{{ layout.pageTitle() }}</div>
       </div>
+      @if (layout.headerTool(); as tool) { <div class="m-head-tool"><ng-container *ngTemplateOutlet="tool" /></div> }
       <div class="m-user">
         <button type="button" class="m-avatar-btn" [class.on]="menuOpen() || onSettings()" (click)="toggleMenu($event)" aria-haspopup="menu" [attr.aria-expanded]="menuOpen()" aria-label="帳號選單">
           <app-avatar [name]="auth.user()?.displayName ?? ''" [url]="auth.user()?.avatarUrl ?? null" />
@@ -37,7 +38,11 @@
       <a class="nav-item" routerLink="/route" routerLinkActive="active"><app-icon name="route" [size]="20" /><span>航線</span></a>
       <a class="nav-item" routerLink="/craft" routerLinkActive="active"><app-icon name="anvil" [size]="20" /><span>製作</span></a>
     </div>
-    <app-copyright variant="bar" />
+    @if (maintenance.view()) {
+      <app-maintenance-notice variant="line" />
+    } @else {
+      <app-copyright variant="bar" />
+    }
   </div>
 } @else {
   <div class="d-wrap">
@@ -63,6 +68,7 @@
       <a class="d-nav-item" routerLink="/craft" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '配件製作' : null"><app-icon name="anvil" [size]="20" /><span>配件製作</span></a>
       <a class="d-nav-item" routerLink="/settings" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '設定' : null"><app-icon name="settings" [size]="20" /><span>設定</span></a>
       <div style="flex-grow: 1"></div>
+      <app-maintenance-notice [variant]="layout.sidebarCollapsed() ? 'icon' : 'card'" />
       @if (install.canInstallDesktop()) {
         <button type="button" class="d-install" (click)="install.installDesktop()" [tip]="layout.sidebarCollapsed() ? '安裝到桌面' : null" aria-label="安裝到桌面"><app-icon name="download" [size]="18" /><span>安裝到桌面</span></button>
       }

@@ -1,9 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DataStore } from '../core/data-store';
 import { circled } from '../core/format';
-import { OverviewVm, wsMeta } from '../core/overview-vm';
+import { OverviewVm, upkeepText, wsInfo, wsMeta } from '../core/overview-vm';
+import { UpkeepVm } from '../core/upkeep-vm';
+import { SelectField } from '../ui/select';
+import { OverviewSort } from './overview-sort';
 import { IconComponent } from '../ui/icon';
 import { PULL_THRESHOLD, PullRefresh } from '../ui/pull-refresh';
+import { LevelBadge, LevelTag, NextRouteTag } from './level-tag';
+import { UpkeepTag } from './upkeep-bits';
 
 /** 重新整理中,指示區停留的高度 */
 const REFRESHING_HEIGHT = 36;
@@ -12,7 +17,7 @@ const MIN_REFRESH_MS = 600;
 
 @Component({
   selector: 'app-overview-mobile',
-  imports: [IconComponent, PullRefresh],
+  imports: [IconComponent, PullRefresh, UpkeepTag, LevelBadge, LevelTag, NextRouteTag, SelectField, OverviewSort],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './overview-mobile.html',
   host: { style: 'display: contents' },
@@ -22,6 +27,18 @@ export class OverviewMobile {
   protected readonly store = inject(DataStore);
   protected readonly circled = circled;
   protected readonly wsMeta = wsMeta;
+  protected readonly wsInfo = wsInfo;
+  protected readonly upkeepText = upkeepText;
+  private readonly upkeep = inject(UpkeepVm);
+
+  /** 只有「全部」且沒有依工坊分組時,每艘才需要標出所屬工坊(D-290 續) */
+  protected readonly showWs = computed(() => this.vm.currentWorkshop() === null && this.vm.groups() === null);
+
+  /** 摘要格的維修:先開第一間需要維修的工坊,面板上可左右切到其他間(D-290) */
+  protected openUpkeep(): void {
+    const ids = this.vm.upkeepSummary().alerts.map((a) => a.workshop.id);
+    if (ids.length > 0) this.upkeep.open(ids[0], ids);
+  }
 
   /** 手指拉出的距離 */
   protected readonly pull = signal(0);

@@ -30,6 +30,8 @@ function normalize(raw: string): string {
     .replace(FULLWIDTH, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
     .replace(/　/g, ' ')
     .replace(/[级钟时馀余间]/g, (c) => SIMPLIFIED[c] ?? c)
+    // 遊戲內「縮放視窗」選單(200%…60%)疊在潛艇列右邊時,會被偵測器併進同一行;百分比不會出現在任何潛艇資料裡
+    .replace(/\d{2,3}\s*%/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -95,6 +97,8 @@ const DEFAULT_NAME = /^.?水[^\d\s]\s*[-－—–]?\s*(\d)\s*/;
 
 interface RowParse {
   name: string | null;
+  /** 選單視窗每列有「[N級]」;情報頁沒有(D-289) */
+  level: number | null;
   status: OcrSubmarineDto['status'];
   days: number | null;
   hours: number | null;
@@ -119,8 +123,16 @@ function parseTime(rest: string): { d: number; h: number; m: number } | { error:
   return { d: seen['天'] ?? 0, h: seen['小'] ?? 0, m: seen['分'] ?? 0 };
 }
 
+/** 「[94級]」→ 94;範圍外(1~130 以外)視為沒讀到 */
+function parseLevel(text: string): number | null {
+  const m = /(\d{1,3})\s*[級级]/.exec(text);
+  const n = m ? Number(m[1]) : NaN;
+  return Number.isInteger(n) && n >= 1 && n <= 130 ? n : null;
+}
+
 function parseRow(text: string, mean: number, format: OcrFormat): RowParse {
   const reasons: OcrSuspectReason[] = [];
+  const level = format === 'menu' ? parseLevel(text) : null;
   const complete = /完成/.test(text);
 
   // --- 名稱與「時間所在的剩餘字串」 ---
@@ -157,19 +169,19 @@ function parseRow(text: string, mean: number, format: OcrFormat): RowParse {
 
   if (complete) {
     if (mean < LOW_CONFIDENCE) reasons.push('low_confidence');
-    return { name, status: 'complete', days: null, hours: null, minutes: null, remaining: null, reasons };
+    return { name, level, status: 'complete', days: null, hours: null, minutes: null, remaining: null, reasons };
   }
 
   const t = parseTime(rest);
   if ('error' in t) {
     reasons.push(t.error === 'unreadable' ? 'time_unreadable' : 'time_malformed');
     if (mean < LOW_CONFIDENCE) reasons.push('low_confidence');
-    return { name, status: 'exploring', days: null, hours: null, minutes: null, remaining: null, reasons };
+    return { name, level, status: 'exploring', days: null, hours: null, minutes: null, remaining: null, reasons };
   }
   const remaining = t.d * 1440 + t.h * 60 + t.m;
   if (t.h > 23 || t.m > 59 || t.d > 99 || remaining <= 0 || remaining > LIMITS.maxRemainingMinutes) reasons.push('time_out_of_range');
   if (mean < LOW_CONFIDENCE) reasons.push('low_confidence');
-  return { name, status: 'exploring', days: t.d, hours: t.h, minutes: t.m, remaining, reasons };
+  return { name, level, status: 'exploring', days: t.d, hours: t.h, minutes: t.m, remaining, reasons };
 }
 
 /**
@@ -226,7 +238,10 @@ export function parseOcrLines(rawLines: OcrLine[]): OcrResultDto | null {
       hours: r.hours,
       minutes: r.minutes,
       remaining_minutes: r.remaining,
+      level: r.level,
       suspect: {
+        // 等級讀到才有「請核對」:信心低時標出,避免把讀錯的等級直接存起來
+        ...(r.level !== null && low ? { level: true } : {}),
         name: low || r.reasons.includes('name_unreadable'),
         // 情報頁讀不到名稱時,名稱裡的編號數字可能被當成時間的一部分(「-1 8小時」→ 18),所以時間也要核對
         time:

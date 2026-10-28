@@ -225,7 +225,7 @@ test('總覽:只含自己的工坊,每間內含依位置排序的潛艇;沒有�
   assert.equal(ov.workshops[0]!.notify_batched, false);
   assert.ok(!('submarines' in ((await a('GET', `/api/workshops/${w1}`)).json() as object)), '工坊 CRUD 不含潛艇');
   assert.deepEqual(((await b('GET', '/api/overview')).json() as OverviewDto).workshops.map((w) => w.name), ['B 的']);
-  assert.deepEqual(((await asUser(t, '777777777777777777').then((c) => c('GET', '/api/overview'))).json() as OverviewDto), { workshops: [] });
+  assert.deepEqual(((await asUser(t, '777777777777777777').then((c) => c('GET', '/api/overview'))).json() as OverviewDto), { workshops: [], maintenance: null });
 });
 
 test('刪除工坊後,總覽不再出現其潛艇', async () => {
@@ -234,7 +234,7 @@ test('刪除工坊後,總覽不再出現其潛艇', async () => {
   const wid = await mkWorkshop(api);
   await api('PUT', `/api/workshops/${wid}/submarines`, { submarines: [{ position: 1, status: 'complete' }] });
   await api('DELETE', `/api/workshops/${wid}`);
-  assert.deepEqual((await api('GET', '/api/overview')).json(), { workshops: [] });
+  assert.deepEqual((await api('GET', '/api/overview')).json(), { workshops: [], maintenance: null });
   assert.equal(subCount(t), 0);
 });
 

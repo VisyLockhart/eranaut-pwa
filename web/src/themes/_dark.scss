@@ -147,6 +147,26 @@ html[data-theme='dark'] {
   .update-banner { font-family: var(--font-head); color: var(--gold-b); }
   .tip-bubble, .ws-tooltip-bubble, .m-user-menu, .rt-fab-menu { background: var(--bg-elevated-2); border: 1px solid var(--gold-d); box-shadow: var(--float); color: var(--text); }
 
+  /* 總覽(D-290):工坊下拉標題金字、排序分段金框、分組標題金色襯線 + 細線、手機收合區塊雙線框 */
+  .sel-trigger.sel-pager .sel-label { @include title-gold; font-size: 14px; letter-spacing: 0.08em; }
+  .sel-hint, .sel-meta { font-family: var(--font-ui); }
+  .ct-seg.ov-sort { border: 1px solid var(--gold-d); background: var(--bg-elevated-2); box-shadow: inset 0 0 0 2px var(--bg-elevated-2), inset 0 0 0 3px var(--gl); }
+  .ct-seg.ov-sort button { font-family: var(--font-head); font-weight: 700; letter-spacing: 0.08em; color: var(--text-muted); box-shadow: none; }
+  .ct-seg.ov-sort button + button { border-left: 1px solid var(--gl); }
+  .ct-seg.ov-sort button.on { background: var(--gold); color: var(--on-accent); }
+  .ct-seg.ov-sort button:disabled { background: transparent; border-color: var(--gl); }
+  .ct-seg.ov-sort .ov-sort-dir { color: var(--gold-b); }
+  .ov-sort-n { border-radius: 0; background: var(--bg-elevated-2); color: var(--gold-b); font-family: var(--font-mono); }
+  .ov-ghead { border-bottom: 1px solid var(--gl); margin-bottom: 6px; }
+  .ov-ghead b { font-family: var(--font-head); font-weight: 900; letter-spacing: 0.1em; color: var(--gold-b); text-shadow: 0 0 12px var(--glow); }
+  .table-ghead { background: var(--bg-elevated); border-top: 1px solid var(--gold-d); margin-bottom: 0; }
+  .m-ovpanel.open { border: 1px solid var(--gold-d); background: var(--bg-elevated-2); box-shadow: var(--frame-deep); }
+  .m-stats-toggle.ov-toggle { background: var(--bg-elevated-2); border: 1px solid var(--gold-d); }
+  .ov-uk-chip { background: var(--bg-elevated-2); font-family: var(--font-head); }
+  .ov-meter { background: var(--track); }
+  .ov-meter i { box-shadow: 0 0 8px var(--ready-glow); }
+  .ov-fleet-ready, .ov-uk-head, .ov-next-name { font-family: var(--font-head); }
+
   /* 設定頁主題選擇:徽印(圓形三色章) */
   .theme-opt { background: transparent; border: 0; box-shadow: none; gap: 6px; padding: 6px 2px; }
   .theme-sw { width: 62px; height: 62px; gap: 0; border-radius: 50%; overflow: hidden; border: 1px solid var(--steel-d); position: relative; margin-bottom: 4px; }

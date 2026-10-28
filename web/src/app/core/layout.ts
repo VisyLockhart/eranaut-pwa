@@ -1,4 +1,4 @@
-import { Injectable, effect, inject, signal, untracked } from '@angular/core';
+import { Injectable, effect, inject, signal, untracked, type TemplateRef } from '@angular/core';
 import { readJson, writeJson } from './storage';
 import { UiScale } from './ui-scale';
 
@@ -18,6 +18,8 @@ export class Layout {
   readonly isDesktop = signal(false);
   /** 手機版標頭的副標題,由各頁面設定 */
   readonly pageTitle = signal('');
+  /** 手機版標頭右側(頭像左邊)的頁面工具,例如更新頁的工坊選擇(D-291);離開頁面時清掉 */
+  readonly headerTool = signal<TemplateRef<unknown> | null>(null);
   /** 桌機側欄收合成窄欄(只剩圖示) */
   readonly sidebarCollapsed = signal(readJson<boolean>(SIDEBAR_KEY) === true);
 

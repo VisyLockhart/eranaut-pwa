@@ -1,11 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
+  MaintenanceResponse,
   MeDto,
   NotifyPrefs,
   NotifyPrefsUpdate,
   OcrResultDto,
   OverviewDto,
+  ProgressInput,
   PublicConfigDto,
   PushConfigDto,
   PushSubscriptionInput,
@@ -15,8 +17,10 @@ import type {
   RouteFilterInput,
   RouteSubDto,
   RouteSubInput,
+  SubmarineDto,
   SubmarineInput,
   SubmarinesUpdateResult,
+  UpkeepPatch,
   WorkshopDto,
   WorkshopInput,
 } from '@eranaut/shared';
@@ -35,6 +39,11 @@ export class Api {
   }
   overview(): Promise<OverviewDto> {
     return firstValueFrom(this.http.get<OverviewDto>('/api/overview'));
+  }
+
+  /** 伺服器維護橫幅顯示期間的輕量重抓(D-283,回應很小) */
+  maintenance(): Promise<MaintenanceResponse> {
+    return firstValueFrom(this.http.get<MaintenanceResponse>('/api/maintenance'));
   }
   logout(): Promise<unknown> {
     return firstValueFrom(this.http.post('/api/auth/logout', null));
@@ -59,6 +68,26 @@ export class Api {
   /** 單艘快速修改:位置取自網址 */
   updateSubmarine(workshopId: string, input: SubmarineInput): Promise<SubmarinesUpdateResult> {
     return firstValueFrom(this.http.put<SubmarinesUpdateResult>(`/api/workshops/${encodeURIComponent(workshopId)}/submarines/${input.position}`, input));
+  }
+
+  // ---- 配件維修提醒(D-288);開啟隨「更新潛艇」一起送(SubmarineInput.upkeep),這裡是手動調整 ----
+  adjustUpkeep(submarineId: string, patch: UpkeepPatch): Promise<SubmarineDto> {
+    return firstValueFrom(this.http.put<SubmarineDto>(`/api/submarines/${encodeURIComponent(submarineId)}/upkeep`, patch));
+  }
+  disableUpkeep(submarineId: string): Promise<SubmarineDto> {
+    return firstValueFrom(this.http.delete<SubmarineDto>(`/api/submarines/${encodeURIComponent(submarineId)}/upkeep`));
+  }
+  /** 標示已維修(同工坊勾選的幾艘),回該工坊全部潛艇 */
+  // ---- 潛艇等級與練級輔助(D-289);設定隨「更新潛艇」一起送(SubmarineInput.progress),這裡是單獨儲存 ----
+  setProgress(submarineId: string, input: ProgressInput): Promise<SubmarineDto> {
+    return firstValueFrom(this.http.put<SubmarineDto>(`/api/submarines/${encodeURIComponent(submarineId)}/progress`, input));
+  }
+  clearProgress(submarineId: string): Promise<SubmarineDto> {
+    return firstValueFrom(this.http.delete<SubmarineDto>(`/api/submarines/${encodeURIComponent(submarineId)}/progress`));
+  }
+
+  markUpkeepRepaired(workshopId: string, submarineIds: string[]): Promise<{ submarines: SubmarineDto[] }> {
+    return firstValueFrom(this.http.post<{ submarines: SubmarineDto[] }>(`/api/workshops/${encodeURIComponent(workshopId)}/upkeep/repaired`, { submarine_ids: submarineIds }));
   }
 
   // ---- 截圖辨識(SCHEMA §8.1):只辨識、不寫資料庫、不存圖片(D-49、D-126) ----

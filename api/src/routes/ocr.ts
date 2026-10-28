@@ -4,6 +4,7 @@ import type { OcrErrorCode } from '@eranaut/shared';
 import type { registerSessionAuth } from '../auth/session-guard.js';
 import { UnsupportedImageError } from '../ocr/engine.js';
 import { BusyError } from '../ocr/limiter.js';
+import type { OcrTrace } from '../ocr/service.js';
 import type { AppDeps } from '../server.js';
 
 // 截圖辨識(SCHEMA §8.1):POST /api/ocr,multipart 的 `image` 欄位。
@@ -47,9 +48,12 @@ export function registerOcrRoutes(app: FastifyInstance, deps: AppDeps, requireSe
         if (buffer.length === 0) return fail(reply, 400, 'no_file');
 
         try {
-          const result = await ocr.recognize(buffer);
+          const trace: OcrTrace = {};
+          const started = performance.now();
+          const result = await ocr.recognize(buffer, trace);
+          trace.total_ms = Math.round(performance.now() - started);
           if (!result) return fail(reply, 422, 'unrecognized');
-          req.log.info({ event: 'ocr', format: result.format, rows: result.submarines.length, suspects: result.submarines.filter((s) => s.suspect.name || s.suspect.time).length, bytes: buffer.length });
+          req.log.info({ event: 'ocr', format: result.format, rows: result.submarines.length, suspects: result.submarines.filter((s) => s.suspect.name || s.suspect.time).length, bytes: buffer.length, ...trace });
           return result;
         } catch (e) {
           if (e instanceof BusyError) return fail(reply, 429, 'busy', () => void reply.header('Retry-After', '5'));

@@ -1,11 +1,14 @@
 import type { NotifyPrefsUpdate, SubmarineDto, SubmarinesUpdateResult, WorkshopDto } from '@eranaut/shared';
 import { applyNotifyPrefsUpdate } from '@eranaut/shared';
 import type { Db } from '../db/index.js';
-import { upsertSubmarines } from '../repo/submarines.js';
+import { listSubmarines, upsertSubmarines } from '../repo/submarines.js';
+import { applyProgressInput, deleteProgress } from '../repo/progress.js';
+import { deleteUpkeep } from '../repo/upkeep.js';
 import { replaceWorkshop } from '../repo/workshops.js';
 import { getNotifyMethods, setNotifyMethods } from '../repo/users.js';
 import { syncUserReminders, syncWorkshopReminders } from './reminders.js';
 import type { ValidSubmarine } from './submarines.js';
+import { enableUpkeep } from './upkeep.js';
 import type { ValidWorkshop } from './workshops.js';
 
 // 「寫入 + 重算提醒」放在同一個交易內:要嘛都成功,要嘛都不生效,提醒不會和資料脫節(D-139)。
@@ -15,6 +18,22 @@ export function updateSubmarines(db: Db, userId: string, workshopId: string, ite
   return db.transaction((): SubmarinesUpdateResult | undefined => {
     const all = upsertSubmarines(db, userId, workshopId, items, now);
     if (!all) return undefined;
+
+    // 維修提醒的開啟 / 關閉(D-288)與潛艇更新在同一個交易:被拒絕(沒綁定配置等)整筆不生效
+    const idByPos = new Map(all.map((s) => [s.position, s.id]));
+    for (const v of items) {
+      if (v.upkeep === undefined) continue;
+      const sid = idByPos.get(v.position)!;
+      if (v.upkeep === null) deleteUpkeep(db, sid);
+      else enableUpkeep(db, sid, v.position, v.upkeep, v.status, now);
+    }
+    // 等級與練級輔助(D-289)同樣和更新在同一個交易:被拒絕整筆不生效
+    for (const v of items) {
+      if (v.progress === undefined) continue;
+      const sid = idByPos.get(v.position)!;
+      if (v.progress === null) deleteProgress(db, sid);
+      else applyProgressInput(db, sid, v.progress, v.status, now, v.position);
+    }
     const { leadSkipped } = syncWorkshopReminders(db, workshopId, now);
 
     const idByPosition = new Map(all.map((s) => [s.position, s.id]));
@@ -23,7 +42,7 @@ export function updateSubmarines(db: Db, userId: string, workshopId: string, ite
       .filter((v) => (batchSkipped ? v.status === 'exploring' : leadSkipped.includes(idByPosition.get(v.position) ?? '')))
       .map((v) => v.position)
       .sort((a, b) => a - b);
-    return { submarines: all, reminder_skipped_positions: skipped };
+    return { submarines: listSubmarines(db, userId, workshopId, now), reminder_skipped_positions: skipped };
   })();
 }
 

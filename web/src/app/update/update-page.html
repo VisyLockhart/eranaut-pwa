@@ -5,7 +5,7 @@
       <div class="d-subtitle">對照遊戲內潛艇畫面，逐艘填入剩餘時間，一次更新整個工坊</div>
     </div>
   </div>
-  <div class="d-upload-wrap" style="width: 100%">
+  <div class="d-upload-wrap" [class.dp-wide]="split()" style="width: 100%">
     <ng-container *ngTemplateOutlet="body" />
     @if (vm.formVisible()) {
       <div class="uf-actions-d">
@@ -37,31 +37,22 @@
       <button type="button" role="tab" class="up-tab" [class.active]="vm.mode() === 'ocr'" [attr.aria-selected]="vm.mode() === 'ocr'" (click)="vm.setMode('ocr')">截圖辨識</button>
       <button type="button" role="tab" class="up-tab" [class.active]="vm.mode() === 'manual'" [attr.aria-selected]="vm.mode() === 'manual'" (click)="vm.setMode('manual')">手動輸入</button>
     </div>
-    <div style="margin-bottom: 16px">
-      <label class="field-label" for="uf-ws">更新哪個工坊</label>
-      <app-select inputId="uf-ws" [style.width]="layout.isDesktop() ? '260px' : null" [options]="wsOptions()" [value]="vm.workshopId() ?? ''" (valueChange)="onSelect($event)" />
-    </div>
+    @if (layout.isDesktop() && !split()) {
+      <ng-container *ngTemplateOutlet="wsPick" />
+    }
 
-    @if (vm.mode() === 'ocr' && vm.ocrPhase() !== 'review' && vm.workshop()) {
-      @if (vm.ocrPhase() === 'busy') {
-        <div class="ocr-busy" role="status"><div class="ocr-spinner"></div><div style="color: var(--text-muted); font-size: 13px">辨識中…</div></div>
-      } @else {
-        <label class="dropzone" [class.drag]="dragging()" [class.pasted]="pasted()" style="flex-direction: column; gap: 8px; min-height: 200px; padding: 22px 16px; text-align: center" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
-          <input type="file" accept="image/png,image/jpeg,image/webp" data-field="ocr-file" (change)="onFile($event)" />
-          <app-icon name="camera" [size]="30" />
-          <span style="font-size: 14px; font-weight: 600">{{ layout.isDesktop() ? '點擊選擇截圖，或把截圖拖到這裡' : '點擊選擇截圖或拍照' }}</span>
-          @if (layout.isDesktop()) {
-            <span class="uf-note" style="margin: 0; color: var(--text-muted)" data-field="paste-hint">也可以先截圖，再直接按 {{ pasteKey }} 貼上</span>
-          }
-          <span class="uf-note" style="margin: 0">支援「航行管制視窗→管理潛水艇」視窗或「任務情報→遠航探索」視窗，PNG／JPEG／WebP、10 MB 以內。圖片只用來辨識，不會被保存。</span>
-        </label>
-        @if (layout.isDesktop() && captureSupported) {
-          <div class="up-capture">
-            <button type="button" class="ghost-btn" data-action="capture" [disabled]="capturing()" (click)="capture()">{{ capturing() ? '等待選擇畫面…' : '擷取畫面' }}</button>
-            <span class="uf-note" style="margin: 0">選擇遊戲視窗或整個螢幕，會直接擷取當下畫面來辨識。</span>
+    @if (vm.mode() === 'ocr' && vm.ocrPhase() !== 'review' && vm.workshop(); as ws) {
+      @if (split()) {
+        <!-- 練級輔助開著的艇:出發前就看得到下一趟派出建議(D-291)。桌機上傳區縮成左欄,手機上傳區縮成一條按鈕 -->
+        <div class="up-split" [class.m]="!layout.isDesktop()">
+          <div class="up-split-main">
+            @if (layout.isDesktop()) { <ng-container *ngTemplateOutlet="wsPick" /> }
+            <ng-container *ngTemplateOutlet="upload" />
           </div>
-        }
-        @if (vm.ocrError(); as message) { <div class="uf-err" role="alert" style="margin-top: 10px">{{ message }}</div> }
+          <app-dispatch-panel [workshop]="ws" [desktop]="layout.isDesktop()" />
+        </div>
+      } @else {
+        <ng-container *ngTemplateOutlet="upload" />
       }
     }
 
@@ -88,18 +79,75 @@
           [flagName]="row.flag?.name ?? false"
           [flagTime]="row.flag?.time ?? false"
           [flagText]="flagText(row)"
+          [flagLevel]="row.flag?.level ?? false"
+          (levelChange)="vm.setOcrLevel(row.key, $event)"
           (nameChange)="vm.setName(row.key, $event)"
           (statusChange)="vm.setStatus(row.key, $event)"
           (timeChange)="vm.setTime(row.key, $event.field, $event.value)"
           (timeFocus)="vm.pause(row.key)"
           (timeLeave)="vm.resume(row.key)"
           (remove)="vm.removeRow(row.key)"
-        />
+        >
+          <app-dispatch-line
+            [sub]="subAt(ws, row.position)"
+            [status]="row.status"
+            [sel]="row.route"
+            [filled]="filled(row)"
+            [ocrLevel]="row.ocrLevel"
+            [remaining]="vm.mode() === 'ocr' ? minutesOf(row) : null"
+            [wsName]="ws.name"
+            [desktop]="layout.isDesktop()"
+            (routeChange)="vm.setRoute(row.key, $event)"
+          />
+        </app-sub-row-editor>
       }
       @if (vm.canAdd()) {
         <button type="button" class="uf-add" (click)="vm.addRow()">＋ 加入第 {{ vm.nextPosition() }} 艘</button>
       }
       @if (vm.formError(); as message) { <div class="uf-err" role="alert" style="margin-bottom: 10px">{{ message }}</div> }
     }
+  }
+</ng-template>
+
+<ng-template #wsPick>
+  <div class="up-ws-pick">
+    <label class="field-label" for="uf-ws">更新哪個工坊</label>
+    <app-select inputId="uf-ws" [style.width]="split() ? null : '260px'" [options]="wsOptions()" [value]="vm.workshopId() ?? ''" (valueChange)="onSelect($event)" />
+  </div>
+</ng-template>
+
+<!-- 手機版:工坊選擇放到標題列右側(D-291 ⑧),省一列高度 -->
+<ng-template #wsHeader>
+  <app-select class="m-head-ws" size="compact" ariaLabel="更新哪個工坊" [options]="wsOptions()" [value]="vm.workshopId() ?? ''" (valueChange)="onSelect($event)" />
+</ng-template>
+
+<ng-template #upload>
+  @if (vm.ocrPhase() === 'busy') {
+    <div class="ocr-busy" role="status"><div class="ocr-spinner"></div><div style="color: var(--text-muted); font-size: 13px">辨識中…</div></div>
+  } @else {
+    @if (!layout.isDesktop() && split()) {
+      <label class="dropzone compact" [class.drag]="dragging()" [class.pasted]="pasted()" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
+        <input type="file" accept="image/png,image/jpeg,image/webp" data-field="ocr-file" (change)="onFile($event)" />
+        <app-icon name="camera" [size]="24" />
+        <span class="dz-text"><b>點擊選擇截圖或拍照</b><small>管理潛水艇／遠航探索視窗・圖片不會被保存</small></span>
+      </label>
+    } @else {
+      <label class="dropzone" [class.drag]="dragging()" [class.pasted]="pasted()" [class.narrow]="split()" style="flex-direction: column; gap: 8px; min-height: 200px; padding: 22px 16px; text-align: center" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
+        <input type="file" accept="image/png,image/jpeg,image/webp" data-field="ocr-file" (change)="onFile($event)" />
+        <app-icon name="camera" [size]="30" />
+        <span style="font-size: 14px; font-weight: 600">{{ layout.isDesktop() ? (split() ? '點擊選擇截圖，或拖到這裡' : '點擊選擇截圖，或把截圖拖到這裡') : '點擊選擇截圖或拍照' }}</span>
+        @if (layout.isDesktop()) {
+          <span class="uf-note" style="margin: 0; color: var(--text-muted)" data-field="paste-hint">也可以先截圖，再直接按 {{ pasteKey }} 貼上</span>
+        }
+        <span class="uf-note" style="margin: 0">支援「航行管制視窗→管理潛水艇」視窗或「任務情報→遠航探索」視窗，PNG／JPEG／WebP、10 MB 以內。圖片只用來辨識，不會被保存。</span>
+      </label>
+    }
+    @if (layout.isDesktop() && captureSupported) {
+      <div class="up-capture">
+        <button type="button" class="ghost-btn" data-action="capture" [disabled]="capturing()" (click)="capture()">{{ capturing() ? '等待選擇畫面…' : '擷取畫面' }}</button>
+        <span class="uf-note" style="margin: 0">選擇遊戲視窗或整個螢幕，會直接擷取當下畫面來辨識。</span>
+      </div>
+    }
+    @if (vm.ocrError(); as message) { <div class="uf-err" role="alert" style="margin-top: 10px">{{ message }}</div> }
   }
 </ng-template>

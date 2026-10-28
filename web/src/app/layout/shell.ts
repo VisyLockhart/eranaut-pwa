@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -7,15 +8,17 @@ import { Auth } from '../core/auth';
 import { InstallPrompt } from '../core/install-prompt';
 import { Layout } from '../core/layout';
 import { INTRO_ENABLED } from '../demo/demo-routes';
+import { Maintenance } from '../core/maintenance';
 import { AvatarComponent } from '../ui/avatar';
 import { CopyrightComponent } from '../ui/copyright';
 import { IconComponent } from '../ui/icon';
+import { MaintenanceNotice } from '../ui/maintenance-notice';
 import { Tip } from '../ui/tip';
 
 /** 登入後的外殼:手機 = 標頭 + 內容 + 底部導覽;桌機 = 側邊欄 + 內容(D-93、D-102) */
 @Component({
   selector: 'app-shell',
-  imports: [Tip, RouterOutlet, RouterLink, RouterLinkActive, IconComponent, AvatarComponent, CopyrightComponent],
+  imports: [NgTemplateOutlet, Tip, RouterOutlet, RouterLink, RouterLinkActive, IconComponent, AvatarComponent, CopyrightComponent, MaintenanceNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
   host: { '(document:click)': 'closeMenu()', '(document:keydown.escape)': 'closeMenu()' },
@@ -42,6 +45,8 @@ export class Shell {
   protected readonly install = inject(InstallPrompt);
   protected readonly up = inject(AppUpdate);
   protected readonly intro = INTRO_ENABLED;
+  /** 伺服器維護橫幅(D-283):手機暫時取代底部聲明、桌機放在側欄;維護結束後恢復 */
+  protected readonly maintenance = inject(Maintenance);
   private readonly router = inject(Router);
 
   /** 手機右上角頭像選單(D-241):設定、登出 */
