@@ -3,6 +3,7 @@ import type { WorkshopDto, WorkshopWithSubmarines } from '@eranaut/shared';
 import { Auth } from './auth';
 import { DispatchVm, type DispatchInfo } from './dispatch-vm';
 import { DataStore } from './data-store';
+import { chartSummary, type ChartSummary } from './charts';
 import type { SubRow } from './submarine-form';
 import { circled, displayFor, isReady, type SubDisplay } from './format';
 import { readJson, writeJson } from './storage';
@@ -173,6 +174,11 @@ export class OverviewVm {
   /** 0 = 全部;工坊被刪除導致超出範圍時退回「全部」 */
   readonly index = computed(() => (this.requestedIndex() <= this.store.workshops().length ? this.requestedIndex() : 0));
   readonly currentWorkshop = computed(() => (this.index() === 0 ? null : (this.store.workshops()[this.index() - 1] ?? null)));
+  /** 目前檢視的工坊的海圖探索摘要(D-293);「全部」為 null */
+  readonly chart = computed<ChartSummary | null>(() => {
+    const ws = this.currentWorkshop();
+    return ws ? chartSummary(ws, this.store.now()) : null;
+  });
 
   // ---- 排序(D-290) ----
 

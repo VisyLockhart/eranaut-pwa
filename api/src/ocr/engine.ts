@@ -15,7 +15,7 @@ import type { Region } from './region.js';
 /** 縮圖後的長邊上限(D-125):不放大;實測縮到 1280 準確度不變、手機大圖快 3 倍以上、記憶體小很多 */
 export const MAX_EDGE = 1280;
 /** 單張圖的像素上限,防止極大的壓縮炸彈圖;一般手機照片約 1200 萬像素 */
-const MAX_INPUT_PIXELS = 80_000_000;
+export const MAX_INPUT_PIXELS = 80_000_000;
 const SUPPORTED_FORMATS = new Set(['png', 'jpeg', 'webp']);
 
 export class UnsupportedImageError extends Error {

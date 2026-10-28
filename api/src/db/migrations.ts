@@ -233,4 +233,20 @@ CREATE TABLE submarine_progress (
 );
 `,
   },
+  {
+    version: 10,
+    name: 'workshop_charts',
+    // 海圖探索紀錄(D-293):每間工坊、每個海域最多一列,points 為已發現的航點 id(航線資料集的 id,JSON 文字)。
+    // 主鍵用 (workshop_id, sea),和 submarine_upkeep 一樣不另開流水號;工坊刪除時連帶刪除,不需清理排程。
+    // 寫入只覆寫該海域(整筆取代),沒有任何已發現的點就刪除該列。點是否屬於該海域的驗證在 API。
+    sql: `
+CREATE TABLE workshop_charts (
+  workshop_id TEXT NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  sea INTEGER NOT NULL,
+  points TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (workshop_id, sea)
+);
+`,
+  },
 ];

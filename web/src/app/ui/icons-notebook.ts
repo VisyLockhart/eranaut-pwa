@@ -39,4 +39,5 @@ export const NOTEBOOK_ICONS: Partial<Record<IconName, string>> = {
   dragDots: `<svg width="100%" height="100%" viewBox="0 0 16 24" style="fill:var(--text-faint)"><circle cx="4" cy="5" r="1.7"/><circle cx="12" cy="5.3" r="1.6"/><circle cx="4" cy="12" r="1.6"/><circle cx="12" cy="12.2" r="1.7"/><circle cx="4" cy="19" r="1.7"/><circle cx="12" cy="18.8" r="1.6"/></svg>`,
   sortAsc: svg('<path d="M12.1 19.3c-.2-4.6-.1-9.3.1-14"/><path d="M6.4 10.4c2-1.6 3.8-3.4 5.7-5.4 1.8 2 3.6 3.7 5.6 5.2"/>'),
   sortDesc: svg('<path d="M11.9 4.7c.2 4.6.1 9.3-.1 14"/><path d="M6.4 13.6c2 1.6 3.8 3.4 5.7 5.4 1.8-2 3.6-3.7 5.6-5.2"/>'),
+  seaChart: svg('<path d="M3.4 6.8c2-.9 3.8-1.6 5.7-2.2 2 .5 3.9 1.3 5.8 2 1.9-.7 3.7-1.3 5.7-1.9.2 4.3.2 8.5 0 12.7-1.9.7-3.8 1.3-5.7 1.9-1.9-.8-3.8-1.5-5.8-2-1.9.6-3.8 1.3-5.7 2.1-.2-4.2-.2-8.4 0-12.6z"/><path d="M9.1 4.7c.2 4.2.1 8.5 0 12.6M14.9 6.6c-.2 4.3-.1 8.6 0 12.8"/>'),
 };

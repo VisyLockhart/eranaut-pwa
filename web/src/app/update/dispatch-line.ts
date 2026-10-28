@@ -144,7 +144,7 @@ export class DispatchLine {
       value: o.key,
       label: o.label + (o.pref ? '（偏好）' : ''),
       display: [o.label, routeText(o.plan.points), up(o.after)].filter(Boolean).join('・'),
-      hint: routeText(o.plan.points) + (o.unlock ? `（${unlockText(o.unlock)}）` : '') + (o.sameAs ? `（與${o.sameAs}相同）` : '') + (o.calc ? '（依配置推算）' : ''),
+      hint: routeText(o.plan.points) + (o.unlock ? `（${unlockText(o.unlock)}）` : '') + (o.sameAs ? `（與${o.sameAs}相同）` : '') + (o.avoided?.length && o.calc ? '（已避開未發現的點）' : o.calc ? '（依配置推算）' : ''),
       meta: [{ text: `${o.plan.minutes !== null ? minutesText(o.plan.minutes) + '・' : ''}+${fmtExp(o.plan.exp)} ${up(o.after)}`.trim() }],
     }));
     const own = this.sel();

@@ -1,0 +1,146 @@
+@if (layout.isDesktop()) {
+  <div class="d-topbar">
+    <div>
+      <div class="d-title">更新海圖</div>
+      <div class="d-subtitle">截「選擇航海圖」視窗辨識已發現的航點,核對後存到這間工坊;練級建議與航線模擬會避開還沒發現的點</div>
+    </div>
+    @if (store.workshops().length > 0) {
+      <div class="up-ws-pick" style="margin: 0">
+        <label class="field-label" for="ch-ws">工坊</label>
+        <app-select inputId="ch-ws" style="width: 220px" [options]="wsOptions()" [value]="vm.workshopId() ?? ''" (valueChange)="onSelect($event)" />
+      </div>
+    }
+  </div>
+  <div class="d-upload-wrap ch-wrap"><ng-container *ngTemplateOutlet="body" /></div>
+  @if (vm.workshop()) {
+    <div class="uf-actions-d ch-actions">
+      <span class="ch-sum" role="status"><ng-container *ngTemplateOutlet="summary" /></span>
+      <button type="button" class="ghost-btn" (click)="cancel()">取消</button>
+      <button type="button" class="primary-btn" [disabled]="!vm.dirty() || vm.saving()" (click)="save()">{{ vm.saving() ? '儲存中…' : '儲存' }}</button>
+    </div>
+  }
+} @else {
+  <div class="m-upload-body ch-m-body"><ng-container *ngTemplateOutlet="body" /></div>
+  @if (vm.workshop()) {
+    <div class="uf-actions-m ch-actions-m">
+      <span class="ch-sum" role="status"><ng-container *ngTemplateOutlet="summary" /></span>
+      <button type="button" class="primary-btn" [disabled]="!vm.dirty() || vm.saving()" (click)="save()">{{ vm.saving() ? '儲存中…' : '儲存' }}</button>
+    </div>
+  }
+}
+
+<ng-template #body>
+  @if (!store.loaded()) {
+    <div class="up-empty">讀取中…</div>
+  } @else if (!vm.workshop()) {
+    <div class="up-empty">還沒有任何工坊。請先到「工坊」新增一間工坊。</div>
+  } @else if (layout.isDesktop()) {
+    <div class="ch-grid">
+      <div class="ch-side">
+        <ng-container *ngTemplateOutlet="upload" />
+        @if (compare(); as s) {
+          <section class="rt-block" aria-label="對照截圖">
+            <div class="rt-block-title">對照截圖 · {{ seaIdx().sea.name }}</div>
+            <app-chart-shot [result]="s.result" [url]="s.url" [found]="vm.draft()" />
+            <div class="uf-note ch-note">綠圈是目前標為已發現的點。對不上的地方直接點右邊的海圖修改。</div>
+          </section>
+        }
+      </div>
+      <div class="ch-main"><ng-container *ngTemplateOutlet="mapBlock" /></div>
+    </div>
+  } @else {
+    <ng-container *ngTemplateOutlet="upload" />
+    <ng-container *ngTemplateOutlet="mapBlock" />
+  }
+</ng-template>
+
+<ng-template #summary>
+  @if (vm.changeList().length === 0) {
+    <span class="ch-dim">沒有變更</span>
+  } @else {
+    @for (c of vm.changeList(); track c.sea) {
+      <span class="ch-chg">{{ c.name }}
+        @if (c.add) { <b class="ch-add">+{{ c.add }}</b> }
+        @if (c.rem) { <b class="ch-rem">−{{ c.rem }}</b> }
+      </span>
+    }
+  }
+</ng-template>
+
+<!-- 手機版:工坊選擇放在標題列右側 -->
+<ng-template #wsHeader>
+  <app-select class="m-head-ws" size="compact" ariaLabel="哪一間工坊" [options]="wsOptions()" [value]="vm.workshopId() ?? ''" (valueChange)="onSelect($event)" />
+</ng-template>
+
+<ng-template #upload>
+  <label class="dropzone ch-drop" [class.compact]="!layout.isDesktop()" [class.drag]="dragging()" [class.pasted]="pasted()" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
+    <input type="file" multiple accept="image/png,image/jpeg,image/webp" data-field="chart-file" (change)="onFile($event)" />
+    <app-icon name="camera" [size]="layout.isDesktop() ? 26 : 24" />
+    <span class="dz-text">
+      <b>{{ layout.isDesktop() ? '選擇海圖截圖(可多張),或拖到這裡' : '選擇海圖截圖(可多張)' }}</b>
+      <small>工坊內「選擇航海圖」視窗,每個海域各一張・圖片只用來辨識,不會被保存</small>
+    </span>
+  </label>
+  @if (layout.isDesktop()) {
+    <div class="up-capture ch-capture">
+      @if (captureSupported) {
+        <button type="button" class="ghost-btn" [disabled]="capturing()" (click)="capture()">{{ capturing() ? '等待選擇畫面…' : '擷取畫面' }}</button>
+      }
+      <span class="uf-note" style="margin: 0">也可以截圖後按 {{ pasteKey }} 貼上;整個遊戲畫面也可以,會自動找出海圖。</span>
+    </div>
+  }
+  @if (vm.busy() > 0) {
+    <div class="ch-busy" role="status"><div class="ocr-spinner"></div><span>辨識中…</span></div>
+  }
+  @if (vm.error(); as message) { <div class="uf-err" role="alert">{{ message }}</div> }
+</ng-template>
+
+<ng-template #mapBlock>
+  <section class="rt-block ch-map-block" aria-label="海圖">
+    <div class="ch-tabs" role="tablist" aria-label="海域">
+      @for (t of vm.tabs(); track t.sea) {
+        @if (!t.locked) {
+          <button type="button" role="tab" class="rt-chip ch-tab" [class.active]="vm.viewSea() === t.sea" [attr.aria-selected]="vm.viewSea() === t.sea" (click)="setSea(t.sea)">
+            {{ t.name }} <span class="ch-tab-n">{{ t.base === t.draft ? t.draft : t.base + '→' + t.draft }}/{{ t.total }}</span>@if (t.warn) { <span class="ch-warn-dot" aria-label="請核對">!</span> }
+          </button>
+        }
+      }
+    </div>
+
+    @if (!layout.isDesktop() && compare()) {
+      <div class="ct-seg ch-seg" role="group" aria-label="檢視">
+        <button type="button" [class.on]="vm.view() === 'app'" [attr.aria-pressed]="vm.view() === 'app'" (click)="vm.view.set('app')">App 海圖</button>
+        <button type="button" [class.on]="vm.view() === 'shot'" [attr.aria-pressed]="vm.view() === 'shot'" (click)="vm.view.set('shot')">對照截圖</button>
+      </div>
+    }
+
+    @if (mismatch(); as m) {
+      <div class="uf-comp ch-msg" role="status"><span>⚠</span><span>畫面顯示已發現 {{ m.screen }},目前標了 {{ m.draft }}。請對照截圖核對{{ uncertainCodes() ? '(可能是 ' + uncertainCodes() + ')' : '' }}。</span></div>
+    } @else if (shot()?.result?.screen_count != null) {
+      <div class="ch-ok" role="status">✓ 與畫面「已發現 {{ shot()!.result.screen_count }}」相符</div>
+    }
+    @if (filledCodes()) {
+      <div class="uf-note ch-note">{{ filledCodes() }} 在截圖上沒認出來,因為後面的點已發現而補上。</div>
+    }
+
+    @if (!layout.isDesktop() && vm.view() === 'shot' && compare(); as s) {
+      <app-chart-shot [result]="s.result" [url]="s.url" [found]="vm.draft()" />
+      <div class="uf-note ch-note">綠圈是目前標為已發現的點。對不上的地方切回「App 海圖」修改。</div>
+    } @else {
+      <app-route-map [sea]="seaIdx()" [found]="vm.draft()" [added]="vm.added()" [removed]="vm.removed()" (pick)="vm.toggle($event)" />
+      <div class="rt-map-legend" aria-hidden="true">
+        <span><i class="lg cf-on"></i>已發現</span>
+        @if (vm.added().size) { <span><i class="lg cf-add"></i>新增</span> }
+        @if (vm.removed().size) { <span><i class="lg cf-rem"></i>取消</span> }
+        <span><i class="lg cf-off"></i>未發現(點一下加入)</span>
+      </div>
+      @if (vm.undo(); as u) {
+        <div class="rt-undo" role="status" aria-live="polite">
+          <span>{{ u.text }}</span>
+          <button type="button" class="rt-link-btn" (click)="vm.undoLast()">復原</button>
+          <button type="button" class="rt-x" aria-label="關閉提示" (click)="vm.undo.set(null)">×</button>
+        </div>
+      }
+    }
+  </section>
+</ng-template>

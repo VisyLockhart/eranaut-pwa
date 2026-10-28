@@ -12,6 +12,8 @@ export const DOT_R = 37;
 
 interface Dot {
   p: SeaPoint;
+  /** 「海圖探索」模式才有:on = 已發現、off = 未發現;add / rem = 和原本紀錄的差異 */
+  chart: 'on' | 'off' | 'add' | 'rem' | null;
   state: Selectability;
   order: number;
   /** 「去過哪些航點」模式才有:去過 / 現在可以去 / 還沒解鎖 */
@@ -51,6 +53,15 @@ export class RouteMap {
   readonly filter = input<ReadonlyMap<number, FilterState> | null>(null);
   /** 篩選模式:等級不足的航點 id(變暗加鎖,不能選) */
   readonly locked = input<ReadonlySet<number>>(new Set());
+  /**
+   * 「海圖探索」模式(D-293):傳入已發現的點就切換成這個模式——已發現的點實心、未發現的點虛線變暗(點一下加入);
+   * `added` / `removed` 是和原本紀錄比較的差異(辨識新增 ＋、紀錄有但這次沒有 －)。優先於其他模式。
+   */
+  readonly found = input<ReadonlySet<number> | null>(null);
+  readonly added = input<ReadonlySet<number>>(new Set());
+  readonly removed = input<ReadonlySet<number>>(new Set());
+  /** 不畫的點(航線頁選了工坊時,工坊還沒發現的點,D-293);已選進路線的點照畫 */
+  readonly hidden = input<ReadonlySet<number>>(new Set());
   readonly pick = output<number>();
 
   protected readonly hitR = HIT_R;
@@ -68,12 +79,21 @@ export class RouteMap {
   protected readonly links = computed(() => {
     const c = this.coords();
     const out: { key: string; x1: number; y1: number; x2: number; y2: number; lit: boolean }[] = [];
+    const shown = this.shownIds();
     for (const [a, b] of this.sea().sea.links) {
       const pa = c.get(a);
       const pb = c.get(b);
-      if (pa && pb) out.push({ key: `${a}-${b}`, x1: pa.x, y1: pa.y, x2: pb.x, y2: pb.y, lit: this.isLit(a, b) });
+      if (pa && pb && shown(a) && shown(b)) out.push({ key: `${a}-${b}`, x1: pa.x, y1: pa.y, x2: pb.x, y2: pb.y, lit: this.isLit(a, b) });
     }
     return out;
+  });
+
+  /** 這個點要不要畫(出發點與已選進路線的點一定畫) */
+  private readonly shownIds = computed(() => {
+    const hidden = this.hidden();
+    const seq = this.seq();
+    const home = this.sea().sea.home.id;
+    return (id: number) => id === home || !hidden.has(id) || seq.includes(id);
   });
 
   /** 已選路線:出發點 → 依序各點 */
@@ -92,19 +112,29 @@ export class RouteMap {
     const g = this.graph();
     const f = this.filter();
     const lock = this.locked();
-    const dots = this.sea().sea.points.map((p) => ({
+    const found = this.found();
+    const added = this.added();
+    const removed = this.removed();
+    const shown = this.shownIds();
+    const dots = this.sea().sea.points.filter((p) => shown(p.id)).map((p) => ({
       p,
       state: states.get(p.id) ?? 'ok',
       order: seq.indexOf(p.id) + 1,
-      visit: ex && g && !f ? exploreState(g, ex, p.id) : null,
-      filter: f ? (f.get(p.id) ?? 'none') : null,
-      locked: !!f && lock.has(p.id),
-    }));
+      visit: ex && g && !f && !found ? exploreState(g, ex, p.id) : null,
+      filter: f && !found ? (f.get(p.id) ?? 'none') : null,
+      locked: !!f && !found && lock.has(p.id),
+      chart: found ? (added.has(p.id) ? 'add' : removed.has(p.id) ? 'rem' : found.has(p.id) ? 'on' : 'off') : null,
+    } satisfies Dot));
     // 已選的畫在最上面,徽章不被別的點蓋住
     return dots.sort((a, b) => Number(a.order > 0) - Number(b.order > 0));
   });
 
   private isLit(a: number, b: number): boolean {
+    const found = this.found();
+    if (found) {
+      const home = this.sea().sea.home.id;
+      return (a === home || found.has(a)) && found.has(b);
+    }
     const ex = this.explored();
     if (!ex) return false;
     // 出發點到根的連線:根去過就亮
@@ -114,6 +144,14 @@ export class RouteMap {
 
   protected label(d: Dot): string {
     const base = `${d.p.code} ${d.p.name}`;
+    if (d.chart) {
+      switch (d.chart) {
+        case 'on': return `${base},已發現,點一下取消(後面的點也會一起取消)`;
+        case 'add': return `${base},這次辨識新增,點一下取消`;
+        case 'rem': return `${base},原本紀錄有、這次沒辨識到,點一下保留`;
+        case 'off': return `${base},未發現,點一下加入(前面的點也會一起加入)`;
+      }
+    }
     if (d.filter) {
       if (d.locked) return `${base},潛艇等級不足(需要 ${d.p.rankReq} 級),不能選`;
       switch (d.filter) {
@@ -139,6 +177,7 @@ export class RouteMap {
   }
 
   protected pressed(d: Dot): boolean | 'mixed' {
+    if (d.chart) return d.chart === 'on' || d.chart === 'add';
     if (d.filter) return d.filter === 'in' ? true : d.filter === 'out' ? 'mixed' : false;
     return d.visit ? d.visit === 'done' : d.state === 'selected';
   }

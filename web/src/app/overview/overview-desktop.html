@@ -3,7 +3,12 @@
     <div class="d-title">{{ vm.currentWorkshop() ? vm.currentWorkshop()!.name + ' 總覽' : '潛水艇總覽' }}</div>
     <div class="d-subtitle">返航時間、練級、維修等狀態，跨工坊一次看</div>
   </div>
-  <a class="upload-cta" routerLink="/update"><app-icon name="camera" [size]="20" />更新潛艇</a>
+  <div class="ov-ctas">
+    @if (vm.currentWorkshop(); as ws) {
+      <a class="ghost-btn ov-chart-cta" routerLink="/charts" [queryParams]="{ ws: ws.id }"><app-icon name="seaChart" [size]="18" />更新海圖</a>
+    }
+    <a class="upload-cta" routerLink="/update"><app-icon name="camera" [size]="20" />更新潛艇</a>
+  </div>
 </div>
 
 <div class="d-stats ov-strip">
@@ -60,6 +65,18 @@
     <div class="ov-wsinfo">
       <div class="ov-wsinfo-line"><app-icon name="server" [size]="13" /><span>{{ ws.server || '未設定伺服器' }}</span><span class="sep">·</span><span>{{ ws.captain || '未設定代表角色' }}</span></div>
       @if (hasAddress(ws)) { <div class="ov-wsinfo-line"><app-icon name="mapPin" [size]="13" /><span>{{ addressLine(ws) }}</span></div> }
+      @if (vm.chart(); as c) {
+        <div class="ov-wsinfo-line ov-chart-line">
+          <app-icon name="seaChart" [size]="13" />
+          @if (c.seas.length === 0) {
+            <span>海圖未記錄</span><span class="sep">·</span><a class="ov-chart-link" routerLink="/charts" [queryParams]="{ ws: ws.id }">更新海圖</a>
+          } @else {
+            @for (s of c.seas; track s.sea) { <span class="ov-chart-sea">{{ s.name }} <b class="mono">{{ s.found }}</b>/{{ s.total }}</span> }
+            <span class="sep">·</span><span>{{ chartDate(c.updatedAt) }} 更新</span>
+            @if (c.returnedSince > 0) { <span class="ov-chart-hint">· 之後返航 {{ c.returnedSince }} 艘,可能開了新點</span> }
+          }
+        </div>
+      }
     </div>
   }
   <div class="ov-tools">

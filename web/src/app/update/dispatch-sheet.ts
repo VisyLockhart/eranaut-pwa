@@ -46,7 +46,9 @@ import { LevelingPicker } from './leveling-picker';
                 <small class="lv-meta">
                   @if (o.plan.minutes !== null) { <span>航行 {{ time(o.plan.minutes) }}</span> }
                   <span>+{{ fmt(o.plan.exp) }} {{ up(i.start.level, o.after) }}</span>
-                  @if (o.calc) { <span class="dp-calc">依配置推算</span> }
+                  @if (o.avoided?.length && o.calc) { <span class="dp-calc">已避開未發現的 {{ o.avoided.join('、') }}</span> }
+                  @else if (o.calc) { <span class="dp-calc">依配置推算</span> }
+                  @if (o.prereq) { <span class="dp-calc">先去 {{ o.prereq }}(解鎖點還沒發現)</span> }
                 </small>
               </button>
             }

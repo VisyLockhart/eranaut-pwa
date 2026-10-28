@@ -18,14 +18,18 @@
       [class.done]="d.visit === 'done'"
       [class.open]="d.visit === 'open'"
       [class.locked]="d.visit === 'locked'"
-      [class.off]="!d.filter && d.state !== 'ok' && d.state !== 'selected'"
+      [class.off]="!d.chart && !d.filter && d.state !== 'ok' && d.state !== 'selected'"
       [class.fnone]="d.filter === 'none' && !d.locked"
       [class.fin]="d.filter === 'in'"
       [class.fout]="d.filter === 'out'"
       [class.flock]="d.locked"
+      [class.cf-on]="d.chart === 'on'"
+      [class.cf-off]="d.chart === 'off'"
+      [class.cf-add]="d.chart === 'add'"
+      [class.cf-rem]="d.chart === 'rem'"
       [attr.aria-label]="label(d)"
       [attr.aria-pressed]="pressed(d)"
-      [attr.aria-disabled]="d.locked || (!d.filter && d.state !== 'ok' && d.state !== 'selected') ? 'true' : null"
+      [attr.aria-disabled]="!d.chart && (d.locked || (!d.filter && d.state !== 'ok' && d.state !== 'selected')) ? 'true' : null"
       [attr.transform]="'translate(' + d.p.x + ' ' + d.p.y + ')'"
       (click)="activate(d)"
       (keydown.enter)="activate(d)"
@@ -50,6 +54,18 @@
         <g class="badge fbadge out" transform="translate(27 -27)">
           <circle r="19" />
           <path d="M-8 -8 L8 8 M8 -8 L-8 8" />
+        </g>
+      }
+      @if (d.chart === 'add') {
+        <g class="badge cf-badge add" transform="translate(27 -27)">
+          <circle r="19" />
+          <path d="M-9 0 L9 0 M0 -9 L0 9" />
+        </g>
+      }
+      @if (d.chart === 'rem') {
+        <g class="badge cf-badge rem" transform="translate(27 -27)">
+          <circle r="19" />
+          <path d="M-9 0 L9 0" />
         </g>
       }
       @if (d.locked) {

@@ -1,5 +1,5 @@
 import multipart from '@fastify/multipart';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { OcrErrorCode } from '@eranaut/shared';
 import type { registerSessionAuth } from '../auth/session-guard.js';
 import { UnsupportedImageError } from '../ocr/engine.js';
@@ -7,7 +7,7 @@ import { BusyError } from '../ocr/limiter.js';
 import type { OcrTrace } from '../ocr/service.js';
 import type { AppDeps } from '../server.js';
 
-// 截圖辨識(SCHEMA §8.1):POST /api/ocr,multipart 的 `image` 欄位。
+// 截圖辨識(SCHEMA §8.1):POST /api/ocr(潛艇)與 POST /api/charts/ocr(海圖,D-293),multipart 的 `image` 欄位。
 // 只辨識、不寫資料庫、不存圖片(D-49、D-126):上傳內容只存在記憶體 buffer,辨識完隨回應結束被回收。
 // 路由只處理 HTTP;縮圖、辨識、解析在 ocr/。
 
@@ -26,45 +26,69 @@ export function registerOcrRoutes(app: FastifyInstance, deps: AppDeps, requireSe
       return reply.code(status).send({ error });
     };
 
-    scope.post('/api/ocr', { preHandler: requireSession }, async (req, reply) => {
-      const ocr = deps.ocr;
-      if (!ocr) return fail(reply, 503, 'ocr_unavailable');
-      const userId = req.session!.userId;
-      if (inFlight.has(userId)) return fail(reply, 429, 'busy', () => void reply.header('Retry-After', '3'));
+    /** 共用的上傳與錯誤處理;`run` 回 null = 認不出來(422 unrecognized) */
+    const handle = <T>(run: (buffer: Buffer, trace: OcrTrace) => Promise<T | null> | null, log: (result: T) => Record<string, unknown>) =>
+      async (req: FastifyRequest, reply: FastifyReply) => {
+        const userId = req.session!.userId;
+        if (inFlight.has(userId)) return fail(reply, 429, 'busy', () => void reply.header('Retry-After', '3'));
 
-      if (!req.isMultipart()) return fail(reply, 400, 'no_file');
-      inFlight.add(userId);
-      try {
-        let buffer: Buffer;
+        if (!req.isMultipart()) return fail(reply, 400, 'no_file');
+        inFlight.add(userId);
         try {
-          const part = await req.file();
-          if (!part || part.fieldname !== 'image') return fail(reply, 400, 'no_file');
-          buffer = await part.toBuffer(); // 超過上限會丟 RequestFileTooLargeError
-        } catch (e) {
-          if ((e as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE') return fail(reply, 413, 'file_too_large');
-          if ((e as { code?: string }).code?.startsWith('FST_')) return fail(reply, 400, 'no_file');
-          throw e;
-        }
-        if (buffer.length === 0) return fail(reply, 400, 'no_file');
+          let buffer: Buffer;
+          try {
+            const part = await req.file();
+            if (!part || part.fieldname !== 'image') return fail(reply, 400, 'no_file');
+            buffer = await part.toBuffer(); // 超過上限會丟 RequestFileTooLargeError
+          } catch (e) {
+            if ((e as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE') return fail(reply, 413, 'file_too_large');
+            if ((e as { code?: string }).code?.startsWith('FST_')) return fail(reply, 400, 'no_file');
+            throw e;
+          }
+          if (buffer.length === 0) return fail(reply, 400, 'no_file');
 
-        try {
-          const trace: OcrTrace = {};
-          const started = performance.now();
-          const result = await ocr.recognize(buffer, trace);
-          trace.total_ms = Math.round(performance.now() - started);
-          if (!result) return fail(reply, 422, 'unrecognized');
-          req.log.info({ event: 'ocr', format: result.format, rows: result.submarines.length, suspects: result.submarines.filter((s) => s.suspect.name || s.suspect.time).length, bytes: buffer.length, ...trace });
-          return result;
-        } catch (e) {
-          if (e instanceof BusyError) return fail(reply, 429, 'busy', () => void reply.header('Retry-After', '5'));
-          if (e instanceof UnsupportedImageError) return fail(reply, 415, 'unsupported_image');
-          // 模型載入失敗、推論錯誤:記 log,對使用者只說暫時不能用,前端改引導手動輸入
-          req.log.error({ event: 'ocr_failed', err: e });
-          return fail(reply, 503, 'ocr_unavailable');
+          try {
+            const trace: OcrTrace = {};
+            const started = performance.now();
+            const pending = run(buffer, trace);
+            if (pending === null) return fail(reply, 503, 'ocr_unavailable');
+            const result = await pending;
+            trace.total_ms = Math.round(performance.now() - started);
+            if (!result) {
+              req.log.info({ event: 'ocr_unrecognized', url: req.url, bytes: buffer.length, ...trace });
+              return fail(reply, 422, 'unrecognized');
+            }
+            req.log.info({ ...log(result), bytes: buffer.length, ...trace });
+            return result;
+          } catch (e) {
+            if (e instanceof BusyError) return fail(reply, 429, 'busy', () => void reply.header('Retry-After', '5'));
+            if (e instanceof UnsupportedImageError) return fail(reply, 415, 'unsupported_image');
+            // 模型載入失敗、推論錯誤:記 log,對使用者只說暫時不能用,前端改引導手動輸入
+            req.log.error({ event: 'ocr_failed', url: req.url, err: e });
+            return fail(reply, 503, 'ocr_unavailable');
+          }
+        } finally {
+          inFlight.delete(userId);
         }
-      } finally {
-        inFlight.delete(userId);
-      }
-    });
+      };
+
+    scope.post(
+      '/api/ocr',
+      { preHandler: requireSession },
+      handle(
+        (buffer, trace) => (deps.ocr ? deps.ocr.recognize(buffer, trace) : null),
+        (result) => ({ event: 'ocr', format: result.format, rows: result.submarines.length, suspects: result.submarines.filter((s) => s.suspect.name || s.suspect.time).length }),
+      ),
+    );
+
+    // 海圖截圖(D-293):只辨識、不寫資料庫、不存圖片;前端核對後再 PUT /api/workshops/:id/charts
+    scope.post(
+      '/api/charts/ocr',
+      { preHandler: requireSession },
+      handle(
+        (buffer, trace) => (deps.ocr?.recognizeChart ? deps.ocr.recognizeChart(buffer, trace) : null),
+        (result) => ({ event: 'chart_ocr', points: result.points.length, filled: result.filled.length, uncertain: result.uncertain.length, screen_count: result.screen_count }),
+      ),
+    );
   });
 }

@@ -1,7 +1,8 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { LEVELING_SCHOOL_LABEL, applyExp, type LevelingSchool, type ProgressInput, type ProgressRoute, type SubmarineDto } from '@eranaut/shared';
 import { RouteVm } from '../route/route-vm';
-import { hasReturned, nextStart, sameRoute, schoolFor, suggestAll, unlockTarget, type NextStart, type Parts, type Suggestion, type UnlockTarget, type ViewSchool } from './dispatch';
+import { foundCodes, hasReturned, nextStart, sameRoute, schoolFor, suggestAll, unlockTarget, type FoundCodes, type NextStart, type Parts, type Suggestion, type UnlockTarget, type ViewSchool } from './dispatch';
+import { foundOf } from './charts';
 import { DataStore } from './data-store';
 import { planRoute, routeText, type RoutePlan } from './leveling-vm';
 
@@ -26,6 +27,10 @@ export interface DispatchOption {
   calc: boolean;
   /** 會解鎖下一個潛艇欄位(例:「艇3」) */
   unlock: string | null;
+  /** 依工坊海圖避開的攻略點(代號,D-293) */
+  avoided?: string[];
+  /** 解鎖點還沒發現,這趟先去的點(代號,D-293) */
+  prereq?: string;
 }
 
 export interface DispatchInfo {
@@ -51,16 +56,16 @@ export interface ResolvedRoute {
 }
 
 function optionOf(s: Suggestion, pref: boolean, label: string): DispatchOption {
-  return { key: s.school, label, plan: s.plan, after: s.after, pref, sameAs: null, calc: s.source === 'calc', unlock: s.unlock };
+  return { key: s.school, label, plan: s.plan, after: s.after, pref, sameAs: null, calc: s.source === 'calc', unlock: s.unlock, avoided: s.avoided, prereq: s.prereq };
 }
 
 /** 一艘的選項;練級輔助沒開、沒填等級、超過 85 級回 null(只有 over 時仍回 start 供顯示) */
-export function dispatchInfo(sub: SubmarineDto, parts: Parts | null, view: ViewSchool, now: number, unlock: UnlockTarget | null = null): DispatchInfo | null {
+export function dispatchInfo(sub: SubmarineDto, parts: Parts | null, view: ViewSchool, now: number, unlock: UnlockTarget | null = null, found: FoundCodes | null = null): DispatchInfo | null {
   const start = nextStart(sub, now);
   if (!start) return null;
   if (start.over) return { sub, start, parts, options: [], current: null, guideConfig: null, toGray: false };
   const prefSchool = sub.progress?.school ?? null;
-  const sugg = suggestAll(start.level, start.exp, parts, unlock);
+  const sugg = suggestAll(start.level, start.exp, parts, unlock, found);
   const options: DispatchOption[] = [];
   for (const s of sugg) {
     const o = optionOf(s, s.school === prefSchool, LEVELING_SCHOOL_LABEL[s.school]);
@@ -131,7 +136,8 @@ export class DispatchVm {
   info(sub: SubmarineDto, now: number, view: ViewSchool = this.view()): DispatchInfo | null {
     // 工坊有幾艘 = 已解鎖幾個欄位;還沒滿 4 艘時,潛艇-1 優先推薦解鎖下一個欄位的點(D-291 第二次調整)
     const ws = this.store.workshops().find((w) => w.id === sub.workshop_id);
-    return dispatchInfo(sub, this.partsOf(sub.id), view, now, ws ? unlockTarget(ws.submarines, sub) : null);
+    // 工坊有海圖紀錄時,建議先避開還沒發現的點(D-293)
+    return dispatchInfo(sub, this.partsOf(sub.id), view, now, ws ? unlockTarget(ws.submarines, sub) : null, foundCodes(foundOf(ws)));
   }
 }
 

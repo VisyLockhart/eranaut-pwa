@@ -14,6 +14,7 @@ import { registerPushRoutes } from './routes/push.js';
 import type { PushSender } from './push/sender.js';
 import type { OcrService } from './ocr/service.js';
 import { registerRouteFilterRoutes } from './routes/route-filters.js';
+import { registerChartRoutes } from './routes/charts.js';
 import { registerRouteSubRoutes } from './routes/route-subs.js';
 import { registerSubmarineRoutes } from './routes/submarines.js';
 import { registerWorkshopRoutes } from './routes/workshops.js';
@@ -64,6 +65,7 @@ export function buildPublicServer(deps: AppDeps, opts: { logger?: boolean } = {}
   registerOcrRoutes(app, deps, requireSession);
   registerRouteSubRoutes(app, deps, requireSession);
   registerRouteFilterRoutes(app, deps, requireSession);
+  registerChartRoutes(app, deps, requireSession);
   return app;
 }
 

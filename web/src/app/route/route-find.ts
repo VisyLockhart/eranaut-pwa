@@ -79,8 +79,10 @@ export class RouteFind {
   protected readonly seaOptions: SelectOption[] = [{ value: 'all', label: '全部海域' }, ...SEAS.map((s) => ({ value: s.sea, label: s.name }))];
   protected readonly hourOptions: SelectOption[] = MAX_HOURS_OPTIONS.map((h) => ({ value: h ?? 'any', label: h === null ? '不限' : `${h} 小時內` }));
   protected readonly seaIdx = computed(() => SEA_INDEXES.find((s) => s.sea.sea === this.x.viewSea()) ?? SEA_INDEXES[0]!);
+  protected readonly none: ReadonlySet<number> = new Set();
+  protected readonly chartCount = computed(() => this.x.found()?.size ?? 0);
   protected readonly seaProgress = computed(() => {
-    const ex = this.x.explored();
+    const ex = this.x.chartActive() ? (this.x.found() ?? this.none) : this.x.explored();
     const pts = this.seaIdx().sea.points;
     return `${pts.filter((p) => ex.has(p.id)).length} / ${pts.length}`;
   });

@@ -7,6 +7,7 @@ export const routes: Routes = [
   { path: '', component: OverviewPage, pathMatch: 'full', title: '靜謐海域交換所 Aequor Eranos' },
   { path: 'workshops', title: '工坊管理 ・ Aequor Eranos', loadComponent: () => import('./workshops/workshops-page').then((m) => m.WorkshopsPage) },
   { path: 'update', title: '更新潛水艇 ・ Aequor Eranos', loadComponent: () => import('./update/update-page').then((m) => m.UpdatePage) },
+  { path: 'charts', title: '更新海圖 ・ Aequor Eranos', loadComponent: () => import('./charts/chart-page').then((m) => m.ChartPage) },
   { path: 'route', title: 'FFXIV 潛水艇航線模擬器・靜謐海域交換所 Aequor Eranos', loadComponent: () => import('./route/route-page').then((m) => m.RoutePage) },
   { path: 'craft', title: 'FFXIV 潛水艇配件製作・靜謐海域交換所 Aequor Eranos', loadComponent: () => import('./craft/craft-page').then((m) => m.CraftPage) },
   { path: 'settings', title: '設定 ・ Aequor Eranos', loadComponent: () => import('./settings/settings-page').then((m) => m.SettingsPage) },

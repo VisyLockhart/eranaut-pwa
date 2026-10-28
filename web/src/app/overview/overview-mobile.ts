@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DataStore } from '../core/data-store';
 import { circled } from '../core/format';
+import { chartFound, chartLabel } from '../core/charts';
+import { RouterLink } from '@angular/router';
 import { OverviewVm, upkeepText, wsInfo, wsMeta } from '../core/overview-vm';
 import { UpkeepVm } from '../core/upkeep-vm';
 import { SelectField } from '../ui/select';
@@ -17,7 +19,7 @@ const MIN_REFRESH_MS = 600;
 
 @Component({
   selector: 'app-overview-mobile',
-  imports: [IconComponent, PullRefresh, UpkeepTag, LevelBadge, LevelTag, NextRouteTag, SelectField, OverviewSort],
+  imports: [IconComponent, RouterLink, PullRefresh, UpkeepTag, LevelBadge, LevelTag, NextRouteTag, SelectField, OverviewSort],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './overview-mobile.html',
   host: { style: 'display: contents' },
@@ -29,6 +31,8 @@ export class OverviewMobile {
   protected readonly wsMeta = wsMeta;
   protected readonly wsInfo = wsInfo;
   protected readonly upkeepText = upkeepText;
+  protected readonly chartFound = chartFound;
+  protected readonly chartLabel = chartLabel;
   private readonly upkeep = inject(UpkeepVm);
 
   /** 只有「全部」且沒有依工坊分組時,每艘才需要標出所屬工坊(D-290 續) */

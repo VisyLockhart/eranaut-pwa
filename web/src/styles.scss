@@ -1039,6 +1039,20 @@ app-route-find > .rt-block, app-route-find > .rt-dirty, app-route-find > .rt-fin
 .rt-map-legend .lg.f-none { border-color: var(--text-faint); }
 .rt-map-legend .lg.f-in { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 35%, transparent); }
 .rt-map-legend .lg.f-out { border-color: var(--pink); background: color-mix(in srgb, var(--pink) 30%, transparent); }
+/* 海圖探索模式(D-293):已發現實心、未發現虛線變暗;辨識新增綠(＋)、紀錄有但沒辨識到桃紅虛線(－) */
+.rt-pt.cf-on .dot { fill: color-mix(in srgb, var(--accent) 22%, transparent); stroke: var(--accent); }
+.rt-pt.cf-off .dot { fill: var(--bg-locked); stroke: var(--text-faint); stroke-width: 4; stroke-dasharray: 9 7; }
+.rt-pt.cf-off .code { fill: var(--text-locked); }
+.rt-pt.cf-add .dot { fill: color-mix(in srgb, var(--ok) 28%, transparent); stroke: var(--ok); stroke-width: 7; }
+.rt-pt.cf-rem .dot { fill: color-mix(in srgb, var(--pink) 20%, transparent); stroke: var(--pink); stroke-width: 6; stroke-dasharray: 10 6; }
+.rt-pt.cf-rem .code { fill: var(--pink-text); }
+.rt-pt .cf-badge.add circle { fill: var(--ok); }
+.rt-pt .cf-badge.rem circle { fill: var(--pink); }
+.rt-pt .cf-badge path { fill: none; stroke: var(--on-accent); stroke-width: 6; stroke-linecap: round; }
+.rt-map-legend .lg.cf-on { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+.rt-map-legend .lg.cf-off { border-color: var(--text-faint); border-style: dashed; }
+.rt-map-legend .lg.cf-add { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 35%, transparent); }
+.rt-map-legend .lg.cf-rem { border-color: var(--pink); border-style: dashed; }
 
 .rt-undo { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 8px 6px 10px; border-radius: calc(10px * var(--rs)); background: color-mix(in srgb, var(--amber) 10%, transparent); border: var(--bw) solid color-mix(in srgb, var(--amber) 35%, transparent); font-size: 12px; color: var(--amber); }
 .rt-undo > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
@@ -1601,3 +1615,65 @@ app-select { display: block; }
 .d-card-sub + .ov-next-route { margin: 0 0 4px; }
 .t-sub .ov-next-route b { font-size: 12.5px; letter-spacing: 0; }
 .dp-tag.unlock { border-color: color-mix(in srgb, var(--ok) 55%, transparent); color: var(--ok); }
+
+/* ---- 更新海圖(D-293):只用 token,沿用 dropzone / rt-block / rt-chip / ct-seg / uf-comp 等既有元件,四個主題各自的外觀會自動套上 ---- */
+.ch-wrap { max-width: 1100px; width: 100%; }
+.ch-grid { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.ch-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ch-main { min-width: 0; max-width: 640px; }
+.ch-drop { gap: 12px; min-height: 84px; padding: 14px 16px; text-align: left; justify-content: flex-start; }
+.ch-drop app-icon { color: var(--accent); flex: 0 0 auto; }
+.ch-capture { margin-top: 0; }
+.ch-busy { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-muted); }
+.ch-busy .ocr-spinner { width: 20px; height: 20px; border-width: 2px; }
+.ch-m-body { display: flex; flex-direction: column; gap: 10px; }
+.ch-m-body .uf-err, .ch-side .uf-err { margin-top: 0; }
+.ch-map-block { display: flex; flex-direction: column; gap: 10px; }
+.ch-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.ch-tabs::-webkit-scrollbar { display: none; }
+.ch-tab { flex: 0 0 auto; min-height: 44px; line-height: normal; display: inline-flex; align-items: center; gap: 6px; max-width: none; }
+.ch-tab-n { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; }
+.ch-warn-dot { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: var(--r-round); background: var(--amber); color: var(--on-amber); font-size: 11px; font-weight: 800; }
+.ct-seg.ch-seg { display: flex; }
+.ch-seg button { flex: 1; }
+.uf-comp.ch-msg { margin-bottom: 0; }
+.ch-ok { font-size: 12.5px; font-weight: 600; color: var(--ok); }
+.uf-note.ch-note { margin: 0; }
+.ch-shot { position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: calc(12px * var(--rs)); border: var(--bw) solid var(--border); background: var(--bg-elevated); }
+.ch-shot img { display: block; max-width: none; height: auto; }
+.ch-ring { position: absolute; width: 6.5%; aspect-ratio: 1 / 1; transform: translate(-50%, -50%); border: 2px solid var(--ok); border-radius: var(--r-round); box-shadow: 0 0 0 1px var(--shade); pointer-events: none; }
+.ch-ring b { position: absolute; right: -9px; top: -9px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: var(--r-pill); background: var(--bg-elevated); border: 1px solid var(--ok); color: var(--text); font-size: 10px; font-weight: 800; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.ch-actions { align-items: center; margin-top: 14px; max-width: 1100px; }
+.uf-actions-d.ch-actions .primary-btn { flex: 0 0 auto; padding: 12px 28px; }
+.ch-sum { margin-right: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 12.5px; color: var(--text-muted); min-width: 0; }
+.ch-actions-m { align-items: center; }
+.ch-actions-m .ch-sum { flex: 1; }
+.uf-actions-m.ch-actions-m .primary-btn { flex: 0 0 auto; padding: 0 24px; min-height: 46px; }
+.ch-add { color: var(--ok); }
+.ch-rem { color: var(--pink-text); }
+.ch-dim { color: var(--text-dim); }
+/* 總覽的海圖入口(D-293) */
+.ov-ctas { display: flex; align-items: center; gap: 10px; }
+a.ghost-btn.ov-chart-cta { display: inline-flex; align-items: center; gap: 8px; width: auto; padding: 10px 16px; color: var(--accent); border-color: var(--accent); text-decoration: none; }
+.ov-chart-line { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
+.ov-chart-line app-icon { color: var(--accent); }
+.ov-chart-sea b { color: var(--text); }
+.ov-chart-hint { color: var(--amber-text); }
+.ov-chart-link { color: var(--accent); font-weight: 600; }
+.ws-context-line.ov-m-context { gap: 8px; padding-bottom: 6px; }
+.ov-m-ctx-text { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+a.rt-chip.ov-chart-chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; line-height: normal; padding: 0 12px; color: var(--text); text-decoration: none; }
+.ov-chart-chip app-icon { color: var(--accent); }
+.ov-chart-chip b { font-weight: 700; }
+.ov-chart-dot { width: 8px; height: 8px; border-radius: var(--r-round); background: var(--amber); }
+/* 航線頁的「工坊海圖」選擇(D-293) */
+.rt-chartbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: 12px 0 0; padding: 8px 12px; border-radius: calc(12px * var(--rs)); border: var(--bw) solid var(--border); background: var(--bg-elevated-2); }
+.rt-chartbar > app-icon { color: var(--accent); flex: 0 0 auto; }
+.rt-chartbar-label { font-size: 12.5px; font-weight: 700; color: var(--text-muted); }
+.rt-chartbar-select { width: 180px; max-width: 100%; }
+.rt-chartbar-note { flex: 1 1 200px; min-width: 0; font-size: 12px; color: var(--text-dim); overflow-wrap: anywhere; }
+.rt-chartbar-note a { color: var(--accent); font-weight: 600; }
+.dp-tag.chart { border-color: color-mix(in srgb, var(--accent) 55%, transparent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.ch-actions .primary-btn, .ch-actions-m .primary-btn { width: auto; }
+.ch-actions .ch-sum, .ch-actions-m .ch-sum { flex: 1 1 auto; }
+.uf-actions-d.ch-actions { margin-bottom: 56px; }

@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { MaintenanceDto, OverviewDto, ProgressInput, SubmarineDto, SubmarineInput, UpkeepPatch, SubmarinesUpdateResult, WorkshopDto, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
+import type { MaintenanceDto, OverviewDto, ProgressInput, SubmarineDto, SubmarineInput, UpkeepPatch, SubmarinesUpdateResult, WorkshopChartsInput, WorkshopDto, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
 import { Api } from './api';
 import { Auth } from './auth';
 import { isReady } from './format';
@@ -184,6 +184,15 @@ export class DataStore {
   async clearProgress(submarineId: string): Promise<void> {
     const sub = await this.api.clearProgress(submarineId);
     this.applySubmarines(sub.workshop_id, [sub]);
+  }
+
+  // ---- 海圖探索(D-293) ----
+
+  /** 覆寫列出的海域(`points` 空 = 刪除該海域);用回應取代該工坊的紀錄 */
+  async saveCharts(workshopId: string, seas: WorkshopChartsInput['seas']): Promise<void> {
+    const charts = await this.api.saveCharts(workshopId, seas);
+    this.fetched.update((list) => list.map((w) => (w.id === workshopId ? { ...w, charts } : w)));
+    this.persist();
   }
 
   /** 以位置為鍵合併回應裡的潛艇(整坊回應含全部、單艘回應只有一艘,合併後都正確),存快照並在背景重抓確認 */

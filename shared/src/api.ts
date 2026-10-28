@@ -180,6 +180,8 @@ export interface SubmarinesBatchValidationErrorBody {
 export interface WorkshopWithSubmarines extends WorkshopDto {
   /** 依 position 排序 */
   submarines: SubmarineDto[];
+  /** 海圖探索紀錄(D-293),依海域排序;內部端點(Eranarch)的回應不帶這個欄位 */
+  charts?: WorkshopChartDto[];
 }
 
 /**
@@ -271,6 +273,48 @@ export interface OcrResultDto {
   format: OcrFormat;
   submarines: OcrSubmarineDto[];
   warnings: OcrWarning[];
+}
+
+/**
+ * `POST /api/charts/ocr` 的回應(D-293):「選擇航海圖」視窗截圖的辨識結果。只辨識、不寫資料庫、不存圖片;
+ * 前端在海圖上給使用者核對後,再用 `PUT /api/workshops/:id/charts` 儲存。航點以航線資料集的航點 id 表示。
+ */
+export interface ChartOcrResultDto {
+  /** 海域編號(航線資料集的 sea:1 溺沒海、2 灰海…) */
+  sea: number;
+  /** 判斷為已發現的航點 id(含 `filled`),依資料集順序 */
+  points: number[];
+  /** 畫面上沒認出、但因為後面的點已發現而補上的點(前一個點一定已探索過) */
+  filled: number[];
+  /** 介於有無之間、請使用者核對的點(沒有算進 `points`) */
+  uncertain: number[];
+  /** 畫面上「已發現目的地數」讀到的數字;讀不到為 null。和 `points` 的數量不同時前端標「請核對」 */
+  screen_count: number | null;
+  /**
+   * 海圖在截圖中的位置(轉正後的原圖像素):正方形,範圍是資料座標 -40~1064(`CHART_BOX_MARGIN`)。
+   * 前端「對照截圖」用來只顯示海圖那一塊並圈出辨識到的點;`width`/`height` 是原圖尺寸
+   */
+  map_box: { left: number; top: number; size: number; width: number; height: number };
+}
+
+/** `map_box` 四周多留的資料單位(海圖本身是 0~1024) */
+export const CHART_BOX_MARGIN = 40;
+
+/** 工坊某一海域的海圖探索紀錄(D-293):已發現的航點 id。沒有紀錄的海域不會出現 */
+export interface WorkshopChartDto {
+  sea: number;
+  points: number[];
+  updated_at: string;
+}
+
+/** `PUT /api/workshops/:id/charts`:只覆寫列出的海域;`points` 為空陣列 = 刪除該海域的紀錄 */
+export interface WorkshopChartsInput {
+  seas: { sea: number; points: number[] }[];
+}
+
+export interface WorkshopChartsValidationErrorBody {
+  error: 'validation_failed';
+  fields: { seas?: FieldErrorCode };
 }
 
 export type OcrErrorCode =

@@ -19,6 +19,7 @@
   @switch (vm.tab()) {
     @case ('config') { <app-route-editor /> }
     @case ('route') {
+      <app-route-chart-bar />
       @if (vm.findOpen()) {
         <app-route-recommend />
       } @else {
@@ -53,7 +54,7 @@
   <section class="rt-main" aria-label="地圖">
     <app-route-sea-pager [sea]="vm.sea()" (seaChange)="setSea($event)" />
 
-    <app-route-map [sea]="vm.seaIdx()" [seq]="vm.seq()" [states]="vm.selectable()" (pick)="pick($event)" />
+    <app-route-map [sea]="vm.seaIdx()" [seq]="vm.seq()" [states]="vm.selectable()" [hidden]="x.hiddenIds()" (pick)="pick($event)" />
 
     <div class="rt-hint" role="status" aria-live="polite">{{ hint() }}</div>
   </section>

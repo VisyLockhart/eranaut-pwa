@@ -1,5 +1,7 @@
-import type { OcrResultDto } from '@eranaut/shared';
-import { cropRegion, prepareImage, type OcrEngine, type RawImage } from './engine.js';
+import type { ChartOcrResultDto, OcrResultDto } from '@eranaut/shared';
+import sharp from 'sharp';
+import { CROP_MARGIN, CROP_SCALE, cropRect, discoveredFrom, guessesFromLines, isConfident, matchSeaAny, pinScores, PIN_THRESHOLD, readDiscoveredCount, refineSea } from './chart.js';
+import { cropRegion, MAX_INPUT_PIXELS, prepareImage, type OcrEngine, type RawImage } from './engine.js';
 import { createLimiter, type Limiter } from './limiter.js';
 import { parseOcrLines, type OcrLine } from './parse.js';
 import { addRowSiblings, boxesInRegion, FIRST_ROW_CANDIDATES, findDialogRegion, MAX_ROW_CANDIDATES, pickRowCandidates, type Region } from './region.js';
@@ -18,6 +20,8 @@ export type OcrTrace = Record<string, number | string>;
 export interface OcrService {
   /** 回 null = 讀得到圖但找不到潛艇列(unrecognized)。圖片無法解碼丟 UnsupportedImageError、太忙丟 BusyError */
   recognize(image: Buffer, trace?: OcrTrace): Promise<OcrResultDto | null>;
+  /** 海圖截圖(D-293)。回 null = 找不到可信的海圖(unrecognized);錯誤同 {@link recognize} */
+  recognizeChart?(image: Buffer, trace?: OcrTrace): Promise<ChartOcrResultDto | null>;
   /** 預先載入模型(啟動時呼叫,不等待) */
   warmup?(): Promise<void>;
 }
@@ -40,8 +44,67 @@ export function createOcrService(engine: OcrEngine & { warmup?(): Promise<void> 
         if (trace) trace.path = 'whole';
         return recognizeWhole(engine, image, raw);
       }),
+    recognizeChart: (image, trace) => limiter.run(() => recognizeChart(engine, image, trace)),
     warmup: engine.warmup ? () => engine.warmup!() : undefined,
   };
+}
+
+/** 介於有無之間、請使用者核對的圖釘分數下限 */
+const PIN_UNCERTAIN = 0.5;
+
+/**
+ * 海圖辨識(D-293):縮圖 → OCR 找文字錨點 → 比對底圖決定海域與位置 → 回原圖裁出海圖(標準化大小)→ 細調 → 找圖釘。
+ * 只辨識、不存圖(D-126)。
+ */
+async function recognizeChart(engine: OcrEngine, image: Buffer, trace?: OcrTrace): Promise<ChartOcrResultDto | null> {
+  const mark = stopwatch(trace);
+  const raw = await prepareImage(image);
+  mark('prepare_ms');
+  const lines = await engine.detect(raw);
+  mark('ocr_ms');
+  const m = matchSeaAny(raw, guessesFromLines(lines, raw.width, raw.height));
+  mark('match_ms');
+  if (trace) Object.assign(trace, { anchor: m.kind, sea: m.sea, score: Math.round(m.score * 1000) / 1000, margin: Math.round((m.runnerUp - m.score) * 1000) / 1000 });
+  if (!isConfident(m)) return null;
+
+  // 回原圖裁出海圖、縮放成每資料單位 CROP_SCALE 像素(海圖超出圖片的部分直接裁掉,轉換跟著調整)
+  const srcW = raw.sourceWidth ?? raw.width;
+  const srcH = raw.sourceHeight ?? raw.height;
+  const k = srcW / raw.width;
+  const rect = cropRect(m.transform);
+  const left = Math.max(0, Math.floor(rect.left * k));
+  const top = Math.max(0, Math.floor(rect.top * k));
+  const right = Math.min(srcW, Math.ceil((rect.left + rect.size) * k));
+  const bottom = Math.min(srcH, Math.ceil((rect.top + rect.size) * k));
+  const f = CROP_SCALE / (m.transform.s * k);
+  const { data, info } = await sharp(image, { limitInputPixels: MAX_INPUT_PIXELS })
+    .rotate()
+    .extract({ left, top, width: right - left, height: bottom - top })
+    .resize({ width: Math.max(16, Math.round((right - left) * f)), height: Math.max(16, Math.round((bottom - top) * f)), fit: 'fill' })
+    .ensureAlpha(1)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const crop = { data, width: info.width, height: info.height };
+  const fx = info.width / (right - left);
+  const fy = info.height / (bottom - top);
+  const start = { s: CROP_SCALE, ox: (m.transform.ox * k - left) * fx, oy: (m.transform.oy * k - top) * fy };
+  const refined = refineSea(crop, m.sea, start);
+  mark('crop_ms');
+  const scores = pinScores(crop, m.sea, Number.isFinite(refined.score) ? refined.transform : start);
+  const { points, filled } = discoveredFrom(m.sea, scores);
+  mark('pins_ms');
+  const uncertain = scores.filter((s) => s.score >= PIN_UNCERTAIN && s.score < PIN_THRESHOLD && !points.includes(s.id)).map((s) => s.id);
+  // 海圖在原圖的位置:用細調後的轉換換回原圖座標(對照截圖要對得準)
+  const t = Number.isFinite(refined.score) ? refined.transform : start;
+  const sSrc = t.s / fx;
+  const box = {
+    left: Math.round(left + t.ox / fx - CROP_MARGIN * sSrc),
+    top: Math.round(top + t.oy / fy - CROP_MARGIN * sSrc),
+    size: Math.round((1024 + 2 * CROP_MARGIN) * sSrc),
+    width: srcW,
+    height: srcH,
+  };
+  return { sea: m.sea, points, filled, uncertain, screen_count: readDiscoveredCount(lines), map_box: box };
 }
 
 /**

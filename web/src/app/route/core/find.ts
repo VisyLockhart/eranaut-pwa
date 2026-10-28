@@ -31,6 +31,11 @@ export interface FindQuery {
   /** 去過的航點與解鎖樹:排序為 opens 時用來決定「可去的點」與新解鎖的點 */
   explored: ReadonlySet<number>;
   graph: UnlockGraph;
+  /**
+   * 工坊的海圖探索紀錄(D-293):有給時只用已發現的點;排序為 opens 時「可去的點」= 已發現的點,
+   * 新解鎖的點 = 路線上的點後面還沒發現的點(取代 `explored`)。null / 省略 = 不限制
+   */
+  discovered?: ReadonlySet<number> | null;
   limit?: number;
 }
 
@@ -137,7 +142,9 @@ export function findRoutes(seas: readonly SeaIndex[], q: FindQuery): FindRoute[]
   for (const si of scope) {
     const reqPts = si.sea.points.filter((p) => q.required.has(p.id)).sort((a, b) => a.id - b.id);
     if (reqPts.length > MAX_STOPS) continue;
-    const usable = (p: SeaPoint): boolean => p.rankReq <= q.level && !q.excluded.has(p.id) && (q.sort !== 'opens' || isAvailable(q.graph, q.explored, p.id));
+    const disc = q.discovered ?? null;
+    const usable = (p: SeaPoint): boolean =>
+      p.rankReq <= q.level && !q.excluded.has(p.id) && (disc ? disc.has(p.id) : q.sort !== 'opens' || isAvailable(q.graph, q.explored, p.id));
     // 必選點本身不能用(等級不足、排除、不是可去的點)→ 這個海域沒有路線
     if (reqPts.some((p) => !usable(p))) continue;
     const optional = si.sea.points.filter((p) => !q.required.has(p.id) && usable(p)).sort((a, b) => a.id - b.id);
@@ -182,7 +189,7 @@ export function findRoutes(seas: readonly SeaIndex[], q: FindQuery): FindRoute[]
       const lbMinutes = Math.floor(sumDist / speed + 720);
       if (q.maxMinutes !== null && lbMinutes > q.maxMinutes) return;
       let opensN = 0;
-      if (q.sort === 'opens') opensN = opensFor(q.graph, q.explored, pts.map((p) => p.id)).length;
+      if (q.sort === 'opens') opensN = opensFor(q.graph, disc ?? q.explored, pts.map((p) => p.id)).length;
       if (top.length >= limit) {
         const worst = top[top.length - 1]!;
         if (q.sort === 'perMin') {
@@ -215,7 +222,7 @@ export function findRoutes(seas: readonly SeaIndex[], q: FindQuery): FindRoute[]
       const minutes = Math.floor(bestDist / speed + 720);
       if (q.maxMinutes !== null && minutes > q.maxMinutes) return;
       const order = bestPerm.map((j) => pts[j]!.id);
-      const opens = opensFor(q.graph, q.explored, order);
+      const opens = opensFor(q.graph, disc ?? q.explored, order);
       const items = [...count.keys()].sort((a, b) => a - b);
       insert({
         sea: si.sea.sea,

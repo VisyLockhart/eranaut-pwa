@@ -23,3 +23,35 @@ describe('航點地圖的圈圈與觸控範圍(D-211)', () => {
     expect(HIT_R).toBeGreaterThan(34);
   });
 });
+
+describe('海圖探索模式與隱藏未發現的點(D-293)', () => {
+  const render = async (inputs: Record<string, unknown>) => {
+    const { TestBed } = await import('@angular/core/testing');
+    const { RouteMap } = await import('./route-map');
+    const { SEA_INDEXES } = await import('./core/data');
+    TestBed.resetTestingModule();
+    const f = TestBed.createComponent(RouteMap);
+    f.componentRef.setInput('sea', SEA_INDEXES[0]!);
+    for (const [k, v] of Object.entries(inputs)) f.componentRef.setInput(k, v);
+    f.detectChanges();
+    return f.nativeElement as HTMLElement;
+  };
+  const byCode = (el: HTMLElement, code: string) => [...el.querySelectorAll('g.rt-pt')].find((g) => g.querySelector('.code')?.textContent?.trim() === code);
+
+  it('已發現實心、未發現虛線(點一下加入)、新增與取消有徽章', async () => {
+    const el = await render({ found: new Set([1, 2, 3]), added: new Set([3]), removed: new Set([4]) });
+    expect(byCode(el, 'A')!.classList).toContain('cf-on');
+    expect(byCode(el, 'C')!.classList).toContain('cf-add');
+    expect(byCode(el, 'D')!.classList).toContain('cf-rem');
+    expect(byCode(el, 'E')!.classList).toContain('cf-off');
+    expect(byCode(el, 'E')!.getAttribute('aria-label')).toContain('未發現');
+  });
+
+  it('hidden 的點不畫,連到它的線也不畫;已選進路線的點照畫', async () => {
+    const all = await render({});
+    const hidden = new Set(SEAS[0]!.points.filter((p) => p.code !== 'A' && p.code !== 'B').map((p) => p.id));
+    const el = await render({ hidden, seq: [5] });
+    expect(el.querySelectorAll('g.rt-pt').length).toBe(3); // A、B + 已選的 E
+    expect(el.querySelectorAll('line.rt-link').length).toBeLessThan(all.querySelectorAll('line.rt-link').length);
+  });
+});

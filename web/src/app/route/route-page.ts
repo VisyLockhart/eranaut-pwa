@@ -9,6 +9,8 @@ import { RouteAbout } from './route-about';
 import { RouteConfigDialog } from './route-config-dialog';
 import { RouteEditor } from './route-editor';
 import { RouteLoot } from './route-loot';
+import { RouteChartBar } from './route-chart-bar';
+import { RouteExploreVm } from './route-explore-vm';
 import { RouteMap } from './route-map';
 import { RoutePerfDialog } from './route-perf-dialog';
 import { RouteCfgBar } from './route-cfg-bar';
@@ -27,7 +29,7 @@ import { RouteVm } from './route-vm';
  */
 @Component({
   selector: 'app-route-page',
-  imports: [NgTemplateOutlet, IconComponent, RouteCfgBar, RouteMap, RouteEditor, RouteRecommend, RouteLoot, RouteAbout, RouteConfigDialog, RoutePerfDialog, RouteReplaceDialog, RouteSeaPager, RouteStats],
+  imports: [NgTemplateOutlet, IconComponent, RouteChartBar, RouteCfgBar, RouteMap, RouteEditor, RouteRecommend, RouteLoot, RouteAbout, RouteConfigDialog, RoutePerfDialog, RouteReplaceDialog, RouteSeaPager, RouteStats],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-page.html',
   host: {
@@ -39,6 +41,7 @@ import { RouteVm } from './route-vm';
 export class RoutePage {
   protected readonly layout = inject(Layout);
   protected readonly vm = inject(RouteVm);
+  protected readonly x = inject(RouteExploreVm);
   protected readonly maxStops = MAX_STOPS;
 
   protected openFind(): void {

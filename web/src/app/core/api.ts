@@ -1,6 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
+  ChartOcrResultDto,
+  WorkshopChartDto,
+  WorkshopChartsInput,
   MaintenanceResponse,
   MeDto,
   NotifyPrefs,
@@ -95,6 +98,16 @@ export class Api {
     const form = new FormData();
     form.append('image', file, file.name);
     return firstValueFrom(this.http.post<OcrResultDto>('/api/ocr', form));
+  }
+
+  // ---- 海圖探索(D-293):截圖只辨識、不存;核對後才儲存 ----
+  chartOcr(file: File): Promise<ChartOcrResultDto> {
+    const form = new FormData();
+    form.append('image', file, file.name);
+    return firstValueFrom(this.http.post<ChartOcrResultDto>('/api/charts/ocr', form));
+  }
+  saveCharts(workshopId: string, seas: WorkshopChartsInput['seas']): Promise<WorkshopChartDto[]> {
+    return firstValueFrom(this.http.put<WorkshopChartDto[]>(`/api/workshops/${encodeURIComponent(workshopId)}/charts`, { seas }));
   }
 
   // ---- 提醒方式(SCHEMA §8.5;對外用具名布林,D-145 ⑦) ----

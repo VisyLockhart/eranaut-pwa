@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { registerSessionAuth } from '../auth/session-guard.js';
+import { listChartsByWorkshop } from '../repo/charts.js';
 import { getActiveMaintenance } from '../repo/maintenance.js';
 import { getOverview, getSubmarine, listSubmarines } from '../repo/submarines.js';
 import { applyProgressInput, deleteProgress, ProgressRejected } from '../repo/progress.js';
@@ -18,7 +19,13 @@ export function registerSubmarineRoutes(app: FastifyInstance, deps: AppDeps, req
 
   // 前端總覽一次取得所有工坊與潛艇(D-146)
   // 維護橫幅(D-283)順便帶回總覽,不增加請求;橫幅顯示期間前端改打下面這支輕量端點
-  app.get('/api/overview', opts, async (req) => ({ ...getOverview(db, req.session!.userId, deps.now()), maintenance: getActiveMaintenance(db, deps.now()) }));
+  // 海圖探索紀錄(D-293)也帶在各工坊上(內部端點不帶)
+  app.get('/api/overview', opts, async (req) => {
+    const userId = req.session!.userId;
+    const overview = getOverview(db, userId, deps.now());
+    const charts = listChartsByWorkshop(db, userId);
+    return { workshops: overview.workshops.map((w) => ({ ...w, charts: charts.get(w.id) ?? [] })), maintenance: getActiveMaintenance(db, deps.now()) };
+  });
   app.get('/api/maintenance', opts, async () => ({ maintenance: getActiveMaintenance(db, deps.now()) }));
 
   app.get<{ Params: { id: string } }>('/api/workshops/:id/submarines', opts, async (req, reply) => {

@@ -64,8 +64,14 @@
 </div>
 
 @if (vm.currentWorkshop(); as ws) {
-  <div class="ws-context-line">
-    <app-icon name="server" [size]="12" />{{ ws.server || '未設定伺服器' }}<span style="color: var(--text-faint)">·</span>{{ ws.captain || '未設定代表角色' }}
+  <div class="ws-context-line ov-m-context">
+    <span class="ov-m-ctx-text"><app-icon name="server" [size]="12" />{{ ws.server || '未設定伺服器' }}<span style="color: var(--text-faint)">·</span>{{ ws.captain || '未設定代表角色' }}</span>
+    @if (vm.chart(); as c) {
+      <a class="rt-chip ov-chart-chip" routerLink="/charts" [queryParams]="{ ws: ws.id }" [attr.aria-label]="chartLabel(c)">
+        <app-icon name="seaChart" [size]="15" />海圖@if (c.seas.length) { <b class="mono">{{ chartFound(c) }}</b> } @else { <span>未記錄</span> }
+        @if (c.returnedSince > 0) { <i class="ov-chart-dot" aria-hidden="true"></i> }
+      </a>
+    }
   </div>
 }
 

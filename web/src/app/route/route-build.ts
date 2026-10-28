@@ -14,6 +14,7 @@ import { judgeBuild, routeNeed, type BuildJudgement } from './core/need';
 import { formatTravel, offReason } from './route-format';
 import { MIN_KEYS, RouteBuildVm, type MinKey } from './route-build-vm';
 import { RouteCraftBtn } from './route-craft-btn';
+import { RouteExploreVm } from './route-explore-vm';
 import { RouteMap } from './route-map';
 import { RouteSeaPager } from './route-sea-pager';
 import { sameBuild } from './route-state';
@@ -64,6 +65,7 @@ export class RouteBuild {
   protected readonly layout = inject(Layout);
   protected readonly vm = inject(RouteVm);
   protected readonly b = inject(RouteBuildVm);
+  protected readonly x = inject(RouteExploreVm);
   private readonly toast = inject(Toast);
 
   protected readonly goals = GOALS;

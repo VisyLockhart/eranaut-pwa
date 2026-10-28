@@ -51,6 +51,7 @@ const SHORT: Record<ViewSchool, string> = { pref: '偏好', snap: '掐點', half
                     <span class="dp-tag">{{ desktop() ? o.label : shortOf(o) }}@if (o.pref && desktop()) {・偏好}</span>
                     @if (o.unlock) { <span class="dp-tag unlock">{{ unlockText(o.unlock) }}</span> }
                     @if (o.plan.sea === 2) { <span class="dp-tag sea">灰海</span> }
+                    @if (o.avoided?.length && o.calc) { <span class="dp-tag chart">已避開未發現的點</span> }
                     <b class="dp-pts mono">{{ routeText(o.plan.points) }}</b>
                     <span class="dp-meta">
                       @if (desktop()) { <span><b>+{{ fmt(o.plan.exp) }}</b> {{ up(c.i.start.level, o.after) }}</span> } @else if (o.after > c.i.start.level) { <span>→ {{ o.after }}</span> }
@@ -60,7 +61,9 @@ const SHORT: Record<ViewSchool, string> = { pref: '偏好', snap: '掐點', half
                   </span>
                   @if (c.allSame && desktop()) { <small class="dp-note">三種流派都是這條</small> }
                   @if (c.i.toGray) { <small class="dp-note warn">抵達 Lv 50 後，下一趟起改走灰海</small> }
-                  @if (o.unlock) { <small class="dp-note">工坊還有潛艇欄位沒解鎖，優先跑含解鎖點的路線@if (o.calc) {（依配置推算）}</small> }
+                  @if (o.prereq) { <small class="dp-note">解鎖點還沒發現：這趟先去 {{ o.prereq }}，回來後解鎖點才會出現在海圖上</small> }
+                  @else if (o.unlock) { <small class="dp-note">工坊還有潛艇欄位沒解鎖，優先跑含解鎖點的路線@if (o.calc) {（依配置推算）}</small> }
+                  @else if (o.avoided?.length) { <small class="dp-note">@if (o.calc) {攻略路線含還沒發現的 {{ o.avoided.join('、') }}，改推已發現的點裡最好的路線} @else {攻略路線含還沒發現的 {{ o.avoided.join('、') }}，請先更新海圖或確認}</small> }
                   @else if (o.calc) { <small class="dp-note">這艘的配置走不了攻略路線，改依配置推算</small> }
                   @if (o.plan.problem === 'range') { <small class="dp-note warn">以這艘的配置，距離不夠（{{ o.plan.range }} / {{ o.plan.rangeCap }}）</small> }
                   @if (c.i.parts === null && c.i.guideConfig) { <small class="dp-note warn">還沒綁定配置，時間依攻略配置 {{ c.i.guideConfig.join('') }} 推算</small> }

@@ -78,6 +78,48 @@ export interface Suggestion {
   guideConfig: Parts | null;
   /** 這條路線會解鎖下一個潛艇欄位(例:「艇3」);沒有為 null */
   unlock: string | null;
+  /** 依工坊海圖(D-293):攻略路線裡還沒發現、因此避開的點(代號);沒有省略 */
+  avoided?: string[];
+  /** 依工坊海圖:解鎖點還沒發現,這趟先去它路上的這個點(代號);沒有省略 */
+  prereq?: string;
+}
+
+/** 工坊已發現的點,依海域分成代號集合(D-293);null = 沒有紀錄(不過濾) */
+export type FoundCodes = ReadonlyMap<number, ReadonlySet<string>>;
+
+export function foundCodes(found: ReadonlySet<number> | null): FoundCodes | null {
+  if (!found) return null;
+  const out = new Map<number, Set<string>>();
+  for (const sea of [1, 2, 3, 4, 5, 6]) {
+    let si: ReturnType<typeof seaIndex>;
+    try {
+      si = seaIndex(sea);
+    } catch {
+      continue;
+    }
+    const codes = new Set(si.sea.points.filter((p) => found.has(p.id)).map((p) => p.code));
+    if (codes.size) out.set(sea, codes);
+  }
+  return out;
+}
+
+/** 解鎖點還沒發現時,先去哪個點:從根往解鎖點走,第一個還沒發現的點的上一個點(已發現);找不到回 null */
+export function stepToward(found: FoundCodes, sea: number, code: string): string | null {
+  const si = seaIndex(sea);
+  const byCode = new Map(si.sea.points.map((p) => [p.code, p]));
+  const parent = new Map<number, number>();
+  for (const p of si.sea.points) for (const c of p.unlocks) parent.set(c, p.id);
+  const target = byCode.get(code);
+  if (!target) return null;
+  const chain: string[] = [];
+  for (let id: number | undefined = target.id; id !== undefined; id = parent.get(id)) {
+    const p = si.byId.get(id);
+    if (!p) break;
+    chain.unshift(p.code);
+  }
+  const seen = found.get(sea) ?? new Set<string>();
+  const i = chain.findIndex((c) => !seen.has(c));
+  return i > 0 ? chain[i - 1]! : null;
 }
 
 /** 「艇3」→「解鎖第 3 艘」 */
@@ -115,7 +157,8 @@ export function unlockTarget(subs: readonly Pick<SubmarineDto, 'progress' | 'pos
  * 有還沒解鎖的潛艇欄位(`unlock`)且等級夠時,路線一定要包含解鎖點(最高優先):
  * 攻略路線剛好包含就用攻略,沒有就以資料集推算(含解鎖點、在該流派時間限制內最好的);推算不出來才退回一般建議。
  */
-export function suggest(school: LevelingSchool, level: number, exp: number, parts: Parts | null, unlock: UnlockTarget | null = null): Suggestion | null {
+export function suggest(school: LevelingSchool, level: number, exp: number, parts: Parts | null, unlock: UnlockTarget | null = null, found: FoundCodes | null = null): Suggestion | null {
+  if (found) return suggestFound(school, level, exp, parts, unlock, found);
   const r = recommendedRoute(school, level);
   if (!r) return null;
   if (unlock && level >= unlock.rank && !(r.sea === 1 && r.points.includes(unlock.code))) {
@@ -145,11 +188,80 @@ export function suggest(school: LevelingSchool, level: number, exp: number, part
   return { school, plan, after: applyExp({ level, exp_in_level: exp }, plan.exp).level, source, guideConfig: parts === null ? (r.config as Parts) : null, unlock: unlocks ? unlock!.mark : null };
 }
 
+/**
+ * 有工坊海圖紀錄時的建議(D-293,使用者 2026-10-28):先排除含「未發現」點的路線,再照原本的規則。
+ * ① 解鎖點(最高優先):已發現 → 路線要含它;還沒發現 → 路線要含它路上第一個未發現點的上一個點(`stepToward`),回來後解鎖點才會出現。
+ * ② 攻略路線的點都已發現 → 照原本的規則(配置走不了才推算,只用已發現的點)。
+ * ③ 攻略路線含未發現的點 → 用資料集在已發現的點裡推算(先限攻略出現過的點,推不出來再放寬到全部已發現的點);
+ *    攻略換到的海域還沒開放(例如還沒到灰海)→ 留在已開放、編號最大的海域。都推不出來才照攻略並標出未發現的點。
+ */
+function suggestFound(school: LevelingSchool, level: number, exp: number, parts: Parts | null, unlock: UnlockTarget | null, found: FoundCodes): Suggestion | null {
+  const r = recommendedRoute(school, level);
+  if (!r) return null;
+  const guideCfg = r.config as Parts;
+  const cfg = parts ?? guideCfg;
+  const guideMinutes = planRoute(r.sea, r.points, guideCfg, level)?.minutes ?? null;
+  const seen = (sea: number) => found.get(sea) ?? new Set<string>();
+  const allows = (sea: number): Set<string>[] => {
+    const all = new Set([...seen(sea)].filter((c) => seaIndex(sea).sea.points.some((p) => p.code === c && p.rankReq <= level)));
+    const guide = new Set([...allowedCodes(sea, level)].filter((c) => all.has(c)));
+    return guide.size && guide.size < all.size ? [guide, all] : [all];
+  };
+  const make = (plan: RoutePlan, source: Suggestion['source'], extra: Partial<Suggestion> = {}): Suggestion => ({
+    school,
+    plan,
+    after: applyExp({ level, exp_in_level: exp }, plan.exp).level,
+    source,
+    guideConfig: parts === null ? guideCfg : null,
+    unlock: null,
+    ...extra,
+  });
+  const calcIn = (sea: number, required: string | null): RoutePlan | null => {
+    for (const allow of allows(sea)) {
+      const calc = calcRoute(sea, level, cfg, school, guideMinutes, required, allow);
+      const plan = calc ? planRoute(sea, calc, cfg, level) : null;
+      if (plan) return plan;
+    }
+    return null;
+  };
+
+  // ① 解鎖下一個潛艇欄位(最高優先)
+  if (unlock && level >= unlock.rank) {
+    const need = seen(1).has(unlock.code) ? unlock.code : stepToward(found, 1, unlock.code);
+    if (need) {
+      const guideOk = r.sea === 1 && r.points.includes(need) && r.points.every((c) => seen(1).has(c));
+      const guidePlan = guideOk ? planRoute(1, r.points, cfg, level) : null;
+      const plan = guidePlan && (parts === null || guidePlan.problem === null) ? guidePlan : calcIn(1, need);
+      if (plan) return make(plan, plan === guidePlan ? 'guide' : 'calc', need === unlock.code ? { unlock: unlock.mark } : { unlock: unlock.mark, prereq: need });
+    }
+  }
+
+  // ② 攻略路線的點都已發現
+  const missing = r.points.filter((c) => !seen(r.sea).has(c));
+  if (missing.length === 0) {
+    const plan = planRoute(r.sea, r.points, cfg, level);
+    if (!plan) return null;
+    if (parts !== null && plan.problem !== null) {
+      const calc = calcIn(r.sea, null);
+      if (calc) return make(calc, 'calc');
+    }
+    return make(plan, 'guide');
+  }
+
+  // ③ 含未發現的點:在已發現的點裡推算;攻略的海域還沒開放就留在已開放、編號最大的海域
+  const opened = [...found.keys()].filter((sea) => sea <= r.sea).sort((a, b) => b - a);
+  const sea = seen(r.sea).size > 0 ? r.sea : (opened[0] ?? 1);
+  const plan = calcIn(sea, null);
+  if (plan) return make(plan, 'calc', { avoided: missing });
+  const guidePlan = planRoute(r.sea, r.points, cfg, level);
+  return guidePlan ? make(guidePlan, 'guide', { avoided: missing }) : null;
+}
+
 /** 三個流派各一條(沒資料的不列) */
-export function suggestAll(level: number, exp: number, parts: Parts | null, unlock: UnlockTarget | null = null): Suggestion[] {
+export function suggestAll(level: number, exp: number, parts: Parts | null, unlock: UnlockTarget | null = null, found: FoundCodes | null = null): Suggestion[] {
   const out: Suggestion[] = [];
   for (const s of LEVELING_SCHOOLS) {
-    const x = suggest(s, level, exp, parts, unlock);
+    const x = suggest(s, level, exp, parts, unlock, found);
     if (x) out.push(x);
   }
   return out;
@@ -212,13 +324,15 @@ export function calcRoute(
   school: LevelingSchool,
   guideMinutes: number | null = null,
   required: string | null = null,
+  /** 只從這些點挑(依工坊海圖,D-293);省略 = 攻略到這個等級出現過的點 */
+  allowOverride: ReadonlySet<string> | null = null,
 ): string[] | null {
   const tiers = SCHOOL_TIERS[school].slice(startTier(school, guideMinutes));
-  const key = `${sea}|${level}|${parts.join('')}|${school}|${tiers.length}|${required ?? ''}`;
+  const key = `${sea}|${level}|${parts.join('')}|${school}|${tiers.length}|${required ?? ''}|${allowOverride ? [...allowOverride].sort().join(',') : '*'}`;
   const hit = calcMemo.get(key);
   if (hit !== undefined) return hit;
   const si = seaIndex(sea);
-  const allow = allowedCodes(sea, level);
+  const allow = allowOverride ?? allowedCodes(sea, level);
   // 經驗高的點先試:很快就有不錯的最佳解,之後的組合多半在試排列前就被剪掉
   const fixed = required === null ? null : (si.sea.points.find((p) => p.code === required && p.rankReq <= level) ?? null);
   if (required !== null && !fixed) {

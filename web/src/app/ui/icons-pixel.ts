@@ -58,4 +58,5 @@ export const PIXEL_ICONS: Partial<Record<IconName, string>> = {
   tree: bitmap(['...####...', '...####...', '....##....', '.########.', '.##....##.', '####..####', '####..####']),
   sortAsc: bitmap(ARROW_UP),
   sortDesc: bitmap(flipV(ARROW_UP)),
+  seaChart: bitmap(['##..##....', '#.##..##.#', '#..#...###', '#..#...#.#', '#..#...#.#', '#..#...#.#', '#..#...#.#', '###....#.#', '#.##..##.#', '....##..##']),
 };

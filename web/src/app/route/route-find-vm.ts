@@ -33,6 +33,8 @@ interface FindSnapshot {
   itemIds: readonly number[];
   match: 'all' | 'any';
   explored: ReadonlySet<number>;
+  /** 選了工坊時該工坊已發現的點(D-293);null = 不限制 */
+  discovered: ReadonlySet<number> | null;
 }
 
 function metric(r: FindRoute, sort: FindSort): number {
@@ -118,7 +120,11 @@ export class RouteFindVm {
       else if (c.rankLocked.length > 0) out.push({ kind: 'warn', text: `${si.sea.name}:有選中的航點等級不足` });
       else if (!c.ok) out.push({ kind: 'warn', text: `${si.sea.name}:選中的航點合起來走不完(耗用 ${c.range},距離上限 ${stats.range})` });
     }
-    if (this.sort() === 'opens') {
+    const found = this.x.found();
+    if (found) {
+      const hidden = [...req].filter((id) => !found.has(id));
+      if (hidden.length > 0) out.push({ kind: 'warn', text: `有 ${hidden.length} 個選中的航點${this.x.chartName()}還沒發現,不會有結果` });
+    } else if (this.sort() === 'opens') {
       const ex = this.x.explored();
       const g = this.x.graph;
       const bad = [...req].filter((id) => ex.has(id) || (g.parent.has(id) && !ex.has(g.parent.get(id)!)));
@@ -143,6 +149,7 @@ export class RouteFindVm {
       this.l.itemIds(),
       this.l.match(),
       this.sort() === 'opens' ? [...this.x.explored()].sort((a, b) => a - b) : null,
+      this.x.found() ? [...this.x.found()!].sort((a, b) => a - b) : null,
     ]);
   });
 
@@ -160,6 +167,7 @@ export class RouteFindVm {
       match: q.match,
       explored: q.explored,
       graph: this.x.graph,
+      discovered: q.discovered,
     };
     const { seas } = searchSeas(SEA_INDEXES, { sea: q.sea, required: q.required });
     if (seas.length <= 1 || q.required.size === 0) return findRoutes(SEA_INDEXES, { ...base, sea: q.sea, limit: FIND_LIMIT });
@@ -249,6 +257,7 @@ export class RouteFindVm {
         itemIds: this.l.itemIds(),
         match: this.l.match(),
         explored: this.x.explored(),
+        discovered: this.x.found(),
       });
       this.runCount.update((n) => n + 1);
       this.busy.set(false);
