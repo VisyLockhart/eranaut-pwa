@@ -41,14 +41,17 @@ This repository is the **production frontend + backend monorepo** (with its full
 ## Features
 
 - **Discord OAuth2 login**, with the bot querying guild membership and roles to decide who is eligible (rules can combine AND / OR, e.g. `A+B,C`).
-- **Overview**: every workshop and submarine sorted by return time, with countdowns and "soonest return"; list and card views, filterable by workshop.
+- **Overview**: every workshop and submarine sorted by return time, with countdowns and "soonest return"; list and card views, filterable by workshop. It also shows each submarine's level and leveling progress and its part-repair status, and ready submarines show the suggested next route.
 - **Workshop management**: create, edit, delete, and reorder by drag or buttons (mouse and touch).
-- **Update submarines**: type values in, or upload / paste / capture a game screenshot for the self-hosted OCR; results are verified boat by boat before submitting, and low-confidence fields are flagged "please verify".
+- **Update submarines**: type values in, or upload / paste / capture a game screenshot for the self-hosted OCR; results are verified boat by boat before submitting, and low-confidence fields are flagged "please verify". Before submitting, "dispatch suggestions" recommend this voyage's route for each submarine from its current level, a preferred schedule (snap / half-day / full-day) and its bound build; while a submarine slot is still locked, routes that include the unlocking waypoint come first.
 - **Reminders**: Discord DM, server-channel mention and browser push (Web Push) can be combined; each workshop can remind N minutes ahead, or once per batch.
 - **Route simulator**: pick waypoints on a sea map to get travel time, return time and fuel; waypoints you cannot take (level or range limit) are greyed out live; edit part builds (10⁴ combinations) against the route's requirements; "Find route" filters routes by required / excluded waypoints, sea, maximum travel time, wanted items and a sort (experience per minute, likely unlocks, most item variety), or works in reverse — finds the part combinations that meet a target. Builds and the find-route filters can both be saved under a name and synced across devices ("filter sets"), and a build can be bound to several workshop submarines. The dataset is third-party and **not MIT** (see the license at the end).
 - **Accessory crafting**: choose a grade and quantity for each of the four submarine parts (hull / stern / bow / bridge) and get three equivalent lists — **hand-in materials** (what you put into the game's delivery screen), **direct materials** (the intermediates and raw materials needed to make each not-yet-stocked hand-in item once) and **base materials** (fully expanded to the bottom). Optionally expand the frame of modified parts and copy the list. "Track stock" links the three lists layer by layer: once a hand-in item is stocked, everything beneath it drops to zero, and progress is measured on the hand-in list. The dataset was checked item by item against a third-party workshop calculator: all three lists for all 40 parts match it. Selections and stock live only in this browser (`localStorage`), never in the database.
+- **Part repair reminders**: a submarine with a bound build can track repairs; the number of voyages is computed from the route and parts, every dispatch is counted, and the overview and update page say when repairs are due.
+- **Leveling assist**: records submarine levels (also read from screenshots), remembers the route on dispatch, and settles experience and level-ups after return.
+- **Server maintenance banner**: the Discord bot passes the official maintenance window to the API, and a notice shows before and during maintenance.
 - **PWA**: installable to the phone's home screen; the service worker caches only the app shell, and the API always goes to the network.
-- **Interface**: dark theme only, separate phone and desktop layouts, three interface sizes, collapsible stats (phone) and sidebar (desktop), pull-to-refresh on phones.
+- **Interface**: four themes, separate phone and desktop layouts, three interface sizes, collapsible stats (phone) and sidebar (desktop), pull-to-refresh on phones.
 
 ## Engineering highlights
 
@@ -61,8 +64,8 @@ If you want a quick tour of the engineering trade-offs, start here (full context
 - **Eligibility rule defined once**: website login, the daily sweep and bot commands share one evaluation function; losing eligibility only suspends (data is kept), and the sweep aborts entirely if Discord returns no member list, so an outage cannot suspend everyone.
 - **Per-device Web Push**: one reminder fans out to all of a user's devices, dead subscriptions are pruned automatically, and iOS's "must be added to the home screen" restriction is handled.
 - **Demo mode**: the same Angular code with a fake `HttpBackend` swapped in via build-time `fileReplacements`; the production bundle contains no demo code.
-- **Route calculations are pure functions**: selection rules, shortest order, build search and route recommendations live in `route/core/`, independent of Angular; the dataset ships in a lazy chunk (works offline); features are switched by an injected `ROUTE_FEATURES` token (the demo turns saving and binding off).
-- **Tests**: backend uses Node.js's built-in `node:test` (OCR parsing, reminder delivery and retries, eligibility sweep, authentication, and more); the frontend has about 560 unit tests.
+- **Route calculations are pure functions**: selection rules, shortest order, build search and route recommendations live in `route/core/`, independent of Angular; the dataset ships in a lazy chunk (works offline); features are switched by an injected `ROUTE_FEATURES` token. The leveling "dispatch suggestions" are pure functions too (`core/dispatch.ts`): they search only waypoints that appear in the leveling guide, results are memoized, and the worst case is about 60 ms.
+- **Tests**: backend uses Node.js's built-in `node:test` (OCR parsing, reminder delivery and retries, eligibility sweep, authentication, and more); the frontend has about 960 unit tests.
 
 ## Demo mode
 
@@ -70,9 +73,10 @@ The [live demo](https://demo.eranaut.aequoreranos.com/) is not a separate page; 
 
 - Angular's dependency injection swaps `HttpBackend` for `DemoBackend`, which intercepts every `/api/*` request, so the screens and all other code are untouched. The fake backend mirrors the real API's validation and error formats, and data is kept in the browser's `localStorage`.
 - `fileReplacements` in the `demo` build configuration performs the switch, so the production bundle contains no demo code.
-- The "展示模式" (Demo mode) tag at the bottom right can reset the data, log out to show the welcome page, or jump to the various login-failure screens.
+- The "展示模式" (Demo mode) tag at the bottom right can reset the data, log out to show the welcome page, jump to the various login-failure screens, or toggle a sample server-maintenance banner.
+- The sample data already includes submarines being leveled, a farming submarine that has used up its voyages and needs repair, and bound builds, so leveling assist, dispatch suggestions and repair reminders are visible right away; the fake backend counts voyages and settles experience with the same rules as the real API.
 - What the demo does **not** have: real Discord login, real OCR (it returns a fixed sample result), and real push scheduling ("send test notification" is displayed locally by the service worker and looks the same as the real thing).
-- The **route simulator** is fully usable in the demo, but **without saved builds, workshop-submarine binding and saved filter sets** (all need login and server-side tables): the build and the find-route filters are just temporary and live on this page in this browser, and "reset data" clears them too. This is done with the `ROUTE_FEATURES` injection token — the demo configuration sets `saving` to `false`, the screens hide the related buttons and the filter-set bar, and `RouteVm` and `RouteFilterVm` never call `/api/route-subs` or `/api/route-filters`.
+- The **route simulator** is fully usable in the demo, including saved builds, workshop-submarine binding and saved filter sets; they are kept in this browser, and "reset data" clears them too.
 
 Build the demo locally (shared must be built first):
 
