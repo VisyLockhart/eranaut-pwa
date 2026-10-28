@@ -9,8 +9,8 @@ import type { ProgressRow, UpkeepRow } from './demo-levels';
 import { seedDemo } from './demo-data';
 
 const KEY = 'eranaut.demo';
-/** 存檔格式版本:加了維修提醒、等級、儲存配置與條件組合(D-292)。舊版存檔直接換成新的假資料 */
-const VERSION = 2;
+/** 存檔格式版本:加了維修提醒、等級、儲存配置與條件組合(D-292),3 = 工坊多了海圖探索紀錄(D-293)。舊版存檔直接換成新的假資料 */
+const VERSION = 3;
 
 interface DemoState {
   v: number;

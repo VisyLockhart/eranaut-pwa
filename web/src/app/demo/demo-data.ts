@@ -1,10 +1,19 @@
 import { newId } from './demo-id';
-import { routeExp, type RouteSubDto, type SubmarineDto, type WorkshopWithSubmarines } from '@eranaut/shared';
+import { routeExp, type RouteSubDto, type SubmarineDto, type WorkshopChartDto, type WorkshopWithSubmarines } from '@eranaut/shared';
+import { SEAS } from '../route/core/data';
 import type { ProgressRow, UpkeepRow } from './demo-levels';
 
 // 展示用的假資料。時間以「載入當下」為基準,所以每次重設都像剛更新過。
-// 也放了配件維修提醒(D-288)、等級與練級輔助(D-289、D-291)、儲存配置與綁定,讓這些功能一打開就能體驗(D-292)。
+// 也放了配件維修提醒(D-288)、等級與練級輔助(D-289、D-291)、儲存配置與綁定,讓這些功能一打開就能體驗(D-292);
+// 以及海圖探索紀錄(D-293):貝殼工坊開到一半、鋼鐵之心開到灰海、珊瑚礁工坊還沒記錄。
 const MIN = 60_000;
+
+/** 海圖探索紀錄(D-293):依代號列出已發現的點 */
+function chart(sea: number, codes: string[], now: number): WorkshopChartDto {
+  const s = SEAS.find((x) => x.sea === sea)!;
+  return { sea, points: s.points.filter((p) => codes.includes(p.code)).map((p) => p.id), updated_at: new Date(now - 2 * 86_400_000).toISOString() };
+}
+const allBut = (sea: number, except: string[]): string[] => SEAS.find((x) => x.sea === sea)!.points.map((p) => p.code).filter((c) => !except.includes(c));
 
 function sub(workshopId: string, position: number, name: string | null, minutesLeft: number | null, now: number): SubmarineDto {
   const exploring = minutesLeft !== null;
@@ -84,6 +93,8 @@ export function seedDemo(now: number): DemoSeed {
       notify_lead_minutes: 10,
       created_at: new Date(now - 3 * 86_400_000).toISOString(),
       submarines: [a1, a2],
+      // 開到 M 與 P:潛艇-1 的解鎖點 O 還沒發現,練級建議會先去 J
+      charts: [chart(1, ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'P'], now)],
     },
     {
       id: b,
@@ -97,6 +108,7 @@ export function seedDemo(now: number): DemoSeed {
       notify_lead_minutes: 15,
       created_at: new Date(now - 2 * 86_400_000).toISOString(),
       submarines: [b1, b2, b3, b4],
+      charts: [chart(1, allBut(1, ['AC']), now), chart(2, allBut(2, ['Q']), now)],
     },
     {
       id: c,
@@ -110,6 +122,8 @@ export function seedDemo(now: number): DemoSeed {
       notify_lead_minutes: 0,
       created_at: new Date(now - 86_400_000).toISOString(),
       submarines: [c1, sub(c, 2, '潛水艇-2', 410, now), sub(c, 3, '潛水艇-3', 2900, now), sub(c, 4, '潛水艇-4', null, now)],
+      // 還沒有海圖紀錄:總覽顯示「未記錄」,航線與練級照原本的方式
+      charts: [],
     },
   ];
 

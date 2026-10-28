@@ -38,6 +38,8 @@ const LOGIN_ERRORS = [
     :host { position: fixed; bottom: 10px; right: 10px; z-index: 2000; display: block; }
     /* 手機版底部有導覽列與版權列,浮在它們上方 */
     @media (max-width: 767px) { :host { bottom: calc(100px + env(safe-area-inset-bottom)); right: 8px; } }
+    /* 手機版頁面底部有固定的按鈕列(更新潛艇、更新海圖)時,再往上浮,不蓋住「送出」「儲存」 */
+    @media (max-width: 767px) { :host-context(body:has(.uf-actions-m)) { bottom: calc(172px + env(safe-area-inset-bottom)); } }
     .demo-tag { font: 600 11px/1 inherit; letter-spacing: 0.06em; color: var(--on-amber); background: var(--amber); border: 0; border-radius: var(--r-pill); padding: 5px 10px; cursor: pointer; opacity: 0.92; }
     .demo-tag:hover { opacity: 1; }
     .demo-panel { position: absolute; bottom: 32px; right: 0; width: min(300px, calc(100vw - 20px)); box-sizing: border-box; padding: 14px; border-radius: calc(12px * var(--rs)); background: var(--bg-elevated-2); color: var(--text); border: var(--bw) solid var(--border-strong); box-shadow: 0 10px 30px color-mix(in srgb, var(--shade) 50%, transparent); }

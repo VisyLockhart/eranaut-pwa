@@ -9,6 +9,7 @@ import {
   SUBMARINE_STATUSES,
   type FieldErrorCode,
   type NotifyLeadMinutes,
+  type ChartOcrResultDto,
   type OcrResultDto,
   type MaintenanceDto,
   type RouteFilterDto,
@@ -20,6 +21,7 @@ import {
   type WorkshopWithSubmarines,
 } from '@eranaut/shared';
 import { Observable, delay, of, throwError } from 'rxjs';
+import { SEAS } from '../route/core/data';
 import { DemoStore } from './demo-store';
 import {
   DemoRejected,
@@ -193,6 +195,33 @@ function fakeOcr(): OcrResultDto {
   return { format: 'menu', submarines: [row(1, 0, 3, 20), row(2, 0, 7, 5, true), row(3, 1, 2, 48), row(4, 0, 0, 55)], warnings: [] };
 }
 
+/**
+ * 示範的海圖辨識(D-293):展示版沒有伺服器,不管上傳哪張圖都回同一個結果——溺沒海開到 N(和畫面「已發現」相符)。
+ * 沒有海圖位置(map_box.size = 0),所以不提供「對照截圖」。
+ */
+function fakeChartOcr(): ChartOcrResultDto {
+  const sea = SEAS.find((s) => s.sea === 1)!;
+  const codes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'P'];
+  const points = sea.points.filter((p) => codes.includes(p.code)).map((p) => p.id);
+  return { sea: 1, points, filled: [], uncertain: [], screen_count: points.length, map_box: { left: 0, top: 0, size: 0, width: 0, height: 0 } };
+}
+
+/** 海圖紀錄的驗證(同真 API):航點必須屬於該海域;空陣列 = 刪除該海域 */
+function validateCharts(b: Record<string, unknown>): { sea: number; points: number[] }[] | null {
+  const seas = b['seas'];
+  if (!Array.isArray(seas) || seas.length === 0 || seas.length > SEAS.length) return null;
+  const out: { sea: number; points: number[] }[] = [];
+  for (const item of seas as Record<string, unknown>[]) {
+    const def = SEAS.find((s) => s.sea === item?.['sea']);
+    const pts = item?.['points'];
+    if (!def || !Array.isArray(pts) || out.some((o) => o.sea === def.sea)) return null;
+    const ids = def.points.map((p) => p.id);
+    if (!pts.every((p) => typeof p === 'number' && ids.includes(p))) return null;
+    out.push({ sea: def.sea, points: ids.filter((id) => pts.includes(id)) });
+  }
+  return out;
+}
+
 @Injectable()
 export class DemoBackend extends HttpBackend {
   private readonly store = inject(DemoStore);
@@ -243,13 +272,35 @@ export class DemoBackend extends HttpBackend {
     if (path === '/api/workshops' && method === 'POST') {
       const { fields, value } = validateWorkshop(b);
       if (!value) return fail(400, { error: 'validation_failed', fields });
-      const created: WorkshopWithSubmarines = { ...value, id: newId(), created_at: new Date().toISOString(), submarines: [] };
+      const created: WorkshopWithSubmarines = { ...value, id: newId(), created_at: new Date().toISOString(), submarines: [], charts: [] };
       this.store.workshops.push(created);
       this.store.commit();
       const { submarines: _omit, ...dto } = created;
       void _omit;
       return new Reply(201, dto);
     }
+
+    // 海圖探索紀錄(D-293)
+    const ch = /^\/api\/workshops\/([^/]+)\/charts$/.exec(path);
+    if (ch) {
+      const workshop = this.store.workshops.find((w) => w.id === decodeURIComponent(ch[1]));
+      if (!workshop) return fail(404, { error: 'not_found' });
+      workshop.charts ??= [];
+      if (method === 'GET') return ok(workshop.charts);
+      if (method === 'PUT') {
+        const seas = validateCharts(b);
+        if (!seas) return fail(400, { error: 'validation_failed', fields: { seas: 'invalid_value' } });
+        const t = new Date().toISOString();
+        for (const s of seas) {
+          workshop.charts = workshop.charts.filter((c) => c.sea !== s.sea);
+          if (s.points.length) workshop.charts.push({ sea: s.sea, points: s.points, updated_at: t });
+        }
+        workshop.charts.sort((x, y) => x.sea - y.sea);
+        this.store.commit();
+        return ok(workshop.charts);
+      }
+    }
+    if (path === '/api/charts/ocr' && method === 'POST') return ok(fakeChartOcr(), OCR_LATENCY_MS);
 
     const ws = /^\/api\/workshops\/([^/]+)(?:\/submarines(?:\/(\d+))?)?$/.exec(path);
     if (ws) {
@@ -314,7 +365,7 @@ export class DemoBackend extends HttpBackend {
 
   private withExtras(w: WorkshopWithSubmarines): WorkshopWithSubmarines {
     const now = Date.now();
-    return { ...w, submarines: w.submarines.map((s) => this.decorate(s, now)) };
+    return { ...w, charts: w.charts ?? [], submarines: w.submarines.map((s) => this.decorate(s, now)) };
   }
 
   /** 展示標籤打開「示範維護橫幅」時,回一則進行中的示範維護(D-283、D-292) */
