@@ -16,10 +16,14 @@ const LOGIN_ERRORS = [
     <button type="button" class="demo-tag" (click)="open.set(!open())" [attr.aria-expanded]="open()" aria-controls="demo-panel">展示模式</button>
     @if (open()) {
       <div id="demo-panel" class="demo-panel" role="dialog" aria-label="展示模式說明">
-        <p class="demo-lead">這是 Eranaut 的線上展示。資料是假的,只存在這個瀏覽器裡,不會送到任何伺服器;截圖辨識也只會回傳固定的示範結果。</p>
+        <p class="demo-lead">這是 Eranaut 的線上展示。資料是假的,只存在這個瀏覽器裡,不會送到任何伺服器;截圖辨識也只會回傳固定的示範結果。示範資料已放好配件維修提醒、練級輔助與綁定的配置,可以直接點潛艇試用。</p>
         <div class="demo-actions">
           <button type="button" (click)="reset()">重設資料</button>
           <button type="button" (click)="signOut()">登出(看迎賓頁)</button>
+        </div>
+        <div class="demo-sub">伺服器維護橫幅</div>
+        <div class="demo-actions">
+          <button type="button" [attr.aria-pressed]="maintenance" (click)="toggleMaintenance()">{{ maintenance ? '關閉示範維護橫幅' : '顯示示範維護橫幅' }}</button>
         </div>
         <div class="demo-sub">登入失敗畫面</div>
         <div class="demo-actions">
@@ -55,6 +59,14 @@ export class DemoBar {
   private readonly store = inject(DemoStore);
   readonly open = signal(false);
   readonly errors = LOGIN_ERRORS;
+  /** 示範維護橫幅(D-283):正式版由 Discord bot 通知伺服器維護時才出現,展示版用這個開關看效果 */
+  readonly maintenance = this.store.maintenance;
+
+  toggleMaintenance(): void {
+    this.store.setMaintenance(!this.store.maintenance);
+    // 橫幅隨總覽資料取得,重新載入最單純
+    this.reload(window.location.pathname);
+  }
 
   reset(): void {
     this.store.reset();

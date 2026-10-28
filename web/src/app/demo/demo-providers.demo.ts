@@ -15,8 +15,9 @@ export const demoProviders: (Provider | EnvironmentProviders)[] = [
   { provide: HttpBackend, useClass: DemoBackend },
   // 推播:沒有推播伺服器,改由本機 service worker 顯示測試通知
   { provide: PushVm, useClass: DemoPushVm },
-  // 航線模擬器:沒有伺服器,不提供儲存配置與綁定工坊潛艇(RS-25、RS-26);配置只是臨時配置
-  { provide: ROUTE_FEATURES, useValue: { saving: false } },
+  // 航線模擬器:儲存配置、綁定工坊潛艇與條件組合也開放,由假後端存在這個瀏覽器(D-292);
+  // 配件維修提醒與練級輔助需要綁定的配置,所以一定要開
+  { provide: ROUTE_FEATURES, useValue: { saving: true } },
   // 必須在 Auth.init() 之前跑(app.config 的順序):先依網址參數決定登入狀態
   provideAppInitializer(() => {
     const store = inject(DemoStore);

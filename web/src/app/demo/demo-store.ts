@@ -1,22 +1,36 @@
 import { Injectable } from '@angular/core';
-import type { NotifyPrefs, WorkshopWithSubmarines } from '@eranaut/shared';
+import type { NotifyPrefs, RouteFilterDto, RouteSubDto, WorkshopWithSubmarines } from '@eranaut/shared';
 import { CRAFT_STORAGE_KEYS } from '../craft/craft-keys';
 import { removeKey } from '../core/storage';
 import { ORDER_KEY } from '../core/workshop-order';
 import { INSTALL_PROMPT_KEY } from '../core/install-prompt';
-import { ROUTE_LAST_KEY } from '../route/route-cache';
-import { seedWorkshops } from './demo-data';
+import { ROUTE_CACHE_KEY, ROUTE_LAST_KEY } from '../route/route-cache';
+import type { ProgressRow, UpkeepRow } from './demo-levels';
+import { seedDemo } from './demo-data';
 
 const KEY = 'eranaut.demo';
+/** 存檔格式版本:加了維修提醒、等級、儲存配置與條件組合(D-292)。舊版存檔直接換成新的假資料 */
+const VERSION = 2;
 
 interface DemoState {
+  v: number;
   signedIn: boolean;
   workshops: WorkshopWithSubmarines[];
   prefs: NotifyPrefs;
+  /** 以潛艇 id 為鍵;有資料 = 已開啟維修提醒(D-288) */
+  upkeep: Record<string, UpkeepRow>;
+  /** 以潛艇 id 為鍵;有資料 = 有填等級(D-289) */
+  progress: Record<string, ProgressRow>;
+  /** 儲存的配置與綁定(RS-25、RS-26) */
+  routeSubs: RouteSubDto[];
+  /** 條件組合(D-229) */
+  routeFilters: RouteFilterDto[];
+  /** 展示標籤的「示範維護橫幅」開關(D-283) */
+  maintenance: boolean;
 }
 
 function fresh(): DemoState {
-  return { signedIn: true, workshops: seedWorkshops(Date.now()), prefs: { dm: true, channel: false, push: false } };
+  return { v: VERSION, signedIn: true, prefs: { dm: true, channel: false, push: false }, maintenance: false, routeFilters: [], ...seedDemo(Date.now()) };
 }
 
 /** 展示資料的存放處:記憶體 + localStorage(重新整理後保留;無法使用 localStorage 時退回只在記憶體) */
@@ -29,7 +43,9 @@ export class DemoStore {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<DemoState>;
-        if (Array.isArray(parsed.workshops) && parsed.prefs && typeof parsed.signedIn === 'boolean') return parsed as DemoState;
+        if (parsed.v === VERSION && Array.isArray(parsed.workshops) && parsed.prefs && typeof parsed.signedIn === 'boolean') return parsed as DemoState;
+        // 舊版存檔:保留登入狀態,其餘換成新的假資料
+        if (typeof parsed.signedIn === 'boolean') return { ...fresh(), signedIn: parsed.signedIn };
       }
     } catch {
       // 讀不到就用全新的
@@ -64,6 +80,43 @@ export class DemoStore {
     return this.state.prefs;
   }
 
+  get upkeep(): Record<string, UpkeepRow> {
+    return this.state.upkeep;
+  }
+  get progress(): Record<string, ProgressRow> {
+    return this.state.progress;
+  }
+  get routeSubs(): RouteSubDto[] {
+    return this.state.routeSubs;
+  }
+  set routeSubs(list: RouteSubDto[]) {
+    this.state.routeSubs = list;
+  }
+  get routeFilters(): RouteFilterDto[] {
+    return this.state.routeFilters;
+  }
+  set routeFilters(list: RouteFilterDto[]) {
+    this.state.routeFilters = list;
+  }
+
+  get maintenance(): boolean {
+    return this.state.maintenance;
+  }
+  setMaintenance(on: boolean): void {
+    this.state.maintenance = on;
+    this.save();
+  }
+
+  /** 刪掉工坊時,連帶清掉那些潛艇的維修提醒、等級與配置綁定(正式版是資料庫的 ON DELETE CASCADE) */
+  forgetSubmarines(ids: readonly string[]): void {
+    const gone = new Set(ids);
+    for (const id of ids) {
+      delete this.state.upkeep[id];
+      delete this.state.progress[id];
+    }
+    this.state.routeSubs = this.state.routeSubs.map((r) => ({ ...r, bound_submarine_ids: r.bound_submarine_ids.filter((x) => !gone.has(x)) }));
+  }
+
   /** 重設為全新的假資料(保留登入狀態) */
   reset(): void {
     const signedIn = this.state.signedIn;
@@ -73,8 +126,9 @@ export class DemoStore {
     removeKey('eranaut.snapshot');
     removeKey(ORDER_KEY);
     removeKey('eranaut.demo.push');
-    // 航線模擬器的檢視狀態(臨時配置、已選航點、分頁):展示版沒有伺服器端的儲存配置,重設時一併清掉
+    // 航線模擬器的檢視狀態(已選航點、分頁)與儲存配置的快取,重設時一併清掉
     removeKey(ROUTE_LAST_KEY);
+    removeKey(ROUTE_CACHE_KEY);
     // 配件製作的選擇、檢視設定與庫存(只存在這個瀏覽器)
     for (const k of CRAFT_STORAGE_KEYS) removeKey(k);
     // 「加入主畫面」提示:重設後再看一次
