@@ -3,9 +3,9 @@ import type { WorkshopDto } from '@eranaut/shared';
 import { RouterLink } from '@angular/router';
 import { DataStore } from '../core/data-store';
 import { circled } from '../core/format';
-import { chartDate } from '../core/charts';
 import { OverviewVm, addressLine, upkeepText, wsInfo, wsMeta } from '../core/overview-vm';
 import { UpkeepVm } from '../core/upkeep-vm';
+import { WorkshopsVm } from '../core/workshops-vm';
 import { IconComponent } from '../ui/icon';
 import { SelectField } from '../ui/select';
 import { LevelBadge, LevelTag, NextRouteTag } from './level-tag';
@@ -22,13 +22,13 @@ import { UpkeepTag } from './upkeep-bits';
 export class OverviewDesktop {
   protected readonly vm = inject(OverviewVm);
   protected readonly store = inject(DataStore);
+  protected readonly wsVm = inject(WorkshopsVm);
   private readonly upkeep = inject(UpkeepVm);
   protected readonly circled = circled;
   protected readonly wsMeta = wsMeta;
   protected readonly wsInfo = wsInfo;
   protected readonly addressLine = addressLine;
   protected readonly upkeepText = upkeepText;
-  protected readonly chartDate = (ms: number | null) => chartDate(ms);
   protected readonly sections = this.vm.sections;
   /** 只有「全部」且沒有依工坊分組時,每艘才需要標出所屬工坊(D-290 續) */
   protected readonly showWsCol = computed(() => this.vm.currentWorkshop() === null && this.vm.groups() === null);

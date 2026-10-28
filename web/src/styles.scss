@@ -318,7 +318,6 @@
   .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text-dim); font-size: 12.5px; margin-bottom: 16px; cursor: pointer; }
 
   /* ---------- Workshop management ---------- */
-  .ws-browse-item { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: calc(14px * var(--rs)); background: var(--bg-elevated); border: var(--bw) solid var(--border); cursor: pointer; }
   .ws-icon { width: 44px; height: 44px; border-radius: calc(10px * var(--rs)); background: color-mix(in srgb, var(--accent) 12%, transparent); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; color: var(--accent); }
   .ws-row { position: relative; display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: calc(14px * var(--rs)); background: var(--bg-elevated); border: var(--bw) solid var(--border); }
   /* Dragged row = dashed "placeholder" that marks exactly where the card will land;
@@ -337,14 +336,9 @@
   .ws-arrow-btn { width: 26px; height: 18px; border-radius: calc(5px * var(--rs)); background: var(--bg-elevated-2); border: var(--bw) solid var(--border-strong); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; }
   .ws-arrow-btn:disabled { color: var(--text-faint); cursor: not-allowed; }
   .ws-icon-btn { width: 34px; height: 34px; border-radius: calc(8px * var(--rs)); background: var(--bg-elevated-2); border: var(--bw) solid var(--border-strong); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; flex: 0 0 auto; }
-  .ws-icon-btn.danger { background: color-mix(in srgb, var(--danger) 10%, transparent); border-color: color-mix(in srgb, var(--danger) 30%, transparent); color: var(--danger); }
   .ws-add-btn { margin-top: 4px; padding: 14px; border-radius: calc(14px * var(--rs)); background: transparent; border: 1.5px dashed var(--border-strong); color: var(--accent); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; width: 100%; }
 
   /* ---------- Address tooltip (desktop) ---------- */
-  .ws-tooltip-wrap { position: relative; }
-  .ws-tooltip-bubble { position: absolute; left: 0; bottom: calc(100% + 10px); background: var(--bg-elevated-2); border: var(--bw) solid var(--border-strong); color: var(--text); font-size: 11.5px; padding: 8px 11px; border-radius: calc(9px * var(--rs)); white-space: nowrap; opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity .12s, transform .12s; box-shadow: 0 10px 28px color-mix(in srgb, var(--shade) 45%, transparent); z-index: 30; }
-  .ws-tooltip-wrap:hover .ws-tooltip-bubble { opacity: 1; transform: translateY(0); }
-  .ws-notify-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); padding: 1px 7px; border-radius: var(--r-pill); margin-left: 6px; }
 
   /* ---------- Modal ---------- */
   .modal-overlay { position: fixed; inset: 0; background: color-mix(in srgb, var(--scrim) 72%, transparent); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
@@ -460,11 +454,8 @@ a.upload-cta { text-decoration: none; }
 app-root { display: block; }
 
 /* ---------- 工坊管理(階段 3;拖曳用 @angular/cdk DragDrop,D-141) ---------- */
-.ws-m-bar { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px 10px; }
-.ws-m-hint { font-size: 12.5px; color: var(--text-dim); min-width: 0; }
-.ws-done-btn { padding: 9px 18px; border-radius: calc(10px * var(--rs)); background: var(--accent); border: none; color: var(--on-accent-deep); font-size: 13px; font-weight: 700; cursor: pointer; flex: 0 0 auto; }
-.ws-wrap.mobile { flex-grow: 1; overflow-y: auto; padding: 0 18px 18px; display: flex; flex-direction: column; gap: 10px; }
-.ws-wrap.desktop { max-width: 720px; display: flex; flex-direction: column; gap: 8px; }
+.ws-wrap.mobile { display: flex; flex-direction: column; gap: 10px; }
+.ws-wrap.desktop { display: flex; flex-direction: column; gap: 8px; }
 .ws-list { display: flex; flex-direction: column; gap: 10px; }
 .ws-wrap.desktop .ws-list { gap: 8px; }
 .ws-row.ws-row-desktop { padding: 14px 16px; }
@@ -1629,7 +1620,20 @@ app-select { display: block; }
 .ch-m-body { display: flex; flex-direction: column; gap: 10px; }
 .ch-m-body .uf-err, .ch-side .uf-err { margin-top: 0; }
 .ch-map-block { display: flex; flex-direction: column; gap: 10px; }
-.ch-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.ch-tabrow { display: flex; align-items: center; gap: 6px; }
+.ch-tabrow .ch-tabs { flex: 1 1 auto; min-width: 0; }
+.ch-add-btn { flex: 0 0 auto; min-height: 44px; padding: 0 14px; margin-left: 2px; display: inline-flex; align-items: center; gap: 6px; border: 1.5px dashed var(--border-strong); background: transparent; color: var(--accent); border-radius: calc(12px * var(--rs)); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.ch-add-btn:hover { border-color: var(--accent); background: var(--bg-elevated); }
+.ch-rm { margin-top: 10px; }
+.ch-add-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.ch-add-opt { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 0 14px; border: var(--bw) solid var(--border-strong); background: var(--bg-elevated); color: var(--text); border-radius: calc(14px * var(--rs)); font: inherit; font-size: 16px; cursor: pointer; text-align: left; }
+.ch-add-opt b { flex: 1; font-weight: 700; }
+.ch-add-opt.on { border-color: var(--accent); }
+.ch-add-radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--text-muted); flex: none; }
+.ch-add-opt.on .ch-add-radio { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 4px var(--bg-elevated); }
+.ch-add-n { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); }
+.ch-add-none { margin-top: 12px; color: var(--text-muted); }
+.ch-add-dlg { width: min(520px, 100%); }
 .ch-tabs::-webkit-scrollbar { display: none; }
 .ch-tab { flex: 0 0 auto; min-height: 44px; line-height: normal; display: inline-flex; align-items: center; gap: 6px; max-width: none; }
 .ch-tab-n { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; }
@@ -1654,17 +1658,11 @@ app-select { display: block; }
 .ch-dim { color: var(--text-dim); }
 /* 總覽的海圖入口(D-293) */
 .ov-ctas { display: flex; align-items: center; gap: 10px; }
-a.ghost-btn.ov-chart-cta { display: inline-flex; align-items: center; gap: 8px; width: auto; padding: 10px 16px; color: var(--accent); border-color: var(--accent); text-decoration: none; }
-.ov-chart-line { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
-.ov-chart-line app-icon { color: var(--accent); }
-.ov-chart-sea b { color: var(--text); }
-.ov-chart-hint { color: var(--amber-text); }
-.ov-chart-link { color: var(--accent); font-weight: 600; }
+.ghost-btn.ov-cta-btn { position: relative; display: inline-flex; align-items: center; gap: 8px; width: auto; padding: 10px 16px; text-decoration: none; }
+.ghost-btn.ov-cta-btn.chart { color: var(--accent); border-color: var(--accent); }
+.ov-cta-btn .ov-chart-dot, .ov-ibtn .ov-chart-dot { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border: 2px solid var(--bg); }
 .ws-context-line.ov-m-context { gap: 8px; padding-bottom: 6px; }
 .ov-m-ctx-text { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-a.rt-chip.ov-chart-chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; line-height: normal; padding: 0 12px; color: var(--text); text-decoration: none; }
-.ov-chart-chip app-icon { color: var(--accent); }
-.ov-chart-chip b { font-weight: 700; }
 .ov-chart-dot { width: 8px; height: 8px; border-radius: var(--r-round); background: var(--amber); }
 /* 航線頁的「工坊海圖」選擇(D-293) */
 .rt-chartbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: 12px 0 0; padding: 8px 12px; border-radius: calc(12px * var(--rs)); border: var(--bw) solid var(--border); background: var(--bg-elevated-2); }
@@ -1677,3 +1675,27 @@ a.rt-chip.ov-chart-chip { flex: 0 0 auto; display: inline-flex; align-items: cen
 .ch-actions .primary-btn, .ch-actions-m .primary-btn { width: auto; }
 .ch-actions .ch-sum, .ch-actions-m .ch-sum { flex: 1 1 auto; }
 .uf-actions-d.ch-actions { margin-bottom: 56px; }
+/* 工坊管理搬進總覽(D-294) */
+.ov-rem { text-align: left; font: inherit; color: var(--text); cursor: pointer; flex: 0 0 auto; width: 260px; }
+.ov-rem:hover { border-color: var(--accent); }
+.ov-rem-chips, .ov-m-rem { display: flex; flex-wrap: wrap; gap: 6px; }
+.ov-rem-chip { display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: var(--r-pill); font-size: 12.5px; font-weight: 600; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); white-space: nowrap; }
+.ov-rem-none { font-size: 13px; color: var(--text-dim); }
+.ov-strip:has(.ov-rem) .ov-fleet { flex: 0 0 250px; }
+.ov-m-rem { padding: 0 18px 6px; }
+.ov-ibtn { position: relative; flex: 0 0 auto; width: 44px; height: 44px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; border-radius: calc(12px * var(--rs)); border: var(--bw) solid var(--border-strong); background: var(--bg-elevated); color: var(--text-muted); cursor: pointer; text-decoration: none; padding: 0; }
+.ov-ibtn.chart { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+.rt-chip.ov-manage-chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; line-height: normal; padding: 0 14px; color: var(--text); }
+.ov-manage-chip app-icon { color: var(--accent); }
+.ws-manage .rt-note { font-size: 12.5px; color: var(--text-dim); }
+.ws-manage-actions { display: flex; gap: 10px; align-items: center; }
+.ws-manage-actions .ws-add-btn { margin-top: 0; width: auto; flex: 1 1 auto; padding: 12px; }
+.ws-manage-actions .btn-primary-modal { flex: 0 0 auto; padding: 12px 28px; }
+.ws-wrap.mobile .ws-arrow-btn { width: 40px; height: 26px; }
+.ws-wrap.mobile .ws-drag-handle { padding: 12px 8px; margin: -12px -8px; }
+.ws-del { width: 100%; justify-content: center; }
+.ws-del-warn { margin-top: 10px; padding: 10px 12px; border-radius: calc(10px * var(--rs)); border: var(--bw) solid color-mix(in srgb, var(--danger) 35%, transparent); background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--text); font-size: 13px; line-height: 1.6; }
+.ws-del-warn b { color: var(--danger); }
+.ws-del-warn { scroll-margin-bottom: 96px; }
+.ch-meta { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 0 0 10px; font-size: 12.5px; color: var(--text-muted); }
+.ch-meta-hint { color: var(--amber-text); }

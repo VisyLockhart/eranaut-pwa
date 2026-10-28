@@ -28,7 +28,7 @@
       @if (errorOf('server') || errorOf('captain'); as msg) { <div class="modal-error-text" role="alert">{{ msg }}</div> }
     </div>
 
-    <div class="modal-section-label">公會屋地址（選填，僅工坊管理內部使用，不會顯示在總覽）</div>
+    <div class="modal-section-label">公會屋地址（選填）</div>
     <div class="modal-field-row">
       <div style="flex: 1.4">
         <label class="field-label" for="wsf-district">住宅區</label>
@@ -72,6 +72,23 @@
         <app-select size="compact" ariaLabel="提前多久提醒" formControlName="leadMinutes" [options]="leadOptions()" />
       }
     </div>
+
+    @if (editing) {
+      <div class="modal-section-label">危險區域</div>
+      <button type="button" class="ct-tool danger ws-del" [class.confirm]="confirmDelete()" [disabled]="saving()" (click)="requestDelete()" (blur)="cancelDelete()">
+        <app-icon name="trash" [size]="16" /><span>{{ confirmDelete() ? '確定刪除？' : '刪除工坊' }}</span>
+      </button>
+      @if (confirmDelete()) {
+        <div class="ws-del-warn" role="alert">
+          @if (subCount() > 0) {
+            「{{ workshop()?.name }}」底下還有 <b>{{ subCount() }} 艘</b> 潛艇記錄，刪除工坊會一併刪除這些記錄，<b>此動作無法復原</b>。
+          } @else {
+            刪除「{{ workshop()?.name }}」？這個工坊底下目前沒有潛水艇記錄。
+          }
+          再點一次才會刪除。
+        </div>
+      }
+    }
 
     @if (submitError(); as msg) { <div class="modal-error-text" role="alert" style="margin: 14px 0 0">{{ msg }}</div> }
 

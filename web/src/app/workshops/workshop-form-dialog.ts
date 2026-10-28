@@ -1,6 +1,6 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, input, output, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DISTRICTS, LIMITS, SERVERS, type ValidationErrorBody, type WorkshopInput } from '@eranaut/shared';
@@ -34,7 +34,7 @@ const API_FIELD: Record<ControlName, keyof WorkshopInput> = {
 };
 const REQUIRED_TEXT: Partial<Record<ControlName, string>> = { name: '請輸入工坊名稱', server: '請選擇遊戲伺服器' };
 
-/** 新增/編輯工坊 Modal(D-103、D-135、D-137):Reactive Forms,欄位分四組 + 預先提醒 */
+/** 新增/編輯工坊 Modal(D-103、D-135、D-137):Reactive Forms,欄位分四組 + 預先提醒;編輯時底部有「刪除工坊」二次確認(D-294) */
 @Component({
   selector: 'app-workshop-form',
   imports: [ReactiveFormsModule, CdkTrapFocus, IconComponent, SelectField],
@@ -49,6 +49,8 @@ export class WorkshopFormDialog implements OnInit {
 
   private readonly store = inject(DataStore);
   private readonly vm = inject(WorkshopsVm);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   private destroyed = false;
 
   protected readonly serverOptions: SelectOption[] = [{ value: '', label: '請選擇' }, ...SERVERS.map((s) => ({ value: s, label: s }))];
@@ -97,8 +99,12 @@ export class WorkshopFormDialog implements OnInit {
   }
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => (this.destroyed = true));
+    inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      clearTimeout(this.confirmTimer);
+    });
     this.form.valueChanges.subscribe(() => {
+      this.cancelDelete();
       this.vm.formDraft.set(this.form.getRawValue());
       if (Object.keys(this.serverErrors()).length > 0) this.serverErrors.set({});
     });
@@ -135,6 +141,45 @@ export class WorkshopFormDialog implements OnInit {
       this.form.markAsDirty();
     } else {
       this.form.reset(toFormValue(this.workshop()));
+    }
+  }
+
+  /** 「刪除工坊」第一次點擊後進入確認狀態(3 秒內再點才真的刪除,同配件製作的「清除全部」);失焦、逾時、改動表單都會取消 */
+  protected readonly confirmDelete = signal(false);
+  private confirmTimer: ReturnType<typeof setTimeout> | undefined;
+  protected readonly subCount = computed(() => this.workshop()?.submarines.length ?? 0);
+
+  protected requestDelete(): void {
+    const id = this.workshopId();
+    if (id === null || this.saving()) return;
+    clearTimeout(this.confirmTimer);
+    if (this.confirmDelete()) {
+      this.confirmDelete.set(false);
+      void this.remove(id);
+      return;
+    }
+    this.confirmDelete.set(true);
+    this.confirmTimer = setTimeout(() => this.confirmDelete.set(false), 3000);
+    // 警示框在表單底部,手機上可能被黏底的按鈕列蓋住:等它畫出來後捲進可視範圍
+    afterNextRender(() => this.host.nativeElement.querySelector('.ws-del-warn')?.scrollIntoView({ block: 'nearest' }), { injector: this.injector });
+  }
+
+  protected cancelDelete(): void {
+    clearTimeout(this.confirmTimer);
+    this.confirmDelete.set(false);
+  }
+
+  private async remove(id: string): Promise<void> {
+    this.saving.set(true);
+    this.submitError.set(null);
+    try {
+      await this.vm.deleteWorkshop(id);
+      this.finish();
+    } catch {
+      // 401 由 interceptor 轉成 session 過期畫面;其他錯誤留在對話框讓使用者重試
+      this.submitError.set('刪除失敗，請稍後再試。');
+    } finally {
+      this.saving.set(false);
     }
   }
 

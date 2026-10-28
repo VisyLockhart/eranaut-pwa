@@ -108,7 +108,7 @@
     @if (!p.dm && !p.channel && !p.push) {
       <div class="uf-note" style="margin-top: 12px" role="status">所有方式都關閉時，不會收到任何潛艇提醒。</div>
     }
-    <div class="uf-note" style="margin-top: 12px">每間工坊另可設定「整批提醒」與「預先提醒」，到「工坊」→ 管理 → 編輯。</div>
+    <div class="uf-note" style="margin-top: 12px">每間工坊另可設定「整批提醒」與「預先提醒」，到總覽切到該工坊，按「工坊設定」。</div>
     @if (vm.saveError(); as message) { <div class="modal-error-text" role="alert">{{ message }}</div> }
   } @else if (vm.loadError()) {
     <div class="up-empty">讀取失敗。<br /><button type="button" class="ghost-btn" style="margin-top: 12px; max-width: 160px" (click)="vm.load()">重試</button></div>

@@ -24,18 +24,18 @@ function mount(desktop: boolean, swEnabled = false) {
 }
 
 describe('Shell 導覽', () => {
-  it('手機底部 5 項:總覽/工坊/更新/航線/製作,不再有「我的」', () => {
+  it('手機底部 4 項:總覽/更新/航線/製作(工坊管理已搬進總覽,D-294),不再有「我的」', () => {
     const { el } = mount(false);
     const labels = [...el.querySelectorAll('.m-nav .nav-item')].map((a) => a.textContent!.trim());
-    expect(labels).toEqual(['總覽', '工坊', '更新', '航線', '製作']);
-    expect(el.querySelector('.m-nav .nav-item:nth-child(3)')!.classList.contains('nav-upload')).toBe(true);
+    expect(labels).toEqual(['總覽', '更新', '航線', '製作']);
+    expect(el.querySelector('.m-nav .nav-item:nth-child(2)')!.classList.contains('nav-upload')).toBe(true);
     expect(el.querySelector('.m-nav a[href="/craft"]')).toBeTruthy();
   });
 
-  it('桌機側欄:配件製作在航線模擬之後、設定之前', () => {
+  it('桌機側欄:總覽、航線模擬、配件製作、設定(工坊管理與更新潛艇的入口都在總覽,D-294)', () => {
     const { el } = mount(true);
     const hrefs = [...el.querySelectorAll('a.d-nav-item')].map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual(['/', '/workshops', '/update', '/route', '/craft', '/settings']);
+    expect(hrefs).toEqual(['/', '/route', '/craft', '/settings']);
   });
 
   it('桌機側欄結構(D-268):內容在可捲動的 .d-side-scroll 內,收合把手在它外面(不被裁掉);收合 / 展開照常', () => {
@@ -43,7 +43,7 @@ describe('Shell 導覽', () => {
     const side = el.querySelector('.d-sidebar')!;
     const scroll = side.querySelector('.d-side-scroll')!;
     expect(scroll.querySelector('.d-brand')).toBeTruthy();
-    expect(scroll.querySelectorAll('a.d-nav-item')).toHaveLength(6);
+    expect(scroll.querySelectorAll('a.d-nav-item')).toHaveLength(4);
     expect(scroll.querySelector('.d-user')).toBeTruthy();
     const handle = side.querySelector('.d-collapse-handle')!;
     expect(handle.parentElement).toBe(side);

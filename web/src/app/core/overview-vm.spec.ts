@@ -61,6 +61,15 @@ describe('OverviewVm', () => {
     expect(vm.index()).toBe(0);
   });
 
+  it('提醒(D-294):只有單一工坊檢視才有,整批與預先提醒分開列', () => {
+    expect(vm.reminder()).toBeNull();
+    store.fetched.set([{ ...ws('A', []), notify_batched: true, notify_lead_minutes: 10 as never }, ws('B', [])]);
+    vm.select('A');
+    expect(vm.reminder()).toEqual({ batched: true, lead: '10 分' });
+    vm.select('B');
+    expect(vm.reminder()).toEqual({ batched: false, lead: null });
+  });
+
   it('select:依工坊 id 套用過濾,找不到退回「全部」', () => {
     vm.select('B');
     expect(vm.currentWorkshop()?.id).toBe('B');

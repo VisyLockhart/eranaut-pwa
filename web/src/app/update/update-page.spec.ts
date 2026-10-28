@@ -158,11 +158,11 @@ describe('UpdatePage', () => {
     expect(el.querySelectorAll('.uf-row').length).toBe(2);
   });
 
-  it('沒有任何工坊:顯示引導前往工坊管理', () => {
+  it('沒有任何工坊:顯示引導前往總覽新增(D-294)', () => {
     store.fetched.set([]);
     const { el } = open();
-    expect(el.textContent).toContain('先建立一個工坊');
-    expect(el.querySelector('a[href="/workshops"]')).not.toBeNull();
+    expect(el.textContent).toContain('在總覽新增一個工坊');
+    expect(el.querySelector('a.primary-btn[href="/"]')).not.toBeNull();
     expect(el.querySelector('.uf-actions-m')).toBeNull();
   });
 

@@ -7,6 +7,7 @@ import { chartSummary, type ChartSummary } from './charts';
 import type { SubRow } from './submarine-form';
 import { circled, displayFor, isReady, type SubDisplay } from './format';
 import { readJson, writeJson } from './storage';
+import { leadLabel } from './workshop-form';
 import type { SelectMeta, SelectOption } from '../ui/select';
 import { progressView, type ProgressView, type QuickProgressDraft } from './leveling-vm';
 import { upkeepItem, workshopUpkeep, type QuickUpkeepDraft, type UpkeepItem, type WorkshopUpkeep } from './upkeep-vm';
@@ -178,6 +179,13 @@ export class OverviewVm {
   readonly chart = computed<ChartSummary | null>(() => {
     const ws = this.currentWorkshop();
     return ws ? chartSummary(ws, this.store.now()) : null;
+  });
+
+  /** 目前檢視的工坊的提醒設定(整批、預先提醒),總覽的「提醒」區塊用(D-294);「全部」為 null */
+  readonly reminder = computed<{ batched: boolean; lead: string | null } | null>(() => {
+    const ws = this.currentWorkshop();
+    if (!ws) return null;
+    return { batched: ws.notify_batched, lead: ws.notify_lead_minutes > 0 ? leadLabel(ws.notify_lead_minutes) : null };
   });
 
   // ---- 排序(D-290) ----

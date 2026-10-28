@@ -6,8 +6,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { Auth } from '../core/auth';
 import { DataStore } from '../core/data-store';
 import { QuickEditDialog } from '../update/quick-edit-dialog';
-import { WorkshopDeleteDialog } from '../workshops/workshop-delete-dialog';
 import { WorkshopFormDialog } from '../workshops/workshop-form-dialog';
+import { WorkshopManageDialog } from '../workshops/workshop-manage-dialog';
 
 // 回歸:模板事件處理式若回傳 false,Angular 會 preventDefault。
 // 曾因 (pointerdown)="downOnOverlay = …" 讓真實滑鼠點不進對話框內的輸入框(焦點被擋)。
@@ -33,15 +33,7 @@ describe('對話框不阻止內部元素的預設行為', () => {
 
   const cases: [string, () => ReturnType<typeof TestBed.createComponent>, string][] = [
     ['新增/編輯工坊', () => TestBed.createComponent(WorkshopFormDialog), '#wsf-captain'],
-    [
-      '刪除工坊',
-      () => {
-        const f = TestBed.createComponent(WorkshopDeleteDialog);
-        f.componentRef.setInput('workshopId', 'w1');
-        return f;
-      },
-      'button',
-    ],
+    ['工坊管理', () => TestBed.createComponent(WorkshopManageDialog), '.ws-add-btn'],
     [
       '單艘快速修改',
       () => {

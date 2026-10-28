@@ -1,20 +1,16 @@
 import { CdkDrag, CdkDragHandle, CdkDropList, type CdkDragDrop } from '@angular/cdk/drag-drop';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, input } from '@angular/core';
-import { Router } from '@angular/router';
 import type { WorkshopDto } from '@eranaut/shared';
 import { DataStore } from '../core/data-store';
-import { addressLine } from '../core/overview-vm';
-import { leadLabel } from '../core/workshop-form';
 import { WorkshopsVm } from '../core/workshops-vm';
 import { IconComponent } from '../ui/icon';
 
 export type ListVariant = 'mobile' | 'desktop';
 
 /**
- * 工坊清單(D-101、D-102、D-115、D-116)。
- * - 瀏覽模式:點工坊跳到總覽並套用該工坊過濾;桌機 hover 顯示地址泡泡(D-105)
- * - 管理模式:拖曳把手(CDK DragDrop,滑鼠與觸控共用)+ ▲▼ 按鈕(含滑動動畫)+ 編輯 + 刪除
+ * 工坊排序清單(D-115、D-116、D-294):拖曳把手(CDK DragDrop,滑鼠與觸控共用)+ ▲▼ 按鈕(含滑動動畫)。
+ * 放在總覽「全部」檢視的「工坊管理」視窗裡;編輯與刪除在單一工坊檢視的「工坊設定」。
  * 順序只存 localStorage(D-55),由 DataStore 處理。
  */
 @Component({
@@ -29,17 +25,8 @@ export class WorkshopList {
 
   protected readonly vm = inject(WorkshopsVm);
   protected readonly store = inject(DataStore);
-  private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
-
-  protected readonly addressLine = addressLine;
-  protected readonly leadLabel = leadLabel;
-
-  protected open(id: string): void {
-    this.vm.focusInOverview(id);
-    void this.router.navigateByUrl('/');
-  }
 
   protected onDrop(event: CdkDragDrop<unknown>): void {
     this.store.reorderWorkshops(event.previousIndex, event.currentIndex);

@@ -103,19 +103,59 @@ export class ChartUpdateVm {
     return n === screen ? null : { screen, draft: n };
   }
 
+  /** 這個海域是否已開放:第一個海域、或它的入口點的前一個解鎖點已發現 */
+  private isOpened(sea: number, draft: ReadonlySet<number>): boolean {
+    const s = SEAS.find((x) => x.sea === sea);
+    if (!s) return false;
+    const root = this.rootPoint(sea);
+    const parent = root ? UNLOCK_GRAPH.parent.get(root) : undefined;
+    return s.sea === SEAS[0]!.sea || parent === undefined || draft.has(parent);
+  }
+
+  private rootPoint(sea: number): number | undefined {
+    return SEAS.find((x) => x.sea === sea)?.points.find((p) => !UNLOCK_GRAPH.parent.has(p.id) || UNLOCK_GRAPH.seaOf.get(UNLOCK_GRAPH.parent.get(p.id)!)?.sea.sea !== sea)?.id;
+  }
+
   readonly tabs = computed<SeaTab[]>(() => {
     const base = this.base();
     const draft = this.draft();
     this.shots();
     return SEAS.map((s) => {
-      const root = s.points.find((p) => !UNLOCK_GRAPH.parent.has(p.id) || UNLOCK_GRAPH.seaOf.get(UNLOCK_GRAPH.parent.get(p.id)!)?.sea.sea !== s.sea);
-      const parent = root ? UNLOCK_GRAPH.parent.get(root.id) : undefined;
-      const opened = s.sea === SEAS[0]!.sea || parent === undefined || draft.has(parent);
       const b = foundIn(base, s.sea);
       const d = foundIn(draft, s.sea);
-      return { sea: s.sea, name: s.name, base: b, draft: d, total: s.points.length, warn: this.mismatch(s.sea) !== null, locked: !opened && b === 0 && d === 0 };
+      return { sea: s.sea, name: s.name, base: b, draft: d, total: s.points.length, warn: this.mismatch(s.sea) !== null, locked: !this.isOpened(s.sea, draft) && b === 0 && d === 0 };
     });
   });
+
+  /** 可以手動加入的海圖(目前沒顯示的分頁) */
+  readonly addable = computed(() => this.tabs().filter((t) => t.locked));
+
+  /** 手動加入海圖(D-294 補):標起點 A(1/n),連同前面海域的解鎖點一起標 */
+  addSea(sea: number): void {
+    const root = this.rootPoint(sea);
+    if (root === undefined || !this.addable().some((t) => t.sea === sea)) return;
+    const prev = this.draft();
+    const { next } = markExplored(UNLOCK_GRAPH, prev, root);
+    this.draft.set(next);
+    this.undo.set(null);
+    this.viewSea.set(sea);
+  }
+
+  /** 移除整張海圖:這個海域還沒解鎖的狀態——取消它的所有點,連同前一個海域裡解鎖它的那個點(可復原) */
+  removeSea(sea: number): void {
+    const s = SEAS.find((x) => x.sea === sea);
+    const root = this.rootPoint(sea);
+    const parent = root === undefined ? undefined : UNLOCK_GRAPH.parent.get(root);
+    if (!s || parent === undefined) return;
+    const prev = this.draft();
+    let next = unmarkExplored(UNLOCK_GRAPH, prev, parent).next;
+    next = new Set([...next].filter((id) => !s.points.some((p) => p.id === id)));
+    if (next.size === prev.size) return;
+    this.draft.set(next);
+    this.undo.set({ text: `已移除 ${s.name} 的海圖(前一個海域的解鎖點也一併取消)`, prev });
+    const visible = this.tabs().filter((t) => !t.locked);
+    if (!visible.some((t) => t.sea === this.viewSea())) this.viewSea.set(visible[0]?.sea ?? SEAS[0]!.sea);
+  }
 
   /** 進入頁面:表單進行中(同一間工坊)就沿用;否則以總覽正在看的工坊(或指定的)開始 */
   open(preferId: string | null = null): void {

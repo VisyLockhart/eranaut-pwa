@@ -30,10 +30,16 @@
 }
 
 <ng-template #body>
+  @if (meta(); as m) {
+    <div class="ch-meta">
+      @if (m.updatedAt !== null) { <span>上次更新 {{ chartDate(m.updatedAt) }}</span> } @else { <span>這間工坊還沒有海圖紀錄</span> }
+      @if (m.returnedSince > 0) { <span class="ch-meta-hint">之後返航 {{ m.returnedSince }} 艘，可能開了新點</span> }
+    </div>
+  }
   @if (!store.loaded()) {
     <div class="up-empty">讀取中…</div>
   } @else if (!vm.workshop()) {
-    <div class="up-empty">還沒有任何工坊。請先到「工坊」新增一間工坊。</div>
+    <div class="up-empty">還沒有任何工坊。請先到總覽新增一間工坊。</div>
   } @else if (layout.isDesktop()) {
     <div class="ch-grid">
       <div class="ch-side">
@@ -97,6 +103,7 @@
 
 <ng-template #mapBlock>
   <section class="rt-block ch-map-block" aria-label="海圖">
+    <div class="ch-tabrow">
     <div class="ch-tabs" role="tablist" aria-label="海域">
       @for (t of vm.tabs(); track t.sea) {
         @if (!t.locked) {
@@ -105,6 +112,10 @@
           </button>
         }
       }
+    </div>
+    @if (vm.addable().length > 0) {
+      <button type="button" class="ch-add-btn" data-field="add-sea" (click)="addOpen.set(true)"><app-icon name="plus" [size]="16" />加入海圖</button>
+    }
     </div>
 
     @if (!layout.isDesktop() && compare()) {
@@ -134,6 +145,9 @@
         @if (vm.removed().size) { <span><i class="lg cf-rem"></i>取消</span> }
         <span><i class="lg cf-off"></i>未發現(點一下加入)</span>
       </div>
+      @if (canRemove()) {
+        <button type="button" class="ct-tool danger ch-rm" data-field="remove-sea" [class.confirm]="confirmRm()" (click)="requestRemove()" (blur)="confirmRm.set(false)">{{ confirmRm() ? '確定移除？' : '移除這張海圖' }}</button>
+      }
       @if (vm.undo(); as u) {
         <div class="rt-undo" role="status" aria-live="polite">
           <span>{{ u.text }}</span>
@@ -144,3 +158,5 @@
     }
   </section>
 </ng-template>
+
+@if (addOpen()) { <app-add-sea (closed)="addOpen.set(false)" /> }

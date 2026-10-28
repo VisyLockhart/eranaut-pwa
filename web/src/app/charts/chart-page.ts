@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationStart, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { ChartUpdateVm } from '../core/chart-update-vm';
+import { chartDate, chartSummary } from '../core/charts';
 import { seaIndex } from '../route/core/data';
 import { DataStore } from '../core/data-store';
 import { ImageTools, clipboardImage, isCaptureCancelled, isTextTarget, pasteShortcut } from '../core/image-input';
@@ -12,6 +13,7 @@ import { OCR_MAX_BYTES } from '../core/update-vm';
 import { RouteMap } from '../route/route-map';
 import { IconComponent } from '../ui/icon';
 import { SelectField, type SelectValue } from '../ui/select';
+import { AddSeaDialog } from './add-sea-dialog';
 import { ChartShot } from './chart-shot';
 
 /**
@@ -20,7 +22,7 @@ import { ChartShot } from './chart-shot';
  */
 @Component({
   selector: 'app-chart-page',
-  imports: [NgTemplateOutlet, IconComponent, SelectField, RouteMap, ChartShot],
+  imports: [NgTemplateOutlet, IconComponent, SelectField, RouteMap, ChartShot, AddSeaDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './chart-page.html',
   host: { style: 'display: contents', '(document:paste)': 'onPaste($event)' },
@@ -37,7 +39,18 @@ export class ChartPage implements OnDestroy {
   protected readonly pasted = signal(false);
   protected readonly capturing = signal(false);
   private pasteTimer: ReturnType<typeof setTimeout> | undefined;
+  protected readonly addOpen = signal(false);
+  protected readonly confirmRm = signal(false);
+  private rmTimer: ReturnType<typeof setTimeout> | undefined;
+  /** 第一個海域不能移除 */
+  protected readonly canRemove = computed(() => this.vm.viewSea() !== 1);
   protected readonly wsOptions = computed(() => this.store.workshops().map((w) => ({ value: w.id, label: w.name })));
+  /** 這間工坊上次更新海圖的日期與返航提示(D-294:從總覽搬過來) */
+  protected readonly meta = computed(() => {
+    const ws = this.vm.workshop();
+    return ws ? chartSummary(ws, this.store.now()) : null;
+  });
+  protected readonly chartDate = (ms: number | null) => chartDate(ms);
   protected readonly seaIdx = computed(() => seaIndex(this.vm.viewSea()));
   protected readonly shot = computed(() => this.vm.shotOf(this.vm.viewSea()));
   /** 可以對照的截圖(有海圖位置才有) */
@@ -80,11 +93,25 @@ export class ChartPage implements OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.pasteTimer);
+    clearTimeout(this.rmTimer);
     this.layout.headerTool.set(null);
   }
 
   protected onSelect(value: SelectValue): void {
     this.vm.selectWorkshop(String(value) || null);
+  }
+
+  /** 移除整張海圖:兩段式確認(同配件製作清空,3 秒內沒再按就取消) */
+  protected requestRemove(): void {
+    if (!this.confirmRm()) {
+      this.confirmRm.set(true);
+      clearTimeout(this.rmTimer);
+      this.rmTimer = setTimeout(() => this.confirmRm.set(false), 3000);
+      return;
+    }
+    clearTimeout(this.rmTimer);
+    this.confirmRm.set(false);
+    this.vm.removeSea(this.vm.viewSea());
   }
 
   protected setSea(sea: number): void {

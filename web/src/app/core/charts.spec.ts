@@ -198,6 +198,20 @@ describe('ChartUpdateVm(更新海圖頁)', () => {
     await p;
   };
 
+  it('手動加入海圖:標起點 A 變成 1/n,可以再移除整張(D-294)', () => {
+    const target = vm.addable().find((t) => t.sea === 6)!;
+    expect(target).toBeTruthy();
+    vm.addSea(6);
+    const tab = vm.tabs().find((t) => t.sea === 6)!;
+    expect(tab.locked).toBe(false);
+    expect(tab.draft).toBe(1);
+    expect(vm.viewSea()).toBe(6);
+    expect(vm.addable().some((t) => t.sea === 6)).toBe(false);
+    vm.removeSea(6);
+    expect(vm.tabs().find((t) => t.sea === 6)!.locked).toBe(true);
+    expect(vm.viewSea()).not.toBe(6);
+  });
+
   it('開啟時帶入工坊的紀錄,停在最後一個有紀錄的海域', () => {
     expect(vm.draft().size).toBe(12);
     expect(vm.viewSea()).toBe(1);

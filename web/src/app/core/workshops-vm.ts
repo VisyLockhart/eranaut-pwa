@@ -6,9 +6,12 @@ import { isReady } from './format';
 import { OverviewVm } from './overview-vm';
 import type { WorkshopFormValue } from './workshop-form';
 
-export type WorkshopDialog = { type: 'form'; id: string | null } | { type: 'delete'; id: string };
+/** 新增(id = null)/ 編輯工坊對話框(D-103);刪除在編輯對話框裡二次確認(D-294) */
+export interface WorkshopFormState {
+  id: string | null;
+}
 
-/** 工坊管理頁的一列:工坊本身加上該工坊目前的潛艇統計 */
+/** 工坊管理視窗的一列:工坊本身加上該工坊目前的潛艇統計 */
 export interface WorkshopRow {
   ws: WorkshopWithSubmarines;
   exploring: number;
@@ -16,8 +19,8 @@ export interface WorkshopRow {
 }
 
 /**
- * 工坊管理頁的畫面狀態(D-101~D-105):管理/瀏覽模式、目前開啟的對話框。
- * 手機與桌機兩種版面共用,所以放在 service,視窗縮放切換版面時不會丟失。
+ * 工坊管理的畫面狀態(D-101~D-105、D-294):總覽「全部」檢視的「工坊管理」視窗(排序、新增)、
+ * 單一工坊檢視的「工坊設定」(編輯、刪除)。手機與桌機兩種版面共用,所以放在 service,視窗縮放切換版面時不會丟失。
  */
 @Injectable({ providedIn: 'root' })
 export class WorkshopsVm {
@@ -25,16 +28,10 @@ export class WorkshopsVm {
   private readonly overview = inject(OverviewVm);
   private readonly auth = inject(Auth);
 
-  readonly manageMode = signal(false);
-  readonly dialog = signal<WorkshopDialog | null>(null);
-  readonly formDialog = computed(() => {
-    const d = this.dialog();
-    return d?.type === 'form' ? d : null;
-  });
-  readonly deleteDialog = computed(() => {
-    const d = this.dialog();
-    return d?.type === 'delete' ? d : null;
-  });
+  /** 「工坊管理」視窗(排序與新增)是否開啟 */
+  readonly manageOpen = signal(false);
+  /** 新增 / 編輯工坊對話框;null = 沒開 */
+  readonly formDialog = signal<WorkshopFormState | null>(null);
 
   readonly rows = computed<WorkshopRow[]>(() => {
     const now = this.store.now();
@@ -59,9 +56,6 @@ export class WorkshopsVm {
   readonly submitError = signal<string | null>(null);
   readonly busy = signal(false);
 
-  /** 頁面目前是否「在使用中」:版面切換重建頁面時為 true,不重置模式與對話框 */
-  active = false;
-
   constructor() {
     // 登出或 session 失效:一律回到初始狀態
     effect(() => {
@@ -69,11 +63,10 @@ export class WorkshopsVm {
     });
   }
 
-  /** 離開工坊頁、或登出時呼叫:回到瀏覽模式、關掉對話框並丟棄草稿 */
+  /** 登出時呼叫:關掉視窗並丟棄草稿 */
   reset(): void {
-    this.active = false;
-    this.manageMode.set(false);
-    this.dialog.set(null);
+    this.manageOpen.set(false);
+    this.formDialog.set(null);
     this.clearDialogState();
   }
 
@@ -85,28 +78,31 @@ export class WorkshopsVm {
     this.busy.set(false);
   }
 
-  toggleManage(): void {
-    this.manageMode.update((v) => !v);
+  openManage(): void {
+    this.manageOpen.set(true);
   }
+  closeManage(): void {
+    this.manageOpen.set(false);
+  }
+  /** 從工坊管理視窗新增:先收掉管理視窗,避免兩個對話框疊在一起 */
   add(): void {
+    this.manageOpen.set(false);
     this.clearDialogState();
-    this.dialog.set({ type: 'form', id: null });
+    this.formDialog.set({ id: null });
   }
   edit(id: string): void {
     this.clearDialogState();
-    this.dialog.set({ type: 'form', id });
-  }
-  remove(id: string): void {
-    this.clearDialogState();
-    this.dialog.set({ type: 'delete', id });
+    this.formDialog.set({ id });
   }
   closeDialog(): void {
-    this.dialog.set(null);
+    this.formDialog.set(null);
     this.clearDialogState();
   }
 
-  /** 瀏覽模式點工坊:總覽套用該工坊的過濾(實際導頁由元件做) */
-  focusInOverview(id: string): void {
-    this.overview.select(id);
+  /** 刪除工坊;刪的是總覽目前檢視的那間,刪完回到「全部」(總覽以位置記目前檢視,不先處理會跳到下一間) */
+  async deleteWorkshop(id: string): Promise<void> {
+    const viewing = this.overview.currentWorkshop()?.id === id;
+    await this.store.deleteWorkshop(id);
+    if (viewing) this.overview.goTo(0);
   }
 }

@@ -187,6 +187,89 @@ describe('WorkshopFormDialog', () => {
     expect(closed).toHaveBeenCalled();
   });
 
+  describe('刪除工坊(D-294):編輯對話框底部的二次確認', () => {
+    const delBtn = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('.ws-del')!;
+
+    it('新增模式沒有刪除按鈕', () => {
+      const { el } = open(null);
+      expect(el.querySelector('.ws-del')).toBeNull();
+    });
+
+    it('第一下進入確認(按鈕變「確定刪除?」、顯示潛艇數量警告),不呼叫 API', () => {
+      store.fetched.set([workshop({}, [30, 60])]);
+      const { el, fixture } = open('w1');
+      expect(delBtn(el).textContent).toContain('刪除工坊');
+      delBtn(el).click();
+      fixture.detectChanges();
+      expect(delBtn(el).classList.contains('confirm')).toBe(true);
+      expect(delBtn(el).textContent).toContain('確定刪除？');
+      expect(el.querySelector('.ws-del-warn')?.textContent).toContain('2 艘');
+      expect(el.querySelector('.ws-del-warn')?.textContent).toContain('無法復原');
+      http.expectNone('/api/workshops/w1');
+    });
+
+    it('第二下才刪除:DELETE 成功後關閉對話框、工坊從清單消失', async () => {
+      store.fetched.set([workshop()]);
+      const { el, fixture, closed } = open('w1');
+      delBtn(el).click();
+      fixture.detectChanges();
+      delBtn(el).click();
+      const req = http.expectOne('/api/workshops/w1');
+      expect(req.request.method).toBe('DELETE');
+      req.flush(null, { status: 204, statusText: 'No Content' });
+      await settle();
+      fixture.detectChanges();
+      expect(closed).toHaveBeenCalled();
+      expect(store.workshops()).toHaveLength(0);
+    });
+
+    it('失焦、逾時、改動表單都會取消確認', () => {
+      vi.useFakeTimers();
+      try {
+        store.fetched.set([workshop()]);
+        const { el, fixture, type } = open('w1');
+        delBtn(el).click();
+        fixture.detectChanges();
+        delBtn(el).dispatchEvent(new Event('blur'));
+        fixture.detectChanges();
+        expect(delBtn(el).classList.contains('confirm')).toBe(false);
+
+        delBtn(el).click();
+        fixture.detectChanges();
+        vi.advanceTimersByTime(3100);
+        fixture.detectChanges();
+        expect(delBtn(el).classList.contains('confirm')).toBe(false);
+
+        delBtn(el).click();
+        fixture.detectChanges();
+        type('#wsf-captain', '別人');
+        fixture.detectChanges();
+        expect(delBtn(el).classList.contains('confirm')).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('刪除失敗:留在對話框顯示錯誤,可重試', async () => {
+      store.fetched.set([workshop()]);
+      const { el, fixture, closed } = open('w1');
+      delBtn(el).click();
+      fixture.detectChanges();
+      delBtn(el).click();
+      http.expectOne('/api/workshops/w1').flush({}, { status: 500, statusText: 'Server Error' });
+      await settle();
+      fixture.detectChanges();
+      expect(closed).not.toHaveBeenCalled();
+      expect(el.textContent).toContain('刪除失敗');
+    });
+
+    it('地址標題只留「選填」,不再說不會顯示在總覽', () => {
+      const { el } = open(null);
+      const label = [...el.querySelectorAll('.modal-section-label')].find((e) => e.textContent?.includes('公會屋地址'));
+      expect(label?.textContent?.trim()).toBe('公會屋地址（選填）');
+    });
+  });
+
   describe('版面切換重建對話框(D-163)', () => {
     it('填到一半的內容在對話框被銷毀、重建後保留', () => {
       TestBed.inject(Auth).status.set('authenticated');
@@ -232,7 +315,7 @@ describe('WorkshopFormDialog', () => {
       expect(vm.busy()).toBe(true);
       req.flush({ ...workshop({ id: 'new', name: '新工坊' }), submarines: undefined }, { status: 201, statusText: 'Created' });
       await settle();
-      expect(vm.dialog()).toBeNull();
+      expect(vm.formDialog()).toBeNull();
       expect(vm.busy()).toBe(false);
     });
   });

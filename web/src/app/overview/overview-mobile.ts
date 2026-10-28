@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DataStore } from '../core/data-store';
 import { circled } from '../core/format';
-import { chartFound, chartLabel } from '../core/charts';
+import { chartLabel } from '../core/charts';
 import { RouterLink } from '@angular/router';
 import { OverviewVm, upkeepText, wsInfo, wsMeta } from '../core/overview-vm';
 import { UpkeepVm } from '../core/upkeep-vm';
+import { WorkshopsVm } from '../core/workshops-vm';
 import { SelectField } from '../ui/select';
 import { OverviewSort } from './overview-sort';
 import { IconComponent } from '../ui/icon';
@@ -27,11 +28,11 @@ const MIN_REFRESH_MS = 600;
 export class OverviewMobile {
   protected readonly vm = inject(OverviewVm);
   protected readonly store = inject(DataStore);
+  protected readonly wsVm = inject(WorkshopsVm);
   protected readonly circled = circled;
   protected readonly wsMeta = wsMeta;
   protected readonly wsInfo = wsInfo;
   protected readonly upkeepText = upkeepText;
-  protected readonly chartFound = chartFound;
   protected readonly chartLabel = chartLabel;
   private readonly upkeep = inject(UpkeepVm);
 

@@ -5,7 +5,12 @@
   </div>
   <div class="ov-ctas">
     @if (vm.currentWorkshop(); as ws) {
-      <a class="ghost-btn ov-chart-cta" routerLink="/charts" [queryParams]="{ ws: ws.id }"><app-icon name="seaChart" [size]="18" />更新海圖</a>
+      <button type="button" class="ghost-btn ov-cta-btn" (click)="wsVm.edit(ws.id)"><app-icon name="settings" [size]="18" />工坊設定</button>
+      <a class="ghost-btn ov-cta-btn chart" routerLink="/charts" [queryParams]="{ ws: ws.id }" [attr.aria-label]="vm.chart()?.returnedSince ? '更新海圖,上次更新後有潛艇返航,可能開了新點' : null">
+        <app-icon name="seaChart" [size]="18" />更新海圖@if (vm.chart()?.returnedSince) { <i class="ov-chart-dot" aria-hidden="true"></i> }
+      </a>
+    } @else if (vm.stats().workshops > 0) {
+      <button type="button" class="ghost-btn ov-cta-btn" (click)="wsVm.openManage()"><app-icon name="workshops" [size]="18" />工坊管理</button>
     }
     <a class="upload-cta" routerLink="/update"><app-icon name="camera" [size]="20" />更新潛艇</a>
   </div>
@@ -20,6 +25,19 @@
     </div>
     <div class="ov-meter" aria-hidden="true"><i [style.width.%]="readyPct()"></i></div>
   </div>
+  @if (vm.reminder(); as r) {
+    <button type="button" class="d-stat ov-rem" (click)="wsVm.edit(vm.currentWorkshop()!.id)" aria-label="提醒設定，開啟工坊設定">
+      <div class="label">提醒</div>
+      @if (r.batched || r.lead) {
+        <div class="ov-rem-chips">
+          @if (r.batched) { <span class="ov-rem-chip">整批提醒</span> }
+          @if (r.lead) { <span class="ov-rem-chip">提前 {{ r.lead }}</span> }
+        </div>
+      } @else {
+        <div class="ov-rem-none">逐艘返航提醒</div>
+      }
+    </button>
+  }
   @if (vm.upkeepSummary(); as u) {
     @if (u.state !== 'none') {
       <div class="d-stat ov-uk" [attr.data-state]="u.state" [attr.data-phase]="u.repairNow > 0 ? 'repair_now' : 'repair_after_return'">
@@ -65,18 +83,6 @@
     <div class="ov-wsinfo">
       <div class="ov-wsinfo-line"><app-icon name="server" [size]="13" /><span>{{ ws.server || '未設定伺服器' }}</span><span class="sep">·</span><span>{{ ws.captain || '未設定代表角色' }}</span></div>
       @if (hasAddress(ws)) { <div class="ov-wsinfo-line"><app-icon name="mapPin" [size]="13" /><span>{{ addressLine(ws) }}</span></div> }
-      @if (vm.chart(); as c) {
-        <div class="ov-wsinfo-line ov-chart-line">
-          <app-icon name="seaChart" [size]="13" />
-          @if (c.seas.length === 0) {
-            <span>海圖未記錄</span><span class="sep">·</span><a class="ov-chart-link" routerLink="/charts" [queryParams]="{ ws: ws.id }">更新海圖</a>
-          } @else {
-            @for (s of c.seas; track s.sea) { <span class="ov-chart-sea">{{ s.name }} <b class="mono">{{ s.found }}</b>/{{ s.total }}</span> }
-            <span class="sep">·</span><span>{{ chartDate(c.updatedAt) }} 更新</span>
-            @if (c.returnedSince > 0) { <span class="ov-chart-hint">· 之後返航 {{ c.returnedSince }} 艘,可能開了新點</span> }
-          }
-        </div>
-      }
     </div>
   }
   <div class="ov-tools">
@@ -96,7 +102,12 @@
   <div class="up-empty">讀取中…</div>
 } @else if (vm.items().length === 0) {
   <div class="up-empty">
-    {{ vm.stats().workshops === 0 ? '還沒有工坊。到「工坊管理」新增第一間工坊吧。' : '目前沒有潛水艇記錄。到「更新潛艇」輸入潛艇的剩餘時間。' }}
+    @if (vm.stats().workshops === 0) {
+      還沒有工坊，先新增第一間工坊吧。
+      <div style="margin-top: 12px"><button type="button" class="primary-btn" style="width: auto; padding: 10px 20px" (click)="wsVm.add()">新增工坊</button></div>
+    } @else {
+      目前沒有潛水艇記錄。按右上角的「更新潛艇」輸入潛艇的剩餘時間。
+    }
   </div>
 } @else if (store.view() === 'list') {
   <div class="table-wrap ov-table" [class.with-ws]="showWsCol()" [class.no-prog]="!showProgCol()">

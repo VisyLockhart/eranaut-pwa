@@ -30,7 +30,6 @@
         <a class="nav-item m-intro" routerLink="/intro" routerLinkActive="active"><app-icon name="plusSquare" [size]="20" /><span>加入</span><i class="intro-dot"></i></a>
       }
       <a class="nav-item" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>總覽</span></a>
-      <a class="nav-item" routerLink="/workshops" routerLinkActive="active"><app-icon name="workshops" [size]="20" /><span>工坊</span></a>
       <a class="nav-item nav-upload" routerLink="/update" routerLinkActive="active">
         <div class="nav-upload-fab"><app-icon name="camera" [size]="20" /></div>
         <span>更新</span>
@@ -62,8 +61,6 @@
         <a class="d-nav-item intro-link" routerLink="/intro" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '加入海域' : null"><app-icon name="plusSquare" [size]="20" /><span>加入海域</span><span class="intro-new">HERE</span></a>
       }
       <a class="d-nav-item" routerLink="/" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '總覽' : null" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>總覽</span></a>
-      <a class="d-nav-item" routerLink="/workshops" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '工坊管理' : null"><app-icon name="workshops" [size]="20" /><span>工坊管理</span></a>
-      <a class="d-nav-item" routerLink="/update" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '更新潛艇' : null"><app-icon name="camera" [size]="20" /><span>更新潛艇</span></a>
       <a class="d-nav-item" routerLink="/route" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '航線模擬' : null"><app-icon name="route" [size]="20" /><span>航線模擬</span></a>
       <a class="d-nav-item" routerLink="/craft" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '配件製作' : null"><app-icon name="anvil" [size]="20" /><span>配件製作</span></a>
       <a class="d-nav-item" routerLink="/settings" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '設定' : null"><app-icon name="settings" [size]="20" /><span>設定</span></a>
