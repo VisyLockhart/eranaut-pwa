@@ -28,6 +28,8 @@ html[data-theme='notebook'] {
   --line: #3a4236; --pencil: color-mix(in srgb, #3a4236 24%, transparent);
   --sage: #a8b79b; --sage-p: #dde4d3; --rose: #b98a82; --rose-d: #86463f; --rose-p: #ecd6d0;
   --mus: #c4a76a; --mus-d: #6e5822; --mus-p: #eadfbf; --blue: #8a9ea9; --blue-d: #445b6b; --blue-p: #d9e2e6;
+  /* 薰衣草(提醒區塊)與統計區塊用的深字色:每個區塊一個色相,淡底配同色相深字 */
+  --lav: #9a8fae; --lav-d: #5a4d73; --lav-p: #e3dfec; --lav-ink: #43365c; --mus-ink: #5a4617; --blue-ink: #2f4452; --blue-time: #2b566f;
   /* 待收艇:玫瑰淡底配深玫瑰字 */
   --cover-ink: #faf7ef; --ready-bg: #ecd6d0; --ready-ink: #6e3b34; --ready-dot: #b98a82;
 }
@@ -64,8 +66,6 @@ html[data-theme='notebook'] {
   }
   .rt-block, .rt-cfgbar, .rt-baseline, .ct-tree-cry { background: var(--bg-elevated-2); }
   .ws-row, .ws-browse-item, .uf-row, .d-user, .ct-sum-row { outline: 0; }
-  .m-stat.ready, .d-stat.ready { background: var(--ready-bg); border-color: var(--rose-d); color: var(--ready-ink); }
-  .m-stat.ready .num, .d-stat.ready .num, .m-stat.ready .label, .d-stat.ready .label { color: var(--ready-ink); }
   /* 待收艇的卡片(D-291 後續):淡玫瑰底 + 左側書籤色條,內文維持各自的顏色(滿底會讓小字難讀) */
   .card.ready, .d-card.ready, .uf-row.ready { background: color-mix(in srgb, var(--ready-bg) 40%, var(--bg-elevated)); border-color: var(--rose-d); color: var(--text); box-shadow: inset 4px 0 0 var(--rose); }
   .dropzone { border-style: dashed; background: var(--bg-elevated-2); }
@@ -148,10 +148,37 @@ html[data-theme='notebook'] {
   .m-ovpanel.open { border: var(--bw) solid var(--line); border-radius: var(--w1); background: var(--bg-elevated); outline: 1px solid var(--pencil); outline-offset: 3px; }
   .m-stats-toggle.ov-toggle { border: var(--bw) dashed var(--text-muted); border-radius: var(--w2); background: transparent; }
   .ov-sort-n { border-radius: var(--blob); background: var(--accent); color: var(--on-accent); }
-  .ov-uk-chip { border-style: dashed; border-radius: var(--w2); background: transparent; }
   .ov-meter { height: 8px; border: var(--bw) solid var(--line); border-radius: var(--w3); background: var(--bg-elevated-2); }
   .ov-meter i { background: var(--rose); border-radius: inherit; }
   .d-stat.ov-uk[data-state="alert"], .m-stat.ov-uk[data-state="alert"] { border-color: var(--rose-d); background: var(--rose-p); }
+
+  /* 總覽統計區塊配色:一個區塊一個色相(淡底 + 同色相深字),避免全是玫瑰色 */
+  .d-stat.ov-fleet, .m-stat.ov-fleet { background: var(--sage-p); border-color: var(--accent-dark); color: var(--text); }
+  .ov-fleet .label { color: var(--accent-dark); font-weight: 700; }
+  .ov-fleet .ov-meter i { background: var(--accent); }
+  .d-stat.ov-fleet.ready, .m-stat.ov-fleet.ready { background: var(--mus-p); border-color: var(--mus-d); color: var(--mus-ink); }
+  .ov-fleet.ready .num, .ov-fleet.ready .ov-fleet-ready, .ov-fleet.ready .ov-mval-t, .ov-fleet.ready .ov-fleet-of { color: var(--mus-ink); }
+  .ov-fleet.ready .label { color: var(--mus-d); }
+  .ov-fleet.ready .ov-meter i { background: var(--mus-d); }
+  .ov-uk[data-state="alert"] .label { color: var(--rose-d); font-weight: 700; }
+  .ov-uk[data-state="alert"] .ov-uk-head, .ov-uk[data-state="alert"] .ov-mval { color: var(--ready-ink); }
+  /* 維修的工坊小標:白底 + 實線不規則手繪框 + 一點偏移的紙影(虛線在不規則圓角上會斷得很亂) */
+  .ov-uk-chip { border-style: solid; border-color: var(--rose-d); border-radius: var(--w2); background: var(--bg-elevated); color: var(--text); box-shadow: 2px 2px 0 0 color-mix(in srgb, var(--rose-d) 35%, transparent); }
+  .ov-uk-chip b { color: var(--rose-d); }
+  .ov-uk-chip:hover { background: var(--white); }
+  .d-stat.ov-uk[data-state="ok"], .m-stat.ov-uk[data-state="ok"] { background: var(--bg-elevated); }
+  /* 下一艘返航:霧藍底,艇名大而粗、工坊名淡、時間獨立一行用深藍並以虛線分隔 */
+  .d-stat.ov-next, .m-stat.ov-next { background: var(--blue-p); border-color: var(--blue-d); color: var(--blue-ink); }
+  .ov-next .label { color: var(--blue-d); font-weight: 700; }
+  .ov-next .ov-next-name { font-size: 17px; font-weight: 700; color: var(--blue-ink); }
+  .ov-next .ov-next-name span { font-size: 13.5px; font-weight: 400; color: var(--blue-d); }
+  .ov-next .ov-next-time { font-size: 15px; color: var(--blue-time); padding-top: 4px; border-top: 1.5px dashed color-mix(in srgb, var(--blue-d) 45%, transparent); }
+  .ov-next .ov-mval, .ov-next .ov-mval-t { color: var(--blue-time); }
+  /* 提醒:薰衣草底,標籤是白底手繪小框 */
+  .d-stat.ov-rem { background: var(--lav-p); border-color: var(--lav-d); color: var(--lav-ink); }
+  .ov-rem .label { color: var(--lav-d); font-weight: 700; }
+  .ov-rem-chip { background: var(--bg-elevated); color: var(--lav-ink); border: 1.4px solid var(--lav-d); border-radius: var(--w2); font-weight: 600; }
+  .ov-m-rem .ov-rem-chip { background: var(--lav-p); }
 
   /* 索引標籤(分頁) */
   .up-tabs { background: transparent; border: 0; border-bottom: var(--bw) solid var(--line); border-radius: 0; padding: 6px 0 0; gap: 6px; box-shadow: none; outline: 0; }
