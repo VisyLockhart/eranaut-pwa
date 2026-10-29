@@ -96,6 +96,31 @@ const PAGES = [
     ],
   },
   {
+    path: 'gear',
+    title: 'FFXIV 潛水艇配件清單・靜謐海域交換所 Aequor Eranos',
+    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:FFXIV 潛水艇(潛艇)配件清單，設定四個部位的配置，查看探索、收集、距離、恩惠等能力與耐久；手機與桌機都能用，免費。',
+    image: 'og/route-2.png',
+    imageAlt: 'Eranaut 潛水艇配件清單與航線模擬畫面',
+    body: `<main style="max-width:720px;margin:0 auto;padding:32px 20px;line-height:1.8">
+<h1>FFXIV 潛水艇配件清單</h1>
+<p>設定潛艇四個部位的配置,查看探索、收集、距離、恩惠等能力與耐久。Eranaut 是靜謐海域交換所(Aequor Eranos)同好會自行開發的潛水艇返航追蹤工具。</p>
+<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/craft">潛水艇配件製作</a> ・ <a href="/intro">靜謐海域交換所介紹</a></p>
+</main>`,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: 'Eranaut 潛水艇配件清單',
+        alternateName: 'Aequor Eranos',
+        url: `${ORIGIN}/gear`,
+        applicationCategory: 'GameApplication',
+        operatingSystem: 'Web',
+        inLanguage: 'zh-Hant',
+        isAccessibleForFree: true,
+      },
+    ],
+  },
+  {
     path: 'craft',
     title: 'FFXIV 潛水艇配件製作・靜謐海域交換所 Aequor Eranos',
     description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:選好潛水艇(潛艇)配件，列出完整的材料表、記錄庫存。FFXIV 潛水艇配件製作工具，手機與桌機都能使用。',
