@@ -5,21 +5,28 @@ import { isLootItem } from './route-loot-vm';
 
 // 條件組合(D-229)的純函式:讀回來的資料驗證、對照資料集整理、命名與比較。不依賴 Angular。
 
-export const DEFAULT_SPEC: RouteFilterSpec = { v: 1, sea: 'all', max_hours: null, sort: 'perMin', required: [], excluded: [], item_ids: [], match: 'all' };
+export const DEFAULT_SPEC: RouteFilterSpec = { v: 2, sea: 'all', max_hours: null, sort: ['perMin'], required: [], excluded: [], item_ids: [], match: 'all' };
 
 const isInt = (v: unknown, min: number, max: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
 const ids = (v: unknown, max: number, cap: number): number[] =>
   Array.isArray(v) ? [...new Set(v.filter((x): x is number => isInt(x, 1, max)))].slice(0, cap) : [];
+
+/** 排序:v1 是單一字串、v2 是陣列(順序 = 優先順序);不重複,壞掉或空的當作只照每分鐘經驗 */
+function sanitizeSort(raw: unknown): RouteFilterSort[] {
+  const list: unknown[] = Array.isArray(raw) ? raw : [raw];
+  const out = [...new Set(list)].filter((k): k is RouteFilterSort => (ROUTE_FILTER_SORTS as readonly unknown[]).includes(k));
+  return out.length > 0 ? out : ['perMin'];
+}
 
 /** 讀回來的單一 spec(API 回應或 localStorage 快照):形狀不對的欄位用預設值,不丟例外 */
 export function sanitizeSpec(raw: unknown): RouteFilterSpec {
   const o = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
   const required = ids(o['required'], ROUTE_FILTER_LIMITS.pointIdMax, ROUTE_FILTER_LIMITS.maxRequired);
   return {
-    v: 1,
+    v: 2,
     sea: isInt(o['sea'], 1, ROUTE_FILTER_LIMITS.seaMax) ? o['sea'] : 'all',
     max_hours: isInt(o['max_hours'], 1, ROUTE_FILTER_LIMITS.maxHoursMax) ? o['max_hours'] : null,
-    sort: (ROUTE_FILTER_SORTS as readonly unknown[]).includes(o['sort']) ? (o['sort'] as RouteFilterSort) : 'perMin',
+    sort: sanitizeSort(o['sort']),
     required,
     excluded: ids(o['excluded'], ROUTE_FILTER_LIMITS.pointIdMax, ROUTE_FILTER_LIMITS.maxExcluded).filter((id) => !required.includes(id)),
     item_ids: ids(o['item_ids'], ROUTE_FILTER_LIMITS.itemIdMax, ROUTE_FILTER_LIMITS.maxItems),
@@ -71,13 +78,13 @@ export function fitToDataset(spec: RouteFilterSpec): { spec: RouteFilterSpec; dr
 
 const sorted = (a: readonly number[]) => [...a].sort((x, y) => x - y).join(',');
 
-/** 兩組條件是否相同(陣列不分順序;只有一個物品時「全部 / 任一個」沒有差別) */
+/** 兩組條件是否相同(陣列不分順序(排序除外,順序是優先順序);只有一個物品時「全部 / 任一個」沒有差別) */
 export function sameSpec(a: RouteFilterSpec, b: RouteFilterSpec): boolean {
   const matchSame = (a.item_ids.length < 2 && b.item_ids.length < 2) || a.match === b.match;
   return (
     a.sea === b.sea &&
     a.max_hours === b.max_hours &&
-    a.sort === b.sort &&
+    a.sort.join(',') === b.sort.join(',') &&
     matchSame &&
     sorted(a.required) === sorted(b.required) &&
     sorted(a.excluded) === sorted(b.excluded) &&
@@ -96,7 +103,7 @@ export function specSummary(s: RouteFilterSpec): string {
   if (s.required.length > 0) parts.push(`${s.required.length} 點`);
   if (s.excluded.length > 0) parts.push(`排除 ${s.excluded.length}`);
   if (s.item_ids.length > 0) parts.push(`${s.item_ids.length} 種物品`);
-  if (s.sort !== 'perMin') parts.push(s.sort === 'opens' ? '解鎖' : '最多物品');
+  if (!(s.sort.length === 1 && s.sort[0] === 'perMin')) parts.push(s.sort.map((k) => ({ perMin: '經驗', variety: '物品', opens: '解鎖' })[k]).join('+'));
   return parts.filter((p) => p !== '').join(' · ');
 }
 

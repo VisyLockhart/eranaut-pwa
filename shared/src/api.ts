@@ -1,4 +1,3 @@
-import type { LevelingSchool } from './leveling-data.js';
 import type { District, NotifyLeadMinutes, RouteFilterSort, Server, SubmarineStatus } from './constants.js';
 
 // 公開 API 的請求/回應型別(D-140)。JSON 欄位沿用資料表的 snake_case(SCHEMA §8)。
@@ -53,12 +52,40 @@ export interface SubmarineDto {
   upkeep?: UpkeepDto;
   /** 等級與練級輔助(D-289);沒填等級時整個欄位省略 */
   progress?: ProgressDto;
+  /** 潛艇自己的配件(D-296);沒設定時整個欄位省略 */
+  build?: BuildDto;
+}
+
+// ---- 潛艇配件(D-296) ----
+
+/** 四個配件,各為 1~10(1~5 原版、6~10 改版);列存在 = 已設定 */
+export interface BuildDto {
+  hull: number;
+  stern: number;
+  bow: number;
+  bridge: number;
+  updated_at: string;
+}
+
+/** 設定配件(隨更新潛艇一起送,或用 `PUT /api/submarines/:id/build`) */
+export interface BuildInput {
+  hull: number;
+  stern: number;
+  bow: number;
+  bridge: number;
+  /** 同時標示已維修:有開維修提醒時,趟數歸 0、零件簽名與上限依新配件重算(D-296 ③) */
+  mark_repaired?: boolean;
 }
 
 // ---- 等級與練級輔助(D-289) ----
 
 /** 等級來源:手動輸入、截圖辨識、練級輔助推算 */
 export type ProgressSource = 'manual' | 'ocr' | 'sim';
+
+/** 航線輔助的模式:練級、條件組合(D-297) */
+export type AssistMode = 'level' | 'combo';
+/** 練級的最長航行時間可選值(小時),null = 不限 */
+export const ASSIST_MAX_HOURS: readonly (number | null)[] = [null, 6, 12, 24, 36, 48];
 
 /** 派出時記下的路線(練級輔助);返航後才把經驗加進等級 */
 export interface ProgressRoute {
@@ -73,10 +100,14 @@ export interface ProgressDto {
   level: number;
   exp_in_level: number;
   source: ProgressSource;
-  /** 練級輔助(每次手動更新後詢問路線、推算經驗)是否開啟 */
-  sim_on: boolean;
-  /** 偏好的收艇方式,推薦路線的預設 */
-  school: LevelingSchool | null;
+  /** 航線輔助(每次手動更新後推薦路線、推算經驗)是否開啟 */
+  assist_on: boolean;
+  /** 航線輔助模式:練級 / 條件組合(D-297) */
+  assist_mode: AssistMode;
+  /** 練級的最長航行時間(小時);null = 不限(每分鐘經驗最高) */
+  max_hours: number | null;
+  /** 條件組合模式用的條件(`route_filters` 的 id);沒選或條件已被刪除為 null */
+  filter_id: string | null;
   /** 派出後還沒結算的路線與它的經驗;沒有為 null */
   pending: (ProgressRoute & { exp: number }) | null;
   /** 最近一次記下的路線(結算後也保留),下次可一鍵「跟上次一樣」;沒記過為 null */
@@ -95,8 +126,12 @@ export interface ProgressInput {
   exp_in_level?: number;
   /** 預設 manual;截圖辨識帶 ocr(等級以辨識為準,並清掉待結算的路線) */
   source?: 'manual' | 'ocr';
-  sim_on?: boolean;
-  school?: LevelingSchool | null;
+  assist_on?: boolean;
+  assist_mode?: AssistMode;
+  /** null = 不限 */
+  max_hours?: number | null;
+  /** null = 清掉 */
+  filter_id?: string | null;
   /** 這次剛派出的路線(練級輔助);null = 清掉待結算的路線;省略 = 不變 */
   route?: ProgressRoute | null;
 }
@@ -114,7 +149,7 @@ export interface UpkeepDto {
   limit_voyages: number;
   /** 開啟時的零件簽名,例如 `3,1,2,4` */
   parts_sig: string;
-  /** 目前綁定的配置零件簽名;沒有綁定為 null。和 `parts_sig` 不同表示配置被改過 */
+  /** 這艘目前的配件簽名;沒有設定配件為 null。和 `parts_sig` 不同表示零件被改過 */
   current_sig: string | null;
   repaired_at: string | null;
   updated_at: string;
@@ -154,6 +189,8 @@ export interface SubmarineInput {
   upkeep?: UpkeepInput | null;
   /** 等級與練級輔助:物件 = 設定;null = 清除等級;省略 = 不變(D-289) */
   progress?: ProgressInput | null;
+  /** 配件:物件 = 設定;null = 清除;省略 = 不變(D-296)。同一個請求裡先套用配件,再處理維修提醒 */
+  build?: BuildInput | null;
 }
 
 /** 整個工坊一次更新:只對有列出的位置做 UPSERT,沒列出的位置不動(D-40、D-122) */
@@ -386,15 +423,13 @@ export interface RouteSubDto {
   stern: number;
   bow: number;
   bridge: number;
-  /** 綁定的工坊潛艇(可多艘:同一組配置常有好幾艘共用);潛艇被刪時由資料庫自動解除。一艘潛艇同時只綁一組配置 */
-  bound_submarine_ids: string[];
   /** 常用(星號,D-237):只影響顯示排序與篩選,由 PATCH 切換、PUT 不會改它 */
   favorite: boolean;
   created_at: string;
   updated_at: string;
 }
 
-/** 新增/整筆取代儲存潛艇的請求。`bound_submarine_ids` 省略或空陣列 = 不綁定 */
+/** 新增/整筆取代儲存潛艇(配置範本)的請求。D-296 起不再綁定潛艇,多送的 `bound_submarine_ids` 會被忽略 */
 export interface RouteSubInput {
   name: string;
   level: number;
@@ -402,7 +437,6 @@ export interface RouteSubInput {
   stern: number;
   bow: number;
   bridge: number;
-  bound_submarine_ids?: string[];
 }
 
 export interface RouteSubValidationErrorBody {
@@ -424,13 +458,14 @@ export interface RouteFavoriteInput {
 
 /** 條件組合的內容(存成 JSON)。不含配置與去過的航點(D-229 ②) */
 export interface RouteFilterSpec {
-  /** 版本,目前恆為 1 */
-  v: 1;
+  /** 版本,目前恆為 2(D-297:`sort` 由單值改為陣列;v1 讀進來時轉成只開那一項) */
+  v: 2;
   /** 'all' 或海域編號 */
   sea: 'all' | number;
   /** 最長航行時間(小時);null = 不限 */
   max_hours: number | null;
-  sort: RouteFilterSort;
+  /** 開啟的排序條件(至少一項,依 `ROUTE_FILTER_SORTS` 的順序,不重複);權重由前到後 */
+  sort: RouteFilterSort[];
   /** 篩選航點:路線一定要經過 */
   required: number[];
   /** 篩選航點:路線不能經過 */

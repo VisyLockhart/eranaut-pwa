@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { SEA_INDEXES } from './core/data';
-import { checkRequired, findRoutes, searchSeas, type FindRoute, type FindSort } from './core/find';
+import { checkRequired, compareRoutes, findRoutes, normalizeSort, searchSeas, type FindRoute, type FindSort } from './core/find';
 import type { FilterState } from './route-map';
 import { MAX_HOURS_OPTIONS, RouteExploreVm } from './route-explore-vm';
 import { RouteLootVm } from './route-loot-vm';
@@ -27,7 +27,7 @@ interface FindSnapshot {
   stats: ReturnType<RouteVm['stats']>;
   sea: number | 'all';
   maxMinutes: number | null;
-  sort: FindSort;
+  sort: readonly FindSort[];
   required: ReadonlySet<number>;
   excluded: ReadonlySet<number>;
   itemIds: readonly number[];
@@ -35,10 +35,6 @@ interface FindSnapshot {
   explored: ReadonlySet<number>;
   /** 選了工坊時該工坊已發現的點(D-293);null = 不限制 */
   discovered: ReadonlySet<number> | null;
-}
-
-function metric(r: FindRoute, sort: FindSort): number {
-  return sort === 'perMin' ? r.perMin : sort === 'opens' ? r.opens.length : r.items.length;
 }
 
 /**
@@ -79,7 +75,8 @@ export class RouteFindVm {
 
   readonly sea = signal<number | 'all'>('all');
   readonly maxHours = signal<number | null>(null);
-  readonly sort = signal<FindSort>('perMin');
+  /** 開啟的排序條件(多重排序,D-297);至少一項,依固定權重 */
+  readonly sort = signal<FindSort[]>(['perMin']);
   readonly busy = signal(false);
   /** 右側「找路線」條件區是否展開(收合時只留標題、條件摘要與按鈕) */
   readonly condOpen = signal(true);
@@ -124,7 +121,7 @@ export class RouteFindVm {
     if (found) {
       const hidden = [...req].filter((id) => !found.has(id));
       if (hidden.length > 0) out.push({ kind: 'warn', text: `有 ${hidden.length} 個選中的航點${this.x.chartName()}還沒發現,不會有結果` });
-    } else if (this.sort() === 'opens') {
+    } else if (this.sort().includes('opens')) {
       const ex = this.x.explored();
       const g = this.x.graph;
       const bad = [...req].filter((id) => ex.has(id) || (g.parent.has(id) && !ex.has(g.parent.get(id)!)));
@@ -148,7 +145,7 @@ export class RouteFindVm {
       [...this.excluded()].sort((a, b) => a - b),
       this.l.itemIds(),
       this.l.match(),
-      this.sort() === 'opens' ? [...this.x.explored()].sort((a, b) => a - b) : null,
+      this.sort().includes('opens') ? [...this.x.explored()].sort((a, b) => a - b) : null,
       this.x.found() ? [...this.x.found()!].sort((a, b) => a - b) : null,
     ]);
   });
@@ -173,7 +170,7 @@ export class RouteFindVm {
     if (seas.length <= 1 || q.required.size === 0) return findRoutes(SEA_INDEXES, { ...base, sea: q.sea, limit: FIND_LIMIT });
     // 必選點跨海域:各海域分開算再合併,避免某個海域把別的海域擠掉
     const merged = seas.flatMap((si) => findRoutes(SEA_INDEXES, { ...base, sea: si.sea.sea, limit: PER_SEA_LIMIT }));
-    return merged.sort((a, b) => metric(b, q.sort) - metric(a, q.sort) || a.minutes - b.minutes || a.sea - b.sea);
+    return merged.sort((a, b) => compareRoutes(a, b, q.sort) || a.minutes - b.minutes || a.sea - b.sea);
   });
   /** 搜尋當時的性能(結果卡的燈號依這個判斷) */
   readonly searchedStats = computed(() => this.snapshot()?.stats ?? null);
@@ -235,8 +232,15 @@ export class RouteFindVm {
     this.tapNote.set('');
   }
 
+  /** 只用這一項排序 */
   setSort(s: FindSort): void {
-    this.sort.set(s);
+    this.sort.set([s]);
+  }
+
+  /** 開關一項排序條件:點選的先後就是優先順序;全關掉也可以(搜尋時預設照每分鐘經驗,D-298) */
+  toggleSort(s: FindSort): void {
+    const cur = this.sort();
+    this.sort.set(cur.includes(s) ? cur.filter((k) => k !== s) : [...cur, s]);
   }
 
   run(): void {
@@ -251,7 +255,7 @@ export class RouteFindVm {
         stats: this.vm.stats(),
         sea: this.sea(),
         maxMinutes: hours === null ? null : hours * 60,
-        sort: this.sort(),
+        sort: normalizeSort(this.sort()),
         required: this.required(),
         excluded: this.excluded(),
         itemIds: this.l.itemIds(),

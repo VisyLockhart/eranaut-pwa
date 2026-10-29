@@ -1,3 +1,4 @@
+import { MultiSort } from '../ui/multi-sort';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Layout } from '../core/layout';
 import { SelectField, type SelectOption, type SelectValue } from '../ui/select';
@@ -14,7 +15,6 @@ import { itemName } from './route-loot-vm';
 import { RouteMap } from './route-map';
 import { RouteSeaPager } from './route-sea-pager';
 import { RouteVm } from './route-vm';
-import { Tip } from '../ui/tip';
 
 const PAGE = 20;
 /** 結果卡上最多直接列出幾個指定物品,其餘折成「+N」 */
@@ -22,8 +22,8 @@ const GOT_PREVIEW = 3;
 
 export const SORT_OPTIONS: readonly { id: FindSort; label: string; title: string }[] = [
   { id: 'perMin', label: '每分鐘經驗', title: '練級:每分鐘經驗最高的路線' },
-  { id: 'opens', label: '可能解鎖', title: '探索:回來後可能開出最多新航點的路線' },
   { id: 'variety', label: '最多物品', title: '一趟撈到最多種不同物品的路線' },
+  { id: 'opens', label: '可能解鎖', title: '探索:回來後可能開出最多新航點的路線' },
 ];
 
 interface Card {
@@ -57,7 +57,7 @@ interface Card {
  */
 @Component({
   selector: 'app-route-find',
-  imports: [Tip, SelectField, RouteMap, RouteSeaPager, RouteFindDialogs],
+  imports: [SelectField, RouteMap, RouteSeaPager, RouteFindDialogs, MultiSort],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-find.html',
 })
@@ -108,11 +108,9 @@ export class RouteFind {
   }
 
   protected readonly sortLabel = computed(() => {
-    switch (this.f.searchedSort()) {
-      case 'opens': return '可能開出的新航點數';
-      case 'variety': return '物品種類數';
-      default: return '每分鐘經驗';
-    }
+    const sort = this.f.searchedSort();
+    const names = { perMin: '每分鐘經驗', variety: '物品種類數', opens: '可能開出的新航點數' };
+    return sort ? sort.map((k) => names[k]).join(' → ') : '';
   });
 
   protected readonly cards = computed<Card[]>(() => {
@@ -126,11 +124,12 @@ export class RouteFind {
   /** 沒有結果時,依條件說明可以怎麼放寬 */
   protected readonly emptyText = computed(() => {
     const sort = this.f.searchedSort();
-    if (sort === 'opens') return '沒有可以去的航點。可能是配置的距離不夠、等級不足,或這個海域的航點都已經去過了;試著放寬條件,或到上面「標記去過」補標還沒標的航點。';
+    if (sort?.includes('opens')) return '沒有可以去的航點。可能是配置的距離不夠、等級不足,或這個海域的航點都已經去過了;試著放寬條件,或到上面「標記去過」補標還沒標的航點。';
     return '用這個配置找不到符合的路線。可能是條件太嚴(選中太多點、指定物品拿不到),也可能是距離或等級不夠;試著放寬條件,或到「配置」提高探索與距離。';
   });
 
-  private card(r: FindRoute, stats: NonNullable<ReturnType<RouteFindVm['searchedStats']>>, sort: FindSort): Card {
+  private card(r: FindRoute, stats: NonNullable<ReturnType<RouteFindVm['searchedStats']>>, sorts: readonly FindSort[]): Card {
+    const sort = sorts[0]!;
     const si = SEA_INDEXES.find((s) => s.sea.sea === r.sea)!;
     const j = judgeBuild(stats, routeNeed(si, r.order));
     const lt = (label: string, g: { grade: string; have: number; gapToTop: number }) => ({ label, grade: g.grade, text: `${label} ${g.have}${g.gapToTop > 0 ? `(差 ${g.gapToTop})` : ''}` });
@@ -145,7 +144,7 @@ export class RouteFind {
       stops: r.order.map((id) => { const p = si.byId.get(id)!; return { code: p.code, name: p.name }; }),
       headline: sort === 'perMin' ? `每分鐘 ${r.perMin.toFixed(1)} 經驗` : sort === 'opens' ? `最多開 ${r.opens.length} 點` : `共 ${r.items.length} 種物品`,
       opens:
-        sort === 'opens' && r.opens.length > 0
+        sorts.includes('opens') && r.opens.length > 0
           ? r.opens.map((id) => { const o = graph.seaOf.get(id)!; const code = o.byId.get(id)!.code; return o === si ? code : `${o.sea.name} ${code}`; }).join('、')
           : null,
       itemsCount: r.items.length,
@@ -153,7 +152,7 @@ export class RouteFind {
       gotMore: Math.max(0, gotNames.length - GOT_PREVIEW),
       exp: r.exp.toLocaleString('en-US'),
       perMin: r.perMin.toFixed(1),
-      showPerMin: sort !== 'perMin',
+      showPerMin: !sorts.includes('perMin'),
       time: formatTravel(r.minutes),
       fuel: r.cost.fuel,
       range: r.cost.range,

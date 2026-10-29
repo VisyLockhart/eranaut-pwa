@@ -10,6 +10,7 @@ import { Toast } from '../core/toast';
 import { announceSkippedReminders } from '../core/update-vm';
 import { IconComponent } from '../ui/icon';
 import { LevelingField } from './leveling-field';
+import { BuildField } from './build-field';
 import { UpkeepField } from './upkeep-field';
 import { progressRequest } from '../core/leveling-vm';
 import { DispatchVm, isDispatch, resolveRoute, type RouteSel } from '../core/dispatch-vm';
@@ -23,9 +24,9 @@ import { SubRowEditor } from './sub-row-editor';
  */
 @Component({
   selector: 'app-quick-edit',
-  imports: [CdkTrapFocus, IconComponent, SubRowEditor, UpkeepField, LevelingField, DispatchLine],
+  imports: [CdkTrapFocus, IconComponent, SubRowEditor, BuildField, UpkeepField, LevelingField, DispatchLine],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:keydown.escape)': 'close()' },
+  host: { '(document:keydown.escape)': 'onEscape($event)' },
   template: `
     @if (workshop(); as ws) {
       @if (row(); as r) {
@@ -54,6 +55,7 @@ import { SubRowEditor } from './sub-row-editor';
                 (routeChange)="setRoute($event)"
               />
             </app-sub-row-editor>
+            @if (sub(); as s) { <app-build-field [sub]="s" /> }
             @if (sub(); as s) { <app-upkeep-field [sub]="s" [status]="r.status" /> }
             @if (sub(); as s) { <app-leveling-field [sub]="s" /> }
             @if (formError()) { <div class="modal-error-text" role="alert">{{ formError() }}</div> }
@@ -114,8 +116,10 @@ export class QuickEditDialog {
         level,
         exp_in_level: exp,
         source: p?.source ?? 'manual',
-        sim_on: d.enabled,
-        school: d.school ?? p?.school ?? null,
+        assist_on: d.enabled,
+        assist_mode: d.mode,
+        max_hours: d.maxHours,
+        filter_id: d.filterId,
         pending: d.edited || !p ? null : p.pending,
         last_route: p?.last_route ?? null,
         effective_level: level,
@@ -166,6 +170,11 @@ export class QuickEditDialog {
   protected setTime(field: TimeField, value: string): void {
     this.row.update((r) => (r === null ? r : { ...r, [field]: value }));
     this.error.set(null);
+  }
+
+  /** 疊在上面的潛艇配置對話框已先處理這次 Esc(它會 preventDefault),這裡就不關快速修改 */
+  protected onEscape(event: Event): void {
+    if (!event.defaultPrevented) this.close();
   }
 
   protected close(): void {

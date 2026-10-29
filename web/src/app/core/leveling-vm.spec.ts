@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import type { ProgressDto, SubmarineDto } from '@eranaut/shared';
+import { LEVELING_SCHOOLS, recommendedRoute, type ProgressDto, type SubmarineDto } from '@eranaut/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   changeExp,
@@ -12,7 +12,6 @@ import {
   planRoute,
   progressRequest,
   progressView,
-  schoolPlans,
   type QuickProgressDraft,
 } from './leveling-vm';
 
@@ -20,8 +19,10 @@ const progress = (over: Partial<ProgressDto> = {}): ProgressDto => ({
   level: 20,
   exp_in_level: 52_000,
   source: 'manual',
-  sim_on: true,
-  school: null,
+  assist_on: true,
+  assist_mode: 'level',
+  max_hours: null,
+  filter_id: null,
   pending: null,
   last_route: null,
   effective_level: 20,
@@ -34,7 +35,7 @@ const sub = (over: Partial<SubmarineDto> = {}): SubmarineDto => ({
 });
 
 describe('練級輔助:快速修改的草稿', () => {
-  const on: QuickProgressDraft = { enabled: true, level: 20, exp: 52_000, school: null, edited: false };
+  const on: QuickProgressDraft = { enabled: true, level: 20, exp: 52_000, mode: 'level', maxHours: null, filterId: null, edited: false };
 
   it('沒碰 = 不帶 progress', () => {
     expect(progressRequest(null, false)).toBeUndefined();
@@ -42,31 +43,33 @@ describe('練級輔助:快速修改的草稿', () => {
   });
 
   it('關閉:有紀錄只關掉練級輔助(等級保留);沒有紀錄什麼都不送', () => {
-    expect(progressRequest({ ...on, enabled: false }, true)).toEqual({ sim_on: false });
+    expect(progressRequest({ ...on, enabled: false }, true)).toEqual({ assist_on: false });
     expect(progressRequest({ ...on, enabled: false }, false)).toBeUndefined();
     // 關掉之前改過的等級照樣記下
-    expect(progressRequest({ ...on, enabled: false, edited: true, level: 30, exp: 5 }, true)).toEqual({ sim_on: false, level: 30, exp_in_level: 5 });
+    expect(progressRequest({ ...on, enabled: false, edited: true, level: 30, exp: 5 }, true)).toEqual({ assist_on: false, level: 30, exp_in_level: 5 });
   });
 
   it('開啟且沒動過數字:不送等級和經驗(不蓋掉伺服器已記的待結算路線)', () => {
-    expect(progressRequest(on, true)).toEqual({ sim_on: true });
-    expect(progressRequest({ ...on, school: 'half' }, true)).toEqual({ sim_on: true, school: 'half' });
+    const base = { assist_on: true, assist_mode: 'level', max_hours: null, filter_id: null };
+    expect(progressRequest(on, true)).toEqual(base);
+    expect(progressRequest({ ...on, maxHours: 12 }, true)).toEqual({ ...base, max_hours: 12 });
+    expect(progressRequest({ ...on, mode: 'combo', filterId: 'f1' }, true)).toEqual({ ...base, assist_mode: 'combo', filter_id: 'f1' });
   });
 
   it('動過數字、或這艘還沒有紀錄:送等級和經驗', () => {
-    expect(progressRequest({ ...on, edited: true }, true)).toEqual({ sim_on: true, level: 20, exp_in_level: 52_000 });
-    expect(progressRequest({ ...on, level: 1, exp: 3000 }, false)).toEqual({ sim_on: true, level: 1, exp_in_level: 3000 });
+    expect(progressRequest({ ...on, edited: true }, true)).toEqual({ assist_on: true, assist_mode: 'level', max_hours: null, filter_id: null, level: 20, exp_in_level: 52_000 });
+    expect(progressRequest({ ...on, level: 1, exp: 3000 }, false)).toEqual({ assist_on: true, assist_mode: 'level', max_hours: null, filter_id: null, level: 1, exp_in_level: 3000 });
   });
 
   it('預設值:沒有紀錄從 1 級、經驗取中間;有紀錄沿用(含超過經驗上限時夾回)', () => {
     const d = defaultDraft(null);
     expect(d).toMatchObject({ enabled: true, level: 1, edited: false });
     expect(d.exp).toBe(middleExp(1));
-    expect(defaultDraft(sub({ progress: progress({ school: 'day' }) }))).toMatchObject({ level: 20, exp: 52_000, school: 'day' });
+    expect(defaultDraft(sub({ progress: progress({ assist_mode: 'combo', max_hours: 24, filter_id: 'f1' }) }))).toMatchObject({ level: 20, exp: 52_000, mode: 'combo', maxHours: 24, filterId: 'f1' });
   });
 
-  it('換等級:等級限制 1~85,經驗夾回新等級的範圍;沒動過的經驗改回中間', () => {
-    expect(changeLevel(on, 200).level).toBe(85);
+  it('換等級:等級限制 1~130,經驗夾回新等級的範圍;沒動過的經驗改回中間', () => {
+    expect(changeLevel(on, 200).level).toBe(130);
     expect(changeLevel(on, 0).level).toBe(1);
     const lowered = changeLevel({ ...on, exp: 140_000, edited: true }, 1);
     expect(lowered.exp).toBeLessThan(6180);
@@ -87,7 +90,7 @@ describe('總覽的等級顯示', () => {
 
   it('有等級:徽章、經驗條百分比、返航後的推算', () => {
     const v = progressView(sub({ progress: progress({ pending: { sea: 1, points: ['J', 'K'], exp: 292_420 } }) }));
-    expect(v).toMatchObject({ level: 20, exp: 52_000, need: 149_799, pct: 35, over: false, fromOcr: false, sim: true });
+    expect(v).toMatchObject({ level: 20, exp: 52_000, need: 149_799, pct: 35, fromOcr: false, sim: true });
     expect(v?.pending).toEqual({ gain: 292_420, toLevel: 22 });
   });
 
@@ -97,9 +100,9 @@ describe('總覽的等級顯示', () => {
     expect(v?.pending).toBeNull();
   });
 
-  it('超過 85 級:只有等級,沒有經驗條', () => {
+  it('超過 85 級:沒有經驗條(沒有每級經驗資料),航線輔助照樣開', () => {
     const v = progressView(sub({ progress: progress({ level: 87, effective_level: 87, effective_exp: 0, source: 'ocr' }) }));
-    expect(v).toMatchObject({ level: 87, exp: null, need: null, pct: null, over: true, fromOcr: true, sim: false });
+    expect(v).toMatchObject({ level: 87, exp: null, need: null, pct: null, fromOcr: true, sim: true });
   });
 });
 
@@ -123,9 +126,10 @@ describe('路線推算(以資料集)', () => {
 
   it('每個等級、每個流派的推薦路線都能推算', () => {
     for (const level of [1, 10, 20, 44, 49, 50, 63, 85]) {
-      const plans = schoolPlans(level, null);
-      expect(plans.length).toBe(3);
-      for (const p of plans) expect(p.plan.exp).toBeGreaterThan(0);
+      for (const school of LEVELING_SCHOOLS) {
+        const r = recommendedRoute(school, level)!;
+        expect(planRoute(r.sea, r.points, null, level)!.exp).toBeGreaterThan(0);
+      }
     }
   });
 });

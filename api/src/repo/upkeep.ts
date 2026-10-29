@@ -20,13 +20,12 @@ interface Row {
   bridge: number | null;
 }
 
-// 目前綁定的配置零件(沒綁定為 NULL),用來和開啟當時的 parts_sig 比對
+// 這艘目前的配件(沒設定為 NULL),用來和開啟當時的 parts_sig 比對(D-296)
 const SELECT = `
 SELECT u.submarine_id, u.route_key, u.route_sea, u.route_points, u.voyages_done, u.limit_voyages, u.parts_sig,
        u.repaired_at, u.updated_at, rs.hull, rs.stern, rs.bow, rs.bridge
 FROM submarine_upkeep u
-LEFT JOIN route_sub_bindings b ON b.submarine_id = u.submarine_id
-LEFT JOIN route_subs rs ON rs.id = b.route_sub_id`;
+LEFT JOIN submarine_build rs ON rs.submarine_id = u.submarine_id`;
 
 function toDto(r: Row): UpkeepDto {
   return {
@@ -48,13 +47,6 @@ export function attachUpkeep(db: Db, subs: SubmarineDto[]): SubmarineDto[] {
   const rows = db.prepare(`${SELECT} WHERE u.submarine_id IN (${subs.map(() => '?').join(',')})`).all(...subs.map((s) => s.id)) as Row[];
   const byId = new Map(rows.map((r) => [r.submarine_id, toDto(r)]));
   return subs.map((s) => (byId.has(s.id) ? { ...s, upkeep: byId.get(s.id)! } : s));
-}
-
-/** 這艘潛艇目前綁定的配置零件;沒綁定回 undefined */
-export function getBoundParts(db: Db, submarineId: string): UpkeepParts | undefined {
-  return db
-    .prepare('SELECT rs.hull, rs.stern, rs.bow, rs.bridge FROM route_sub_bindings b JOIN route_subs rs ON rs.id = b.route_sub_id WHERE b.submarine_id = ?')
-    .get(submarineId) as UpkeepParts | undefined;
 }
 
 export interface UpkeepWrite {
@@ -106,6 +98,19 @@ export function markRepaired(db: Db, submarineIds: string[], now: Date): void {
   const stmt = db.prepare('UPDATE submarine_upkeep SET voyages_done = 0, repaired_at = ?, updated_at = ? WHERE submarine_id = ?');
   const t = now.toISOString();
   for (const id of submarineIds) stmt.run(t, t, id);
+}
+
+/** 這艘潛艇維修提醒用的路線 key;沒開啟回 undefined */
+export function getUpkeepRouteKey(db: Db, submarineId: string): string | undefined {
+  return (db.prepare('SELECT route_key FROM submarine_upkeep WHERE submarine_id = ?').get(submarineId) as { route_key: string } | undefined)?.route_key;
+}
+
+/** 改了配件並同時標示已維修(D-296 ③):趟數歸 0、記錄維修時間,零件簽名與上限依新配件重算 */
+export function resyncAfterRepair(db: Db, submarineId: string, partsSig: string, limit: number | null, now: Date): void {
+  const t = now.toISOString();
+  db.prepare(
+    'UPDATE submarine_upkeep SET voyages_done = 0, repaired_at = ?, parts_sig = ?, limit_voyages = COALESCE(?, limit_voyages), updated_at = ? WHERE submarine_id = ?',
+  ).run(t, partsSig, limit, t, submarineId);
 }
 
 /**

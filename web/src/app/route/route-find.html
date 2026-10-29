@@ -112,12 +112,8 @@
 
   <div class="rt-find-row">
     <span class="rt-find-label">排序</span>
-    <div class="rt-chips" role="group" aria-label="排序">
-      @for (s of sorts; track s.id) {
-        <button type="button" class="rt-chip" [class.active]="f.sort() === s.id" [attr.aria-pressed]="f.sort() === s.id" [tip]="s.title" (click)="f.setSort(s.id)">{{ s.label }}</button>
-      }
-    </div>
-    @if (f.sort() === 'opens') {
+    <app-multi-sort [fields]="sorts" [on]="f.sort()" [ordered]="true" label="排序" (toggled)="f.toggleSort($any($event))" />
+    @if (f.sort().includes('opens')) {
       <div class="rt-note" style="margin-top: 6px">只列「可去的點」:前一個點已去過、自己還沒去過(用上面「標記去過」記錄)。</div>
     }
   </div>

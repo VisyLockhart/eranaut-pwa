@@ -1,4 +1,4 @@
-import { LIMITS, ROUTE_PART_MAX, type RouteSubDto } from '@eranaut/shared';
+import { LIMITS, ROUTE_PART_MAX, type RouteSubDto, type SubmarineDto } from '@eranaut/shared';
 import { partLabel } from './core/build';
 import { MAX_STOPS, routeCost, type SeaIndex } from './core/route';
 import { SEAS } from './core/data';
@@ -20,8 +20,10 @@ export interface RouteLast {
   seq: number[];
   level: number;
   parts: Parts;
-  /** 目前使用的儲存潛艇 id;null = 臨時配置 */
+  /** 目前使用的儲存潛艇(配置範本)id;null = 臨時配置或工坊潛艇 */
   subId: string | null;
+  /** 目前使用的工坊潛艇 id(D-296,與 subId 互斥);null = 沒用工坊潛艇 */
+  wsSubId: string | null;
   /** 使用者上次主動切到的分頁;null = 還沒選過(第一次或沒有儲存配置時由 RouteVm 決定預設分頁) */
   tab: RouteTab | null;
 }
@@ -31,7 +33,7 @@ export const DEFAULT_LEVEL = 90;
 export const DEFAULT_PARTS: Parts = [1, 1, 1, 1];
 
 export function defaultLast(): RouteLast {
-  return { sea: SEAS[0]!.sea, seq: [], level: DEFAULT_LEVEL, parts: [...DEFAULT_PARTS], subId: null, tab: null };
+  return { sea: SEAS[0]!.sea, seq: [], level: DEFAULT_LEVEL, parts: [...DEFAULT_PARTS], subId: null, wsSubId: null, tab: null };
 }
 
 const isInt = (v: unknown, min: number, max: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
@@ -74,14 +76,16 @@ export function sanitizeLast(raw: unknown): RouteLast {
     level: isInt(o['level'], 1, LIMITS.maxRouteSubLevel) ? o['level'] : d.level,
     parts: sanitizeParts(o['parts']) ?? d.parts,
     subId: typeof o['subId'] === 'string' && o['subId'] !== '' ? o['subId'] : null,
+    // 兩個來源互斥:同時有值時以配置範本為準
+    wsSubId: typeof o['wsSubId'] === 'string' && o['wsSubId'] !== '' && !(typeof o['subId'] === 'string' && o['subId'] !== '') ? o['wsSubId'] : null,
     // 舊版的「搜尋」「反查」「推薦」「航點」分頁都併入「航線」(D-218、D-223、D-224;數字搜尋移到配置頁的「找配置」,找路線是航線頁的子頁)
     tab: ['search', 'loot', 'recommend', 'map'].includes(o['tab'] as string) ? 'route' : (ROUTE_TABS.find((t) => t === o['tab']) ?? null),
   };
 }
 
-/** 儲存潛艇的預設名稱,例如 `Lv76 3/1/2/3`(配件編號 1~10 以「3」「3改」顯示) */
-export function defaultSubName(build: Build): string {
-  return `Lv${build.level} ${build.parts.map(partLabel).join('/')}`;
+/** 配置範本的預設名稱:只有各部位代號,例如 `3/1/2/3`(配件編號 1~10 以「3」「3改」顯示;等級不放進名稱,D-296) */
+export function defaultSubName(build: Pick<Build, 'parts'> & Partial<Build>): string {
+  return build.parts.map(partLabel).join('/');
 }
 
 /** 讀回離線快照:丟掉格式不合法的項目,最多保留上限組數 */
@@ -102,7 +106,6 @@ export function sanitizeSubs(raw: unknown): RouteSubDto[] {
       bow: parts[2],
       bridge: parts[3],
       favorite: o['favorite'] === true,
-      bound_submarine_ids: Array.isArray(o['bound_submarine_ids']) ? o['bound_submarine_ids'].filter((x): x is string => typeof x === 'string') : [],
       created_at: typeof o['created_at'] === 'string' ? o['created_at'] : '',
       updated_at: typeof o['updated_at'] === 'string' ? o['updated_at'] : '',
     });
@@ -118,4 +121,15 @@ export function subToBuild(s: Pick<RouteSubDto, 'level' | 'hull' | 'stern' | 'bo
 /** 兩個配置是否相同(等級與四個配件) */
 export function sameBuild(a: Build, b: Build): boolean {
   return a.level === b.level && a.parts.every((v, i) => v === b.parts[i]);
+}
+
+/**
+ * 工坊潛艇拿來模擬時的配置(D-296):等級取返航後的有效等級、配件取潛艇自己的配件;
+ * 沒填等級或沒設定配件的潛艇回 null(不出現在「工坊潛艇」選擇器)。
+ */
+export function subSimBuild(s: Pick<SubmarineDto, 'progress' | 'build'>): Build | null {
+  if (!s.progress || !s.build) return null;
+  const parts = sanitizeParts([s.build.hull, s.build.stern, s.build.bow, s.build.bridge]);
+  const level = s.progress.effective_level;
+  return parts && isInt(level, 1, LIMITS.maxRouteSubLevel) ? { level, parts } : null;
 }

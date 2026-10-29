@@ -10,7 +10,7 @@ import { LevelingPicker } from './leveling-picker';
 
 /**
  * 「這次派出哪條?」的選擇面板(D-291):手機是底部面板,桌機是置中對話框(沿用維修面板的 `uk-panel`)。
- * 選項:三個流派、跟上一趟一樣、自己選點(簡化選點器)、這趟不記經驗。只改這一列的選擇,送出更新時才一起存。
+ * 選項:航線輔助推薦(練級或條件組合)、跟上一趟一樣、自己選點(簡化選點器)、這趟不記經驗。只改這一列的選擇,送出更新時才一起存。
  */
 @Component({
   selector: 'app-dispatch-sheet',
@@ -37,7 +37,6 @@ import { LevelingPicker } from './leveling-picker';
               <button type="button" class="lv-opt" [class.pref]="o.key === selected()" [attr.aria-pressed]="o.key === selected()" (click)="pick(o.key)">
                 <span class="lv-opt-top">
                   <b>{{ o.label }}</b>
-                  @if (o.pref) { <i class="lv-badge">偏好</i> }
                   @if (o.key === matched()) { <i class="lv-badge dp-ok">時間吻合</i> }
                   @if (o.unlock) { <i class="dp-tag unlock">{{ unlockText(o.unlock) }}</i> }
                   @if (o.sameAs) { <small class="dp-dim">與{{ o.sameAs }}相同</small> }
@@ -46,7 +45,9 @@ import { LevelingPicker } from './leveling-picker';
                 <small class="lv-meta">
                   @if (o.plan.minutes !== null) { <span>航行 {{ time(o.plan.minutes) }}</span> }
                   <span>+{{ fmt(o.plan.exp) }} {{ up(i.start.level, o.after) }}</span>
-                  @if (o.avoided?.length && o.calc) { <span class="dp-calc">已避開未發現的 {{ o.avoided.join('、') }}</span> }
+                  @if (o.fallback) { <span class="dp-calc">{{ o.fallback }}，改用練級推薦</span> }
+                  @else if (o.relaxedTo) { <span class="dp-calc">上限內沒有路線，放寬到 {{ o.relaxedTo }} 小時</span> }
+                  @else if (o.avoided?.length && o.calc) { <span class="dp-calc">已避開未發現的 {{ o.avoided.join('、') }}</span> }
                   @else if (o.calc) { <span class="dp-calc">依配置推算</span> }
                   @if (o.prereq) { <span class="dp-calc">先去 {{ o.prereq }}(解鎖點還沒發現)</span> }
                 </small>

@@ -2,16 +2,17 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { LIMITS } from '@eranaut/shared';
 import { RouteBuild } from './route-build';
 import { RouteBuildVm } from './route-build-vm';
+import { RouteSubBuilds } from './route-sub-builds';
 import { RouteSubs } from './route-subs';
 import { RouteVm } from './route-vm';
 
 /**
- * 配置頁(第一個分頁):儲存配置的單一清單(另有「找配置」子畫面,D-223)。每一組可使用、編輯、刪除、綁定工坊潛艇;
+ * 配置頁(第一個分頁):儲存配置的單一清單(另有「找配置」子畫面,D-223)。每一組可使用、編輯、刪除、套用到工坊潛艇(複製配件);下方另有「我的潛艇配置」(D-296);
  * 編輯與新增都用共用的配置對話框(`RouteVm.openConfig`),這裡不再內嵌編輯器、統計表與儲存區。
  */
 @Component({
   selector: 'app-route-editor',
-  imports: [RouteBuild, RouteSubs],
+  imports: [RouteBuild, RouteSubs, RouteSubBuilds],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-editor.html',
 })

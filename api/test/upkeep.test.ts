@@ -19,18 +19,13 @@ async function asUser(t: TestApp, discordId: string) {
 type Api = Awaited<ReturnType<typeof asUser>>;
 const advance = (t: TestApp, ms: number) => void (t.clock.now = new Date(t.clock.now.getTime() + ms));
 
-/** 一間工坊 + ①號潛艇;parts 有給就建一組配置並綁定。回 { wid, sid } */
+/** 一間工坊 + ①號潛艇;parts 有給就設定這艘的配件(D-296)。回 { wid, sid } */
 async function setup(t: TestApp, api: Api, parts: { hull: number; stern: number; bow: number; bridge: number } | null = { hull: 3, stern: 1, bow: 2, bridge: 4 }) {
   const w = (await api('POST', '/api/workshops', { name: '貝殼工坊', server: '伊弗利特', captain: '芙寧娜' })).json() as WorkshopDto;
   const res = await api('PUT', `/api/workshops/${w.id}/submarines`, { submarines: [{ position: 1, name: 'S1', status: 'complete' }] });
   const sid = (res.json() as SubmarinesUpdateResult).submarines[0]!.id;
-  let rsid: string | null = null;
-  if (parts) {
-    const rs = await api('POST', '/api/route-subs', { name: '主力', level: 100, ...parts, bound_submarine_ids: [sid] });
-    assert.equal(rs.statusCode, 201);
-    rsid = (rs.json() as { id: string }).id;
-  }
-  return { wid: w.id, sid, rsid };
+  if (parts) assert.equal((await api('PUT', `/api/submarines/${sid}/build`, parts)).statusCode, 200);
+  return { wid: w.id, sid };
 }
 const dispatch = (api: Api, wid: string, extra: object = {}, minutes = 120) =>
   api('PUT', `/api/workshops/${wid}/submarines/1`, { name: 'S1', status: 'exploring', remaining_minutes: minutes, ...extra });
@@ -122,14 +117,14 @@ test('開啟時可指定已跑趟數與上限;送出探索完成則只記錄已�
   assert.deepEqual([u.voyages_done, u.limit_voyages], [2, 6]);
 });
 
-test('沒綁定配置、不支援的路線、不合理的趟數都拒絕,而且整筆更新不生效', async () => {
+test('沒設定配件、不支援的路線、不合理的趟數都拒絕,而且整筆更新不生效', async () => {
   const t = makeApp();
   const api = await asUser(t, ID_A);
   const { wid } = await setup(t, api, null);
   let res = await api('PUT', `/api/workshops/${wid}/submarines/1`, { name: '改名', status: 'exploring', remaining_minutes: 60, ...ON });
   assert.equal(res.statusCode, 400);
   assert.equal(res.json().fields.upkeep, 'invalid_value');
-  assert.equal(res.json().upkeep_reason, 'not_bound');
+  assert.equal(res.json().upkeep_reason, 'no_build');
   assert.equal(((await api('GET', `/api/workshops/${wid}/submarines`)).json() as SubmarineDto[])[0]!.name, 'S1', '整筆回復');
 
   const b = await setup(t, api); // 另一間有綁定的
@@ -178,17 +173,32 @@ test('不能碰別人的潛艇', async () => {
   assert.equal((await upkeepOf(a, wid))!.voyages_done, 1);
 });
 
-test('改綁其他配置:維修進度保留,current_sig 變成新配置;解除綁定為 null', async () => {
+test('改這艘的配件:維修進度保留,current_sig 變成新配件;清除配件為 null', async () => {
   const t = makeApp();
   const api = await asUser(t, ID_A);
-  const { wid, sid, rsid } = await setup(t, api);
+  const { wid, sid } = await setup(t, api);
   await dispatch(api, wid, ON);
-  await api('PUT', `/api/route-subs/${rsid}`, { name: '主力', level: 100, hull: 5, stern: 5, bow: 5, bridge: 5, bound_submarine_ids: [sid] });
+  await api('PUT', `/api/submarines/${sid}/build`, { hull: 5, stern: 5, bow: 5, bridge: 5 });
   let u = (await upkeepOf(api, wid))!;
   assert.deepEqual([u.voyages_done, u.parts_sig, u.current_sig], [1, '3,1,2,4', '5,5,5,5']);
-  await api('PUT', `/api/route-subs/${rsid}`, { name: '主力', level: 100, hull: 5, stern: 5, bow: 5, bridge: 5, bound_submarine_ids: [] });
+  await api('DELETE', `/api/submarines/${sid}/build`);
   u = (await upkeepOf(api, wid))!;
   assert.deepEqual([u.voyages_done, u.current_sig], [1, null]);
+});
+
+test('改配件並同時標示已維修:趟數歸 0、零件簽名與上限依新配件重算(D-296 ③)', async () => {
+  const t = makeApp();
+  const api = await asUser(t, ID_A);
+  const { wid, sid } = await setup(t, api);
+  await dispatch(api, wid, ON);
+  advance(t, 60_000);
+  const res = await api('PUT', `/api/submarines/${sid}/build`, { hull: 5, stern: 5, bow: 5, bridge: 5, mark_repaired: true });
+  assert.equal(res.statusCode, 200);
+  const u = (await upkeepOf(api, wid))!;
+  assert.equal(u.voyages_done, 0);
+  assert.equal(u.parts_sig, '5,5,5,5');
+  assert.equal(u.current_sig, '5,5,5,5');
+  assert.equal(u.repaired_at, t.clock.now.toISOString());
 });
 
 test('刪除潛艇所在工坊時,維修提醒一併刪除(不留孤兒列)', async () => {

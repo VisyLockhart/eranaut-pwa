@@ -12,7 +12,7 @@ import { RouteVm } from './route-vm';
 const GREY = 2; // 灰海
 const g = () => SEA_INDEXES[1]!;
 const dto = (over: Partial<RouteSubDto> = {}): RouteSubDto => ({
-  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [], favorite: false,
+  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, favorite: false,
   created_at: '2026-10-08T00:00:00.000Z', updated_at: '2026-10-08T00:00:00.000Z', ...over,
 });
 const tick = () => new Promise((r) => setTimeout(r));
@@ -232,7 +232,7 @@ describe('RouteVm', () => {
       const p = vm.saveCurrent('  主力艇  ');
       const req = http.expectOne('/api/route-subs');
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [] });
+      expect(req.request.body).toEqual({ name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3 });
       req.flush(dto({ id: 'new' }), { status: 201, statusText: 'Created' });
       await p;
       expect(vm.saved().map((s) => s.id)).toEqual(['new']);
@@ -332,7 +332,7 @@ describe('RouteVm', () => {
       const p = vm.overwrite('a');
       const req = http.expectOne('/api/route-subs/a');
       expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual({ name: '主力艇', level: 90, hull: 1, stern: 7, bow: 8, bridge: 9, bound_submarine_ids: [] });
+      expect(req.request.body).toEqual({ name: '主力艇', level: 90, hull: 1, stern: 7, bow: 8, bridge: 9 });
       req.flush(dto({ id: 'a', level: 90, hull: 1, stern: 7, bow: 8, bridge: 9 }));
       await p;
       expect(vm.dirty()).toBe(false);
@@ -357,41 +357,13 @@ describe('RouteVm', () => {
       expect(vm.cost().range).toBeLessThanOrEqual(vm.stats().range);
     });
 
-    it('bind / 解除綁定:只改綁定,用該筆已儲存的等級與配件送出', async () => {
+    it('改名:只送名稱,等級與配件用該筆已儲存的值', async () => {
       await load([dto({ id: 'a' })]);
-      caseC();
       vm.setLevel(100); // 畫面上改了也不影響送出的值
-      const p = vm.bind('a', ['sub-1']);
-      const req = http.expectOne('/api/route-subs/a');
-      expect(req.request.body).toEqual({ name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: ['sub-1'] });
-      req.flush(dto({ id: 'a', bound_submarine_ids: ['sub-1'] }));
-      await p;
-      expect(vm.saved()[0]!.bound_submarine_ids).toEqual(['sub-1']);
-      const q = vm.bind('a', []);
-      const req2 = http.expectOne('/api/route-subs/a');
-      expect(req2.request.body.bound_submarine_ids).toEqual([]);
-      req2.flush(dto({ id: 'a' }));
-      await q;
-      expect(vm.saved()[0]!.bound_submarine_ids).toEqual([]);
-    });
-
-    it('同一組綁多艘;綁到的潛艇原本在別組時,本地從別組拿掉(伺服器端搬移)', async () => {
-      await load([dto({ id: 'a', bound_submarine_ids: ['s1'] }), dto({ id: 'b', name: '備用', bound_submarine_ids: [] })]);
-      const p = vm.bind('b', ['s1', 's2']);
-      const req = http.expectOne('/api/route-subs/b');
-      expect(req.request.body.bound_submarine_ids).toEqual(['s1', 's2']);
-      req.flush(dto({ id: 'b', name: '備用', bound_submarine_ids: ['s1', 's2'] }));
-      await p;
-      expect(vm.saved().find((s) => s.id === 'a')!.bound_submarine_ids).toEqual([]);
-      expect(vm.saved().find((s) => s.id === 'b')!.bound_submarine_ids).toEqual(['s1', 's2']);
-    });
-
-    it('改名保留綁定', async () => {
-      await load([dto({ id: 'a', bound_submarine_ids: ['sub-1'] })]);
       const p = vm.updateSub('a', { name: '新名字' });
       const req = http.expectOne('/api/route-subs/a');
-      expect(req.request.body).toMatchObject({ name: '新名字', bound_submarine_ids: ['sub-1'] });
-      req.flush(dto({ id: 'a', name: '新名字', bound_submarine_ids: ['sub-1'] }));
+      expect(req.request.body).toEqual({ name: '新名字', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3 });
+      req.flush(dto({ id: 'a', name: '新名字' }));
       await p;
       expect(vm.saved()[0]!.name).toBe('新名字');
       await expect(vm.updateSub('nope', { name: 'x' })).rejects.toThrow();
@@ -399,10 +371,10 @@ describe('RouteVm', () => {
 
     it('寫入失敗(400)不改畫面並丟出原始錯誤', async () => {
       await load([dto()]);
-      const p = vm.updateSub('a', { bound_submarine_ids: ['bad'] });
-      http.expectOne('/api/route-subs/a').flush({ error: 'validation_failed', fields: { bound_submarine_ids: 'invalid_value' } }, { status: 400, statusText: 'Bad' });
+      const p = vm.updateSub('a', { name: '' });
+      http.expectOne('/api/route-subs/a').flush({ error: 'validation_failed', fields: { name: 'required' } }, { status: 400, statusText: 'Bad' });
       await expect(p).rejects.toMatchObject({ status: 400 });
-      expect(vm.saved()[0]!.bound_submarine_ids).toEqual([]);
+      expect(vm.saved()[0]!.name).toBe('主力艇');
     });
 
     it('remove:成功從清單移除並解除使用中;404 當作成功', async () => {
@@ -552,7 +524,7 @@ describe('RouteVm', () => {
       vm.openConfig('new');
       const lv = vm.draft()!.level;
       vm.setDraftPart(1, 2);
-      expect(vm.draft()!.name).toBe(`Lv${lv} 1/2/1/1`);
+      expect(vm.draft()!.name).toBe('1/2/1/1');
       vm.setDraftName('我的');
       vm.setDraftPart(1, 3);
       expect(vm.draft()!.name).toBe('我的');

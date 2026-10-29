@@ -1,0 +1,22 @@
+<div class="rt-bind">
+  <div class="rt-card-actions">
+    <button type="button" class="rt-save-btn" [attr.aria-expanded]="open()" (click)="open.set(!open())">{{ open() ? '完成' : '套用到潛艇' }}</button>
+  </div>
+  @if (open()) {
+    @if (groups().length === 0) {
+      <div class="rt-empty">還沒有工坊潛艇可以套用</div>
+    } @else {
+      <div class="rt-note">點一艘,就把這組配置的配件複製過去(會覆蓋那艘目前的配件)。套用之後兩邊各自獨立,等級不會被動到。</div>
+      @for (g of groups(); track g.workshop) {
+        <div class="rt-bind-group">
+          <div class="rt-save-label">{{ g.workshop }}</div>
+          <div class="rt-chips">
+            @for (o of g.subs; track o.id) {
+              <button type="button" class="rt-chip" [disabled]="busy()" (click)="apply(o, g.workshop)">{{ o.label }}<small>{{ o.parts ? '(現為 ' + o.parts + ')' : '(未設定)' }}</small></button>
+            }
+          </div>
+        </div>
+      }
+    }
+  }
+</div>

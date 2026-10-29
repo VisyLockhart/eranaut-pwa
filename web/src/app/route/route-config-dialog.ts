@@ -12,6 +12,7 @@ import { TABLES } from './core/data';
 import { judgeBuild } from './core/need';
 import { PART_KEYS, type PartKey } from './core/types';
 import { RouteVm } from './route-vm';
+import { SelectField, type SelectOption, type SelectValue } from '../ui/select';
 import { Tip } from '../ui/tip';
 
 /** 等級滑桿最小值(繁中服最低可用等級) */
@@ -39,7 +40,7 @@ const GRADES = [1, 2, 3, 4, 5] as const;
  */
 @Component({
   selector: 'app-route-config-dialog',
-  imports: [Tip, CdkTrapFocus, IconComponent, RouteListTools, RouteStar],
+  imports: [Tip, CdkTrapFocus, IconComponent, RouteListTools, RouteStar, SelectField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-config-dialog.html',
   host: { '(document:keydown.escape)': 'onEscape($event)' },
@@ -78,9 +79,24 @@ export class RouteConfigDialog {
   protected readonly busy = computed(() => this.vm.pending() > 0);
   protected readonly title = computed(() => {
     const mode = this.vm.draft()?.mode;
+    if (mode === 'sub') return '潛艇配置';
     if (!this.vm.canSave) return '編輯配置';
     return mode === 'edit' ? '編輯配置' : mode === 'temp' ? '編輯臨時配置' : '新增配置';
   });
+  /** 編輯的是某艘工坊潛艇自己的配件(D-296) */
+  protected readonly isSub = computed(() => this.vm.draft()?.mode === 'sub');
+  /** 潛艇配置:零件和開啟時不同,且這艘開著維修提醒,才問要不要同時標示已維修 */
+  protected readonly repairShown = computed(() => {
+    const d = this.vm.draft();
+    const sub = d?.sub;
+    if (!d || !sub || !sub.upkeepOn || !sub.baseParts) return false;
+    return d.parts.some((v, i) => v !== sub.baseParts![i]);
+  });
+  /** 「套用已儲存的配置…」下拉的選項(只複製配件,等級不動) */
+  protected readonly savedOptions = computed<SelectOption[]>(() => [
+    { value: '', label: this.vm.saved().length === 0 ? '還沒有儲存的配置範本' : '套用已儲存的配置…' },
+    ...this.vm.saved().map((s) => ({ value: s.id, label: s.name, hint: `配件 ${[s.hull, s.stern, s.bow, s.bridge].map(partLabel).join(' ')}` })),
+  ]);
   /** 「儲存」按鈕文字:編輯儲存潛艇 = 覆蓋這一組;其餘 = 儲存為新配置 */
   protected readonly saveText = computed(() => (this.vm.draft()?.mode === 'edit' ? '儲存' : '儲存為新配置'));
   protected readonly summary = computed(() => {
@@ -139,6 +155,14 @@ export class RouteConfigDialog {
     return Math.min(100, Math.max(0, ((level - this.sliderMin) / (this.maxLevel - this.sliderMin)) * 100));
   }
 
+  protected pickSaved(v: SelectValue): void {
+    if (v !== '') this.vm.applySavedToDraft(String(v));
+  }
+
+  protected onRepair(ev: Event): void {
+    this.vm.setDraftMarkRepaired((ev.target as HTMLInputElement).checked);
+  }
+
   protected onName(ev: Event): void {
     this.vm.setDraftName((ev.target as HTMLInputElement).value);
   }
@@ -174,6 +198,39 @@ export class RouteConfigDialog {
   /** 只套用:成為畫面上的配置,不寫入伺服器 */
   protected apply(): void {
     this.vm.applyDraft();
+  }
+
+  /** 潛艇配置的「儲存到這艘」:沒填等級的艇會把輸入的模擬等級一併存成這艘的等級 */
+  protected async saveSub(): Promise<void> {
+    const d = this.vm.draft();
+    if (!d?.sub || this.busy()) return;
+    this.error.set('');
+    const label = `${d.sub.workshopName} ${d.sub.label}`;
+    try {
+      await this.vm.saveSubDraft();
+      this.toast.show(`已儲存 ${label} 的配件配置`);
+    } catch (e) {
+      this.fail(e);
+    }
+  }
+
+  /** 潛艇配置的「另存範本」:存成一組配置範本,對話框留著 */
+  protected async saveTemplate(): Promise<void> {
+    if (this.busy()) return;
+    this.error.set('');
+    if (this.vm.isFull()) {
+      this.error.set(`範本已經有 ${this.max} 組了,請先到配件清單刪除或覆蓋一組`);
+      return;
+    }
+    try {
+      const sub = await this.vm.saveDraftAsTemplate();
+      this.toast.show(`已存成範本「${sub.name}」`);
+    } catch (e) {
+      if (e instanceof HttpErrorResponse && e.status === 409) {
+        void this.vm.refresh();
+        this.error.set(`範本已經有 ${this.max} 組了,請先到配件清單刪除或覆蓋一組`);
+      } else this.fail(e);
+    }
   }
 
   protected async save(): Promise<void> {

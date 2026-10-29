@@ -14,10 +14,10 @@
   @switch (vm.tab()) {
     @case ('config') { <app-route-editor /> }
     @case ('route') {
-      <app-route-chart-bar />
       @if (vm.findOpen()) {
         <app-route-recommend />
       } @else {
+        <app-route-chart-bar />
         <div class="rt-block-head rt-plan-head">
           <div class="rt-block-title">規劃航線</div>
           <button type="button" class="rt-save-btn rt-cta" (click)="openFind()"><span aria-hidden="true">✦ </span>找路線</button>
@@ -27,7 +27,6 @@
     }
   }
   <app-route-about />
-  <app-route-config-dialog />
   <app-route-perf-dialog />
   <app-route-replace-dialog />
 </ng-template>

@@ -51,12 +51,12 @@ test('隨更新設定等級與經驗;沒有待結算時有效值 = 設定值', a
   const t = makeApp();
   const api = await asUser(t, ID_A);
   const { wid } = await setup(api);
-  const res = await send(api, wid, { progress: { level: 20, exp_in_level: 1000, sim_on: true, school: 'snap' } });
+  const res = await send(api, wid, { progress: { level: 20, exp_in_level: 1000, assist_on: true, assist_mode: 'level', max_hours: null } });
   assert.equal(res.statusCode, 200);
   const p = (res.json() as SubmarinesUpdateResult).submarines[0]!.progress!;
   assert.deepEqual(
-    { l: p.level, e: p.exp_in_level, src: p.source, sim: p.sim_on, sc: p.school, pend: p.pending, el: p.effective_level, ee: p.effective_exp },
-    { l: 20, e: 1000, src: 'manual', sim: true, sc: 'snap', pend: null, el: 20, ee: 1000 },
+    { l: p.level, e: p.exp_in_level, src: p.source, sim: p.assist_on, mode: p.assist_mode, mh: p.max_hours, fid: p.filter_id, pend: p.pending, el: p.effective_level, ee: p.effective_exp },
+    { l: 20, e: 1000, src: 'manual', sim: true, mode: 'level', mh: null, fid: null, pend: null, el: 20, ee: 1000 },
   );
 });
 
@@ -65,7 +65,7 @@ test('換等級不帶經驗 → 經驗歸 0;同等級不帶經驗 → 保留', a
   const api = await asUser(t, ID_A);
   const { wid } = await setup(api);
   await send(api, wid, { progress: { level: 20, exp_in_level: 5000 } });
-  await send(api, wid, { progress: { sim_on: true } });
+  await send(api, wid, { progress: { assist_on: true } });
   assert.equal((await progressOf(api, wid))!.exp_in_level, 5000);
   await send(api, wid, { progress: { level: 21 } });
   const p = (await progressOf(api, wid))!;
@@ -76,7 +76,7 @@ test('練級輔助:派出時記路線,返航後有效等級才會升,下一次�
   const t = makeApp();
   const api = await asUser(t, ID_A);
   const { wid } = await setup(api);
-  const res = await send(api, wid, { progress: { level: 20, exp_in_level: 0, sim_on: true, route: JK } }, 600);
+  const res = await send(api, wid, { progress: { level: 20, exp_in_level: 0, assist_on: true, route: JK } }, 600);
   const p0 = (res.json() as SubmarinesUpdateResult).submarines[0]!.progress!;
   assert.deepEqual(p0.pending, { sea: 1, points: ['J', 'K'], exp: 292420 });
   assert.deepEqual([p0.effective_level, p0.effective_exp], [20, 0], '還沒返航');
@@ -101,7 +101,7 @@ test('結算之後、清掉待結算的路線之後,「上次的路線」仍保�
   const { wid, sid } = await setup(api);
   await send(api, wid, { progress: { level: 20, route: JK } }, 600);
   advance(t, 11 * HOUR);
-  await send(api, wid, { progress: { sim_on: true } }, 600);
+  await send(api, wid, { progress: { assist_on: true } }, 600);
   const p = (await progressOf(api, wid))!;
   assert.equal(p.pending, null);
   assert.deepEqual(p.last_route, JK);
@@ -114,7 +114,7 @@ test('明確給等級或經驗 = 以那個數字為準,待結算的路線作廢(
   const api = await asUser(t, ID_A);
   const { wid } = await setup(api);
   await send(api, wid, { progress: { level: 20, exp_in_level: 0, route: JK } }, 600);
-  await send(api, wid, { progress: { sim_on: true, school: 'half' } }, 590);
+  await send(api, wid, { progress: { assist_on: true, max_hours: 12 } }, 590);
   assert.equal((await progressOf(api, wid))!.pending!.exp, 292420, '只改偏好,路線保留');
   await send(api, wid, { progress: { exp_in_level: 500 } }, 580);
   assert.equal((await progressOf(api, wid))!.pending, null, '改經驗,路線作廢');
@@ -152,10 +152,10 @@ test('截圖辨識(source: ocr)以辨識為準:清掉待結算的路線;同等�
   const t = makeApp();
   const api = await asUser(t, ID_A);
   const { wid } = await setup(api);
-  await send(api, wid, { progress: { level: 20, exp_in_level: 7000, sim_on: true, route: JK } }, 600);
+  await send(api, wid, { progress: { level: 20, exp_in_level: 7000, assist_on: true, route: JK } }, 600);
   await send(api, wid, { progress: { level: 20, source: 'ocr' } }, 590);
   let p = (await progressOf(api, wid))!;
-  assert.deepEqual([p.level, p.exp_in_level, p.source, p.pending, p.sim_on], [20, 7000, 'ocr', null, true]);
+  assert.deepEqual([p.level, p.exp_in_level, p.source, p.pending, p.assist_on], [20, 7000, 'ocr', null, true]);
   await send(api, wid, { progress: { level: 23, source: 'ocr' } }, 580);
   p = (await progressOf(api, wid))!;
   assert.deepEqual([p.level, p.exp_in_level], [23, 0]);
@@ -164,7 +164,7 @@ test('截圖辨識(source: ocr)以辨識為準:清掉待結算的路線;同等�
   const b = await setup(api2);
   await send(api2, b.wid, { progress: { level: 94, source: 'ocr' } });
   const q = (await progressOf(api2, b.wid))!;
-  assert.deepEqual([q.level, q.source, q.sim_on], [94, 'ocr', false]);
+  assert.deepEqual([q.level, q.source, q.assist_on], [94, 'ocr', false]);
 });
 
 test('被拒絕:沒有等級就記路線、探索完成記路線、點位不存在或重複、經驗超過升級所需、等級超出範圍 → 400,整筆不生效', async () => {
@@ -184,7 +184,9 @@ test('被拒絕:沒有等級就記路線、探索完成記路線、點位不存�
   await bad({ level: 20, exp_in_level: 149799 }); // = 升級所需
   await bad({ level: 0 });
   await bad({ level: 131 });
-  await bad({ level: 20, school: 'fast' });
+  await bad({ level: 20, max_hours: 7 });
+  await bad({ level: 20, assist_mode: 'fast' });
+  await bad({ level: 20, filter_id: 'nope' });
   await bad('abc');
   const done = await api('PUT', `/api/workshops/${wid}/submarines/1`, { status: 'complete', progress: { level: 20, route: JK } });
   assert.equal(done.statusCode, 400);
@@ -197,7 +199,7 @@ test('progress: null 清除等級;PUT / DELETE 單獨調整;別人的潛艇 404'
   const api = await asUser(t, ID_A);
   const { wid, sid } = await setup(api);
   await send(api, wid, { progress: { level: 20 } });
-  const put = await api('PUT', `/api/submarines/${sid}/progress`, { level: 30, exp_in_level: 10, sim_on: true });
+  const put = await api('PUT', `/api/submarines/${sid}/progress`, { level: 30, exp_in_level: 10, assist_on: true });
   assert.equal(put.statusCode, 200);
   assert.deepEqual([(put.json() as SubmarineDto).progress!.level, (put.json() as SubmarineDto).progress!.exp_in_level], [30, 10]);
   assert.equal((await api('PUT', `/api/submarines/${sid}/progress`, { level: 0 })).statusCode, 400);
@@ -217,8 +219,8 @@ test('沒有等級時 PUT progress:要帶 level', async () => {
   const t = makeApp();
   const api = await asUser(t, ID_A);
   const { sid } = await setup(api);
-  assert.equal((await api('PUT', `/api/submarines/${sid}/progress`, { sim_on: true })).statusCode, 400);
-  const ok = await api('PUT', `/api/submarines/${sid}/progress`, { level: 12, sim_on: true });
+  assert.equal((await api('PUT', `/api/submarines/${sid}/progress`, { assist_on: true })).statusCode, 400);
+  const ok = await api('PUT', `/api/submarines/${sid}/progress`, { level: 12, assist_on: true });
   assert.equal(ok.statusCode, 200);
   assert.equal((ok.json() as SubmarineDto).progress!.level, 12);
 });
@@ -237,8 +239,28 @@ test('截圖辨識的等級不會自動開啟練級輔助;已開著的維持原�
   const api = await asUser(t, ID_A);
   const { wid } = await setup(api);
   const first = await send(api, wid, { progress: { level: 94, source: 'ocr' } });
-  assert.equal((first.json() as SubmarinesUpdateResult).submarines[0]!.progress!.sim_on, false);
-  await send(api, wid, { progress: { sim_on: true } });
+  assert.equal((first.json() as SubmarinesUpdateResult).submarines[0]!.progress!.assist_on, false);
+  await send(api, wid, { progress: { assist_on: true } });
   const again = await send(api, wid, { progress: { level: 95, source: 'ocr' } });
-  assert.equal((again.json() as SubmarinesUpdateResult).submarines[0]!.progress!.sim_on, true);
+  assert.equal((again.json() as SubmarinesUpdateResult).submarines[0]!.progress!.assist_on, true);
+});
+
+test('航線輔助(D-297):模式、最長航行時間、條件組合各自保存;條件只能選自己的,被刪除後自動清掉', async () => {
+  const t = makeApp();
+  const api = await asUser(t, ID_A);
+  const other = await asUser(t, ID_B);
+  const { wid, sid } = await setup(api);
+  const spec = { v: 1, sea: 'all', max_hours: null, sort: 'perMin', required: [], excluded: [], item_ids: [], match: 'all' };
+  const mine = (await api('POST', '/api/route-filters', { name: '我的', spec })).json() as { id: string };
+  const theirs = (await other('POST', '/api/route-filters', { name: '別人的', spec })).json() as { id: string };
+  assert.equal((await api('PUT', `/api/submarines/${sid}/progress`, { level: 30, assist_on: true, max_hours: 24 })).statusCode, 200);
+  assert.equal((await api('PUT', `/api/submarines/${sid}/progress`, { filter_id: theirs.id })).statusCode, 400, '別人的條件不能選');
+  assert.equal((await api('PUT', `/api/submarines/${sid}/progress`, { assist_mode: 'combo', filter_id: mine.id })).statusCode, 200);
+  let p = (await progressOf(api, wid))!;
+  assert.deepEqual([p.assist_mode, p.max_hours, p.filter_id], ['combo', 24, mine.id], '切到條件組合,練級的 24 小時保留');
+  await api('DELETE', `/api/route-filters/${mine.id}`);
+  p = (await progressOf(api, wid))!;
+  assert.deepEqual([p.assist_mode, p.filter_id], ['combo', null], '條件被刪:filter_id 自動清掉(畫面會退回練級)');
+  assert.equal((await api('PUT', `/api/submarines/${sid}/progress`, { max_hours: null, assist_mode: 'level' })).statusCode, 200);
+  assert.equal((await progressOf(api, wid))!.max_hours, null);
 });

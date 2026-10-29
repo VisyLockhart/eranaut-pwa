@@ -19,7 +19,9 @@ import { DispatchSheet } from './dispatch-sheet';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (info(); as i) {
-      @if (!i.start.over) {
+      @if (i.lock === 'build') {
+        <small class="dp-note warn" role="status">這艘還沒設定配件，航線輔助無法推薦路線；到快速修改的「配件配置」設定後就能用。</small>
+      } @else {
         @if (active()) {
           <div class="dp-line" [class.flagged]="mismatch() !== null">
             <span class="dp-k">這次派出</span>
@@ -49,7 +51,8 @@ import { DispatchSheet } from './dispatch-sheet';
             <small class="dp-note">剩餘時間與「{{ l }}」吻合，派的是那條的話請改選。</small>
           }
           @if (chosen()?.plan?.problem === 'range') { <small class="dp-note warn">以這艘的配置，距離不夠（{{ chosen()!.plan.range }} / {{ chosen()!.plan.rangeCap }}）</small> }
-          @if (i.parts === null && i.guideConfig) { <small class="dp-note">還沒綁定配置，時間依攻略配置 {{ i.guideConfig.join('') }} 推算。</small> }
+          @if (i.current?.fallback; as f) { <small class="dp-note warn">條件組合：{{ f }}，這次改用練級推薦。</small> }
+          @else if (i.current?.relaxedTo; as h) { <small class="dp-note">最長 {{ i.maxHours }} 小時內沒有路線，放寬到 {{ h }} 小時。</small> }
         } @else if (status() === 'complete') {
           <small class="dp-note">沒有派出，不記路線。@if (i.current; as c) {下一趟建議 <b class="mono">{{ routeText(c.plan.points) }}</b>（{{ c.label }}）}</small>
         } @else if (stillOut()) {
@@ -91,9 +94,9 @@ export class DispatchLine {
   protected readonly nonce = signal(0);
 
   constructor() {
-    // 依綁定的配置推算:載入儲存的配置(已載入則不重複)
+    // 條件組合要用已儲存的條件清單:載入(已載入則不重複)
     effect(() => {
-      if (this.sub()?.progress?.sim_on) untracked(() => this.dispatch.start());
+      if (this.sub()?.progress?.assist_on) untracked(() => this.dispatch.start());
     });
   }
 
@@ -116,7 +119,7 @@ export class DispatchLine {
     const i = this.info();
     return i ? resolveRoute(i, this.sel()) : null;
   });
-  /** 與剩餘時間吻合的選項(只看有綁定配置的艇,時間才可信) */
+  /** 與剩餘時間吻合的選項 */
   protected readonly matched = computed(() => {
     const i = this.info();
     if (!i || i.parts === null || this.remaining() === null) return null;
@@ -142,9 +145,9 @@ export class DispatchLine {
     const up = (to: number): string => lvUp(i.start.level, to);
     const out: SelectOption[] = i.options.map((o) => ({
       value: o.key,
-      label: o.label + (o.pref ? '（偏好）' : ''),
+      label: o.label,
       display: [o.label, routeText(o.plan.points), up(o.after)].filter(Boolean).join('・'),
-      hint: routeText(o.plan.points) + (o.unlock ? `（${unlockText(o.unlock)}）` : '') + (o.sameAs ? `（與${o.sameAs}相同）` : '') + (o.avoided?.length && o.calc ? '（已避開未發現的點）' : o.calc ? '（依配置推算）' : ''),
+      hint: routeText(o.plan.points) + (o.unlock ? `（${unlockText(o.unlock)}）` : '') + (o.sameAs ? `（與${o.sameAs}相同）` : '') + (o.fallback ? `（${o.fallback},改用練級推薦）` : o.relaxedTo ? `（上限內沒有路線,放寬到 ${o.relaxedTo} 小時）` : o.avoided?.length && o.calc ? '（已避開未發現的點）' : o.calc ? '（依配置推算）' : ''),
       meta: [{ text: `${o.plan.minutes !== null ? minutesText(o.plan.minutes) + '・' : ''}+${fmtExp(o.plan.exp)} ${up(o.after)}`.trim() }],
     }));
     const own = this.sel();
@@ -166,7 +169,7 @@ export class DispatchLine {
       if (v === 'pick') this.openSheet(true);
       return;
     }
-    this.routeChange.emit(v === 'none' ? { kind: 'none' } : v === 'last' ? { kind: 'last' } : { kind: 'school', school: v as 'snap' | 'half' | 'day' });
+    this.routeChange.emit(v === 'none' ? { kind: 'none' } : v === 'last' ? { kind: 'last' } : { kind: 'assist' });
   }
 
   protected openSheet(pick: boolean): void {

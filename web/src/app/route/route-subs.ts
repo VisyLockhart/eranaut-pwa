@@ -11,7 +11,7 @@ import { judgeBuild, type BuildJudgement, type Grade } from './core/need';
 import { travelMinutes } from './core/route';
 import type { Build } from './core/types';
 import { ListView, PAGE_SIZE_DESKTOP, PAGE_SIZE_MOBILE } from './list-view';
-import { RouteBind } from './route-bind';
+import { RouteApply } from './route-apply';
 import { RouteCraftBtn } from './route-craft-btn';
 import { RouteListTools, RoutePager, RouteStar } from './route-list-ui';
 import { formatTravel } from './route-format';
@@ -38,7 +38,6 @@ interface Card {
   overweight: boolean;
   time: string;
   ok: boolean;
-  bound: boolean;
   active: boolean;
   favorite: boolean;
   /** 能不能跑目前這條路線(距離與等級);沒選航點時為 null,不顯示 */
@@ -51,12 +50,12 @@ interface Card {
 /**
  * 配置卡 / 比較表:逐項對目前路線判定達標與差距(RS-25)。
  * 每一組儲存配置,加上「臨時配置」(只有目前畫面上的配置不是任何一組儲存配置時才出現)。
- * - `actions="manage"`(配置頁):使用 / 編輯 / 刪除 / 綁定;`actions="pick"`(查看性能彈窗):只有「改用這組」與編輯。
+ * - `actions="manage"`(配置頁):使用 / 編輯 / 刪除 / 套用到潛艇;`actions="pick"`(查看性能彈窗):只有「改用這組」與編輯。
  * 沒選航點時不判定顏色(一律中性),避免全部誤顯示成綠色。
  */
 @Component({
   selector: 'app-route-subs',
-  imports: [Tip, NgTemplateOutlet, IconComponent, RouteBind, RouteCraftBtn, RouteListTools, RoutePager, RouteStar],
+  imports: [Tip, NgTemplateOutlet, IconComponent, RouteApply, RouteCraftBtn, RouteListTools, RoutePager, RouteStar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-subs.html',
 })
@@ -110,7 +109,7 @@ export class RouteSubs {
     const si = this.vm.seaIdx();
     const seq = this.vm.seq();
     const needLevel = seq.reduce((m, id) => Math.max(m, si.byId.get(id)?.rankReq ?? 0), 0);
-    const make = (id: string | null, title: string, sub: string, b: Build, bound: boolean, active: boolean, favorite = false): Card => {
+    const make = (id: string | null, title: string, sub: string, b: Build, active: boolean, favorite = false): Card => {
       const stats = buildStats(TABLES, b);
       const j = judgeBuild(stats, need);
       let fit: Card['fit'] = null;
@@ -133,7 +132,6 @@ export class RouteSubs {
         overweight: stats.overweight,
         time: has ? formatTravel(travelMinutes(cost.distance, stats.speed)) : '—',
         ok: has && j.allPass,
-        bound,
         active,
         fit,
         fitText,
@@ -148,9 +146,9 @@ export class RouteSubs {
       // 展示模式沒有儲存配置,畫面上的配置就是唯一的配置,不需要「臨時 / 尚未儲存」的說法
       const title = this.vm.canSave ? '臨時配置' : '目前配置';
       const sub = !this.vm.canSave ? '' : dirty && sel ? `與「${sel.name}」不同,尚未儲存` : '尚未儲存';
-      out.push(make(null, title, sub, this.vm.build(), false, true));
+      out.push(make(null, title, sub, this.vm.build(), true));
     }
-    for (const s of this.list.pageItems()) out.push(make(s.id, s.name, '', subToBuild(s), s.bound_submarine_ids.length > 0, this.vm.subId() === s.id && !dirty, s.favorite));
+    for (const s of this.list.pageItems()) out.push(make(s.id, s.name, '', subToBuild(s), this.vm.subId() === s.id && !dirty, s.favorite));
     return out;
   });
 

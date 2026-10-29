@@ -1,7 +1,7 @@
 import { LIMITS } from '@eranaut/shared';
 import type { FastifyInstance } from 'fastify';
 import type { registerSessionAuth } from '../auth/session-guard.js';
-import { countRouteSubs, deleteRouteSub, insertRouteSub, listRouteSubs, ownsAllSubmarines, replaceRouteSub, setRouteSubFavorite } from '../repo/route-subs.js';
+import { countRouteSubs, deleteRouteSub, insertRouteSub, listRouteSubs, replaceRouteSub, setRouteSubFavorite } from '../repo/route-subs.js';
 import type { AppDeps } from '../server.js';
 import { parseFavoriteInput } from '../services/route-favorite.js';
 import { validateRouteSubInput } from '../services/route-subs.js';
@@ -21,9 +21,6 @@ export function registerRouteSubRoutes(app: FastifyInstance, deps: AppDeps, requ
     const userId = req.session!.userId;
     const v = validateRouteSubInput(req.body);
     if (!v.ok) return reply.code(400).send({ error: 'validation_failed', fields: v.fields });
-    if (!ownsAllSubmarines(db, userId, v.value.bound_submarine_ids)) {
-      return reply.code(400).send({ error: 'validation_failed', fields: { bound_submarine_ids: 'invalid_value' } });
-    }
     const created = db.transaction(() => {
       if (countRouteSubs(db, userId) >= LIMITS.maxRouteSubsPerUser) return null;
       return insertRouteSub(db, userId, v.value, deps.now());
@@ -31,18 +28,15 @@ export function registerRouteSubRoutes(app: FastifyInstance, deps: AppDeps, requ
     return created ? reply.code(201).send(created) : reply.code(409).send({ error: 'limit_reached' });
   });
 
-  // 整筆取代:bound_submarine_ids 省略或空陣列 = 解除全部綁定;已綁在別組的艇會搬過來
+  // 整筆取代(D-296 起配置只是範本,不再綁定潛艇)
   app.put<{ Params: { id: string } }>('/api/route-subs/:id', opts, async (req, reply) => {
     const userId = req.session!.userId;
     const v = validateRouteSubInput(req.body);
     if (!v.ok) return reply.code(400).send({ error: 'validation_failed', fields: v.fields });
-    if (!ownsAllSubmarines(db, userId, v.value.bound_submarine_ids)) {
-      return reply.code(400).send({ error: 'validation_failed', fields: { bound_submarine_ids: 'invalid_value' } });
-    }
     return replaceRouteSub(db, userId, req.params.id, v.value, deps.now()) ?? reply.code(404).send(notFound);
   });
 
-  // 只切換常用(D-237):不動其他欄位、綁定與 updated_at,所以不會蓋掉別台裝置的編輯
+  // 只切換常用(D-237):不動其他欄位與 updated_at,所以不會蓋掉別台裝置的編輯
   app.patch<{ Params: { id: string } }>('/api/route-subs/:id', opts, async (req, reply) => {
     const fav = parseFavoriteInput(req.body);
     if (fav === null) return reply.code(400).send({ error: 'validation_failed', fields: { favorite: 'invalid_type' } });

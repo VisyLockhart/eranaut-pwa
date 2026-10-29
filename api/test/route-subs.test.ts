@@ -40,7 +40,7 @@ test('新增、列表、取代、刪除', async () => {
   const s = res.json() as RouteSubDto;
   assert.match(s.id, /^[0-9a-f-]{36}$/);
   assert.deepEqual({ ...s, id: 'x' }, {
-    id: 'x', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [], favorite: false,
+    id: 'x', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, favorite: false,
     created_at: '2026-10-01T00:00:00.000Z', updated_at: '2026-10-01T00:00:00.000Z',
   });
   t.clock.now = new Date('2026-10-02T00:00:00Z');
@@ -112,9 +112,6 @@ test('驗證:每個欄位的錯誤碼,且錯誤時不寫入 DB', async () => {
     ['船尾 11', { ...valid, stern: 11 }, { stern: 'invalid_value' }],
     ['船首字串', { ...valid, bow: 'a' }, { bow: 'invalid_type' }],
     ['缺艦橋', { ...valid, bridge: undefined }, { bridge: 'required' }],
-    ['綁定型別錯', { ...valid, bound_submarine_ids: 5 }, { bound_submarine_ids: 'invalid_type' }],
-    ['綁定陣列內型別錯', { ...valid, bound_submarine_ids: ['a', 5] }, { bound_submarine_ids: 'invalid_type' }],
-    ['綁定超過上限', { ...valid, bound_submarine_ids: Array.from({ length: 33 }, (_, i) => `s${i}`) }, { bound_submarine_ids: 'invalid_value' }],
     ['多欄位一次回', { name: '', level: 999, hull: 99 }, { name: 'required', level: 'invalid_value', hull: 'invalid_value', stern: 'required', bow: 'required', bridge: 'required' }],
   ];
   for (const [label, body, fields] of cases) {
@@ -145,53 +142,14 @@ test('隔離:別人的 id 一律 404,不影響對方資料', async () => {
   assert.equal((await a('PUT', '/api/route-subs/not-exist', valid)).statusCode, 404);
 });
 
-test('綁定:自己的潛艇可綁(可多艘);別人的潛艇、不存在的 id 回 400;空陣列或省略 = 解除', async () => {
+test('配置只是範本(D-296):多送 bound_submarine_ids 被忽略,回應不含綁定欄位', async () => {
   const t = makeApp();
   const a = await asUser(t, ID_A);
-  const b = await asUser(t, ID_B);
   const mine = await makeSubmarine(a);
-  const mine2 = await makeSubmarine(a);
-  const theirs = await makeSubmarine(b);
-  const s = (await a('POST', '/api/route-subs', { ...valid, bound_submarine_ids: [mine, mine2, mine] })).json() as RouteSubDto;
-  assert.deepEqual(s.bound_submarine_ids, [mine, mine2]); // 重複的只留一個
-  for (const bad of [theirs, '00000000-0000-4000-8000-000000000000']) {
-    const post = await a('POST', '/api/route-subs', { ...valid, bound_submarine_ids: [mine, bad] });
-    assert.equal(post.statusCode, 400);
-    assert.deepEqual(post.json(), { error: 'validation_failed', fields: { bound_submarine_ids: 'invalid_value' } });
-    assert.equal((await a('PUT', `/api/route-subs/${s.id}`, { ...valid, bound_submarine_ids: [bad] })).statusCode, 400);
-  }
-  assert.equal(count(t), 1);
-  assert.deepEqual(((await a('GET', '/api/route-subs')).json() as RouteSubDto[])[0]!.bound_submarine_ids, [mine, mine2]); // 失敗的請求不動綁定
-  assert.deepEqual(((await a('PUT', `/api/route-subs/${s.id}`, { ...valid, bound_submarine_ids: [mine2] })).json() as RouteSubDto).bound_submarine_ids, [mine2]);
-  assert.deepEqual(((await a('PUT', `/api/route-subs/${s.id}`, valid)).json() as RouteSubDto).bound_submarine_ids, []); // 省略 = 解除
-});
-
-test('一艘潛艇只綁一組配置:綁到另一組時從原本那組搬走', async () => {
-  const t = makeApp();
-  const a = await asUser(t, ID_A);
-  const sub = await makeSubmarine(a);
-  const s1 = (await a('POST', '/api/route-subs', { ...valid, name: '甲', bound_submarine_ids: [sub] })).json() as RouteSubDto;
-  const s2 = (await a('POST', '/api/route-subs', { ...valid, name: '乙', bound_submarine_ids: [sub] })).json() as RouteSubDto;
-  assert.deepEqual(s2.bound_submarine_ids, [sub]);
-  const list = (await a('GET', '/api/route-subs')).json() as RouteSubDto[];
-  assert.deepEqual(list.find((x) => x.id === s1.id)!.bound_submarine_ids, []);
-  assert.deepEqual(list.find((x) => x.id === s2.id)!.bound_submarine_ids, [sub]);
-});
-
-test('綁定的潛艇或工坊被刪後,綁定自動解除、儲存潛艇保留;刪配置時綁定一併清除', async () => {
-  const t = makeApp();
-  const a = await asUser(t, ID_A);
-  const w = (await a('POST', '/api/workshops', { name: 'W', server: '泰坦' })).json() as { id: string };
-  const sub = ((await a('PUT', `/api/workshops/${w.id}/submarines`, { submarines: [{ position: 1, status: 'complete' }] })).json().submarines as SubmarineDto[])[0]!;
-  const s = (await a('POST', '/api/route-subs', { ...valid, bound_submarine_ids: [sub.id] })).json() as RouteSubDto;
-  assert.equal((await a('DELETE', `/api/workshops/${w.id}`)).statusCode, 204);
-  const after = ((await a('GET', '/api/route-subs')).json() as RouteSubDto[])[0]!;
-  assert.equal(after.id, s.id);
-  assert.deepEqual(after.bound_submarine_ids, []);
-  const mine = await makeSubmarine(a);
-  const s2 = (await a('POST', '/api/route-subs', { ...valid, bound_submarine_ids: [mine] })).json() as RouteSubDto;
-  assert.equal((await a('DELETE', `/api/route-subs/${s2.id}`)).statusCode, 204);
-  assert.equal((t.db.prepare('SELECT COUNT(*) AS n FROM route_sub_bindings').get() as { n: number }).n, 0);
+  const s = (await a('POST', '/api/route-subs', { ...valid, bound_submarine_ids: [mine] })).json() as RouteSubDto & Record<string, unknown>;
+  assert.equal(s.bound_submarine_ids, undefined);
+  assert.equal(t.db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE name = 'submarine_build'").pluck().get(), 1);
+  assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM submarine_build').pluck().get(), 0); // 建立範本不會替潛艇設定配件
 });
 
 test('使用者被刪(CASCADE)後無殘留', async () => {
@@ -211,11 +169,10 @@ test('Origin 不符的寫入請求 403', async () => {
   assert.equal(res.statusCode, 403);
 });
 
-test('常用:PATCH 只切換星號,不動其他欄位、綁定與 updated_at;PUT 不會重設它', async () => {
+test('常用:PATCH 只切換星號,不動其他欄位與 updated_at;PUT 不會重設它', async () => {
   const t = makeApp();
   const api = await asUser(t, ID_A);
-  const sid = await makeSubmarine(api);
-  const s = (await api('POST', '/api/route-subs', { ...valid, bound_submarine_ids: [sid] })).json() as RouteSubDto;
+  const s = (await api('POST', '/api/route-subs', valid)).json() as RouteSubDto;
   assert.equal(s.favorite, false);
   t.clock.now = new Date('2026-10-03T00:00:00Z');
   const on = await api('PATCH', `/api/route-subs/${s.id}`, { favorite: true });
@@ -224,8 +181,7 @@ test('常用:PATCH 只切換星號,不動其他欄位、綁定與 updated_at;PUT
   assert.equal(d.favorite, true);
   assert.equal(d.updated_at, s.updated_at);
   assert.equal(d.name, s.name);
-  assert.deepEqual(d.bound_submarine_ids, [sid]);
-  const put = (await api('PUT', `/api/route-subs/${s.id}`, { ...valid, name: '改名', bound_submarine_ids: [sid] })).json() as RouteSubDto;
+  const put = (await api('PUT', `/api/route-subs/${s.id}`, { ...valid, name: '改名' })).json() as RouteSubDto;
   assert.equal(put.favorite, true);
   assert.equal(((await api('GET', '/api/route-subs')).json() as RouteSubDto[])[0]!.favorite, true);
   const off = (await api('PATCH', `/api/route-subs/${s.id}`, { favorite: false })).json() as RouteSubDto;

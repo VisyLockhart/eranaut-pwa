@@ -57,8 +57,8 @@ export function validateRouteFilterInput(input: unknown): RouteFilterValidation 
   else if (typeof raw !== 'object' || Array.isArray(raw)) errors.spec = 'invalid_type';
   else {
     const s = raw as Record<string, unknown>;
-    spec.v = 1;
-    if (s.v !== undefined && s.v !== 1) errors.spec = 'invalid_value';
+    spec.v = 2;
+    if (s.v !== undefined && s.v !== 1 && s.v !== 2) errors.spec = 'invalid_value';
 
     if (s.sea === undefined || s.sea === 'all') spec.sea = 'all';
     else if (typeof s.sea !== 'number') {
@@ -71,10 +71,18 @@ export function validateRouteFilterInput(input: unknown): RouteFilterValidation 
     else if (!isInt(s.max_hours, 1, ROUTE_FILTER_LIMITS.maxHoursMax)) errors.max_hours = 'invalid_value';
     else spec.max_hours = s.max_hours;
 
-    if (s.sort === undefined) spec.sort = 'perMin';
-    else if (typeof s.sort !== 'string') errors.sort = 'invalid_type';
-    else if (!(ROUTE_FILTER_SORTS as readonly string[]).includes(s.sort)) errors.sort = 'invalid_value';
-    else spec.sort = s.sort as RouteFilterSort;
+    // D-297:v1 是單一字串,v2 是陣列;一律存成不重複的陣列(順序 = 優先順序)
+    if (s.sort === undefined) spec.sort = ['perMin'];
+    else {
+      const list = typeof s.sort === 'string' ? [s.sort] : s.sort;
+      if (!Array.isArray(list)) errors.sort = 'invalid_type';
+      else if (list.length > ROUTE_FILTER_SORTS.length * 2 || list.some((x) => !(ROUTE_FILTER_SORTS as readonly unknown[]).includes(x))) errors.sort = 'invalid_value';
+      else {
+        // 順序就是優先順序(D-298);去重;空的當作只照每分鐘經驗
+        const uniq = [...new Set(list)] as RouteFilterSort[];
+        spec.sort = uniq.length > 0 ? uniq : ['perMin'];
+      }
+    }
 
     if (s.match === undefined) spec.match = 'all';
     else if (typeof s.match !== 'string') errors.match = 'invalid_type';

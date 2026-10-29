@@ -1,18 +1,21 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { IconComponent } from '../ui/icon';
 import { SelectField, type SelectOption, type SelectValue } from '../ui/select';
 import { partLabel } from './core/build';
-import { RouteVm } from './route-vm';
+import { RouteVm, wsSubLabel } from './route-vm';
 
 const TEMP = '__temp__';
 
 /**
- * 配置列(航點頁與推薦頁共用):使用的配置下拉、編輯、(航點頁才有)查看性能與新增、說明列。
+ * 配置列(航點頁與推薦頁共用):使用的配置來源、編輯、(航點頁才有)查看性能與新增、說明列。
+ * 配置來源有兩個、同時只能用其中一個(D-296):「配置」(儲存的配置範本,這裡的下拉)與「工坊潛艇」(在上面「工坊(資訊)」的潛艇小卡直接點選,D-298,
+ * 等級與配件都取自潛艇)。選了潛艇,這裡的配置反灰(鎖頭 + 虛線),點它會改回配置範本;選了配置範本再點潛艇小卡也會自動切換。
  * 還沒有儲存配置時顯示「目前使用預設配置」提醒(`hint` 接在提醒後面)。
  * 投影進來的內容(例如燈號)放在下拉列與說明列之間。
  */
 @Component({
   selector: 'app-route-cfg-bar',
-  imports: [SelectField],
+  imports: [SelectField, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-cfg-bar.html',
 })
@@ -39,7 +42,13 @@ export class RouteCfgBar {
     return out;
   });
   protected readonly value = computed<SelectValue>(() => (this.vm.subId() === null || this.vm.dirty() ? TEMP : this.vm.subId()!));
-  protected readonly caption = computed(() => `Lv${this.vm.level()} · ${this.vm.parts().map(partLabel).join(' ')} · 距離上限 ${this.vm.stats().range}`);
+  protected readonly caption = computed(() => {
+    const ws = this.vm.wsSub();
+    const base = `Lv${this.vm.level()}${ws ? '(潛艇等級)' : ''} · ${this.vm.parts().map(partLabel).join(' ')} · 距離上限 ${this.vm.stats().range}`;
+    return ws ? `${base} · 來源:${ws.workshop.name} ${wsSubLabel(ws.sub)}` : base;
+  });
+
+  protected readonly editLabel = computed(() => (this.vm.source() === 'ws' ? '編輯潛艇配置' : '編輯'));
 
   protected onChange(value: SelectValue): void {
     if (value === TEMP) return;

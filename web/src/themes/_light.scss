@@ -54,7 +54,9 @@ html[data-theme='light'] {
   .pill-toggle, .up-tabs, .ocr-busy, .copyright-panel, .modal-toggle-row { border-width: 3px; border-color: var(--line); box-shadow: var(--raise); }
   .row { border-width: 3px; }
   /* 內層小元件:只加粗邊框、換成墨色,不加陰影(避免畫面太擁擠) */
-  .ct-slot-card, .ct-tile, .ct-col, .ct-sum-row, .rt-meter, .rt-picked li, .rt-part, .rt-pick, .ct-chip, .ct-tool, .ct-seg, .ct-yield, .rt-chip5, .rt-stat { border-width: 2px; border-color: var(--line); }
+  .ct-slot-card, .ct-tile, .ct-col, .ct-sum-row, .rt-meter, .rt-picked li, .rt-part, .rt-pick, .ct-chip, .ct-tool, .ct-seg, .ct-yield, .rt-chip5, .rt-stat, .rt-wschip, .rt-sb-row, .rt-src-lock, .rt-src-x, .rt-level-fixed { border-width: 2px; border-color: var(--line); }
+  .rt-src-lock { border-style: dashed; }
+  .rt-wschip.unset, .rt-sb-row.unset { border-style: dashed; }
   .ct-slot-card:not(.set), .ct-tile:not(.set) { border-style: dashed; }
   /* 摘要格維持整格黃底(只有大數字,不影響閱讀) */
   .m-stat.ready, .d-stat.ready { background: var(--ready-bg); border-color: var(--line); color: var(--ready-ink); }

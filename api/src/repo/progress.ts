@@ -1,5 +1,5 @@
-import type { ProgressDto, ProgressInput, ProgressRoute, ProgressSource, SubmarineDto, SubmarineStatus } from '@eranaut/shared';
-import { clampExp, levelExp, LEVELING_SCHOOLS, routeExp, settleProgress, type LevelingSchool } from '@eranaut/shared';
+import type { AssistMode, ProgressDto, ProgressInput, ProgressRoute, ProgressSource, SubmarineDto, SubmarineStatus } from '@eranaut/shared';
+import { ASSIST_MAX_HOURS, clampExp, levelExp, routeExp, settleProgress } from '@eranaut/shared';
 import type { Db } from '../db/index.js';
 
 // 潛艇等級與練級輔助(D-289)。一艘潛艇最多一列,列存在 = 有填等級。呼叫端須先確認潛艇屬於該使用者。
@@ -10,8 +10,10 @@ interface Row {
   level: number;
   exp_in_level: number;
   source: ProgressSource;
-  sim_on: number;
-  school: string | null;
+  assist_on: number;
+  assist_mode: string;
+  max_hours: number | null;
+  filter_id: string | null;
   pending_sea: number | null;
   pending_points: string | null;
   pending_exp: number | null;
@@ -50,8 +52,10 @@ function toDto(r: Row, returned: boolean): ProgressDto {
     level: r.level,
     exp_in_level: r.exp_in_level,
     source: r.source,
-    sim_on: r.sim_on === 1,
-    school: (LEVELING_SCHOOLS as readonly string[]).includes(r.school ?? '') ? (r.school as LevelingSchool) : null,
+    assist_on: r.assist_on === 1,
+    assist_mode: (r.assist_mode === 'combo' ? 'combo' : 'level') satisfies AssistMode,
+    max_hours: ASSIST_MAX_HOURS.includes(r.max_hours) ? r.max_hours : null,
+    filter_id: r.filter_id,
     pending,
     last_route: r.last_sea === null || r.last_points === null ? null : { sea: r.last_sea, points: JSON.parse(r.last_points) as string[] },
     effective_level: eff.level,
@@ -124,22 +128,33 @@ export function applyProgressInput(db: Db, submarineId: string, input: ProgressI
   }
 
   const last = input.route ? { sea: input.route.sea, points: input.route.points } : cur && cur.last_sea !== null && cur.last_points !== null ? { sea: cur.last_sea, points: JSON.parse(cur.last_points) as string[] } : null;
-  const sim = input.sim_on ?? (cur ? cur.sim_on === 1 : false);
-  const school = input.school === undefined ? (cur?.school ?? null) : input.school;
+  const assistOn = input.assist_on ?? (cur ? cur.assist_on === 1 : false);
+  const mode: AssistMode = input.assist_mode ?? (cur?.assist_mode === 'combo' ? 'combo' : 'level');
+  const maxHours = input.max_hours === undefined ? (cur?.max_hours ?? null) : input.max_hours;
+  const filterId = input.filter_id === undefined ? (cur?.filter_id ?? null) : input.filter_id;
+  // 條件組合只能選自己的條件(條件被刪除時資料庫會自動設回 null)
+  if (filterId !== null && filterId !== (cur?.filter_id ?? null)) {
+    const own = db
+      .prepare('SELECT 1 FROM route_filters f JOIN workshops w ON w.user_id = f.user_id JOIN submarines s ON s.workshop_id = w.id WHERE f.id = ? AND s.id = ?')
+      .get(filterId, submarineId);
+    if (!own) throw new ProgressRejected('invalid_value', position);
+  }
   const source: ProgressSource = ocr ? 'ocr' : input.level !== undefined || input.exp_in_level !== undefined ? 'manual' : (cur?.source ?? 'manual');
   db.prepare(
-    `INSERT INTO submarine_progress (submarine_id, level, exp_in_level, source, sim_on, school, pending_sea, pending_points, pending_exp, last_sea, last_points, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO submarine_progress (submarine_id, level, exp_in_level, source, assist_on, assist_mode, max_hours, filter_id, pending_sea, pending_points, pending_exp, last_sea, last_points, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(submarine_id) DO UPDATE SET level = excluded.level, exp_in_level = excluded.exp_in_level, source = excluded.source,
-       sim_on = excluded.sim_on, school = excluded.school, pending_sea = excluded.pending_sea, pending_points = excluded.pending_points,
+       assist_on = excluded.assist_on, assist_mode = excluded.assist_mode, max_hours = excluded.max_hours, filter_id = excluded.filter_id, pending_sea = excluded.pending_sea, pending_points = excluded.pending_points,
        pending_exp = excluded.pending_exp, last_sea = excluded.last_sea, last_points = excluded.last_points, updated_at = excluded.updated_at`,
   ).run(
     submarineId,
     level,
     exp,
     source,
-    sim ? 1 : 0,
-    school,
+    assistOn ? 1 : 0,
+    mode,
+    maxHours,
+    filterId,
     pending?.sea ?? null,
     pending ? JSON.stringify(pending.points) : null,
     pending?.exp ?? null,

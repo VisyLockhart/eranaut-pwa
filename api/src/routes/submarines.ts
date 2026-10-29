@@ -4,9 +4,11 @@ import { listChartsByWorkshop } from '../repo/charts.js';
 import { getActiveMaintenance } from '../repo/maintenance.js';
 import { getOverview, getSubmarine, listSubmarines } from '../repo/submarines.js';
 import { applyProgressInput, deleteProgress, ProgressRejected } from '../repo/progress.js';
+import { deleteBuild } from '../repo/build.js';
 import { deleteUpkeep } from '../repo/upkeep.js';
 import type { AppDeps } from '../server.js';
 import { validateProgressInput, validateSubmarineInput, validateSubmarinesBatch } from '../services/submarines.js';
+import { applyBuild, validateBuildInput } from '../services/build.js';
 import { applyUpkeepPatch, repairSubmarines, UpkeepRejected } from '../services/upkeep.js';
 import { updateSubmarines } from '../services/updates.js';
 
@@ -109,6 +111,23 @@ export function registerSubmarineRoutes(app: FastifyInstance, deps: AppDeps, req
     const userId = req.session!.userId;
     if (!getSubmarine(db, userId, req.params.id)) return reply.code(404).send(notFound);
     deleteProgress(db, req.params.id);
+    return getSubmarine(db, userId, req.params.id, deps.now());
+  });
+
+  // 潛艇自己的配件(D-296):單獨設定 / 清除(不經過更新潛艇)。回傳更新後的潛艇
+  app.put<{ Params: { id: string } }>('/api/submarines/:id/build', opts, async (req, reply) => {
+    const userId = req.session!.userId;
+    if (!getSubmarine(db, userId, req.params.id)) return reply.code(404).send(notFound);
+    const v = validateBuildInput(req.body);
+    if (typeof v === 'string') return reply.code(400).send({ error: 'validation_failed', fields: { build: v } });
+    db.transaction(() => applyBuild(db, req.params.id, v, deps.now()))();
+    return getSubmarine(db, userId, req.params.id, deps.now());
+  });
+
+  app.delete<{ Params: { id: string } }>('/api/submarines/:id/build', opts, async (req, reply) => {
+    const userId = req.session!.userId;
+    if (!getSubmarine(db, userId, req.params.id)) return reply.code(404).send(notFound);
+    deleteBuild(db, req.params.id);
     return getSubmarine(db, userId, req.params.id, deps.now());
   });
 

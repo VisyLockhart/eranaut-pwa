@@ -33,7 +33,7 @@
       </div>
       @if (c.fit === 'bad' && !c.active && c.drops > 0) { <div class="rt-dirty">改用這組會移除 {{ c.drops }} 個放不下的航點</div> }
       <div class="rt-card-actions"><ng-container *ngTemplateOutlet="acts; context: { $implicit: c, short: false }" /></div>
-      @if (c.id; as id) { @if (actions() === 'manage') { <app-route-bind [subId]="id" /> } }
+      @if (c.id; as id) { @if (actions() === 'manage') { <app-route-apply [subId]="id" /> } }
       @if (actions() === 'manage' && c.id) {
         <button type="button" class="rt-link-btn rt-card-fold" (click)="toggleOpen(c)">收合</button>
       }
@@ -70,7 +70,7 @@
               @if (c.sub) { <span>{{ c.sub }}</span> }
               @if (c.fit === 'bad' && !c.active && c.drops > 0) { <span class="g-none">改用會移除 {{ c.drops }} 個航點</span> }
             </div>
-            @if (c.id; as id) { @if (actions() === 'manage') { <app-route-bind [subId]="id" /> } }
+            @if (c.id; as id) { @if (actions() === 'manage') { <app-route-apply [subId]="id" /> } }
           </th>
           @for (ch of c.chips; track ch.label) {
             <td class="g-{{ ch.grade }}"><b>{{ ch.value }}</b>@if (ch.gap > 0 && ch.grade !== 'plain') { <i>差 {{ ch.gap }}</i> }</td>

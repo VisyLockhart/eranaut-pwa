@@ -13,7 +13,7 @@ async function asUser(t: TestApp, discordId: string) {
     t.app.inject({ method, url, payload: payload as object, headers: origin ? { origin } : {}, cookies: { eranaut_session: cookie } });
 }
 
-const spec = { v: 1, sea: 3, max_hours: 12, sort: 'opens', required: [5, 7], excluded: [9], item_ids: [100, 200], match: 'any' };
+const spec = { v: 2, sea: 3, max_hours: 12, sort: ['opens'], required: [5, 7], excluded: [9], item_ids: [100, 200], match: 'any' };
 const valid = { name: '灰海', spec };
 const count = (t: TestApp) => (t.db.prepare('SELECT COUNT(*) AS n FROM route_filters').get() as { n: number }).n;
 
@@ -66,7 +66,7 @@ test('省略的欄位補預設值、陣列去重', async () => {
   const api = await asUser(t, ID_A);
   const res = await api('POST', '/api/route-filters', { name: 'x', spec: { required: [1, 1, 2] } });
   assert.equal(res.statusCode, 201);
-  assert.deepEqual((res.json() as RouteFilterDto).spec, { v: 1, sea: 'all', max_hours: null, sort: 'perMin', required: [1, 2], excluded: [], item_ids: [], match: 'all' });
+  assert.deepEqual((res.json() as RouteFilterDto).spec, { v: 2, sea: 'all', max_hours: null, sort: ['perMin'], required: [1, 2], excluded: [], item_ids: [], match: 'all' });
 });
 
 test('每人最多 30 組,第 31 組 409;刪掉後可再新增;上限各人獨立', async () => {
@@ -111,12 +111,13 @@ test('欄位驗證', async () => {
   await bad({ name: 'x'.repeat(21), spec }, { name: 'too_long' });
   await bad({ name: 'x' }, { spec: 'required' });
   await bad({ name: 'x', spec: 'a' }, { spec: 'invalid_type' });
-  await bad({ name: 'x', spec: { ...spec, v: 2 } }, { spec: 'invalid_value' });
+  await bad({ name: 'x', spec: { ...spec, v: 3 } }, { spec: 'invalid_value' });
   await bad({ name: 'x', spec: { ...spec, sea: 0 } }, { sea: 'invalid_value' });
   await bad({ name: 'x', spec: { ...spec, sea: 'a' } }, { sea: 'invalid_type' });
   await bad({ name: 'x', spec: { ...spec, max_hours: 169 } }, { max_hours: 'invalid_value' });
   await bad({ name: 'x', spec: { ...spec, max_hours: '6' } }, { max_hours: 'invalid_type' });
   await bad({ name: 'x', spec: { ...spec, sort: 'nope' } }, { sort: 'invalid_value' });
+  await bad({ name: 'x', spec: { ...spec, sort: ['perMin', 'x'] } }, { sort: 'invalid_value' });
   await bad({ name: 'x', spec: { ...spec, match: 'some' } }, { match: 'invalid_value' });
   await bad({ name: 'x', spec: { ...spec, required: 'a' } }, { required: 'invalid_type' });
   await bad({ name: 'x', spec: { ...spec, required: [0] } }, { required: 'invalid_value' });
@@ -156,4 +157,16 @@ test('常用:PATCH 只切換星號,不動 spec 與 updated_at;PUT 不會重設�
   assert.equal((await b('PATCH', `/api/route-filters/${f.id}`, { favorite: false })).statusCode, 404);
   assert.equal((await a('PATCH', '/api/route-filters/nope', { favorite: false })).statusCode, 404);
   assert.equal((await t.app.inject({ method: 'PATCH', url: `/api/route-filters/${f.id}`, payload: { favorite: true } })).statusCode, 401);
+});
+
+test('排序(D-297、D-298):v1 單一字串轉成陣列;多選保留順序(優先順序)、去重;空的當作只照每分鐘經驗', async () => {
+  const t = makeApp();
+  const api = await asUser(t, ID_A);
+  const old = await api('POST', '/api/route-filters', { name: '舊', spec: { ...spec, v: 1, sort: 'variety' } });
+  assert.deepEqual((old.json() as RouteFilterDto).spec.sort, ['variety']);
+  assert.equal((old.json() as RouteFilterDto).spec.v, 2);
+  const multi = await api('POST', '/api/route-filters', { name: '多', spec: { ...spec, sort: ['opens', 'perMin', 'opens'] } });
+  assert.deepEqual((multi.json() as RouteFilterDto).spec.sort, ['opens', 'perMin']);
+  const none = await api('POST', '/api/route-filters', { name: '空', spec: { ...spec, sort: [] } });
+  assert.deepEqual((none.json() as RouteFilterDto).spec.sort, ['perMin']);
 });

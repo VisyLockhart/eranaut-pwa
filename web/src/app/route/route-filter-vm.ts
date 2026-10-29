@@ -6,6 +6,7 @@ import { Auth } from '../core/auth';
 import { readJson, writeJson } from '../core/storage';
 import { Toast } from '../core/toast';
 import { SEA_INDEXES } from './core/data';
+import { normalizeSort } from './core/find';
 import { DEFAULT_SPEC, autoName, fitToDataset, isDefaultSpec, sameSpec, sanitizeFilters } from './route-filter-state';
 import { ROUTE_FILTERS_CACHE_KEY } from './route-cache';
 import { RouteFindVm } from './route-find-vm';
@@ -47,10 +48,10 @@ export class RouteFilterVm {
 
   /** 畫面上目前的條件 */
   readonly current = computed<RouteFilterSpec>(() => ({
-    v: 1,
+    v: 2,
     sea: this.f.sea(),
     max_hours: this.f.maxHours(),
-    sort: this.f.sort(),
+    sort: normalizeSort(this.f.sort()),
     required: [...this.f.required()].sort((a, b) => a - b),
     excluded: [...this.f.excluded()].sort((a, b) => a - b),
     item_ids: [...this.f.l.itemIds()],
@@ -123,7 +124,7 @@ export class RouteFilterVm {
     const f = this.f;
     f.sea.set(spec.sea);
     f.maxHours.set(spec.max_hours);
-    f.sort.set(spec.sort);
+    f.sort.set([...spec.sort]);
     f.required.set(new Set(spec.required));
     f.excluded.set(new Set(spec.excluded));
     f.l.itemIds.set([...spec.item_ids]);

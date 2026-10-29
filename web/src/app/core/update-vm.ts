@@ -478,7 +478,7 @@ export class UpdateVm {
 
 /** 截圖這時應該看到的等級(練級輔助開著才有):還在航行 = 記錄的等級;已返航 = 加上那一趟之後的等級 */
 function expectedLevel(sub: SubmarinesUpdateResult['submarines'][number] | undefined, now: number): number | undefined {
-  if (!sub?.progress?.sim_on) return undefined;
+  if (!sub?.progress?.assist_on) return undefined;
   return hasReturned(sub, now) ? nextStart(sub, now)?.level : sub.progress.level;
 }
 

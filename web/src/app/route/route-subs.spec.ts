@@ -13,7 +13,7 @@ import { RouteVm } from './route-vm';
 
 const g = () => SEA_INDEXES[1]!;
 const dto = (over: Partial<RouteSubDto> = {}): RouteSubDto => ({
-  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [], favorite: false,
+  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, favorite: false,
   created_at: '2026-10-08T00:00:00.000Z', updated_at: '2026-10-08T00:00:00.000Z', ...over,
 });
 const settle = () => new Promise((r) => setTimeout(r));
@@ -238,14 +238,14 @@ describe('RouteSubs', () => {
     });
   });
 
-  it('actions="pick":只有「改用這組」與編輯,沒有刪除與綁定', async () => {
+  it('actions="pick":只有「改用這組」與編輯,沒有刪除與套用到潛艇', async () => {
     await mount([dto()]);
     fixture.componentRef.setInput('actions', 'pick');
     fixture.detectChanges();
     const card = el.querySelectorAll('.rt-card')[1]!;
     expect(btn(card, '改用這組')).toBeDefined();
     expect(btn(card, '刪除')).toBeUndefined();
-    expect(el.querySelector('app-route-bind')).toBeNull();
+    expect(el.querySelector('app-route-apply')).toBeNull();
   });
 
   describe('製作素材(D-262)', () => {

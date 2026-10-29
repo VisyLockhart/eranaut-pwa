@@ -1,11 +1,13 @@
+import { validateBuildInput } from './build.js';
 import {
   LIMITS,
   SUBMARINE_STATUSES,
-  LEVELING_SCHOOLS,
+  ASSIST_MAX_HOURS,
   MAX_RECORDED_LEVEL,
   UPKEEP_LIMITS,
   routeExp,
   upkeepRoute,
+  type BuildInput,
   type ProgressInput,
   type UpkeepInput,
   type SubmarineFieldErrors,
@@ -26,6 +28,8 @@ export interface ValidSubmarine {
   upkeep?: UpkeepInput | null;
   /** 等級與練級輔助(D-289):物件 = 設定;null = 清除;undefined = 不變 */
   progress?: ProgressInput | null;
+  /** 配件(D-296):物件 = 設定;null = 清除;undefined = 不變 */
+  build?: BuildInput | null;
 }
 
 export type ItemResult = { ok: true; value: ValidSubmarine } | { ok: false; fields: SubmarineFieldErrors };
@@ -102,10 +106,27 @@ export function validateSubmarineInput(input: unknown): ItemResult {
     else progress = r;
   }
 
+  // 配件:省略 = 不變;null = 清除;物件 = 設定(四個部位各 1~10,可附 mark_repaired)
+  let build: BuildInput | null | undefined;
+  if (b.build === null) build = null;
+  else if (b.build !== undefined) {
+    const r = validateBuildInput(b.build);
+    if (r === 'invalid_type' || r === 'invalid_value') errors.build = r;
+    else build = r;
+  }
+
   if (Object.keys(errors).length > 0 || status === null) return { ok: false, fields: errors };
   return {
     ok: true,
-    value: { position, name, status, remaining_minutes: remaining, ...(upkeep !== undefined ? { upkeep } : {}), ...(progress !== undefined ? { progress } : {}) },
+    value: {
+      position,
+      name,
+      status,
+      remaining_minutes: remaining,
+      ...(upkeep !== undefined ? { upkeep } : {}),
+      ...(progress !== undefined ? { progress } : {}),
+      ...(build !== undefined ? { build } : {}),
+    },
   };
 }
 
@@ -127,13 +148,21 @@ export function validateProgressInput(u: unknown): ProgressInput | 'invalid_type
     if (o.source !== 'manual' && o.source !== 'ocr') return 'invalid_value';
     out.source = o.source;
   }
-  if (o.sim_on !== undefined) {
-    if (typeof o.sim_on !== 'boolean') return 'invalid_value';
-    out.sim_on = o.sim_on;
+  if (o.assist_on !== undefined) {
+    if (typeof o.assist_on !== 'boolean') return 'invalid_value';
+    out.assist_on = o.assist_on;
   }
-  if (o.school !== undefined) {
-    if (o.school !== null && !(LEVELING_SCHOOLS as readonly unknown[]).includes(o.school)) return 'invalid_value';
-    out.school = o.school as ProgressInput['school'];
+  if (o.assist_mode !== undefined) {
+    if (o.assist_mode !== 'level' && o.assist_mode !== 'combo') return 'invalid_value';
+    out.assist_mode = o.assist_mode;
+  }
+  if (o.max_hours !== undefined) {
+    if (o.max_hours !== null && !(ASSIST_MAX_HOURS as readonly unknown[]).includes(o.max_hours)) return 'invalid_value';
+    out.max_hours = o.max_hours as number | null;
+  }
+  if (o.filter_id !== undefined) {
+    if (o.filter_id !== null && (typeof o.filter_id !== 'string' || o.filter_id.length === 0 || o.filter_id.length > 64)) return 'invalid_value';
+    out.filter_id = o.filter_id as string | null;
   }
   if (o.route !== undefined) {
     if (o.route === null) out.route = null;

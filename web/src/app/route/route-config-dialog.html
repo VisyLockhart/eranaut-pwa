@@ -2,14 +2,17 @@
   <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
     <div class="modal-box rt-dlg" [class.wide]="layout.isDesktop()" role="dialog" aria-modal="true" aria-labelledby="rt-cfg-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
       <div class="rt-dlg-head">
-        <div class="modal-title" id="rt-cfg-title">{{ title() }}</div>
+        <div class="rt-dlg-titles">
+          <div class="modal-title" id="rt-cfg-title">{{ title() }}</div>
+          @if (d.sub; as sub) { <div class="rt-dlg-sub">{{ sub.workshopName }} · {{ sub.label }}</div> }
+        </div>
         <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
       </div>
 
       @if (step() === 'edit') {
         @if (stats(); as s) {
           <div class="rt-dlg-top">
-            @if (vm.canSave) {
+            @if (vm.canSave && !isSub()) {
               <div class="rt-dlg-field">
                 <label class="field-label" for="rt-cfg-name">名稱</label>
                 <input id="rt-cfg-name" class="rt-text-input" type="text" [value]="d.name" (input)="onName($event)" autocomplete="off" />
@@ -17,11 +20,23 @@
               </div>
             }
             <div class="rt-dlg-field">
-              <label class="field-label" for="rt-cfg-level">潛艇等級</label>
+              @if (d.sub?.levelFixed) {
+                <span class="field-label">潛艇等級</span>
+                <div class="rt-level">
+                  <span class="rt-level-fixed mono" aria-label="潛艇等級">Lv {{ d.level }}</span>
+                  <div class="rt-cap">取自潛艇等級 · 重量上限 <b>{{ s.weightCap }}</b></div>
+                </div>
+              } @else {
+              <label class="field-label" for="rt-cfg-level">模擬等級</label>
               <div class="rt-level">
                 <input id="rt-cfg-level" class="rt-level-input" type="number" inputmode="numeric" min="1" [attr.max]="maxLevel" step="1" [value]="d.level" (change)="onLevel($event)" />
                 <div class="rt-cap">重量上限 <b>{{ s.weightCap }}</b></div>
               </div>
+              @if (d.sub) {
+                <div class="rt-save-count">這艘還沒有等級,儲存時會一併存成這艘的等級</div>
+              } @else if (vm.canSave) {
+                <div class="rt-save-count">只用於模擬;選了工坊潛艇時,以潛艇自己的等級為準</div>
+              }
               <div class="rt-lv-slider" [class.sliding]="sliding()">
                 @if (!layout.isDesktop()) {
                   <button type="button" class="rt-lv-step" aria-label="降低一級" [disabled]="d.level <= 1" (click)="stepLevel(-1)">−</button>
@@ -48,8 +63,14 @@
                   <button type="button" class="rt-lv-step" aria-label="提高一級" [disabled]="d.level >= maxLevel" (click)="stepLevel(1)">＋</button>
                 }
               </div>
+              }
             </div>
           </div>
+          @if (isSub()) {
+            <div class="rt-dlg-apply">
+              <app-select size="compact" ariaLabel="套用已儲存的配置" [options]="savedOptions()" [value]="''" (valueChange)="pickSaved($event)" />
+            </div>
+          }
 
           <div class="rt-dlg-body" [class.wide]="layout.isDesktop()">
             <div class="rt-parts" role="group" aria-label="配件選擇">
@@ -99,7 +120,7 @@
           </div>
         }
       } @else {
-        <div class="rt-save-label">已滿 {{ max }} 組,選一組覆蓋(會保留那一組的名稱與綁定)</div>
+        <div class="rt-save-label">已滿 {{ max }} 組,選一組覆蓋(會保留那一組的名稱)</div>
         <app-route-list-tools [view]="pickList" noun="配置" />
         <ul class="rt-pick-list rt-scroll">
           @for (s of pickList.filtered(); track s.id) {
@@ -118,14 +139,25 @@
         </ul>
       }
 
+      @if (repairShown()) {
+        <label class="rt-repair-opt">
+          <input type="checkbox" [checked]="d.sub!.markRepaired" (change)="onRepair($event)" />
+          <span>同時標示已維修(趟數歸 0)<small>零件和維修提醒開啟時不同;勾選後以新零件重新計算上限</small></span>
+        </label>
+      }
       @if (error()) { <div class="rt-save-error" role="alert">{{ error() }}</div> }
 
       <div class="rt-dlg-foot">
         @if (step() === 'edit') {
           @if (!layout.isDesktop()) { <div class="rt-dlg-sum">{{ summary() }}</div> }
           <div class="rt-save-actions">
+            @if (isSub()) {
+              <button type="button" class="rt-link-btn rt-dlg-aux" [disabled]="busy()" (click)="saveTemplate()">另存範本</button>
+            }
             <button type="button" class="rt-save-btn" (click)="close()">取消</button>
-            @if (vm.canSave) {
+            @if (isSub()) {
+              <button type="button" class="rt-save-btn primary" [disabled]="busy()" (click)="saveSub()">儲存到這艘</button>
+            } @else if (vm.canSave) {
               <button type="button" class="rt-save-btn" [disabled]="busy()" (click)="apply()">只套用</button>
               <button type="button" class="rt-save-btn primary" [disabled]="!nameValid() || busy()" (click)="save()">{{ saveText() }}</button>
             } @else {

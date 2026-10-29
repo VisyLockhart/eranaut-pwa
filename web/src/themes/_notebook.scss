@@ -116,6 +116,10 @@ html[data-theme='notebook'] {
   /* 按鈕:一般 = 縫線補丁(虛線);主要 = 苔綠實心 + 內縮縫線 */
   .ghost-btn, .btn-secondary, .rt-chip, .rt-icon-btn, .rt-save-btn, .pager-btn, .ws-arrow-btn, .ws-icon-btn, .rt-lv-step, .modal-close, .ct-tool, .ct-step, .camera-btn {
     border: var(--bw) dashed var(--text-muted); border-radius: var(--w2); background: transparent; color: var(--text); box-shadow: none; }
+  /* D-296:配置來源與潛艇卡——反灰 = 淡米底 + 虛線 + 鎖頭;潛艇卡用手繪小圓角 */
+  .rt-src-lock, .rt-wschip, .rt-sb-row, .rt-src-x, .rt-level-fixed { border: var(--bw) solid var(--line); border-radius: var(--w2); }
+  .rt-src-lock { border-style: dashed; border-color: var(--text-muted); color: var(--text); }
+  .rt-wschip.unset, .rt-sb-row.unset { border-style: dashed; }
   .ct-step { border-style: solid; border-color: var(--line); border-radius: var(--blob); background: var(--bg); font-family: var(--font-mono); font-size: 22px; }
   .primary-btn, .btn-primary-modal, .rt-save-btn.primary, .rt-icon-btn.primary, .rt-chip.active, .ct-done, .pill-toggle .on {
     background: var(--accent); color: var(--on-accent); border: var(--bw) solid var(--line); border-radius: var(--w2); box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 3px color-mix(in srgb, var(--bg-elevated) 60%, transparent); }

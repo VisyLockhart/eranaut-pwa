@@ -18,7 +18,7 @@ const q = (over: Partial<FindQuery> = {}): FindQuery => ({
   stats: stats130,
   sea: 'all',
   maxMinutes: null,
-  sort: 'perMin',
+  sort: ['perMin'],
   required: new Set(),
   excluded: new Set(),
   itemIds: [],
@@ -52,7 +52,7 @@ describe('排序與基本案例', () => {
   });
 
   it('最多物品:由多到少,一樣多時航行時間短的在前;items 是這條路線拿得到的不同物品', () => {
-    const rs = findRoutes(SEA_INDEXES, q({ sort: 'variety', level: 70 }));
+    const rs = findRoutes(SEA_INDEXES, q({ sort: ['variety'], level: 70 }));
     for (let i = 1; i < rs.length; i++) {
       expect(rs[i - 1]!.items.length).toBeGreaterThanOrEqual(rs[i]!.items.length);
       if (rs[i - 1]!.items.length === rs[i]!.items.length) expect(rs[i - 1]!.minutes).toBeLessThanOrEqual(rs[i]!.minutes);
@@ -64,7 +64,7 @@ describe('排序與基本案例', () => {
   });
 
   it('可能解鎖:什麼都沒去過時只有溺沒海的 A、B 可去,A + B 一起去回來解鎖 C、D、E', () => {
-    const rs = findRoutes(SEA_INDEXES, q({ sort: 'opens' }));
+    const rs = findRoutes(SEA_INDEXES, q({ sort: ['opens'] }));
     const ab = new Set(ids(drowned, 'AB'));
     expect(rs.length).toBeGreaterThan(0);
     for (const r of rs) for (const id of r.order) expect(ab.has(id)).toBe(true);
@@ -74,7 +74,7 @@ describe('排序與基本案例', () => {
   });
 
   it('可能解鎖:依新航點數由多到少,一樣多時航行時間短的在前', () => {
-    const rs = findRoutes(SEA_INDEXES, q({ sort: 'opens', explored: new Set(ids(drowned, 'AB')) }));
+    const rs = findRoutes(SEA_INDEXES, q({ sort: ['opens'], explored: new Set(ids(drowned, 'AB')) }));
     for (let i = 1; i < rs.length; i++) {
       expect(rs[i - 1]!.opens.length).toBeGreaterThanOrEqual(rs[i]!.opens.length);
       if (rs[i - 1]!.opens.length === rs[i]!.opens.length) expect(rs[i - 1]!.minutes).toBeLessThanOrEqual(rs[i]!.minutes);
@@ -85,7 +85,7 @@ describe('排序與基本案例', () => {
     const last = drowned.sea.points.find((x) => x.code === 'AD')!.id;
     const closed = new Set<number>();
     for (let x: number | undefined = last; x !== undefined; x = g.parent.get(x)) closed.add(x);
-    const rs = findRoutes(SEA_INDEXES, q({ sort: 'opens', explored: closed, sea: grey.sea.sea }));
+    const rs = findRoutes(SEA_INDEXES, q({ sort: ['opens'], explored: closed, sea: grey.sea.sea }));
     expect(rs.length).toBeGreaterThan(0);
     expect(rs.every((r) => r.order.every((id) => id === ids(grey, 'A')[0]))).toBe(true);
   });
@@ -215,13 +215,13 @@ describe('篩選:必選 / 排除 / 物品', () => {
 describe('排序:可能解鎖數只列可去的點', () => {
   it('選探索排序時,路線上的點都是「可去的點」;必選點不是可去的點 → 空', () => {
     const explored = new Set(ids(drowned, 'AB'));
-    const rs = findRoutes(SEA_INDEXES, q({ sort: 'opens', explored }));
+    const rs = findRoutes(SEA_INDEXES, q({ sort: ['opens'], explored }));
     expect(rs.length).toBeGreaterThan(0);
     for (const r of rs) for (const id of r.order) expect(isAvailable(g, explored, id)).toBe(true);
     const far = ids(drowned, 'Z')[0]!;
-    expect(findRoutes(SEA_INDEXES, q({ sort: 'opens', explored, required: new Set([far]) }))).toEqual([]);
+    expect(findRoutes(SEA_INDEXES, q({ sort: ['opens'], explored, required: new Set([far]) }))).toEqual([]);
     // 換成每分鐘經驗排序,同一個必選點就不受限制
-    expect(findRoutes(SEA_INDEXES, q({ sort: 'perMin', explored, required: new Set([far]) })).length).toBeGreaterThan(0);
+    expect(findRoutes(SEA_INDEXES, q({ sort: ['perMin'], explored, required: new Set([far]) })).length).toBeGreaterThan(0);
   });
 
   it('非探索排序:opens 不含已去過的點與路線內的點', () => {
@@ -258,7 +258,7 @@ describe('極端輸入與效能', () => {
   it('三種排序各自在全部海域跑完不超過 5 秒(開發機實測約 1 秒內)', () => {
     for (const sort of ['perMin', 'opens', 'variety'] as const) {
       const t = performance.now();
-      findRoutes(SEA_INDEXES, q({ sort, explored: new Set(ids(drowned, 'AB')) }));
+      findRoutes(SEA_INDEXES, q({ sort: [sort], explored: new Set(ids(drowned, 'AB')) }));
       expect(performance.now() - t).toBeLessThan(5000);
     }
   });

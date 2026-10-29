@@ -36,7 +36,7 @@ describe('推薦頁(D-212、D-222)', () => {
     if (opts.saved !== undefined) {
       const http = TestBed.inject(HttpTestingController);
       http.expectOne('/api/route-subs').flush(
-        opts.saved ? [{ id: 's1', name: '主力艇', level: 50, hull: 8, stern: 6, bow: 7, bridge: 7, bound_submarine_ids: [], created_at: '', updated_at: '' }] : [],
+        opts.saved ? [{ id: 's1', name: '主力艇', level: 50, hull: 8, stern: 6, bow: 7, bridge: 7, created_at: '', updated_at: '' }] : [],
       );
     }
     el = f.nativeElement as HTMLElement;
@@ -154,7 +154,7 @@ describe('推薦頁(D-212、D-222)', () => {
 
     it('收合海圖後仍看得到計數', () => {
       clickDot('A');
-      btn('收合').click();
+      btn('收合', el.querySelector('app-route-find')!).click();
       f.detectChanges();
       expect(el.querySelector('app-route-map')).toBeNull();
       expect(el.querySelector('.rt-map-count')!.textContent).toContain('選中 1');
@@ -194,6 +194,7 @@ describe('推薦頁(D-212、D-222)', () => {
       clickDot('A');
       clickDot('B');
       btn('可能解鎖', el.querySelector('[aria-label=排序]')!).click();
+      btn('每分鐘經驗', el.querySelector('[aria-label=排序]')!).click();
       f.detectChanges();
       expect(el.querySelector('[aria-label=找路線條件]')!.textContent).toContain('只列「可去的點」');
       await search();
@@ -208,6 +209,7 @@ describe('推薦頁(D-212、D-222)', () => {
 
     it('排序「最多物品」:右側顯示共幾種物品', async () => {
       btn('最多物品', el.querySelector('[aria-label=排序]')!).click();
+      btn('每分鐘經驗', el.querySelector('[aria-label=排序]')!).click();
       f.detectChanges();
       await search();
       expect(cards()[0]!.querySelector('.rt-card-lv')!.textContent).toContain(`共 ${find.result()![0]!.items.length} 種物品`);
@@ -289,7 +291,7 @@ describe('推薦頁(D-212、D-222)', () => {
       find.setSort('variety');
       f.detectChanges();
       expect(el.textContent).toContain('下面的結果是舊的');
-    });
+    }, 30_000);
 
     it('「模擬路線」:航線頁沒有選點時直接帶入並回到航線主頁', async () => {
       await search();

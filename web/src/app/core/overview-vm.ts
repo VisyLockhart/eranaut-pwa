@@ -49,7 +49,7 @@ export interface UpkeepAlert extends WorkshopUpkeep {
 }
 
 function nextRoute(info: DispatchInfo | null): NextRoute | null {
-  const o = info && !info.start.over ? info.current : null;
+  const o = info ? info.current : null;
   return o && info ? { label: o.label, sea: o.plan.sea, points: o.plan.points, from: info.start.level, after: o.after, unlock: o.unlock } : null;
 }
 

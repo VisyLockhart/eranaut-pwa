@@ -14,7 +14,7 @@ import { RouteVm } from './route-vm';
 const grey = () => SEA_INDEXES[1]!;
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 const row = (over: Partial<RouteFilterDto> = {}): RouteFilterDto => ({
-  id: 'a', name: '灰海組', spec: { v: 1, sea: 'all', max_hours: 6, sort: 'perMin', required: [grey().sea.points[0]!.id], excluded: [], item_ids: [], match: 'all' },
+  id: 'a', name: '灰海組', spec: { v: 2, sea: 'all', max_hours: 6, sort: ['perMin'], required: [grey().sea.points[0]!.id], excluded: [], item_ids: [], match: 'all' },
   favorite: false, created_at: '', updated_at: '', ...over,
 });
 

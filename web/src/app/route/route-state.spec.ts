@@ -5,7 +5,7 @@ import { DEFAULT_LEVEL, defaultLast, normalizeSeq, sameBuild, sanitizeLast, sani
 
 const grey = () => seaIndex(2);
 const sub = (over: Record<string, unknown> = {}) => ({
-  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [], created_at: 't', updated_at: 't', ...over,
+  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, created_at: 't', updated_at: 't', ...over,
 });
 
 describe('sanitizeLast', () => {
@@ -16,7 +16,7 @@ describe('sanitizeLast', () => {
 
   it('合法的值原樣保留', () => {
     const g = grey();
-    const last = { sea: 2, seq: ids(g, 'DG'), level: 76, parts: [3, 1, 2, 3], subId: 'abc', tab: 'route' };
+    const last = { sea: 2, seq: ids(g, 'DG'), level: 76, parts: [3, 1, 2, 3], subId: 'abc', wsSubId: null, tab: 'route' };
     expect(sanitizeLast(last)).toEqual(last);
     expect(sanitizeLast({ ...last, tab: 'search' }).tab).toBe('route'); // 舊版的「搜尋」併入「航線」
     expect(sanitizeLast({ ...last, tab: 'loot' }).tab).toBe('route'); // 舊版的「反查」併入「航線」(D-218)
@@ -57,9 +57,8 @@ describe('sanitizeParts', () => {
 
 describe('sanitizeSubs', () => {
   it('合法項目保留;格式不合法的項目被丟掉', () => {
-    const list = sanitizeSubs([sub(), sub({ id: 5 }), sub({ level: 131 }), sub({ hull: 0 }), null, 'x', sub({ id: 'b', bound_submarine_ids: ['sub-1', 5] })]);
+    const list = sanitizeSubs([sub(), sub({ id: 5 }), sub({ level: 131 }), sub({ hull: 0 }), null, 'x', sub({ id: 'b' })]);
     expect(list.map((s) => s.id)).toEqual(['a', 'b']);
-    expect(list[1]!.bound_submarine_ids).toEqual(['sub-1']);
   });
 
   it('不是陣列 → 空;最多保留 30 組', () => {

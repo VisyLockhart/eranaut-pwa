@@ -1,10 +1,10 @@
 import { newId } from './demo-id';
-import { routeExp, type RouteSubDto, type SubmarineDto, type WorkshopChartDto, type WorkshopWithSubmarines } from '@eranaut/shared';
+import { routeExp, type BuildDto, type RouteFilterDto, type RouteSubDto, type SubmarineDto, type WorkshopChartDto, type WorkshopWithSubmarines } from '@eranaut/shared';
 import { SEAS } from '../route/core/data';
 import type { ProgressRow, UpkeepRow } from './demo-levels';
 
 // 展示用的假資料。時間以「載入當下」為基準,所以每次重設都像剛更新過。
-// 也放了配件維修提醒(D-288)、等級與練級輔助(D-289、D-291)、儲存配置與綁定,讓這些功能一打開就能體驗(D-292);
+// 也放了配件維修提醒(D-288)、等級與練級輔助(D-289、D-291)、儲存配置(範本),讓這些功能一打開就能體驗(D-292);
 // 以及海圖探索紀錄(D-293):貝殼工坊開到一半、鋼鐵之心開到灰海、珊瑚礁工坊還沒記錄。
 const MIN = 60_000;
 
@@ -28,23 +28,36 @@ function sub(workshopId: string, position: number, name: string | null, minutesL
   };
 }
 
-/** 練級輔助開著的艇:目前等級、這一級的經驗、偏好流派,以及剛派出(還沒結算)的路線 */
-function leveling(level: number, exp: number, school: ProgressRow['school'], sea: number, points: string[], now: number): ProgressRow {
+/** 航線輔助開著的艇(D-297):目前等級、這一級的經驗、模式與最長航行時間,以及剛派出(還沒結算)的路線 */
+function assist(
+  level: number,
+  exp: number,
+  opt: { mode?: ProgressRow['assist_mode']; maxHours?: number | null; filterId?: string | null },
+  route: { sea: number; points: string[] } | null,
+  now: number,
+): ProgressRow {
   return {
     level,
     exp_in_level: exp,
     source: 'manual',
-    sim_on: true,
-    school,
-    pending: { sea, points, exp: routeExp(sea, points) ?? 0 },
-    last: { sea, points },
+    assist_on: true,
+    assist_mode: opt.mode ?? 'level',
+    max_hours: opt.maxHours ?? null,
+    filter_id: opt.filterId ?? null,
+    pending: route ? { ...route, exp: routeExp(route.sea, route.points) ?? 0 } : null,
+    last: route,
     updated_at: new Date(now).toISOString(),
   };
 }
 
-/** 只有等級(截圖辨識到的,沒開練級輔助) */
+/** 潛艇自己的配件(D-296) */
+function build(parts: [number, number, number, number], now: number): BuildDto {
+  return { hull: parts[0], stern: parts[1], bow: parts[2], bridge: parts[3], updated_at: new Date(now - 86_400_000).toISOString() };
+}
+
+/** 只有等級(截圖辨識到的,沒開航線輔助) */
 function levelOnly(level: number, now: number): ProgressRow {
-  return { level, exp_in_level: 0, source: 'ocr', sim_on: false, school: null, pending: null, last: null, updated_at: new Date(now).toISOString() };
+  return { level, exp_in_level: 0, source: 'ocr', assist_on: false, assist_mode: 'level', max_hours: null, filter_id: null, pending: null, last: null, updated_at: new Date(now).toISOString() };
 }
 
 /** 溺沒海 O→J 的維修提醒(配置 3124:可跑 6 趟) */
@@ -53,16 +66,18 @@ function upkeepOJ(done: number, now: number): UpkeepRow {
   return { route_key: '1:OJ', route_sea: 1, route_points: ['O', 'J'], voyages_done: done, limit_voyages: 6, parts_sig: '3,1,2,4', repaired_at: null, updated_at: t };
 }
 
-function config(name: string, level: number, parts: [number, number, number, number], bound: string[], now: number, favorite = false): RouteSubDto {
+function config(name: string, level: number, parts: [number, number, number, number], now: number, favorite = false): RouteSubDto {
   const t = new Date(now).toISOString();
-  return { id: newId(), name, level, hull: parts[0], stern: parts[1], bow: parts[2], bridge: parts[3], bound_submarine_ids: bound, favorite, created_at: t, updated_at: t };
+  return { id: newId(), name, level, hull: parts[0], stern: parts[1], bow: parts[2], bridge: parts[3], favorite, created_at: t, updated_at: t };
 }
 
 export interface DemoSeed {
   workshops: WorkshopWithSubmarines[];
   upkeep: Record<string, UpkeepRow>;
   progress: Record<string, ProgressRow>;
+  build: Record<string, BuildDto>;
   routeSubs: RouteSubDto[];
+  routeFilters: RouteFilterDto[];
 }
 
 export function seedDemo(now: number): DemoSeed {
@@ -127,25 +142,49 @@ export function seedDemo(now: number): DemoSeed {
     },
   ];
 
+  const filterId = newId();
+  const t = new Date(now - 86_400_000).toISOString();
   return {
     workshops,
     progress: {
-      [a1.id]: leveling(34, 120_000, 'snap', 1, ['I', 'M', 'P'], now),
-      [a2.id]: leveling(22, 60_000, 'half', 1, ['G', 'I', 'K'], now),
-      [b1.id]: leveling(61, 900_000, 'day', 2, ['D', 'G', 'F', 'K'], now),
+      // 練級:最長 12 小時 / 不限(34、22 級有攻略資料集;下一次推薦會依這個上限挑路線)
+      [a1.id]: assist(34, 120_000, { maxHours: 12 }, { sea: 1, points: ['I', 'M', 'P'] }, now),
+      [a2.id]: assist(22, 60_000, {}, { sea: 1, points: ['G', 'I', 'K'] }, now),
+      // 條件組合:用下面存好的「灰海 24 小時內・開新點優先」
+      [b1.id]: assist(61, 900_000, { mode: 'combo', filterId }, { sea: 2, points: ['D', 'G', 'F', 'K'] }, now),
       [b2.id]: levelOnly(95, now),
-      [b3.id]: levelOnly(96, now),
+      // 85 級以上沒有攻略資料集,改用系統推算;趟數已用滿、需要維修
+      [b3.id]: assist(108, 0, { maxHours: 24 }, null, now),
+      // 開了航線輔助但還沒設定配件 → 顯示「請先設定配件」的鎖定狀態
+      [b4.id]: assist(70, 0, {}, null, now),
       [c1.id]: levelOnly(12, now),
+    },
+    build: {
+      [a1.id]: build([3, 1, 1, 3], now),
+      [a2.id]: build([1, 1, 2, 2], now),
+      [b1.id]: build([1, 1, 2, 3], now),
+      [b2.id]: build([3, 1, 2, 4], now),
+      [b3.id]: build([3, 1, 2, 4], now),
     },
     upkeep: {
       [b2.id]: upkeepOJ(4, now),
       [b3.id]: upkeepOJ(6, now),
     },
     routeSubs: [
-      config('練級主力', 34, [3, 1, 1, 3], [a1.id], now, true),
-      config('練級二號', 22, [1, 1, 2, 2], [a2.id], now),
-      config('灰海練級', 61, [1, 1, 2, 3], [b1.id], now),
-      config('O→J 撈寶', 95, [3, 1, 2, 4], [b2.id, b3.id], now, true),
+      config('練級主力', 34, [3, 1, 1, 3], now, true),
+      config('練級二號', 22, [1, 1, 2, 2], now),
+      config('灰海練級', 61, [1, 1, 2, 3], now),
+      config('O→J 撈寶', 95, [3, 1, 2, 4], now, true),
+    ],
+    routeFilters: [
+      {
+        id: filterId,
+        name: '灰海 24 小時內・開新點優先',
+        spec: { v: 2, sea: 2, max_hours: 24, sort: ['perMin', 'opens'], required: [], excluded: [], item_ids: [], match: 'all' },
+        favorite: true,
+        created_at: t,
+        updated_at: t,
+      },
     ],
   };
 }

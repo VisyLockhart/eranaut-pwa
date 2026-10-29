@@ -1,9 +1,11 @@
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import { LIMITS, type RouteSubDto, type RouteSubInput } from '@eranaut/shared';
+import { LIMITS, type RouteSubDto, type RouteSubInput, type SubmarineDto, type WorkshopWithSubmarines } from '@eranaut/shared';
 import { Api } from '../core/api';
 import { Auth } from '../core/auth';
+import { DataStore } from '../core/data-store';
+import { circled } from '../core/format';
 import { readJson, writeJson } from '../core/storage';
 import { Toast } from '../core/toast';
 import { buildStats } from './core/build';
@@ -12,11 +14,28 @@ import { judgeBuild, routeNeed } from './core/need';
 import { routeCost, selectability, shortestOrder, travelMinutes } from './core/route';
 import type { Build } from './core/types';
 import { ROUTE_CACHE_KEY, ROUTE_LAST_KEY, clearRouteCache } from './route-cache';
+import { RouteExploreVm } from './route-explore-vm';
 import { ROUTE_FEATURES } from './route-features';
-import { defaultSubName, normalizeSeq, sameBuild, sanitizeLast, sanitizeSubs, subToBuild, type Parts, type RouteTab } from './route-state';
+import { DEFAULT_PARTS, defaultSubName, normalizeSeq, sameBuild, sanitizeLast, sanitizeSubs, subSimBuild, subToBuild, type Parts, type RouteTab } from './route-state';
 
-/** 配置編輯對話框的模式:new = 新增(以目前配置為起點)、edit = 編輯某一組儲存潛艇、temp = 編輯臨時配置 */
-export type ConfigMode = 'new' | 'edit' | 'temp';
+/** 配置編輯對話框的模式:new = 新增(以目前配置為起點)、edit = 編輯某一組配置範本、temp = 編輯臨時配置、sub = 編輯工坊潛艇自己的配件(D-296) */
+export type ConfigMode = 'new' | 'edit' | 'temp' | 'sub';
+
+/** 潛艇配置草稿(mode = sub)附帶的資訊 */
+export interface SubDraft {
+  submarineId: string;
+  workshopName: string;
+  /** 例:`② 潛艇-2` */
+  label: string;
+  /** 潛艇已有等級:唯讀(返航後的有效等級);沒有等級的用「模擬等級」輸入,儲存時存成這艘的等級 */
+  levelFixed: boolean;
+  /** 這艘開著維修提醒:零件和開啟時不同,才會出現「同時標示已維修」 */
+  upkeepOn: boolean;
+  /** 開啟時這艘的配件;null = 還沒設定 */
+  baseParts: Parts | null;
+  /** 勾了「同時標示已維修」 */
+  markRepaired: boolean;
+}
 
 /** 編輯中的草稿;只有按「只套用」或「儲存」才會影響畫面上的配置與已選航點 */
 export interface ConfigDraft {
@@ -29,6 +48,16 @@ export interface ConfigDraft {
   /** 開啟時的值,用來判斷有沒有改過 */
   base: Build;
   baseName: string;
+  /** mode = sub 時的潛艇資訊 */
+  sub?: SubDraft;
+}
+
+/** 找路線 / 航點頁使用的配置來源:配置範本、工坊潛艇,或兩者都沒選(臨時配置) */
+export type RouteSource = 'config' | 'ws' | 'none';
+
+/** 工坊潛艇的選擇器標籤,例:`② 潛艇-2` */
+export function wsSubLabel(s: Pick<SubmarineDto, 'position' | 'name'>): string {
+  return `${circled(s.position)} ${s.name ?? `潛艇-${s.position}`}`;
 }
 
 /**
@@ -46,7 +75,9 @@ export class RouteVm {
   private readonly auth = inject(Auth);
   private readonly toast = inject(Toast);
   private readonly router = inject(Router);
-  /** 能不能儲存配置與綁定工坊潛艇;展示模式為 false(沒有伺服器),此時 `saved` 恆為空 */
+  private readonly store = inject(DataStore);
+  private readonly explore = inject(RouteExploreVm);
+  /** 能不能儲存配置範本;展示模式為 false(沒有伺服器),此時 `saved` 恆為空 */
   readonly canSave = inject(ROUTE_FEATURES).saving;
 
   private readonly init = sanitizeLast(readJson<unknown>(ROUTE_LAST_KEY));
@@ -59,6 +90,8 @@ export class RouteVm {
   readonly parts = signal<Parts>(this.init.parts);
   /** 目前使用的儲存潛艇 id;null = 臨時配置 */
   readonly subId = signal<string | null>(this.init.subId);
+  /** 目前使用的工坊潛艇 id(D-296);和 subId 互斥,null = 沒用工坊潛艇 */
+  readonly wsSubId = signal<string | null>(this.init.wsSubId);
 
   // ---- 分頁與對話框(放在這裡,換版面重建頁面元件時不會丟失) ----
   /** 目前的分頁。預設:沒有儲存配置 → 配置;否則記住上次主動切到的分頁(沒有記錄就進航線) */
@@ -74,6 +107,8 @@ export class RouteVm {
   readonly perfOpen = signal(false);
   /** 航線頁是否顯示「找路線」子頁(D-224);只放記憶體,換分頁不丟 */
   readonly findOpen = signal(false);
+  /** 「找路線」上方的設定區(工坊、配置、條件組合)展開中(D-298);收合時只剩一行摘要,不記憶 */
+  readonly condOpen = signal(true);
   /** 等待確認的「模擬路線」:航線頁已有不同的選點時,先問再換 */
   readonly pendingLoad = signal<{ sea: number; order: number[] } | null>(null);
 
@@ -97,6 +132,19 @@ export class RouteVm {
   readonly need = computed(() => routeNeed(this.seaIdx(), this.seq()));
   readonly judgement = computed(() => judgeBuild(this.stats(), this.need()));
   readonly selectedSub = computed(() => this.saved().find((s) => s.id === this.subId()) ?? null);
+  /** 選的工坊潛艇與它所在的工坊(找不到回 null) */
+  readonly wsSub = computed<{ workshop: WorkshopWithSubmarines; sub: SubmarineDto } | null>(() => {
+    const id = this.wsSubId();
+    if (id === null) return null;
+    for (const workshop of this.store.workshops()) {
+      const sub = workshop.submarines.find((s) => s.id === id);
+      if (sub) return { workshop, sub };
+    }
+    return null;
+  });
+  /** 工坊(資訊)選的那間工坊裡「能用來模擬」的潛艇:有等級也有配件的才列出 */
+  readonly wsCandidates = computed<SubmarineDto[]>(() => this.explore.chartWorkshop()?.submarines.filter((s) => subSimBuild(s) !== null) ?? []);
+  readonly source = computed<RouteSource>(() => (this.wsSubId() !== null ? 'ws' : this.subId() !== null ? 'config' : 'none'));
   /** 畫面上的配置與目前使用的儲存潛艇不同(可「覆蓋儲存」) */
   readonly dirty = computed(() => {
     const sub = this.selectedSub();
@@ -125,8 +173,32 @@ export class RouteVm {
     effect(() => {
       // 只記住使用者主動切到的分頁;自動決定的預設分頁不寫入,免得下次被當成偏好
       const tab = this.tab();
-      const last = { sea: this.sea(), seq: this.seq(), level: this.level(), parts: this.parts(), subId: this.subId(), tab: this.tabTouched ? tab : this.init.tab };
+      const last = { sea: this.sea(), seq: this.seq(), level: this.level(), parts: this.parts(), subId: this.subId(), wsSubId: this.wsSubId(), tab: this.tabTouched ? tab : this.init.tab };
       untracked(() => writeJson(ROUTE_LAST_KEY, last));
+    });
+    // 用工坊潛艇時,畫面上的等級與配件跟著這艘走(它被改、被刪、等級或配件被清掉,或換了工坊都要跟上,D-296)
+    effect(() => {
+      const id = this.wsSubId();
+      if (id === null) return;
+      const found = this.wsSub();
+      const loaded = this.store.loaded();
+      const chartWs = this.explore.chartWs();
+      untracked(() => {
+        if (!found) {
+          if (loaded) this.wsSubId.set(null);
+          return;
+        }
+        const b = subSimBuild(found.sub);
+        if (b === null || found.workshop.id !== chartWs) {
+          this.wsSubId.set(null);
+          return;
+        }
+        if (!sameBuild(b, this.build())) {
+          this.level.set(b.level);
+          this.parts.set([...b.parts]);
+          this.renormalize();
+        }
+      });
     });
     // 登出或 session 失效就停止並清掉快照;'loading'(啟動中)與 'unreachable'(離線)不清,離線時還要靠快照顯示
     effect(() => {
@@ -225,6 +297,7 @@ export class RouteVm {
 
   setLevel(level: number): void {
     if (!Number.isInteger(level) || level < 1 || level > LIMITS.maxRouteSubLevel) return;
+    this.wsSubId.set(null);
     this.level.set(level);
     this.renormalize();
   }
@@ -234,6 +307,7 @@ export class RouteVm {
     if (!Number.isInteger(idx) || idx < 1 || idx > 10) return;
     const next = [...this.parts()] as Parts;
     next[index] = idx;
+    this.wsSubId.set(null);
     this.parts.set(next);
     this.renormalize();
   }
@@ -243,14 +317,33 @@ export class RouteVm {
     const sub = this.saved().find((s) => s.id === id);
     if (!sub) return;
     this.subId.set(sub.id);
+    this.wsSubId.set(null);
     this.level.set(sub.level);
     this.parts.set([sub.hull, sub.stern, sub.bow, sub.bridge]);
     this.renormalize();
   }
 
+  /** 改用工坊潛艇(D-296):等級取自潛艇、配件取自潛艇的配置,配置範本的選擇解除。只能選「有等級也有配件」的潛艇 */
+  useWsSub(id: string): void {
+    const sub = this.store.workshops().flatMap((w) => w.submarines).find((s) => s.id === id);
+    const b = sub ? subSimBuild(sub) : null;
+    if (!b) return;
+    this.subId.set(null);
+    this.wsSubId.set(id);
+    this.level.set(b.level);
+    this.parts.set([...b.parts]);
+    this.renormalize();
+  }
+
+  /** 不再使用工坊潛艇(保留畫面上的等級與配件作為臨時配置) */
+  detachWsSub(): void {
+    this.wsSubId.set(null);
+  }
+
   /** 把搜尋結果等「只有配件」的配置帶進畫面:保留目前等級,成為臨時配置(不再使用任何儲存潛艇) */
   applyParts(parts: Parts): void {
     this.subId.set(null);
+    this.wsSubId.set(null);
     this.parts.set(parts);
     this.renormalize();
   }
@@ -278,9 +371,80 @@ export class RouteVm {
 
   /** 編輯目前正在使用的配置(使用儲存潛艇就編輯那一組,否則編輯臨時配置) */
   editCurrent(): void {
+    const ws = this.wsSub();
+    if (ws) {
+      this.openSubBuild(ws.sub.id);
+      return;
+    }
     const sub = this.selectedSub();
     if (sub) this.openConfig('edit', sub.id);
     else this.openConfig('temp');
+  }
+
+  /**
+   * 開啟「潛艇配置」(D-296):編輯某艘工坊潛艇自己的配件。等級用潛艇自己的(唯讀);沒填等級的艇以目前模擬等級為起點,
+   * 儲存時一併存成這艘的等級。沒設定過配件的艇從全 1 級開始。
+   */
+  openSubBuild(submarineId: string): void {
+    const ws = this.store.workshops().find((w) => w.submarines.some((s) => s.id === submarineId));
+    const sub = ws?.submarines.find((s) => s.id === submarineId);
+    if (!ws || !sub) return;
+    const levelFixed = sub.progress !== undefined;
+    const level = sub.progress ? sub.progress.effective_level : Math.min(LIMITS.maxRouteSubLevel, Math.max(1, this.level()));
+    const baseParts: Parts | null = sub.build ? [sub.build.hull, sub.build.stern, sub.build.bow, sub.build.bridge] : null;
+    const parts: Parts = baseParts ? [...baseParts] : [...DEFAULT_PARTS];
+    this.draft.set({
+      mode: 'sub',
+      id: null,
+      name: '',
+      baseName: '',
+      level,
+      parts,
+      base: { level, parts: [...parts] },
+      sub: { submarineId, workshopName: ws.name, label: wsSubLabel(sub), levelFixed, upkeepOn: sub.upkeep !== undefined, baseParts, markRepaired: false },
+    });
+  }
+
+  /** 潛艇配置:把某組配置範本的配件複製進草稿(等級不動;之後改這艘不會動範本) */
+  applySavedToDraft(id: string): void {
+    const s = this.saved().find((x) => x.id === id);
+    const d = this.draft();
+    if (!s || !d) return;
+    this.patchDraft({ parts: [s.hull, s.stern, s.bow, s.bridge] });
+  }
+
+  setDraftMarkRepaired(on: boolean): void {
+    const d = this.draft();
+    if (d?.sub) this.draft.set({ ...d, sub: { ...d.sub, markRepaired: on } });
+  }
+
+  /**
+   * 潛艇配置的「儲存到這艘」:沒填等級的艇先把草稿等級存成這艘的等級(來源 manual),再存配件。
+   * 開著維修提醒且勾了「同時標示已維修」,隨配件一起送。失敗時丟出原始錯誤,草稿保留;兩個請求不是同一個交易,重試是安全的。
+   */
+  async saveSubDraft(): Promise<void> {
+    const d = this.draft();
+    const sub = d?.sub;
+    if (!d || !sub) throw new Error('沒有編輯中的潛艇配置');
+    const [hull, stern, bow, bridge] = d.parts;
+    this.pending.update((n) => n + 1);
+    try {
+      if (!sub.levelFixed) await this.store.setProgress(sub.submarineId, { level: d.level });
+      await this.store.setBuild(sub.submarineId, { hull, stern, bow, bridge, ...(sub.upkeepOn && sub.markRepaired ? { mark_repaired: true } : {}) });
+    } finally {
+      this.pending.update((n) => Math.max(0, n - 1));
+    }
+    this.draft.set(null);
+  }
+
+  /** 潛艇配置的「另存範本」:把草稿的配件(與等級)存成一組配置範本,不改畫面上的配置、不關閉對話框 */
+  async saveDraftAsTemplate(): Promise<RouteSubDto> {
+    const d = this.draft();
+    if (!d) throw new Error('沒有編輯中的配置');
+    const build: Build = { level: d.level, parts: d.parts };
+    const created = await this.write(() => this.api.createRouteSub(this.inputFor(build, defaultSubName(build))));
+    this.setSaved([...this.saved(), created]);
+    return created;
   }
 
   closeConfig(): void {
@@ -289,7 +453,7 @@ export class RouteVm {
 
   setDraftLevel(level: number): void {
     const d = this.draft();
-    if (!d || !Number.isInteger(level) || level < 1 || level > LIMITS.maxRouteSubLevel) return;
+    if (!d || d.sub?.levelFixed || !Number.isInteger(level) || level < 1 || level > LIMITS.maxRouteSubLevel) return;
     this.patchDraft({ level });
   }
 
@@ -325,6 +489,7 @@ export class RouteVm {
       this.useSub(sub.id);
     } else {
       this.subId.set(null);
+      this.wsSubId.set(null);
       this.level.set(d.level);
       this.parts.set(d.parts);
       this.renormalize();
@@ -333,8 +498,8 @@ export class RouteVm {
   }
 
   /**
-   * 「儲存」:edit 模式覆蓋該組(可改名,保留綁定);new / temp 新增一組。`overwriteId` 用於已滿 30 組時改覆蓋另一組
-   * (保留那一組原本的名稱與綁定)。成功後草稿成為畫面上的配置並關閉對話框;失敗時丟出原始錯誤,草稿保留。
+   * 「儲存」:edit 模式覆蓋該組(可改名);new / temp 新增一組。`overwriteId` 用於已滿 30 組時改覆蓋另一組
+   * (保留那一組原本的名稱)。成功後草稿成為畫面上的配置並關閉對話框;失敗時丟出原始錯誤,草稿保留。
    */
   async saveDraft(overwriteId?: string): Promise<RouteSubDto> {
     const d = this.draft();
@@ -344,11 +509,12 @@ export class RouteVm {
     const old = targetId ? this.saved().find((s) => s.id === targetId) : undefined;
     if (targetId && !old) throw new Error('找不到這一組儲存潛艇');
     const sub = old
-      ? await this.write(() => this.api.updateRouteSub(old.id, this.inputFor(build, overwriteId ? old.name : d.name, old.bound_submarine_ids)))
-      : await this.write(() => this.api.createRouteSub(this.inputFor(build, d.name, [])));
+      ? await this.write(() => this.api.updateRouteSub(old.id, this.inputFor(build, overwriteId ? old.name : d.name)))
+      : await this.write(() => this.api.createRouteSub(this.inputFor(build, d.name)));
     if (old) this.replaceSaved(sub);
     else this.setSaved([...this.saved(), sub]);
     this.subId.set(sub.id);
+    this.wsSubId.set(null);
     this.level.set(build.level);
     this.parts.set([...build.parts]);
     this.renormalize();
@@ -386,6 +552,7 @@ export class RouteVm {
     this.loadError.set(false);
     this.pending.set(0);
     this.subId.set(null);
+    this.wsSubId.set(null);
     this.draft.set(null);
     this.perfOpen.set(false);
     this.pendingLoad.set(null);
@@ -409,51 +576,31 @@ export class RouteVm {
 
   /** 把畫面上的等級與配件存成新的一組;已滿 30 組時伺服器回 409,畫面應改問要覆蓋哪一組 */
   async saveCurrent(name: string): Promise<RouteSubDto> {
-    const created = await this.write(() => this.api.createRouteSub(this.input(name, [])));
+    const created = await this.write(() => this.api.createRouteSub(this.input(name)));
     this.setSaved([...this.saved(), created]);
     this.subId.set(created.id);
+    this.wsSubId.set(null);
     return created;
   }
 
-  /** 用畫面上的等級與配件覆蓋某一組(保留原名稱與綁定;可選擇改名) */
+  /** 用畫面上的等級與配件覆蓋某一組(保留原名稱;可選擇改名) */
   async overwrite(id: string, name?: string): Promise<RouteSubDto> {
     const old = this.saved().find((s) => s.id === id);
-    const updated = await this.write(() => this.api.updateRouteSub(id, this.input(name ?? old?.name ?? '', old?.bound_submarine_ids ?? [])));
+    const updated = await this.write(() => this.api.updateRouteSub(id, this.input(name ?? old?.name ?? '')));
     this.replaceSaved(updated);
     this.subId.set(updated.id);
+    this.wsSubId.set(null);
     return updated;
   }
 
-  /** 只改名稱或綁定,不動等級與配件(用該筆已儲存的值送出) */
-  async updateSub(id: string, patch: { name?: string; bound_submarine_ids?: string[] }): Promise<RouteSubDto> {
+  /** 只改名稱,不動等級與配件(用該筆已儲存的值送出) */
+  async updateSub(id: string, patch: { name?: string }): Promise<RouteSubDto> {
     const old = this.saved().find((s) => s.id === id);
-    if (!old) throw new Error('找不到這一組儲存潛艇');
-    const input: RouteSubInput = {
-      name: patch.name ?? old.name,
-      level: old.level,
-      hull: old.hull,
-      stern: old.stern,
-      bow: old.bow,
-      bridge: old.bridge,
-      bound_submarine_ids: patch.bound_submarine_ids === undefined ? old.bound_submarine_ids : patch.bound_submarine_ids,
-    };
+    if (!old) throw new Error('找不到這一組配置');
+    const input: RouteSubInput = { name: patch.name ?? old.name, level: old.level, hull: old.hull, stern: old.stern, bow: old.bow, bridge: old.bridge };
     const updated = await this.write(() => this.api.updateRouteSub(id, input));
     this.replaceSaved(updated);
-    // 一艘潛艇只綁一組配置:伺服器會把它從別組搬過來,本地同步拿掉
-    if (patch.bound_submarine_ids !== undefined) {
-      const mine = new Set(updated.bound_submarine_ids);
-      this.setSaved(
-        this.saved().map((s) =>
-          s.id === id || !s.bound_submarine_ids.some((x) => mine.has(x)) ? s : { ...s, bound_submarine_ids: s.bound_submarine_ids.filter((x) => !mine.has(x)) },
-        ),
-      );
-    }
     return updated;
-  }
-
-  /** 整組取代綁定的工坊潛艇(RS-26 ①;同一組配置可綁多艘);空陣列 = 全部解除 */
-  bind(id: string, submarineIds: string[]): Promise<RouteSubDto> {
-    return this.updateSub(id, { bound_submarine_ids: submarineIds });
   }
 
   private favChain: Promise<void> = Promise.resolve();
@@ -499,13 +646,13 @@ export class RouteVm {
 
   // ---- 內部 ----
 
-  private input(name: string, bound: string[]): RouteSubInput {
-    return this.inputFor(this.build(), name, bound);
+  private input(name: string): RouteSubInput {
+    return this.inputFor(this.build(), name);
   }
 
-  private inputFor(build: Build, name: string, bound: string[]): RouteSubInput {
+  private inputFor(build: Build, name: string): RouteSubInput {
     const [hull, stern, bow, bridge] = build.parts;
-    return { name: name.trim(), level: build.level, hull, stern, bow, bridge, bound_submarine_ids: bound };
+    return { name: name.trim(), level: build.level, hull, stern, bow, bridge };
   }
 
   private async write<T>(fn: () => Promise<T>): Promise<T> {

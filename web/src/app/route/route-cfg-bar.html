@@ -1,20 +1,34 @@
 <div class="rt-cfgbar" role="group" aria-label="使用的配置">
-  @if (vm.canSave && vm.loaded() && vm.saved().length === 0) {
+  @if (vm.canSave && vm.loaded() && vm.saved().length === 0 && vm.source() !== 'ws') {
     <div class="rt-cfg-banner">
       <span>目前使用預設配置(Lv{{ vm.level() }},配件全 1 級){{ hint() ? ',' + hint() : '' }}。</span>
       <button type="button" class="rt-link-btn" (click)="vm.setTab('config')">設定配置</button>
     </div>
   }
-  <div class="rt-cfg-row">
+  <div class="rt-src-row">
     @if (vm.canSave) {
-      <app-select class="rt-cfg-select" size="compact" ariaLabel="使用的配置" [collapsible]="true" groupMemory="route-subs" [options]="options()" [value]="value()" (valueChange)="onChange($event)" />
+      <div class="rt-src" [class.act]="vm.source() === 'config'" [class.off]="vm.source() === 'ws'">
+        <span class="rt-src-lb">配置@if (vm.source() === 'config') { <app-icon name="check" [size]="13" /> }@if (vm.source() === 'ws') { <app-icon name="lock" [size]="13" /> }</span>
+        @if (vm.source() === 'ws') {
+          <button type="button" class="rt-src-lock" aria-label="配置:改用配置範本(會清除工坊潛艇的選擇)" (click)="vm.detachWsSub()"><span>使用工坊潛艇中・點此改用配置</span></button>
+        } @else {
+          <div class="rt-src-box">
+            <app-select class="rt-cfg-select" size="compact" ariaLabel="使用的配置" [collapsible]="true" groupMemory="route-subs" [options]="options()" [value]="value()" (valueChange)="onChange($event)" />
+            @if (vm.source() === 'config') {
+              <button type="button" class="rt-src-x" aria-label="清除配置的選擇" (click)="vm.detachSub()"><app-icon name="close" [size]="13" /></button>
+            }
+          </div>
+        }
+      </div>
     } @else {
       <span class="rt-cfg-fixed">目前配置</span>
     }
+  </div>
+  <div class="rt-cfg-row">
     @if (showPerf()) {
       <button type="button" class="rt-save-btn" (click)="vm.perfOpen.set(true)">查看性能</button>
     }
-    <button type="button" class="rt-link-btn" (click)="vm.editCurrent()">編輯</button>
+    <button type="button" class="rt-link-btn" (click)="vm.editCurrent()">{{ editLabel() }}</button>
     @if (showNew() && vm.canSave) {
       <button type="button" class="rt-link-btn" (click)="vm.openConfig('new')">＋ 新增</button>
     }

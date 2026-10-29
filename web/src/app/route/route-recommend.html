@@ -1,11 +1,23 @@
 <div class="rt-subhead">
   <button type="button" class="rt-link-btn" (click)="back()">‹ 航線</button>
   <b>找路線</b>
+  <button type="button" class="rt-link-btn rt-cond-toggle" [attr.aria-expanded]="vm.condOpen()" aria-controls="rt-cond" (click)="vm.condOpen.set(!vm.condOpen())">
+    {{ vm.condOpen() ? '收合設定' : '展開設定' }}<app-icon [name]="vm.condOpen() ? 'chevronUp' : 'chevronDown'" [size]="14" />
+  </button>
 </div>
 
-<app-route-cfg-bar [showPerf]="false" [showNew]="false" hint="結果會偏保守" />
-
-<app-route-filter-bar />
+<div id="rt-cond">
+  @if (vm.condOpen()) {
+    <app-route-chart-bar />
+    <app-route-cfg-bar [showPerf]="false" [showNew]="false" hint="結果會偏保守" />
+    <app-route-filter-bar />
+  } @else {
+    <button type="button" class="rt-block rt-cond-sum" aria-label="展開設定" (click)="vm.condOpen.set(true)">
+      <span class="rt-cond-sum-main">{{ summary() }}</span>
+      @if (filterName(); as n) { <span class="rt-cond-sum-sub">條件組合:{{ n }}</span> }
+    </button>
+  }
+</div>
 
 <app-route-find />
 

@@ -43,13 +43,12 @@ export class UpdatePage implements OnDestroy {
   private pasteTimer: ReturnType<typeof setTimeout> | undefined;
   protected readonly wsOptions = computed(() => this.store.workshops().map((w) => ({ value: w.id, label: w.name })));
   private readonly dispatch = inject(DispatchVm);
-  /** 這間工坊有練級輔助開著(且未滿 85 級)的艇:截圖辨識等上傳時顯示派出建議(D-291) */
+  /** 這間工坊有航線輔助開著的艇:截圖辨識等上傳時顯示派出建議(D-291) */
   private readonly hasPlan = computed(() => {
     const ws = this.vm.workshop();
     const now = this.store.now();
     return !!ws && ws.submarines.some((s) => {
-      const i = this.dispatch.info(s, now);
-      return i !== null && !i.start.over;
+      return this.dispatch.info(s, now) !== null;
     });
   });
   protected readonly split = computed(() => this.vm.mode() === 'ocr' && this.vm.ocrPhase() !== 'review' && this.hasPlan());

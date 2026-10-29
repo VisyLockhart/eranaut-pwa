@@ -1,6 +1,8 @@
 import {
-  LEVELING_SCHOOLS,
+  ASSIST_MAX_HOURS,
   MAX_RECORDED_LEVEL,
+  ROUTE_PART_KEYS,
+  ROUTE_PART_MAX,
   UPKEEP_LIMITS,
   clampExp,
   levelExp,
@@ -10,12 +12,13 @@ import {
   upkeepLimitFor,
   upkeepPartsSig,
   upkeepRoute,
-  type LevelingSchool,
+  type AssistMode,
+  type BuildDto,
+  type BuildInput,
   type ProgressDto,
   type ProgressInput,
   type ProgressRoute,
   type ProgressSource,
-  type RouteSubDto,
   type SubmarineDto,
   type SubmarineStatus,
   type UpkeepDto,
@@ -43,8 +46,10 @@ export interface ProgressRow {
   level: number;
   exp_in_level: number;
   source: ProgressSource;
-  sim_on: boolean;
-  school: LevelingSchool | null;
+  assist_on: boolean;
+  assist_mode: AssistMode;
+  max_hours: number | null;
+  filter_id: string | null;
   pending: (ProgressRoute & { exp: number }) | null;
   last: ProgressRoute | null;
   updated_at: string;
@@ -67,10 +72,40 @@ export function hasReturned(s: Phase, now: number): boolean {
   return s.status === 'complete' || (s.expected_return_at !== null && Date.parse(s.expected_return_at) <= now);
 }
 
-/** 這艘潛艇目前綁定的配置零件;沒綁定回 undefined */
-export function boundParts(routeSubs: readonly RouteSubDto[], submarineId: string): UpkeepParts | undefined {
-  const r = routeSubs.find((x) => x.bound_submarine_ids.includes(submarineId));
-  return r ? { hull: r.hull, stern: r.stern, bow: r.bow, bridge: r.bridge } : undefined;
+/** 這艘潛艇自己的配件(D-296);沒設定回 undefined */
+export function buildParts(build: BuildDto | undefined): UpkeepParts | undefined {
+  return build ? { hull: build.hull, stern: build.stern, bow: build.bow, bridge: build.bridge } : undefined;
+}
+
+/** 配件欄位驗證(同 api/src/services/build.ts) */
+export function parseBuildInput(u: unknown): BuildInput | 'invalid' {
+  if (typeof u !== 'object' || u === null || Array.isArray(u)) return 'invalid';
+  const o = u as Record<string, unknown>;
+  const out = {} as BuildInput;
+  for (const k of ROUTE_PART_KEYS) {
+    const v = o[k];
+    if (!int(v, 1, ROUTE_PART_MAX)) return 'invalid';
+    out[k] = v;
+  }
+  if (o['mark_repaired'] !== undefined) {
+    if (typeof o['mark_repaired'] !== 'boolean') return 'invalid';
+    out.mark_repaired = o['mark_repaired'];
+  }
+  return out;
+}
+
+/** 設定配件;`mark_repaired` 且有維修提醒:趟數歸 0,零件簽名與上限依新配件重算 */
+export function applyBuild(upkeep: UpkeepRow | undefined, input: BuildInput, now: number): BuildDto {
+  const parts = { hull: input.hull, stern: input.stern, bow: input.bow, bridge: input.bridge };
+  const t = new Date(now).toISOString();
+  if (input.mark_repaired && upkeep) {
+    upkeep.voyages_done = 0;
+    upkeep.repaired_at = t;
+    upkeep.parts_sig = upkeepPartsSig(parts);
+    upkeep.limit_voyages = upkeepLimitFor(parts, upkeep.route_key) ?? upkeep.limit_voyages;
+    upkeep.updated_at = t;
+  }
+  return { ...parts, updated_at: t };
 }
 
 export function upkeepDto(row: UpkeepRow, parts: UpkeepParts | undefined): UpkeepDto {
@@ -83,8 +118,10 @@ export function progressDto(row: ProgressRow, returned: boolean): ProgressDto {
     level: row.level,
     exp_in_level: row.exp_in_level,
     source: row.source,
-    sim_on: row.sim_on,
-    school: row.school,
+    assist_on: row.assist_on,
+    assist_mode: row.assist_mode,
+    max_hours: row.max_hours,
+    filter_id: row.filter_id,
     pending: row.pending ? { ...row.pending, points: [...row.pending.points] } : null,
     last_route: row.last ? { sea: row.last.sea, points: [...row.last.points] } : null,
     effective_level: eff.level,
@@ -130,13 +167,21 @@ export function parseProgressInput(u: unknown): ProgressInput | null | undefined
     if (o['source'] !== 'manual' && o['source'] !== 'ocr') return 'invalid';
     out.source = o['source'];
   }
-  if (o['sim_on'] !== undefined) {
-    if (typeof o['sim_on'] !== 'boolean') return 'invalid';
-    out.sim_on = o['sim_on'];
+  if (o['assist_on'] !== undefined) {
+    if (typeof o['assist_on'] !== 'boolean') return 'invalid';
+    out.assist_on = o['assist_on'];
   }
-  if (o['school'] !== undefined) {
-    if (o['school'] !== null && !(LEVELING_SCHOOLS as readonly unknown[]).includes(o['school'])) return 'invalid';
-    out.school = o['school'] as ProgressInput['school'];
+  if (o['assist_mode'] !== undefined) {
+    if (o['assist_mode'] !== 'level' && o['assist_mode'] !== 'combo') return 'invalid';
+    out.assist_mode = o['assist_mode'];
+  }
+  if (o['max_hours'] !== undefined) {
+    if (o['max_hours'] !== null && !ASSIST_MAX_HOURS.includes(o['max_hours'] as number)) return 'invalid';
+    out.max_hours = o['max_hours'] as number | null;
+  }
+  if (o['filter_id'] !== undefined) {
+    if (o['filter_id'] !== null && (typeof o['filter_id'] !== 'string' || o['filter_id'].length === 0 || o['filter_id'].length > 64)) return 'invalid';
+    out.filter_id = o['filter_id'] as string | null;
   }
   if (o['route'] !== undefined) {
     if (o['route'] === null) out.route = null;
@@ -152,10 +197,10 @@ export function parseProgressInput(u: unknown): ProgressInput | null | undefined
 
 // ---- 寫入規則 ----
 
-/** 開啟維修提醒(「開啟的這次更新」算第 1 趟);沒綁定配置、路線 / 零件沒有資料、趟數不合理都拒絕 */
+/** 開啟維修提醒(「開啟的這次更新」算第 1 趟);沒設定配件、路線 / 零件沒有資料、趟數不合理都拒絕 */
 export function enableUpkeep(parts: UpkeepParts | undefined, input: UpkeepInput, status: SubmarineStatus, now: number, position?: number): UpkeepRow {
   const route = upkeepRoute(input.route_key);
-  if (!parts) throw new DemoRejected('upkeep', 'not_bound', position);
+  if (!parts) throw new DemoRejected('upkeep', 'no_build', position);
   const computed = route ? upkeepLimitFor(parts, route.key) : null;
   if (!route || computed === null) throw new DemoRejected('upkeep', 'unsupported', position);
   const limit = input.limit_voyages ?? computed;
@@ -210,7 +255,14 @@ export function settleOnDispatch(row: ProgressRow, prev: Phase, next: { status: 
 }
 
 /** 套用等級資料(同正式版 applyProgressInput);回傳新的列 */
-export function applyProgressInput(cur: ProgressRow | undefined, input: ProgressInput, status: SubmarineStatus, now: number, position?: number): ProgressRow {
+export function applyProgressInput(
+  cur: ProgressRow | undefined,
+  input: ProgressInput,
+  status: SubmarineStatus,
+  now: number,
+  ownsFilter: (id: string) => boolean,
+  position?: number,
+): ProgressRow {
   if (!cur && input.level === undefined) throw new DemoRejected('progress', 'level_required', position);
   const level = input.level ?? cur!.level;
   const levelChanged = cur !== undefined && level !== cur.level;
@@ -230,13 +282,18 @@ export function applyProgressInput(cur: ProgressRow | undefined, input: Progress
     if (e === null || status !== 'exploring') throw new DemoRejected('progress', 'invalid_value', position);
     pending = { sea: input.route.sea, points: [...input.route.points], exp: e };
   }
+  const filterId = input.filter_id === undefined ? (cur?.filter_id ?? null) : input.filter_id;
+  // 條件組合只能選自己的條件
+  if (filterId !== null && filterId !== (cur?.filter_id ?? null) && !ownsFilter(filterId)) throw new DemoRejected('progress', 'invalid_value', position);
   const last = input.route ? { sea: input.route.sea, points: [...input.route.points] } : (cur?.last ?? null);
   return {
     level,
     exp_in_level: exp,
     source: ocr ? 'ocr' : input.level !== undefined || input.exp_in_level !== undefined ? 'manual' : (cur?.source ?? 'manual'),
-    sim_on: input.sim_on ?? cur?.sim_on ?? false,
-    school: input.school === undefined ? (cur?.school ?? null) : input.school,
+    assist_on: input.assist_on ?? cur?.assist_on ?? false,
+    assist_mode: input.assist_mode ?? cur?.assist_mode ?? 'level',
+    max_hours: input.max_hours === undefined ? (cur?.max_hours ?? null) : input.max_hours,
+    filter_id: filterId,
     pending,
     last,
     updated_at: new Date(now).toISOString(),

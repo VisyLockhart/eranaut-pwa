@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import type { UpkeepPatch } from '@eranaut/shared';
 import { Toast } from '../core/toast';
-import { RouterLink } from '@angular/router';
 import { UPKEEP_LIMITS, upkeepOptionsFor, upkeepPartsLabel, upkeepPartsSig, type SubmarineDto, type SubmarineStatus } from '@eranaut/shared';
 import { OverviewVm } from '../core/overview-vm';
 import { clampLimit, upkeepItem, upkeepNote, upkeepRouteLabel, type QuickUpkeepDraft } from '../core/upkeep-vm';
@@ -16,25 +15,22 @@ import { IconComponent } from '../ui/icon';
  */
 @Component({
   selector: 'app-upkeep-field',
-  imports: [IconComponent, RouterLink],
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (routeVm.canSave) {
       @switch (mode()) {
-        @case ('loading') {
-          <div class="uk-field dim"><app-icon name="wrench" [size]="20" /><span class="uk-main"><b>配件維修提醒</b><small>讀取配置中…</small></span></div>
-        }
-        @case ('unbound') {
-          <a class="uk-field dim dashed" routerLink="/gear" (click)="leave()">
+        @case ('nobuild') {
+          <button type="button" class="uk-field dim dashed" (click)="setBuild()">
             <app-icon name="wrench" [size]="20" />
-            <span class="uk-main"><b>配件維修提醒</b><small>先到「配件 → 清單」把這艘綁到一組配置</small></span>
+            <span class="uk-main"><b>配件維修提醒</b><small>先設定這艘的配件配置</small></span>
             <app-icon name="chevronRight" [size]="14" />
-          </a>
+          </button>
         }
         @case ('unsupported') {
           <div class="uk-field dim">
             <app-icon name="wrench" [size]="20" />
-            <span class="uk-main"><b>配件維修提醒</b><small>配置「{{ configLabel() }}」還沒有耐久資料，暫不支援</small></span>
+            <span class="uk-main"><b>配件維修提醒</b><small>配件「{{ configLabel() }}」還沒有耐久資料，暫不支援</small></span>
             <span class="uk-chip">即將支援</span>
           </div>
         }
@@ -49,8 +45,8 @@ import { IconComponent } from '../ui/icon';
               <b>配件維修提醒</b>
               @switch (mode()) {
                 @case ('tracked') { <small>{{ tracked()!.label }}・{{ routeLabel() }}</small> }
-                @case ('setup') { <small>配置「{{ configLabel() }}」・{{ routeLabel() }}</small> }
-                @default { <small>配置「{{ configLabel() }}」・{{ options()[0]!.route.label }} 可追蹤</small> }
+                @case ('setup') { <small>配件「{{ configLabel() }}」・{{ routeLabel() }}</small> }
+                @default { <small>配件「{{ configLabel() }}」・{{ options()[0]!.route.label }} 可追蹤</small> }
               }
             </span>
             <label class="switch">
@@ -59,7 +55,7 @@ import { IconComponent } from '../ui/icon';
             </label>
           </div>
           @if (mode() === 'tracked' && tracked()!.configChanged) {
-            <div class="uk-warn" role="status">這艘綁定的配置和開啟提醒時不同。若已換新零件，請到「總覽」的維修面板標示已維修。</div>
+            <div class="uk-warn" role="status">這艘的配件和開啟提醒時不同。若已換新零件，請到「總覽」的維修面板標示已維修，或在配件配置裡勾選「同時標示已維修」。</div>
           }
           @if (mode() === 'tracked' && adjusting() && tracked(); as t) {
             <div class="uk-setup">
@@ -145,19 +141,14 @@ export class UpkeepField {
   protected readonly maxV = UPKEEP_LIMITS.maxVoyages;
   protected readonly upkeepRouteLabel = upkeepRouteLabel;
 
-  constructor() {
-    // 需要知道這艘綁了哪一組配置;沒載入過就載入(RouteVm 自己避免重複啟動)
-    this.routeVm.start();
-  }
-
-  /** 這艘綁定的配置;沒綁回 undefined */
-  private readonly bound = computed(() => this.routeVm.saved().find((r) => r.bound_submarine_ids.includes(this.sub().id)));
+  /** 這艘自己的配件(D-296);還沒設定回 undefined */
+  private readonly build = computed(() => this.sub().build);
   protected readonly options = computed(() => {
-    const b = this.bound();
+    const b = this.build();
     return b ? upkeepOptionsFor({ hull: b.hull, stern: b.stern, bow: b.bow, bridge: b.bridge }) : [];
   });
   protected readonly configLabel = computed(() => {
-    const b = this.bound();
+    const b = this.build();
     return b ? upkeepPartsLabel(upkeepPartsSig({ hull: b.hull, stern: b.stern, bow: b.bow, bridge: b.bridge })) : '';
   });
   protected readonly tracked = computed(() => upkeepItem(this.sub(), this.store.now()));
@@ -172,13 +163,12 @@ export class UpkeepField {
     return d?.enabled ? upkeepNote(d, this.status() === 'exploring') : '';
   });
 
-  /** loading / unbound / unsupported / tracked(已開啟,沒動過)/ setup(正在設定)/ off(可開啟) */
+  /** nobuild(還沒設定配件)/ unsupported / tracked(已開啟,沒動過)/ setup(正在設定)/ off(可開啟) */
   protected readonly mode = computed(() => {
     const d = this.draft();
     if (d?.enabled) return 'setup';
     if (d === null && this.sub().upkeep) return 'tracked';
-    if (!this.routeVm.loaded() && !this.bound()) return 'loading';
-    if (!this.bound()) return 'unbound';
+    if (!this.build()) return 'nobuild';
     if (this.options().length === 0) return 'unsupported';
     return 'off';
   });
@@ -229,8 +219,8 @@ export class UpkeepField {
     this.draft.update((d) => (d ? { ...d, ...change } : d));
   }
 
-  /** 到配件清單綁定配置：先關掉快速修改，避免對話框蓋住頁面 */
-  protected leave(): void {
-    this.overview.closeQuickEdit();
+  /** 打開這艘的配件配置對話框(蓋在快速修改上面;存好後回到這裡) */
+  protected setBuild(): void {
+    this.routeVm.openSubBuild(this.sub().id);
   }
 }

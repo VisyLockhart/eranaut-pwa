@@ -138,8 +138,7 @@ describe('RoutePage', () => {
     const find = (t: string) => [...el.querySelectorAll<HTMLButtonElement>('.rt-cfgbar button')].find((b) => b.textContent?.trim() === t)!;
     find('編輯').click();
     f.detectChanges();
-    expect(vm.draft()?.mode).toBe('temp');
-    expect(el.querySelector('.rt-dlg')).not.toBeNull();
+    expect(vm.draft()?.mode).toBe('temp'); // 對話框本身掛在 app 外殼,這裡只確認草稿已開啟
     vm.closeConfig();
     find('＋ 新增').click();
     expect(vm.draft()?.mode).toBe('new');

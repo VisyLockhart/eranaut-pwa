@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import type { NotifyPrefs, RouteFilterDto, RouteSubDto, WorkshopWithSubmarines } from '@eranaut/shared';
+import type { BuildDto, NotifyPrefs, RouteFilterDto, RouteSubDto, WorkshopWithSubmarines } from '@eranaut/shared';
 import { CRAFT_STORAGE_KEYS } from '../craft/craft-keys';
 import { removeKey } from '../core/storage';
 import { ORDER_KEY } from '../core/workshop-order';
@@ -9,8 +9,8 @@ import type { ProgressRow, UpkeepRow } from './demo-levels';
 import { seedDemo } from './demo-data';
 
 const KEY = 'eranaut.demo';
-/** 存檔格式版本:加了維修提醒、等級、儲存配置與條件組合(D-292),3 = 工坊多了海圖探索紀錄(D-293)。舊版存檔直接換成新的假資料 */
-const VERSION = 3;
+/** 存檔格式版本:加了維修提醒、等級、儲存配置與條件組合(D-292),3 = 工坊多了海圖探索紀錄(D-293),4 = 潛艇自己的配件、航線輔助欄位、排序多重(D-296~D-298)。舊版存檔直接換成新的假資料 */
+const VERSION = 4;
 
 interface DemoState {
   v: number;
@@ -21,7 +21,9 @@ interface DemoState {
   upkeep: Record<string, UpkeepRow>;
   /** 以潛艇 id 為鍵;有資料 = 有填等級(D-289) */
   progress: Record<string, ProgressRow>;
-  /** 儲存的配置與綁定(RS-25、RS-26) */
+  /** 以潛艇 id 為鍵;有資料 = 已設定配件(D-296) */
+  build: Record<string, BuildDto>;
+  /** 儲存的配置(RS-25、RS-26) */
   routeSubs: RouteSubDto[];
   /** 條件組合(D-229) */
   routeFilters: RouteFilterDto[];
@@ -30,7 +32,7 @@ interface DemoState {
 }
 
 function fresh(): DemoState {
-  return { v: VERSION, signedIn: true, prefs: { dm: true, channel: false, push: false }, maintenance: false, routeFilters: [], ...seedDemo(Date.now()) };
+  return { v: VERSION, signedIn: true, prefs: { dm: true, channel: false, push: false }, maintenance: false, ...seedDemo(Date.now()) };
 }
 
 /** 展示資料的存放處:記憶體 + localStorage(重新整理後保留;無法使用 localStorage 時退回只在記憶體) */
@@ -86,6 +88,9 @@ export class DemoStore {
   get progress(): Record<string, ProgressRow> {
     return this.state.progress;
   }
+  get build(): Record<string, BuildDto> {
+    return this.state.build;
+  }
   get routeSubs(): RouteSubDto[] {
     return this.state.routeSubs;
   }
@@ -107,14 +112,13 @@ export class DemoStore {
     this.save();
   }
 
-  /** 刪掉工坊時,連帶清掉那些潛艇的維修提醒、等級與配置綁定(正式版是資料庫的 ON DELETE CASCADE) */
+  /** 刪掉工坊時,連帶清掉那些潛艇的維修提醒、等級與配件(正式版是資料庫的 ON DELETE CASCADE) */
   forgetSubmarines(ids: readonly string[]): void {
-    const gone = new Set(ids);
     for (const id of ids) {
       delete this.state.upkeep[id];
       delete this.state.progress[id];
+      delete this.state.build[id];
     }
-    this.state.routeSubs = this.state.routeSubs.map((r) => ({ ...r, bound_submarine_ids: r.bound_submarine_ids.filter((x) => !gone.has(x)) }));
   }
 
   /** 重設為全新的假資料(保留登入狀態) */

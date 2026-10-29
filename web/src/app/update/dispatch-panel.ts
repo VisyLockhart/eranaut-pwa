@@ -1,18 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
-import { LEVELING_SCHOOLS, LEVELING_SCHOOL_LABEL, type WorkshopWithSubmarines } from '@eranaut/shared';
+import type { WorkshopWithSubmarines } from '@eranaut/shared';
 import { DataStore } from '../core/data-store';
-import { unlockText, type ViewSchool } from '../core/dispatch';
+import { unlockText, type AssistView } from '../core/dispatch';
 import { DispatchVm, type DispatchInfo, type DispatchOption } from '../core/dispatch-vm';
 import { circled, displayFor } from '../core/format';
 import { fmtExp, lvUp, minutesText, routeText } from '../core/leveling-vm';
 import { IconComponent } from '../ui/icon';
 
-const SHORT: Record<ViewSchool, string> = { pref: '偏好', snap: '掐點', half: '半日', day: '整日' };
+const VIEWS: readonly AssistView[] = ['pref', 'level', 'combo'];
+const LONG: Record<AssistView, string> = { pref: '各艇設定', level: '練級', combo: '條件組合' };
+const SHORT: Record<AssistView, string> = { pref: '各艇', level: '練級', combo: '條件組合' };
 
 /**
- * 更新頁的「下一趟派出建議」(D-291):上傳截圖 / 手動輸入之前就看得到每艘下一趟該派哪條。
- * 目前等級 + 上一趟待結算的經驗 → 返航後(出發時)的等級 → 該流派的推薦路線。
- * 上方可暫時切換流派檢視(不改各艇的偏好);點一艘展開三個流派的比較。只列練級輔助開著的艇。
+ * 更新頁的「航線輔助」(D-291、D-297):上傳截圖 / 手動輸入之前就看得到每艘下一趟該派哪條。
+ * 目前等級 + 上一趟待結算的經驗 → 返航後(出發時)的等級 → 練級(最長航行時間內經驗最多)或條件組合(已儲存條件的第 1 名)。
+ * 上方可暫時切換模式檢視(不改各艇的設定);點一艘展開比較。列出航線輔助開著的艇;沒有配置的艇鎖住並說明。
  */
 @Component({
   selector: 'app-dispatch-panel',
@@ -23,19 +25,19 @@ const SHORT: Record<ViewSchool, string> = { pref: '偏好', snap: '掐點', half
       <section class="dp-panel" [class.m]="!desktop()" aria-labelledby="dp-title">
         <div class="dp-head">
           <div class="dp-title-wrap">
-            <h2 class="dp-title" id="dp-title"><app-icon name="levelUp" [size]="18" />下一趟派出建議</h2>
-            @if (desktop()) { <small class="dp-sub">目前等級＋上一趟路線的經驗 → 返航後等級 → 該等級的推薦路線</small> }
+            <h2 class="dp-title" id="dp-title"><app-icon name="levelUp" [size]="18" />航線輔助</h2>
+            @if (desktop()) { <small class="dp-sub">目前等級＋上一趟路線的經驗 → 返航後等級 → 練級或條件組合的推薦路線</small> }
             @else { <small class="dp-sub">依返航後等級推算</small> }
           </div>
-          <div class="ct-seg dp-seg" role="group" aria-label="流派檢視">
+          <div class="ct-seg dp-seg" role="group" aria-label="模式檢視">
             @for (v of views; track v) {
-              <button type="button" [class.on]="vm.view() === v" [attr.aria-pressed]="vm.view() === v" (click)="vm.view.set(v)">{{ desktop() ? label(v) : short[v] }}</button>
+              <button type="button" [class.on]="vm.view() === v" [attr.aria-pressed]="vm.view() === v" (click)="vm.view.set(v)">{{ desktop() ? long[v] : short[v] }}</button>
             }
           </div>
         </div>
         <ul class="dp-list">
           @for (c of cards(); track c.i.sub.id) {
-            <li class="dp-card" [class.ready]="c.i.start.returned" [class.open]="openId() === c.i.sub.id">
+            <li class="dp-card" [class.ready]="c.i.start.returned && !c.i.lock" [class.lock]="c.i.lock" [class.open]="openId() === c.i.sub.id">
               <button type="button" class="dp-card-btn" [attr.aria-expanded]="openId() === c.i.sub.id" (click)="toggle(c.i.sub.id)">
                 <span class="dp-who">
                   <span class="sub-no">{{ circled(c.i.sub.position) }}</span>
@@ -44,11 +46,14 @@ const SHORT: Record<ViewSchool, string> = { pref: '偏好', snap: '掐點', half
                     @if (c.i.start.fromLevel !== c.i.start.level) { Lv {{ c.i.start.fromLevel }} → <b>{{ c.i.start.level }}</b> <i class="dp-up">▲{{ c.i.start.level - c.i.start.fromLevel }}</i> }
                     @else { Lv <b>{{ c.i.start.level }}</b> }
                   </span>
-                  <span class="dp-when" [class.ok]="c.i.start.returned">{{ c.when }}</span>
+                  @if (c.i.lock) { <span class="dp-tag warn">無法使用</span> }
+                  @else { <span class="dp-when" [class.ok]="c.i.start.returned">{{ c.when }}</span> }
                 </span>
-                @if (c.o; as o) {
+                @if (c.i.lock) {
+                  <small class="dp-note warn">還沒設定配件，算不出速度與距離。到快速修改的「配件配置」設定後就能用。</small>
+                } @else if (c.o; as o) {
                   <span class="dp-route">
-                    <span class="dp-tag">{{ desktop() ? o.label : shortOf(o) }}@if (o.pref && desktop()) {・偏好}</span>
+                    <span class="dp-tag">{{ o.label }}</span>
                     @if (o.unlock) { <span class="dp-tag unlock">{{ unlockText(o.unlock) }}</span> }
                     @if (o.plan.sea === 2) { <span class="dp-tag sea">灰海</span> }
                     @if (o.avoided?.length && o.calc) { <span class="dp-tag chart">已避開未發現的點</span> }
@@ -59,33 +64,43 @@ const SHORT: Record<ViewSchool, string> = { pref: '偏好', snap: '掐點', half
                       @if (desktop() && c.back) { <span>{{ c.i.start.returned ? '現在出發' : '返航後出發' }}約 {{ c.back }} 回</span> }
                     </span>
                   </span>
-                  @if (c.allSame && desktop()) { <small class="dp-note">三種流派都是這條</small> }
+                  @if (o.fallback) { <small class="dp-note warn">條件組合：{{ o.fallback }}，這艘先顯示練級推薦。</small> }
                   @if (c.i.toGray) { <small class="dp-note warn">抵達 Lv 50 後，下一趟起改走灰海</small> }
                   @if (o.prereq) { <small class="dp-note">解鎖點還沒發現：這趟先去 {{ o.prereq }}，回來後解鎖點才會出現在海圖上</small> }
                   @else if (o.unlock) { <small class="dp-note">工坊還有潛艇欄位沒解鎖，優先跑含解鎖點的路線@if (o.calc) {（依配置推算）}</small> }
                   @else if (o.avoided?.length) { <small class="dp-note">@if (o.calc) {攻略路線含還沒發現的 {{ o.avoided.join('、') }}，改推已發現的點裡最好的路線} @else {攻略路線含還沒發現的 {{ o.avoided.join('、') }}，請先更新海圖或確認}</small> }
-                  @else if (o.calc) { <small class="dp-note">這艘的配置走不了攻略路線，改依配置推算</small> }
+                  @if (o.relaxedTo) { <small class="dp-note">最長 {{ c.i.maxHours }} 小時內沒有路線，放寬到 {{ o.relaxedTo }} 小時</small> }
                   @if (o.plan.problem === 'range') { <small class="dp-note warn">以這艘的配置，距離不夠（{{ o.plan.range }} / {{ o.plan.rangeCap }}）</small> }
-                  @if (c.i.parts === null && c.i.guideConfig) { <small class="dp-note warn">還沒綁定配置，時間依攻略配置 {{ c.i.guideConfig.join('') }} 推算</small> }
                 } @else {
                   <small class="dp-note">這個等級沒有推薦路線</small>
                 }
               </button>
-              @if (openId() === c.i.sub.id) {
-                <ul class="dp-more" aria-label="各流派比較">
-                  @for (o of c.i.options; track o.key) {
-                    <li>
-                      <span class="dp-more-k">{{ o.label }}@if (o.pref) { <i class="lv-badge">偏好</i> }</span>
-                      <b class="mono">{{ routeText(o.plan.points) }}</b>
-                      <small>
-                        @if (o.plan.minutes !== null) { 航行 {{ time(o.plan.minutes) }}・ }
-                        +{{ fmt(o.plan.exp) }} {{ up(c.i.start.level, o.after) }}
-                        @if (o.sameAs) {・與{{ o.sameAs }}相同}
-                        @if (o.unlock) {・{{ unlockText(o.unlock) }}}
-                      </small>
-                    </li>
-                  }
-                </ul>
+              @if (openId() === c.i.sub.id && !c.i.lock) {
+                @if (c.i.mode === 'level') {
+                  <ul class="dp-more" aria-label="各最長航行時間比較">
+                    @for (o of openTiers(); track o.key) {
+                      <li>
+                        <span class="dp-more-k">{{ o.label }}@if (o.key === c.i.current?.key || o.label === c.i.current?.label) { <i class="lv-badge">目前</i> }</span>
+                        <b class="mono">{{ routeText(o.plan.points) }}</b>
+                        <small>
+                          @if (o.plan.minutes !== null) { 航行 {{ time(o.plan.minutes) }}・ }
+                          +{{ fmt(o.plan.exp) }} {{ up(c.i.start.level, o.after) }}
+                          @if (o.sameAs) {・與{{ o.sameAs }}相同}
+                          @if (o.unlock) {・{{ unlockText(o.unlock) }}}
+                        </small>
+                      </li>
+                    }
+                  </ul>
+                } @else if (c.i.combo; as cb) {
+                  <p class="dp-more-note">
+                    @switch (cb.state) {
+                      @case ('ok') { 依「{{ cb.name }}」的條件，取第 1 名。條件在「航線 → 找路線 → 條件組合」建立與修改。 }
+                      @case ('none') { 「{{ cb.name }}」：{{ cb.reason }}。 }
+                      @case ('missing') { 這艘還沒選條件組合（或選的條件已被刪除）。到快速修改的「航線輔助」選一組。 }
+                      @default { 條件組合還在載入… }
+                    }
+                  </p>
+                }
               }
             </li>
           }
@@ -101,7 +116,8 @@ export class DispatchPanel {
 
   protected readonly vm = inject(DispatchVm);
   private readonly store = inject(DataStore);
-  protected readonly views: ViewSchool[] = ['pref', ...LEVELING_SCHOOLS];
+  protected readonly views = VIEWS;
+  protected readonly long = LONG;
   protected readonly short = SHORT;
   protected readonly circled = circled;
   protected readonly routeText = routeText;
@@ -113,31 +129,28 @@ export class DispatchPanel {
 
   constructor() {
     effect(() => {
-      if (this.workshop().submarines.some((s) => s.progress?.sim_on)) untracked(() => this.vm.start());
+      if (this.workshop().submarines.some((s) => s.progress?.assist_on)) untracked(() => this.vm.start());
     });
   }
 
-  protected shortOf(o: DispatchOption): string {
-    return o.key in SHORT ? SHORT[o.key as ViewSchool] : o.label;
-  }
-
-  protected label(v: ViewSchool): string {
-    return v === 'pref' ? '各艇偏好' : LEVELING_SCHOOL_LABEL[v];
-  }
+  /** 展開的那一艘的各最長航行時間比較(只在展開時算,計算量較大) */
+  protected readonly openTiers = computed<DispatchOption[]>(() => {
+    const id = this.openId();
+    const c = id === null ? undefined : this.cards().find((x) => x.i.sub.id === id);
+    return c && c.i.mode === 'level' && !c.i.lock ? this.vm.tiers(c.i) : [];
+  });
 
   protected readonly cards = computed(() => {
     const now = this.store.now();
-    const out: { i: DispatchInfo; o: DispatchOption | null; when: string; back: string | null; allSame: boolean }[] = [];
+    const out: { i: DispatchInfo; o: DispatchOption | null; when: string; back: string | null }[] = [];
     for (const s of [...this.workshop().submarines].sort((a, b) => a.position - b.position)) {
       const i = this.vm.info(s, now);
-      if (!i || i.start.over) continue;
+      if (!i) continue;
       const o = i.current;
       const when = i.start.returned ? '可收・現在就能派' : `${displayFor(false, i.start.returnAt, now).shortTime}後返航`;
       const departAt = i.start.returnAt ?? now;
       const back = o && o.plan.minutes !== null ? displayFor(false, departAt + o.plan.minutes * 60_000, now).hint.replace(/^約 /, '今天 ').replace(/^明 /, '明天 ') : null;
-      const schools = i.options.filter((x) => x.key !== 'last');
-      const allSame = schools.length > 1 && schools.every((x) => x === schools[0] || x.sameAs !== null);
-      out.push({ i, o, when, back, allSame });
+      out.push({ i, o, when, back });
     }
     return out;
   });

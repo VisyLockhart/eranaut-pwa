@@ -1,14 +1,15 @@
 import type { SubmarineDto, SubmarineStatus, UpkeepInput, UpkeepPatch } from '@eranaut/shared';
 import { UPKEEP_LIMITS, upkeepLimitFor, upkeepPartsSig, upkeepRoute } from '@eranaut/shared';
 import type { Db } from '../db/index.js';
-import { getBoundParts, markRepaired, patchUpkeep, saveUpkeep } from '../repo/upkeep.js';
+import { getBuildParts } from '../repo/build.js';
+import { markRepaired, patchUpkeep, saveUpkeep } from '../repo/upkeep.js';
 
 // 配件維修提醒的開啟與調整(D-288)。驗證在 API;資料集與計算規則在 @eranaut/shared。
 
-/** 開啟維修提醒被拒絕(沒綁定配置、路線 / 零件沒有資料、趟數不合理);呼叫端轉成 400 */
+/** 開啟維修提醒被拒絕(沒設定配件、路線 / 零件沒有資料、趟數不合理);呼叫端轉成 400 */
 export class UpkeepRejected extends Error {
   constructor(
-    readonly reason: 'not_bound' | 'unsupported' | 'invalid_value',
+    readonly reason: 'no_build' | 'unsupported' | 'invalid_value',
     readonly position?: number,
   ) {
     super(`upkeep_rejected: ${reason}`);
@@ -16,13 +17,13 @@ export class UpkeepRejected extends Error {
 }
 
 /**
- * 開啟:依目前綁定的配置零件與選定路線算出上限(未指定時),「開啟的這次更新」算第 1 趟。
+ * 開啟:依這艘目前的配件與選定路線算出上限(未指定時),「開啟的這次更新」算第 1 趟。
  * `already_done` = 開啟前已經跑過幾趟(省略 = 0,剛維修完)。送出探索完成則只記錄已跑的趟數,下次出航才 +1。
  */
 export function enableUpkeep(db: Db, submarineId: string, position: number, input: UpkeepInput, status: SubmarineStatus, now: Date): void {
   const route = upkeepRoute(input.route_key);
-  const parts = getBoundParts(db, submarineId);
-  if (!parts) throw new UpkeepRejected('not_bound', position);
+  const parts = getBuildParts(db, submarineId);
+  if (!parts) throw new UpkeepRejected('no_build', position);
   const computed = route ? upkeepLimitFor(parts, route.key) : null;
   if (!route || computed === null) throw new UpkeepRejected('unsupported', position);
 

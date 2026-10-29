@@ -37,8 +37,6 @@ export const LIMITS = {
   routeSubName: 20,
   maxRouteSubsPerUser: 30,
   maxRouteSubLevel: 130,
-  /** 一組儲存潛艇最多綁幾艘工坊潛艇(只是擋異常輸入;一般使用者的潛艇總數遠少於此) */
-  maxRouteSubBindings: 32,
   /** 找路線的條件組合(D-229):名稱字數、每位使用者組數上限 */
   routeFilterName: 20,
   maxRouteFiltersPerUser: 30,
@@ -51,8 +49,11 @@ export const ROUTE_PART_KEYS = ['hull', 'stern', 'bow', 'bridge'] as const;
 export type RoutePartKey = (typeof ROUTE_PART_KEYS)[number];
 export const ROUTE_PART_MAX = 10;
 
-/** 找路線的條件組合 `spec`(D-229)的排序選項,與前端 `FindSort` 一致 */
-export const ROUTE_FILTER_SORTS = ['perMin', 'opens', 'variety'] as const;
+/**
+ * 找路線的條件組合 `spec`(D-229)的排序選項,與前端 `FindSort` 一致。
+ * D-297:可複選(多重排序),權重固定依這個順序由左到右:每分鐘經驗 → 物品種類 → 可能解鎖。
+ */
+export const ROUTE_FILTER_SORTS = ['perMin', 'variety', 'opens'] as const;
 export type RouteFilterSort = (typeof ROUTE_FILTER_SORTS)[number];
 /** 條件組合 `spec` 的範圍上限:API 不認識航點與物品資料集(D-202),只擋明顯異常的輸入;實際存不存在由前端帶入時處理 */
 export const ROUTE_FILTER_LIMITS = {

@@ -90,7 +90,7 @@ describe('找路線:選了工坊時只用已發現的點(D-293)', () => {
     stats,
     sea: 1,
     maxMinutes: null,
-    sort: 'perMin',
+    sort: ['perMin'],
     required: new Set(),
     excluded: new Set(),
     itemIds: [],
@@ -109,7 +109,7 @@ describe('找路線:選了工坊時只用已發現的點(D-293)', () => {
 
   it('可能解鎖:可去的點 = 已發現的點,新點 = 路線上的點後面還沒發現的點', () => {
     const disc = set(drowned, 'ABCDE');
-    const rs = findRoutes(SEA_INDEXES, q({ sort: 'opens', discovered: disc, limit: 5 }));
+    const rs = findRoutes(SEA_INDEXES, q({ sort: ['opens'], discovered: disc, limit: 5 }));
     expect(rs.length).toBeGreaterThan(0);
     for (const r of rs) for (const id of r.opens) expect(disc.has(id)).toBe(false);
     // E 之後是 I、J,C 之後是 F,D 之後是 G
@@ -118,6 +118,8 @@ describe('找路線:選了工坊時只用已發現的點(D-293)', () => {
   });
 });
 
+const STRONG = [10, 10, 10, 10] as const;
+
 describe('練級建議:有海圖紀錄時先排除未發現的點(D-293)', () => {
   beforeAll(() => clearCalcMemo());
   const allIds = (si: typeof drowned) => si.sea.points.map((p) => p.id);
@@ -125,8 +127,8 @@ describe('練級建議:有海圖紀錄時先排除未發現的點(D-293)', () =>
   it('攻略路線的點都已發現:和沒有海圖時一樣', () => {
     const all = foundCodes(new Set([...allIds(drowned), ...allIds(grey)]))!;
     for (const level of [10, 34, 52]) {
-      const a = suggest('snap', level, 0, null, null, null);
-      const b = suggest('snap', level, 0, null, null, all);
+      const a = suggest(null, level, 0, STRONG, null, null);
+      const b = suggest(null, level, 0, STRONG, null, all);
       expect(b?.plan.points).toEqual(a?.plan.points);
       expect(b?.avoided).toBeUndefined();
     }
@@ -136,7 +138,7 @@ describe('練級建議:有海圖紀錄時先排除未發現的點(D-293)', () =>
     // 找一個攻略路線用到 K 以後的點的等級,只開到 A~J
     const r = LEVELING_ROUTES.find((x) => x.sea === 1 && x.points.some((c) => !'ABCDEFGHIJ'.includes(c)) && x.level >= 20)!;
     const found = foundCodes(set(drowned, 'ABCDEFGHIJ'))!;
-    const s = suggest(r.school, r.level, 0, null, null, found)!;
+    const s = suggest(null, r.level, 0, STRONG, null, found)!;
     expect(s.avoided!.length).toBeGreaterThan(0);
     if (s.source === 'calc') for (const c of s.plan.points) expect('ABCDEFGHIJ'.split('')).toContain(c);
   });
@@ -145,7 +147,7 @@ describe('練級建議:有海圖紀錄時先排除未發現的點(D-293)', () =>
     const g = recommendedRoute('snap', 55)!;
     expect(g.sea).toBe(2);
     const found = foundCodes(new Set(allIds(drowned)))!;
-    const s = suggest('snap', 55, 0, null, null, found)!;
+    const s = suggest(null, 55, 0, STRONG, null, found)!;
     expect(s.plan.sea).toBe(1);
     expect(s.avoided).toEqual(g.points);
   });
@@ -154,7 +156,7 @@ describe('練級建議:有海圖紀錄時先排除未發現的點(D-293)', () =>
     // O 的路:B → E → J → N → O;只開到 J → 先去 J(回來 N 出現),再下一趟去 N
     const found = foundCodes(set(drowned, 'ABCDEFGHIJ'))!;
     expect(stepToward(found, 1, 'O')).toBe('J');
-    const s = suggest('snap', 34, 0, null, { code: 'O', mark: '艇3', rank: 30 }, found)!;
+    const s = suggest(null, 34, 0, STRONG, { code: 'O', mark: '艇3', rank: 30 }, found)!;
     expect(s.prereq).toBe('J');
     expect(s.plan.points).toContain('J');
     expect(s.unlock).toBe('艇3');

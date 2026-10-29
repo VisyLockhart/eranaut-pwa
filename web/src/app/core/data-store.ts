@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { MaintenanceDto, OverviewDto, ProgressInput, SubmarineDto, SubmarineInput, UpkeepPatch, SubmarinesUpdateResult, WorkshopChartsInput, WorkshopDto, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
+import type { BuildInput, MaintenanceDto, OverviewDto, ProgressInput, SubmarineDto, SubmarineInput, UpkeepPatch, SubmarinesUpdateResult, WorkshopChartsInput, WorkshopDto, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
 import { Api } from './api';
 import { Auth } from './auth';
 import { isReady } from './format';
@@ -183,6 +183,21 @@ export class DataStore {
   /** 清除這艘的等級(總覽不再顯示) */
   async clearProgress(submarineId: string): Promise<void> {
     const sub = await this.api.clearProgress(submarineId);
+    this.applySubmarines(sub.workshop_id, [sub]);
+  }
+
+  // ---- 潛艇自己的配件(D-296) ----
+
+  /** 設定這艘的配件(`mark_repaired` = 同時標示已維修);回傳更新後的潛艇 */
+  async setBuild(submarineId: string, input: BuildInput): Promise<SubmarineDto> {
+    const sub = await this.api.setBuild(submarineId, input);
+    this.applySubmarines(sub.workshop_id, [sub]);
+    return sub;
+  }
+
+  /** 清除這艘的配件 */
+  async clearBuild(submarineId: string): Promise<void> {
+    const sub = await this.api.clearBuild(submarineId);
     this.applySubmarines(sub.workshop_id, [sub]);
   }
 

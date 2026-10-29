@@ -8,7 +8,7 @@ import { RouteEditor } from './route-editor';
 import { RouteVm } from './route-vm';
 
 const dto = (over: Partial<RouteSubDto> = {}): RouteSubDto => ({
-  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [], favorite: false,
+  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, favorite: false,
   created_at: '2026-10-08T00:00:00.000Z', updated_at: '2026-10-08T00:00:00.000Z', ...over,
 });
 const settle = () => new Promise((r) => setTimeout(r));

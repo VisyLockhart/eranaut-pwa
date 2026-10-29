@@ -11,7 +11,7 @@ import { RouteFindVm } from './route-find-vm';
 
 const grey = () => SEA_INDEXES[1]!;
 const dto = (over: Partial<RouteFilterDto> = {}): RouteFilterDto => ({
-  id: 'a', name: '灰海組', spec: { v: 1, sea: SEAS[1]!.sea, max_hours: 6, sort: 'opens', required: [grey().sea.points[0]!.id], excluded: [], item_ids: [], match: 'all' },
+  id: 'a', name: '灰海組', spec: { v: 2, sea: SEAS[1]!.sea, max_hours: 6, sort: ['opens'], required: [grey().sea.points[0]!.id], excluded: [], item_ids: [], match: 'all' },
   favorite: false, created_at: '2026-10-08T00:00:00.000Z', updated_at: '2026-10-08T00:00:00.000Z', ...over,
 });
 const tick = () => new Promise((r) => setTimeout(r));
@@ -67,7 +67,7 @@ describe('RouteFilterVm(條件組合,D-229)', () => {
     expect(fv.apply(d)).toBe(0);
     expect(f.sea()).toBe(SEAS[1]!.sea);
     expect(f.maxHours()).toBe(6);
-    expect(f.sort()).toBe('opens');
+    expect(f.sort()).toEqual(['opens']);
     expect([...f.required()]).toEqual([grey().sea.points[0]!.id]);
     expect([...f.excluded()]).toEqual([grey().sea.points[1]!.id]);
     expect(f.l.itemIds()).toEqual([itemId]);
@@ -114,11 +114,11 @@ describe('RouteFilterVm(條件組合,D-229)', () => {
   it('saveCurrent / overwrite / rename / remove 成功才更新畫面', async () => {
     await load([]);
     f.maxHours.set(12);
-    f.sort.set('variety');
+    f.sort.set(['variety']);
     const p = fv.saveCurrent('  新組  ');
     const req = http.expectOne('/api/route-filters');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toMatchObject({ name: '新組', spec: { max_hours: 12, sort: 'variety', sea: 'all' } });
+    expect(req.request.body).toMatchObject({ name: '新組', spec: { max_hours: 12, sort: ['variety'], sea: 'all' } });
     req.flush(dto({ id: 'n', name: '新組' }), { status: 201, statusText: 'Created' });
     await p;
     expect(fv.saved().map((s) => s.id)).toEqual(['n']);

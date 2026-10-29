@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
+import { UiScale } from '../core/ui-scale';
 import { Tip } from './tip';
 
 @Component({
@@ -42,5 +43,18 @@ describe('Tip', () => {
     a.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
     expect(bubble()?.classList.contains('show') ?? false).toBe(false);
     expect((f.nativeElement.querySelector('.b') as HTMLElement).getAttribute('aria-label')).toBe('自訂');
+  });
+
+  it('位置用 UiScale 換算過的座標(介面放大用 CSS zoom 時不會偏離、不會跑出畫面)', async () => {
+    TestBed.overrideProvider(UiScale, {
+      useValue: { localRect: () => ({ left: 900, top: 300, right: 940, bottom: 340, width: 40, height: 40 }), localViewport: () => ({ width: 960, height: 700 }) },
+    });
+    const f = await setup();
+    const a = f.nativeElement.querySelector('.a') as HTMLElement;
+    a.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
+    const b = bubble() as HTMLElement;
+    const left = parseInt(b.style.left, 10);
+    expect(left + b.offsetWidth).toBeLessThanOrEqual(960 - 4);
+    expect(parseInt(b.style.top, 10)).toBeLessThan(300);
   });
 });

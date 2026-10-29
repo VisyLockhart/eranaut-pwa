@@ -7,6 +7,7 @@ import { PushVm } from './core/push-vm';
 import { ThemeService } from './core/theme';
 import { UiScale } from './core/ui-scale';
 import { clearRouteCache } from './route/route-cache';
+import { RouteConfigDialog } from './route/route-config-dialog';
 import { Shell } from './layout/shell';
 import { InstallPromptCard } from './ui/install-prompt';
 import { UpdateBanner } from './ui/update-banner';
@@ -14,9 +15,9 @@ import { ToastHost } from './ui/toast-host';
 
 @Component({
   selector: 'app-root',
-  imports: [AuthScreen, Shell, ToastHost, InstallPromptCard, UpdateBanner],
+  imports: [AuthScreen, Shell, ToastHost, InstallPromptCard, UpdateBanner, RouteConfigDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `@if (auth.status() === 'authenticated') { <app-shell /> } @else { <app-auth-screen /> }<app-install-prompt /><app-update-banner /><app-toast-host />`,
+  template: `@if (auth.status() === 'authenticated') { <app-shell /><app-route-config-dialog /> } @else { <app-auth-screen /> }<app-install-prompt /><app-update-banner /><app-toast-host />`,
 })
 export class App {
   protected readonly auth = inject(Auth);

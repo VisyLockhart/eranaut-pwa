@@ -1,11 +1,13 @@
 import {
+  ASSIST_MAX_HOURS,
   LEVELING_POINTS,
   LEVELING_ROUTES,
   LEVELING_SCHOOLS,
   MAX_LEVELING_LEVEL,
   applyExp,
   recommendedRoute,
-  type LevelingSchool,
+  type AssistMode,
+  type LevelingRoute,
   type ProgressRoute,
   type SubmarineDto,
 } from '@eranaut/shared';
@@ -15,15 +17,15 @@ import type { SeaPoint } from '../route/core/types';
 import { planRoute, statsFor, type RoutePlan } from './leveling-vm';
 
 // 練級輔助的「出發前派出建議」(D-291)。純函式,不碰畫面與網路,方便測試。
-// 流程:目前等級 + 上一趟待結算的經驗 → 返航後(下一趟出發時)的等級 → 該等級、該流派的推薦路線。
-// 推薦路線照攻略;艇有綁定配置但走不了攻略路線(距離或等級不夠)時,才用資料集自己找(`calcRoute`)。
+// 流程:目前等級 + 上一趟待結算的經驗 → 返航後(下一趟出發時)的等級 → 該等級、最長航行時間內的推薦路線(航線輔助「練級」,D-297)。
+// 推薦路線照攻略;這艘的配置跑不了攻略、或攻略超過時間上限時,才用資料集自己找(`calcRoute`)。條件組合模式見 assist-combo.ts。
 
 export type Parts = readonly [number, number, number, number];
-/** 建議面板的檢視:各艇偏好的流派,或暫時看某一個流派(只是檢視,不改各艇的偏好) */
-export type ViewSchool = 'pref' | LevelingSchool;
+/** 航線輔助面板的檢視:各艇自己設定的模式,或暫時看某一個模式(只是檢視,不改各艇的設定,D-297) */
+export type AssistView = 'pref' | AssistMode;
 
-/** 沒設定偏好時用哪個流派 */
-export const DEFAULT_SCHOOL: LevelingSchool = 'snap';
+/** 練級的目標:最長航行時間(小時);null = 不限(每分鐘經驗最高,原「掐點收」) */
+export type Goal = number | null;
 
 /** 下一趟出發時的狀態 */
 export interface NextStart {
@@ -36,8 +38,6 @@ export interface NextStart {
   returned: boolean;
   /** 還在航行:預計返航的時間戳;已返航為 null */
   returnAt: number | null;
-  /** 超過 85 級:練級輔助到此為止,不給建議 */
-  over: boolean;
 }
 
 /** 與伺服器一致(`hasReturned`):探索完成,或預計返航時間已過 */
@@ -45,10 +45,10 @@ export function hasReturned(sub: Pick<SubmarineDto, 'status' | 'expected_return_
   return sub.status === 'complete' || (sub.expected_return_at !== null && Date.parse(sub.expected_return_at) <= now);
 }
 
-/** 練級輔助開著的艇才有;沒填等級或沒開回 null */
+/** 航線輔助開著的艇才有;沒填等級或沒開回 null */
 export function nextStart(sub: Pick<SubmarineDto, 'status' | 'expected_return_at' | 'progress'>, now: number): NextStart | null {
   const p = sub.progress;
-  if (!p || !p.sim_on) return null;
+  if (!p || !p.assist_on) return null;
   const returned = hasReturned(sub, now);
   // 待結算的路線一律加上去:伺服器讀取時若已返航會先算好 effective,但重新抓資料前也可能剛好跨過返航時間,這裡自己算才一致
   const after = p.pending ? applyExp({ level: p.level, exp_in_level: p.exp_in_level }, p.pending.exp) : { level: p.level, exp_in_level: p.exp_in_level };
@@ -58,24 +58,24 @@ export function nextStart(sub: Pick<SubmarineDto, 'status' | 'expected_return_at
     fromLevel: p.level,
     returned,
     returnAt: returned || sub.expected_return_at === null ? null : Date.parse(sub.expected_return_at),
-    over: after.level > MAX_LEVELING_LEVEL,
   };
 }
 
-/** 這艘的偏好流派(面板切到某個流派時,暫時以那個為準) */
-export function schoolFor(sub: Pick<SubmarineDto, 'progress'>, view: ViewSchool): LevelingSchool {
-  return view !== 'pref' ? view : (sub.progress?.school ?? DEFAULT_SCHOOL);
+/** 這艘用哪個模式(面板切到某個模式時,暫時以那個為準) */
+export function modeFor(sub: Pick<SubmarineDto, 'progress'>, view: AssistView): AssistMode {
+  return view !== 'pref' ? view : (sub.progress?.assist_mode ?? 'level');
 }
 
 export interface Suggestion {
-  school: LevelingSchool;
+  /** 這條是依哪個最長航行時間算的(null = 不限) */
+  maxHours: Goal;
+  /** 設定的上限內沒有路線,放寬到這個小時數才找到;沒放寬為 null */
+  relaxedTo: number | null;
   plan: RoutePlan;
   /** 跑完這條抵達的等級 */
   after: number;
   /** guide = 攻略路線;calc = 配置走不了攻略路線,改由資料集推算 */
   source: 'guide' | 'calc';
-  /** 沒有綁定配置:時間與距離是用攻略的配置推算的 */
-  guideConfig: Parts | null;
   /** 這條路線會解鎖下一個潛艇欄位(例:「艇3」);沒有為 null */
   unlock: string | null;
   /** 依工坊海圖(D-293):攻略路線裡還沒發現、因此避開的點(代號);沒有省略 */
@@ -153,73 +153,87 @@ export function unlockTarget(subs: readonly Pick<SubmarineDto, 'progress' | 'pos
 }
 
 /**
- * 某流派在這個等級的建議;攻略沒有資料回 null。
- * 有還沒解鎖的潛艇欄位(`unlock`)且等級夠時,路線一定要包含解鎖點(最高優先):
- * 攻略路線剛好包含就用攻略,沒有就以資料集推算(含解鎖點、在該流派時間限制內最好的);推算不出來才退回一般建議。
+ * 練級用的攻略路線(D-297):不限 = 「掐點收」攻略;有上限 = 三個流派的攻略裡,這艘的配置跑得動、航行時間在上限內、經驗最多的一條。
+ * `ok` 可再加條件(例如工坊海圖:路線的點都已發現)。沒有符合的回 undefined。
  */
-export function suggest(school: LevelingSchool, level: number, exp: number, parts: Parts | null, unlock: UnlockTarget | null = null, found: FoundCodes | null = null): Suggestion | null {
-  if (found) return suggestFound(school, level, exp, parts, unlock, found);
-  const r = recommendedRoute(school, level);
-  if (!r) return null;
-  if (unlock && level >= unlock.rank && !(r.sea === 1 && r.points.includes(unlock.code))) {
-    const cfg = parts ?? (r.config as Parts);
-    const guideMinutes = planRoute(r.sea, r.points, r.config as Parts, level)?.minutes ?? null;
-    const calc = calcRoute(1, level, cfg, school, guideMinutes, unlock.code);
-    const plan = calc ? planRoute(1, calc, cfg, level) : null;
-    if (plan) {
-      return { school, plan, after: applyExp({ level, exp_in_level: exp }, plan.exp).level, source: 'calc', guideConfig: parts === null ? (r.config as Parts) : null, unlock: unlock.mark };
-    }
+export function guideFor(goal: Goal, level: number, parts: Parts, ok: (r: LevelingRoute) => boolean = () => true): LevelingRoute | undefined {
+  // 攻略資料集只到 85 級;再高沒有攻略可參考,一律交給系統推算(D-298)
+  if (level > MAX_LEVELING_LEVEL) return undefined;
+  let best: { r: LevelingRoute; exp: number; minutes: number } | undefined;
+  for (const school of goal === null ? (['snap'] as const) : LEVELING_SCHOOLS) {
+    const r = recommendedRoute(school, level);
+    if (!r || !ok(r)) continue;
+    const plan = planRoute(r.sea, r.points, parts, level);
+    if (!plan || plan.problem !== null || plan.minutes === null) continue;
+    if (goal !== null && plan.minutes > goal * 60) continue;
+    if (!best || plan.exp > best.exp || (plan.exp === best.exp && plan.minutes < best.minutes)) best = { r, exp: plan.exp, minutes: plan.minutes };
   }
-  const viaGuide = !!unlock && level >= unlock.rank && r.sea === 1 && r.points.includes(unlock.code);
-  let plan = planRoute(r.sea, r.points, parts ?? (r.config as Parts), level);
-  if (!plan) return null;
-  let source: Suggestion['source'] = 'guide';
-  if (parts !== null && plan.problem !== null) {
-    // 時間檔從攻略那條路線(以攻略的配置推算)所屬的檔開始:攻略是兩天的路線就直接找 ≤48h
-    const guideMinutes = planRoute(r.sea, r.points, r.config as Parts, level)?.minutes ?? null;
-    const calc = calcRoute(r.sea, level, parts, school, guideMinutes, viaGuide ? unlock!.code : null);
-    const calcPlan = calc ? planRoute(r.sea, calc, parts, level) : null;
-    if (calcPlan) {
-      plan = calcPlan;
-      source = 'calc';
-    }
-  }
-  const unlocks = !!unlock && plan.sea === 1 && plan.points.includes(unlock.code);
-  return { school, plan, after: applyExp({ level, exp_in_level: exp }, plan.exp).level, source, guideConfig: parts === null ? (r.config as Parts) : null, unlock: unlocks ? unlock!.mark : null };
+  return best?.r;
 }
 
 /**
- * 有工坊海圖紀錄時的建議(D-293,使用者 2026-10-28):先排除含「未發現」點的路線,再照原本的規則。
+ * 練級在這個等級的建議;攻略沒有資料回 null。
+ * 有還沒解鎖的潛艇欄位(`unlock`)且等級夠時,路線一定要包含解鎖點(最高優先):攻略路線剛好包含就用攻略,沒有就以資料集推算;推算不出來才退回一般建議。
+ * 一般建議:攻略裡這艘的配置跑得動、時間在上限內的最好一條;沒有就用資料集在上限內自己找。
+ */
+export function suggest(goal: Goal, level: number, exp: number, parts: Parts, unlock: UnlockTarget | null = null, found: FoundCodes | null = null): Suggestion | null {
+  if (found) return suggestFound(goal, level, exp, parts, unlock, found);
+  const base = recommendedRoute('snap', level);
+  if (!base) return null;
+  const make = (plan: RoutePlan, source: Suggestion['source'], mark: string | null = null): Suggestion => ({
+    maxHours: goal,
+    relaxedTo: null,
+    plan,
+    after: applyExp({ level, exp_in_level: exp }, plan.exp).level,
+    source,
+    unlock: mark,
+  });
+  const g = guideFor(goal, level, parts);
+  const viaGuide = !!unlock && level >= unlock.rank && !!g && g.sea === 1 && g.points.includes(unlock.code);
+  if (unlock && level >= unlock.rank && !viaGuide) {
+    const calc = calcRoute(1, level, parts, goal, unlock.code);
+    const plan = calc ? planRoute(1, calc, parts, level) : null;
+    if (plan) return make(plan, 'calc', unlock.mark);
+  }
+  if (g) {
+    const plan = planRoute(g.sea, g.points, parts, level);
+    if (plan) return make(plan, 'guide', unlock && plan.sea === 1 && plan.points.includes(unlock.code) ? unlock.mark : null);
+  }
+  const calc = calcRoute(base.sea, level, parts, goal);
+  const plan = calc ? planRoute(base.sea, calc, parts, level) : null;
+  return plan ? make(plan, 'calc') : null;
+}
+
+/**
+ * 有工坊海圖紀錄時的建議(D-293):先排除含「未發現」點的路線,再照原本的規則。
  * ① 解鎖點(最高優先):已發現 → 路線要含它;還沒發現 → 路線要含它路上第一個未發現點的上一個點(`stepToward`),回來後解鎖點才會出現。
- * ② 攻略路線的點都已發現 → 照原本的規則(配置走不了才推算,只用已發現的點)。
- * ③ 攻略路線含未發現的點 → 用資料集在已發現的點裡推算(先限攻略出現過的點,推不出來再放寬到全部已發現的點);
+ * ② 有攻略路線的點都已發現 → 照原本的規則。
+ * ③ 攻略路線都含未發現的點 → 用資料集在已發現的點裡推算(先限攻略出現過的點,推不出來再放寬到全部已發現的點);
  *    攻略換到的海域還沒開放(例如還沒到灰海)→ 留在已開放、編號最大的海域。都推不出來才照攻略並標出未發現的點。
  */
-function suggestFound(school: LevelingSchool, level: number, exp: number, parts: Parts | null, unlock: UnlockTarget | null, found: FoundCodes): Suggestion | null {
-  const r = recommendedRoute(school, level);
-  if (!r) return null;
-  const guideCfg = r.config as Parts;
-  const cfg = parts ?? guideCfg;
-  const guideMinutes = planRoute(r.sea, r.points, guideCfg, level)?.minutes ?? null;
+function suggestFound(goal: Goal, level: number, exp: number, parts: Parts, unlock: UnlockTarget | null, found: FoundCodes): Suggestion | null {
+  const base = recommendedRoute('snap', level);
+  if (!base) return null;
   const seen = (sea: number) => found.get(sea) ?? new Set<string>();
+  const allFound = (r: LevelingRoute) => r.points.every((c) => seen(r.sea).has(c));
   const allows = (sea: number): Set<string>[] => {
     const all = new Set([...seen(sea)].filter((c) => seaIndex(sea).sea.points.some((p) => p.code === c && p.rankReq <= level)));
     const guide = new Set([...allowedCodes(sea, level)].filter((c) => all.has(c)));
     return guide.size && guide.size < all.size ? [guide, all] : [all];
   };
   const make = (plan: RoutePlan, source: Suggestion['source'], extra: Partial<Suggestion> = {}): Suggestion => ({
-    school,
+    maxHours: goal,
+    relaxedTo: null,
     plan,
     after: applyExp({ level, exp_in_level: exp }, plan.exp).level,
     source,
-    guideConfig: parts === null ? guideCfg : null,
     unlock: null,
     ...extra,
   });
   const calcIn = (sea: number, required: string | null): RoutePlan | null => {
     for (const allow of allows(sea)) {
-      const calc = calcRoute(sea, level, cfg, school, guideMinutes, required, allow);
-      const plan = calc ? planRoute(sea, calc, cfg, level) : null;
+      const calc = calcRoute(sea, level, parts, goal, required, allow);
+      const plan = calc ? planRoute(sea, calc, parts, level) : null;
       if (plan) return plan;
     }
     return null;
@@ -229,40 +243,50 @@ function suggestFound(school: LevelingSchool, level: number, exp: number, parts:
   if (unlock && level >= unlock.rank) {
     const need = seen(1).has(unlock.code) ? unlock.code : stepToward(found, 1, unlock.code);
     if (need) {
-      const guideOk = r.sea === 1 && r.points.includes(need) && r.points.every((c) => seen(1).has(c));
-      const guidePlan = guideOk ? planRoute(1, r.points, cfg, level) : null;
-      const plan = guidePlan && (parts === null || guidePlan.problem === null) ? guidePlan : calcIn(1, need);
+      const g = guideFor(goal, level, parts, (r) => r.sea === 1 && r.points.includes(need) && allFound(r));
+      const guidePlan = g ? planRoute(1, g.points, parts, level) : null;
+      const plan = guidePlan ?? calcIn(1, need);
       if (plan) return make(plan, plan === guidePlan ? 'guide' : 'calc', need === unlock.code ? { unlock: unlock.mark } : { unlock: unlock.mark, prereq: need });
     }
   }
 
   // ② 攻略路線的點都已發現
-  const missing = r.points.filter((c) => !seen(r.sea).has(c));
-  if (missing.length === 0) {
-    const plan = planRoute(r.sea, r.points, cfg, level);
-    if (!plan) return null;
-    if (parts !== null && plan.problem !== null) {
-      const calc = calcIn(r.sea, null);
-      if (calc) return make(calc, 'calc');
-    }
-    return make(plan, 'guide');
+  const gOk = guideFor(goal, level, parts, allFound);
+  if (gOk) {
+    const plan = planRoute(gOk.sea, gOk.points, parts, level);
+    if (plan) return make(plan, 'guide');
   }
 
   // ③ 含未發現的點:在已發現的點裡推算;攻略的海域還沒開放就留在已開放、編號最大的海域
-  const opened = [...found.keys()].filter((sea) => sea <= r.sea).sort((a, b) => b - a);
-  const sea = seen(r.sea).size > 0 ? r.sea : (opened[0] ?? 1);
+  const gAny = guideFor(goal, level, parts) ?? base;
+  const missing = gAny.points.filter((c) => !seen(gAny.sea).has(c));
+  const opened = [...found.keys()].filter((sea) => sea <= gAny.sea).sort((a, b) => b - a);
+  const sea = seen(gAny.sea).size > 0 ? gAny.sea : (opened[0] ?? 1);
   const plan = calcIn(sea, null);
-  if (plan) return make(plan, 'calc', { avoided: missing });
-  const guidePlan = planRoute(r.sea, r.points, cfg, level);
-  return guidePlan ? make(guidePlan, 'guide', { avoided: missing }) : null;
+  if (plan) return make(plan, 'calc', missing.length ? { avoided: missing } : {});
+  const guidePlan = planRoute(gAny.sea, gAny.points, parts, level);
+  return guidePlan ? make(guidePlan, 'guide', missing.length ? { avoided: missing } : {}) : null;
 }
 
-/** 三個流派各一條(沒資料的不列) */
-export function suggestAll(level: number, exp: number, parts: Parts | null, unlock: UnlockTarget | null = null, found: FoundCodes | null = null): Suggestion[] {
+/**
+ * 練級的推薦:設定的上限內沒有路線時,依序放寬到更長的上限(D-297;資料集的航行時間至少 12 小時,所以低等級的 12 小時常常剛好不夠),
+ * 找到的那條標上 `relaxedTo`。不限本身不放寬。
+ */
+export function suggestLevel(goal: Goal, level: number, exp: number, parts: Parts, unlock: UnlockTarget | null = null, found: FoundCodes | null = null): Suggestion | null {
+  const tries = goal === null ? [null] : ASSIST_MAX_HOURS.filter((h): h is number => h !== null && h >= goal);
+  for (const h of tries) {
+    const s = suggest(h, level, exp, parts, unlock, found);
+    if (s) return h === goal ? s : { ...s, relaxedTo: h };
+  }
+  return null;
+}
+
+/** 各個最長航行時間(不限、12、24、36、48 小時)各一條,面板展開時並排比較;相同的路線不重複列 */
+export function suggestTiers(level: number, exp: number, parts: Parts, unlock: UnlockTarget | null = null, found: FoundCodes | null = null): Suggestion[] {
   const out: Suggestion[] = [];
-  for (const s of LEVELING_SCHOOLS) {
-    const x = suggest(s, level, exp, parts, unlock, found);
-    if (x) out.push(x);
+  for (const h of ASSIST_MAX_HOURS) {
+    const s = suggest(h, level, exp, parts, unlock, found);
+    if (s) out.push(s);
   }
   return out;
 }
@@ -271,33 +295,13 @@ export function sameRoute(a: Pick<ProgressRoute, 'sea' | 'points'>, b: Pick<Prog
   return a.sea === b.sea && a.points.length === b.points.length && a.points.every((c, i) => c === b.points[i]);
 }
 
-// ---- 資料集推算(配置走不了攻略路線時) ----
+// ---- 資料集推算(攻略沒有合適的路線時) ----
 
 /**
- * 各流派的時間限制(分鐘),由短到長試(使用者 2026-10-28);從攻略路線所屬的檔開始(`startTier`):
- * 掐點收 = 不限時間、每分鐘經驗最高;半日收 = 12h,找不到才放寬到 36h;整日收 = 24h → 48h,兩者都取經驗最多。
+ * 練級的目標對應的搜尋方式(D-297):不限 = 不限時間、每分鐘經驗最高;有上限 = 該時間內經驗最多。
  */
-export const SCHOOL_TIERS: Record<LevelingSchool, readonly { max: number | null; by: 'perMin' | 'exp' }[]> = {
-  snap: [{ max: null, by: 'perMin' }],
-  half: [
-    { max: 12 * 60, by: 'exp' },
-    { max: 36 * 60, by: 'exp' },
-  ],
-  day: [
-    { max: 24 * 60, by: 'exp' },
-    { max: 48 * 60, by: 'exp' },
-  ],
-};
-
-/**
- * 從哪一個時間檔開始找(使用者 2026-10-28):攻略路線的航行時間落在哪一檔就從那一檔開始,
- * 例如整日收攻略是約 47 小時的兩天路線 → 直接找 ≤48h,不先找一天內的;不知道攻略時間(null)從最短的檔開始。
- */
-export function startTier(school: LevelingSchool, guideMinutes: number | null): number {
-  const tiers = SCHOOL_TIERS[school];
-  if (guideMinutes === null) return 0;
-  const i = tiers.findIndex((t) => t.max === null || guideMinutes <= t.max);
-  return i < 0 ? tiers.length - 1 : i;
+export function tierFor(goal: Goal): { max: number | null; by: 'perMin' | 'exp' } {
+  return goal === null ? { max: null, by: 'perMin' } : { max: goal * 60, by: 'exp' };
 }
 
 /**
@@ -321,14 +325,13 @@ export function calcRoute(
   sea: number,
   level: number,
   parts: Parts,
-  school: LevelingSchool,
-  guideMinutes: number | null = null,
+  goal: Goal,
   required: string | null = null,
   /** 只從這些點挑(依工坊海圖,D-293);省略 = 攻略到這個等級出現過的點 */
   allowOverride: ReadonlySet<string> | null = null,
 ): string[] | null {
-  const tiers = SCHOOL_TIERS[school].slice(startTier(school, guideMinutes));
-  const key = `${sea}|${level}|${parts.join('')}|${school}|${tiers.length}|${required ?? ''}|${allowOverride ? [...allowOverride].sort().join(',') : '*'}`;
+  const tier = tierFor(goal);
+  const key = `${sea}|${level}|${parts.join('')}|${goal ?? '*'}|${required ?? ''}|${allowOverride ? [...allowOverride].sort().join(',') : '*'}`;
   const hit = calcMemo.get(key);
   if (hit !== undefined) return hit;
   const si = seaIndex(sea);
@@ -343,14 +346,8 @@ export function calcRoute(
     .filter((p) => allow.has(p.code) && p.rankReq <= level && p !== fixed)
     .sort((a, b) => b.expReward - a.expReward || a.id - b.id);
   const stats = statsFor(parts, level);
-  let result: string[] | null = null;
-  for (const tier of tiers) {
-    const best = bestRoute(si, candidates, stats.range, stats.speed, tier.max, tier.by, fixed);
-    if (best) {
-      result = best.map((p) => p.code);
-      break;
-    }
-  }
+  const best = bestRoute(si, candidates, stats.range, stats.speed, tier.max, tier.by, fixed);
+  const result: string[] | null = best ? best.map((p) => p.code) : null;
   calcMemo.set(key, result);
   return result;
 }

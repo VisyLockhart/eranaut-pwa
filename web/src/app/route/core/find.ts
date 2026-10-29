@@ -11,6 +11,11 @@ export const FIND_ROUTE_LIMIT = 100;
 
 /** perMin = 每分鐘經驗(練級);opens = 回來後可能解鎖的新航點數(探索);variety = 撈得到的不同物品種類數(最多物品) */
 export type FindSort = 'perMin' | 'opens' | 'variety';
+/** 多重排序(D-297):順序就是優先順序(使用者點選的先後,D-298);不重複、去掉不認得的;空的(都沒選)預設只照每分鐘經驗 */
+export function normalizeSort(s: readonly FindSort[]): FindSort[] {
+  const out = [...new Set(s)].filter((k): k is FindSort => k === 'perMin' || k === 'variety' || k === 'opens');
+  return out.length > 0 ? out : ['perMin'];
+}
 
 export interface FindQuery {
   level: number;
@@ -19,7 +24,8 @@ export interface FindQuery {
   sea: number | 'all';
   /** 航行時間上限(分鐘);null = 不限 */
   maxMinutes: number | null;
-  sort: FindSort;
+  /** 排序條件,依陣列順序比較(前面的優先);空的當作只照每分鐘經驗 */
+  sort: readonly FindSort[];
   /** 必選航點(航點 id):該海域的路線必須全部包含 */
   required: ReadonlySet<number>;
   /** 排除航點(航點 id):任何海域的路線都不能包含 */
@@ -105,23 +111,38 @@ export function checkRequired(si: SeaIndex, required: ReadonlySet<number>, level
   return { tooMany, rankLocked, range, ok: rankLocked.length === 0 && range <= rangeCap };
 }
 
+/** 結果清單的多重排序(由好到壞):依序比每個開啟的條件;全部相同回 0(D-297) */
+export function compareRoutes(a: Pick<FindRoute, 'perMin' | 'opens' | 'items'>, b: Pick<FindRoute, 'perMin' | 'opens' | 'items'>, sort: readonly FindSort[]): number {
+  const m = (r: Pick<FindRoute, 'perMin' | 'opens' | 'items'>, k: FindSort): number => (k === 'perMin' ? r.perMin : k === 'opens' ? r.opens.length : r.items.length);
+  for (const k of sort) {
+    const d = m(b, k) - m(a, k);
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
 type Cmp = Pick<FindRoute, 'minutes' | 'exp' | 'perMin' | 'sea' | 'order'> & { opensN: number; itemsN: number };
 
 function metricOf(r: Cmp, sort: FindSort): number {
   return sort === 'perMin' ? r.perMin : sort === 'opens' ? r.opensN : r.itemsN;
 }
 
-/** 由好到壞;分數相同時航行時間短者在前,再看經驗,最後依海域與航點編號固定順序 */
-function compare(a: Cmp, b: Cmp, sort: FindSort): number {
-  const byMetric = metricOf(b, sort) - metricOf(a, sort);
-  if (byMetric !== 0) return byMetric;
+/** 由好到壞;依序比每個開啟的條件,全部相同時航行時間短者在前,再看經驗,最後依海域與航點編號固定順序 */
+function compare(a: Cmp, b: Cmp, sort: readonly FindSort[]): number {
+  for (const k of sort) {
+    const d = metricOf(b, k) - metricOf(a, k);
+    if (d !== 0) return d;
+  }
   if (a.minutes !== b.minutes) return a.minutes - b.minutes;
-  if (sort !== 'perMin' && a.exp !== b.exp) return b.exp - a.exp;
+  if (sort[0] !== 'perMin' && a.exp !== b.exp) return b.exp - a.exp;
   return a.sea - b.sea || a.order.join().localeCompare(b.order.join(), 'en', { numeric: true });
 }
 
 export function findRoutes(seas: readonly SeaIndex[], q: FindQuery): FindRoute[] {
   const limit = q.limit ?? FIND_ROUTE_LIMIT;
+  const sort = normalizeSort(q.sort);
+  const primary = sort[0]!;
+  const wantOpens = sort.includes('opens');
   const { speed, range: cap, surveillance } = q.stats;
   if (!(speed > 0) || limit <= 0) return [];
   const top: (FindRoute & Cmp)[] = [];
@@ -130,7 +151,7 @@ export function findRoutes(seas: readonly SeaIndex[], q: FindQuery): FindRoute[]
     let hi = top.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
-      if (compare(top[mid]!, r, q.sort) <= 0) lo = mid + 1;
+      if (compare(top[mid]!, r, sort) <= 0) lo = mid + 1;
       else hi = mid;
     }
     top.splice(lo, 0, r);
@@ -144,7 +165,7 @@ export function findRoutes(seas: readonly SeaIndex[], q: FindQuery): FindRoute[]
     if (reqPts.length > MAX_STOPS) continue;
     const disc = q.discovered ?? null;
     const usable = (p: SeaPoint): boolean =>
-      p.rankReq <= q.level && !q.excluded.has(p.id) && (disc ? disc.has(p.id) : q.sort !== 'opens' || isAvailable(q.graph, q.explored, p.id));
+      p.rankReq <= q.level && !q.excluded.has(p.id) && (disc ? disc.has(p.id) : !wantOpens || isAvailable(q.graph, q.explored, p.id));
     // 必選點本身不能用(等級不足、排除、不是可去的點)→ 這個海域沒有路線
     if (reqPts.some((p) => !usable(p))) continue;
     const optional = si.sea.points.filter((p) => !q.required.has(p.id) && usable(p)).sort((a, b) => a.id - b.id);
@@ -189,16 +210,17 @@ export function findRoutes(seas: readonly SeaIndex[], q: FindQuery): FindRoute[]
       const lbMinutes = Math.floor(sumDist / speed + 720);
       if (q.maxMinutes !== null && lbMinutes > q.maxMinutes) return;
       let opensN = 0;
-      if (q.sort === 'opens') opensN = opensFor(q.graph, disc ?? q.explored, pts.map((p) => p.id)).length;
+      if (wantOpens) opensN = opensFor(q.graph, disc ?? q.explored, pts.map((p) => p.id)).length;
       if (top.length >= limit) {
+        // 只用第一順位判斷「一定贏不了」;第一順位相同時,只有單一條件才能再用時間剪枝(多條件還要看後面的條件)
         const worst = top[top.length - 1]!;
-        if (q.sort === 'perMin') {
+        if (primary === 'perMin') {
           if (sumExp / lbMinutes < worst.perMin) return;
         } else {
-          const m = q.sort === 'opens' ? opensN : distinct;
-          const wm = q.sort === 'opens' ? worst.opensN : worst.itemsN;
+          const m = primary === 'opens' ? opensN : distinct;
+          const wm = primary === 'opens' ? worst.opensN : worst.itemsN;
           if (m < wm) return;
-          if (m === wm && lbMinutes > worst.minutes) return;
+          if (sort.length === 1 && m === wm && lbMinutes > worst.minutes) return;
         }
       }
       let bestDist = Infinity;

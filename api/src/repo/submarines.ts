@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { OverviewDto, SubmarineDto } from '@eranaut/shared';
 import type { Db } from '../db/index.js';
 import { expectedReturnAt, type ValidSubmarine } from '../services/submarines.js';
+import { attachBuild } from './build.js';
 import { attachProgress, settleOnDispatch } from './progress.js';
 import { countVoyage, attachUpkeep } from './upkeep.js';
 import { getWorkshop, listWorkshops } from './workshops.js';
@@ -10,9 +11,9 @@ import { getWorkshop, listWorkshops } from './workshops.js';
 
 const COLUMNS = 's.id, s.workshop_id, s.position, s.name, s.status, s.expected_return_at, s.last_synced_at';
 
-/** 附上維修提醒與等級(都是選填:沒開啟 / 沒填的潛艇不加欄位) */
+/** 附上維修提醒、等級與配件(都是選填:沒開啟 / 沒填的潛艇不加欄位) */
 function attachExtras(db: Db, subs: SubmarineDto[], now: Date): SubmarineDto[] {
-  return attachProgress(db, attachUpkeep(db, subs), now);
+  return attachBuild(db, attachProgress(db, attachUpkeep(db, subs), now));
 }
 
 export function listSubmarines(db: Db, userId: string, workshopId: string, now: Date = new Date()): SubmarineDto[] {

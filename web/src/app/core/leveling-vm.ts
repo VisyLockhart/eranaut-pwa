@@ -1,14 +1,12 @@
 import {
-  LEVELING_SCHOOLS,
-  MAX_LEVELING_LEVEL,
+  MAX_RECORDED_LEVEL,
   applyExp,
   clampExp,
   expSliderStep,
   levelExp,
   levelingPoints,
-  recommendedRoute,
   routeExp,
-  type LevelingSchool,
+  type AssistMode,
   type ProgressInput,
   type ProgressRoute,
   type SubmarineDto,
@@ -31,7 +29,10 @@ export interface QuickProgressDraft {
   enabled: boolean;
   level: number;
   exp: number;
-  school: LevelingSchool | null;
+  /** 航線輔助模式與各模式的設定(D-297) */
+  mode: AssistMode;
+  maxHours: number | null;
+  filterId: string | null;
   edited: boolean;
 }
 
@@ -41,10 +42,9 @@ export function progressRequest(draft: QuickProgressDraft | null, hasRow: boolea
   // 關閉:有紀錄只關掉練級輔助;關掉之前改過的等級與經驗照樣記下(等級是潛艇的資料,和有沒有開練級輔助無關)
   if (!draft.enabled) {
     if (!hasRow) return undefined;
-    return draft.edited ? { sim_on: false, level: draft.level, exp_in_level: clampExp(draft.level, draft.exp) } : { sim_on: false };
+    return draft.edited ? { assist_on: false, level: draft.level, exp_in_level: clampExp(draft.level, draft.exp) } : { assist_on: false };
   }
-  const req: ProgressInput = { sim_on: true };
-  if (draft.school !== null) req.school = draft.school;
+  const req: ProgressInput = { assist_on: true, assist_mode: draft.mode, max_hours: draft.maxHours, filter_id: draft.filterId };
   if (draft.edited || !hasRow) {
     req.level = draft.level;
     req.exp_in_level = clampExp(draft.level, draft.exp);
@@ -55,9 +55,9 @@ export function progressRequest(draft: QuickProgressDraft | null, hasRow: boolea
 /** 開啟時的預設值:有紀錄就沿用(含截圖辨識的等級),沒有從 1 級、經驗取中間 */
 export function defaultDraft(sub: SubmarineDto | null): QuickProgressDraft {
   const p = sub?.progress;
-  const level = p ? Math.min(p.effective_level, MAX_LEVELING_LEVEL) : 1;
+  const level = p ? Math.min(p.effective_level, MAX_RECORDED_LEVEL) : 1;
   const exp = p ? p.effective_exp : middleExp(level);
-  return { enabled: true, level, exp, school: p?.school ?? null, edited: false };
+  return { enabled: true, level, exp, mode: p?.assist_mode ?? 'level', maxHours: p?.max_hours ?? null, filterId: p?.filter_id ?? null, edited: false };
 }
 
 /** 滑桿預設值:這一級所需經驗的中間,對齊到步距 */
@@ -70,7 +70,7 @@ export function middleExp(level: number): number {
 
 /** 換等級時把經驗夾回新等級的範圍;之前沒動過的經驗改回中間 */
 export function changeLevel(d: QuickProgressDraft, level: number): QuickProgressDraft {
-  const lv = Math.min(MAX_LEVELING_LEVEL, Math.max(1, Math.floor(level)));
+  const lv = Math.min(MAX_RECORDED_LEVEL, Math.max(1, Math.floor(level)));
   // 經驗還停在(舊等級的)預設中間值 = 使用者沒動過它,新等級也取中間;否則夾回新等級的範圍
   const untouched = !d.edited || d.exp === middleExp(d.level);
   return { ...d, level: lv, exp: untouched ? middleExp(lv) : clampExp(lv, d.exp), edited: true };
@@ -92,8 +92,6 @@ export interface ProgressView {
   /** 練級輔助推算:探索中且有待結算的路線 → 返航後增加的經驗與抵達的等級 */
   pending: { gain: number; toLevel: number } | null;
   fromOcr: boolean;
-  /** 超過 85 級:只顯示等級 */
-  over: boolean;
   /** 練級輔助開著:才顯示經驗條與返航後推算(沒開時經驗不是使用者填的,不顯示) */
   sim: boolean;
 }
@@ -114,8 +112,7 @@ export function progressView(sub: Pick<SubmarineDto, 'progress' | 'status'>): Pr
     pct: need === null || exp === null ? null : Math.min(100, Math.round((exp / need) * 100)),
     pending: pending && after ? { gain: pending.exp, toLevel: after.level } : null,
     fromOcr: p.source === 'ocr',
-    over: level > MAX_LEVELING_LEVEL,
-    sim: p.sim_on && level <= MAX_LEVELING_LEVEL,
+    sim: p.assist_on,
   };
 }
 
@@ -132,7 +129,7 @@ export interface RoutePlan {
   sea: number;
   points: string[];
   exp: number;
-  /** 以艇的配置(沒有綁定則用攻略的配置)推算;無法推算(點位不存在)為 null */
+  /** 以艇的配置推算(沒有配置為 null);無法推算(點位不存在)也是 null */
   minutes: number | null;
   range: number | null;
   rangeCap: number | null;
@@ -181,19 +178,6 @@ export function minutesText(minutes: number): string {
 
 export function routeText(points: readonly string[]): string {
   return points.join(' → ');
-}
-
-/** 該等級的三個流派推薦(各一條);沒有資料的流派不列 */
-export function schoolPlans(level: number, parts: Parts | null): { school: LevelingSchool; plan: RoutePlan; config: Parts }[] {
-  const out: { school: LevelingSchool; plan: RoutePlan; config: Parts }[] = [];
-  for (const school of LEVELING_SCHOOLS) {
-    const r = recommendedRoute(school, level);
-    if (!r) continue;
-    const config = parts ?? (r.config as Parts);
-    const plan = planRoute(r.sea, r.points, config, level);
-    if (plan) out.push({ school, plan, config: r.config as Parts });
-  }
-  return out;
 }
 
 /** 溺沒海 / 灰海的選點器按鈕:代碼、需要的等級、解鎖標示 */

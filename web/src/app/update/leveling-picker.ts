@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { MAX_LEVELING_LEVEL, applyExp, levelingPoints, type ProgressRoute } from '@eranaut/shared';
+import { applyExp, levelingPoints, type ProgressRoute } from '@eranaut/shared';
 import { fmtExp, lvUp, minutesText, planRoute, statsFor, type RoutePlan } from '../core/leveling-vm';
 import { MAX_STOPS, selectability, type Selectability } from '../route/core/route';
 import { seaIndex } from '../route/core/data';
@@ -116,7 +116,7 @@ export class LevelingPicker {
   });
   protected readonly after = computed(() => {
     const pl = this.plan();
-    return pl === null ? this.level() : Math.min(applyExp({ level: this.level(), exp_in_level: this.exp() }, pl.exp).level, MAX_LEVELING_LEVEL + 1);
+    return pl === null ? this.level() : applyExp({ level: this.level(), exp_in_level: this.exp() }, pl.exp).level;
   });
 
   protected setSea(sea: number): void {

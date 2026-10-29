@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
+  BuildInput,
   ChartOcrResultDto,
   WorkshopChartDto,
   WorkshopChartsInput,
@@ -87,6 +88,14 @@ export class Api {
   }
   clearProgress(submarineId: string): Promise<SubmarineDto> {
     return firstValueFrom(this.http.delete<SubmarineDto>(`/api/submarines/${encodeURIComponent(submarineId)}/progress`));
+  }
+
+  // ---- 潛艇自己的配件(D-296);設定也可隨「更新潛艇」一起送(SubmarineInput.build),這裡是單獨儲存 ----
+  setBuild(submarineId: string, input: BuildInput): Promise<SubmarineDto> {
+    return firstValueFrom(this.http.put<SubmarineDto>(`/api/submarines/${encodeURIComponent(submarineId)}/build`, input));
+  }
+  clearBuild(submarineId: string): Promise<SubmarineDto> {
+    return firstValueFrom(this.http.delete<SubmarineDto>(`/api/submarines/${encodeURIComponent(submarineId)}/build`));
   }
 
   markUpkeepRepaired(workshopId: string, submarineIds: string[]): Promise<{ submarines: SubmarineDto[] }> {

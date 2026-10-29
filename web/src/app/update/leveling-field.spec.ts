@@ -15,7 +15,7 @@ const settle = (): Promise<void> => new Promise((r) => setTimeout(r));
 const NOW = Date.parse('2026-10-26T02:00:00Z');
 
 const progress = (over: Partial<ProgressDto> = {}): ProgressDto => ({
-  level: 20, exp_in_level: 52_000, source: 'manual', sim_on: true, school: null, pending: null, last_route: null, effective_level: 20, effective_exp: 52_000, updated_at: '2026-10-01T00:00:00Z', ...over,
+  level: 20, exp_in_level: 52_000, source: 'manual', assist_on: true, assist_mode: 'level', max_hours: null, filter_id: null, pending: null, last_route: null, effective_level: 20, effective_exp: 52_000, updated_at: '2026-10-01T00:00:00Z', ...over,
 });
 const sub = (over: Partial<SubmarineDto> = {}): SubmarineDto => ({
   id: 's1', workshop_id: 'w1', position: 1, name: '阿爾法', status: 'complete', expected_return_at: null, last_synced_at: '2026-10-01T00:00:00Z', ...over,
@@ -82,7 +82,7 @@ describe('快速修改的練級輔助', () => {
 
   it('沒填等級:只有一行,不碰就不帶 progress(請求和原本一樣)', async () => {
     const { el, save } = setup();
-    expect(el.querySelector('.lv-field')?.textContent).toContain('練級輔助');
+    expect(el.querySelector('.lv-field')?.textContent).toContain('航線輔助');
     expect(el.querySelector('.lv-setup')).toBeNull();
     save();
     const req = http.expectOne('/api/workshops/w1/submarines/1');
@@ -93,29 +93,29 @@ describe('快速修改的練級輔助', () => {
     await settle();
   });
 
-  it('開啟:自動展開設定(1 級、經驗取中間),送出帶等級、經驗與 sim_on', async () => {
+  it('開啟:自動展開設定(1 級、經驗取中間),送出帶等級、經驗與 assist_on', async () => {
     const { el, toggle, save } = setup();
     toggle(true);
     expect(el.querySelector('.lv-setup')).not.toBeNull();
     expect((el.querySelector('input[aria-label="目前等級"]') as HTMLInputElement).value).toBe('1');
     save();
-    await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { sim_on: true, level: 1, exp_in_level: middleExp(1) } });
+    await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { assist_on: true, assist_mode: 'level', max_hours: null, filter_id: null, level: 1, exp_in_level: middleExp(1) } });
   });
 
-  it('等級 ± 與流派:換等級時上限跟著變,送出選的流派', async () => {
+  it('等級 ± 與最長航行時間:換等級時上限跟著變,送出選的上限', async () => {
     const { el, toggle, click, save } = setup();
     toggle(true);
     click('button[aria-label="等級加 1"]');
     click('button[aria-label="等級加 1"]');
     expect((el.querySelector('input[aria-label="目前等級"]') as HTMLInputElement).value).toBe('3');
     expect(el.querySelector('.lv-head')?.textContent).toContain('18,972');
-    click('.lv-setup .uk-seg button', 1);
+    click('.lv-hours button', 2);
     save();
-    await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { sim_on: true, school: 'half', level: 3, exp_in_level: middleExp(3) } });
+    await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { assist_on: true, assist_mode: 'level', max_hours: 12, filter_id: null, level: 3, exp_in_level: middleExp(3) } });
   });
 
   it('已有等級且開著:收合顯示 Lv,點齒輪才展開;沒動數字就不送等級(保留待結算路線)', async () => {
-    const { el, click, save } = setup(sub({ progress: progress({ school: 'snap' }) }));
+    const { el, click, save } = setup(sub({ progress: progress() }));
     expect(el.querySelector('.lv-field')?.textContent).toContain('Lv 20');
     expect(el.querySelector('.lv-setup')).toBeNull();
     click('.lv-field .uk-ico');
@@ -129,21 +129,28 @@ describe('快速修改的練級輔助', () => {
     await settle();
   });
 
-  it('關閉:只送 sim_on: false(等級保留)', async () => {
+  it('關閉:只送 assist_on: false(等級保留)', async () => {
     const { toggle, save } = setup(sub({ progress: progress() }));
     toggle(false);
     save();
-    await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { sim_on: false } });
+    await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { assist_on: false } });
   });
 
-  it('超過 85 級:只顯示等級,沒有開關', () => {
-    const { el } = setup(sub({ progress: progress({ level: 90, effective_level: 90, effective_exp: 0, source: 'ocr', sim_on: false }) }));
-    expect(el.querySelector('.lv-field')?.textContent).toContain('超過 85 級不提供練級輔助');
-    expect(el.querySelector('.lv-field input[type="checkbox"]')).toBeNull();
+  it('超過 85 級(D-298):一樣有開關;開啟後沒有經驗滑桿,等級可到 130', () => {
+    const { el, fixture } = setup(sub({ progress: progress({ level: 90, effective_level: 90, effective_exp: 0, source: 'ocr', assist_on: false }) }));
+    const sw = el.querySelector<HTMLInputElement>('.lv-field input[type="checkbox"]')!;
+    expect(sw).not.toBeNull();
+    sw.click();
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('.lv-field .uk-ico')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.rt-lv-range')).toBeNull();
+    expect(el.querySelector<HTMLInputElement>('.lv-num input')!.value).toBe('90');
+    expect(el.querySelector('.lv-setup')!.textContent).toContain('沒有攻略與每級經驗資料');
   });
 
-  it('已返航又派出(開著練級輔助):「這次派出」預設帶入建議(欄位未解鎖時優先含解鎖點),隨更新一起送(D-291)', async () => {
-    const { el, fixture, save } = setup(sub({ status: 'complete', progress: progress({ level: 42, exp_in_level: 0, effective_level: 42, effective_exp: 0, school: 'snap' }) }));
+  it('已返航又派出(開著航線輔助):「這次派出」預設帶入建議(欄位未解鎖時優先含解鎖點),隨更新一起送(D-291)', async () => {
+    const { el, fixture, save } = setup(sub({ status: 'complete', progress: progress({ level: 42, exp_in_level: 0, effective_level: 42, effective_exp: 0 }), build: { hull: 3, stern: 1, bow: 1, bridge: 3, updated_at: '2026-10-01T00:00:00Z' } }));
     // 剩餘時間沒填:只顯示下一趟建議
     expect(el.querySelector('.dp-line')).toBeNull();
     expect(el.textContent).toContain('下一趟建議');

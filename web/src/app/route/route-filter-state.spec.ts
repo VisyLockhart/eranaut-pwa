@@ -10,8 +10,8 @@ describe('條件組合的純函式(D-229)', () => {
   it('sanitizeSpec:壞資料用預設值、陣列去重、必選與排除不重疊', () => {
     expect(sanitizeSpec(null)).toEqual(DEFAULT_SPEC);
     expect(sanitizeSpec('x')).toEqual(DEFAULT_SPEC);
-    const s = sanitizeSpec({ sea: 3, max_hours: 12, sort: 'opens', match: 'any', required: [1, 1, 2, 'x', 0], excluded: [2, 3], item_ids: [5, 5] });
-    expect(s).toEqual({ v: 1, sea: 3, max_hours: 12, sort: 'opens', match: 'any', required: [1, 2], excluded: [3], item_ids: [5] });
+    const s = sanitizeSpec({ sea: 3, max_hours: 12, sort: ['opens'], match: 'any', required: [1, 1, 2, 'x', 0], excluded: [2, 3], item_ids: [5, 5] });
+    expect(s).toEqual({ v: 2, sea: 3, max_hours: 12, sort: ['opens'], match: 'any', required: [1, 2], excluded: [3], item_ids: [5] });
     expect(sanitizeSpec({ sort: 'nope', sea: 'x', max_hours: 0, match: 'zzz' })).toEqual(DEFAULT_SPEC);
   });
 
@@ -36,7 +36,7 @@ describe('條件組合的純函式(D-229)', () => {
     expect(sameSpec(spec({ item_ids: [5], match: 'all' }), spec({ item_ids: [5], match: 'any' }))).toBe(true);
     expect(sameSpec(spec({ item_ids: [5, 6], match: 'all' }), spec({ item_ids: [5, 6], match: 'any' }))).toBe(false);
     expect(isDefaultSpec(spec())).toBe(true);
-    expect(isDefaultSpec(spec({ sort: 'opens' }))).toBe(false);
+    expect(isDefaultSpec(spec({ sort: ['opens'] }))).toBe(false);
   });
 
   it('autoName / specSummary', () => {
@@ -44,6 +44,6 @@ describe('條件組合的純函式(D-229)', () => {
     expect(autoName(spec())).toBe('條件組合');
     const grey = SEAS[1]!;
     expect(autoName(spec({ sea: grey.sea, max_hours: 6, required: [1, 2, 3] }))).toBe(`${grey.name} · 6 小時內 · 3 點`);
-    expect([...autoName(spec({ sea: grey.sea, max_hours: 48, required: [1, 2, 3], excluded: [4, 5], item_ids: [1, 2], sort: 'variety' }))].length).toBeLessThanOrEqual(20);
+    expect([...autoName(spec({ sea: grey.sea, max_hours: 48, required: [1, 2, 3], excluded: [4, 5], item_ids: [1, 2], sort: ['variety'] }))].length).toBeLessThanOrEqual(20);
   });
 });

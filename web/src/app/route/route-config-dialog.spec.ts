@@ -13,7 +13,7 @@ import { RouteVm } from './route-vm';
 
 const g = () => SEA_INDEXES[1]!;
 const dto = (over: Partial<RouteSubDto> = {}): RouteSubDto => ({
-  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [], favorite: false,
+  id: 'a', name: '主力艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, favorite: false,
   created_at: '2026-10-08T00:00:00.000Z', updated_at: '2026-10-08T00:00:00.000Z', ...over,
 });
 const settle = () => new Promise((r) => setTimeout(r));
@@ -208,14 +208,14 @@ describe('RouteConfigDialog', () => {
     [3, 1, 2, 3].forEach((p, i) => vm.setPart(i as 0 | 1 | 2 | 3, p));
     open('new');
     const input = el.querySelector<HTMLInputElement>('#rt-cfg-name')!;
-    expect(input.value).toBe('Lv76 3/1/2/3');
+    expect(input.value).toBe('3/1/2/3');
     type(input, '一二三四五六七八九十一二三四五六七八九十一');
     expect(btn('儲存為新配置').disabled).toBe(true);
     type(input, '我的艇');
     btn('儲存為新配置').click();
     const req = http.expectOne('/api/route-subs');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ name: '我的艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3, bound_submarine_ids: [] });
+    expect(req.request.body).toEqual({ name: '我的艇', level: 76, hull: 3, stern: 1, bow: 2, bridge: 3 });
     req.flush(dto({ id: 'n', name: '我的艇' }));
     await settle();
     fixture.detectChanges();
@@ -231,23 +231,23 @@ describe('RouteConfigDialog', () => {
     const input = el.querySelector<HTMLInputElement>('#rt-cfg-name')!;
     part('船體 2').click();
     fixture.detectChanges();
-    expect(vm.draft()!.name).toBe(`Lv${vm.draft()!.level} 2/1/1/1`);
+    expect(vm.draft()!.name).toBe('2/1/1/1');
     type(input, '自訂');
     part('船體 3').click();
     fixture.detectChanges();
     expect(vm.draft()!.name).toBe('自訂');
   });
 
-  it('編輯儲存的配置:PUT 覆蓋同一組,保留綁定', async () => {
-    await mount([dto({ bound_submarine_ids: ['sub1'] })]);
+  it('編輯儲存的配置:PUT 覆蓋同一組', async () => {
+    await mount([dto()]);
     open('edit', 'a');
     part('船體 4').click();
     fixture.detectChanges();
     btn('儲存').click();
     const req = http.expectOne('/api/route-subs/a');
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toMatchObject({ name: '主力艇', hull: 4, bound_submarine_ids: ['sub1'] });
-    req.flush(dto({ hull: 4, bound_submarine_ids: ['sub1'] }));
+    expect(req.request.body).toMatchObject({ name: '主力艇', hull: 4 });
+    req.flush(dto({ hull: 4 }));
     await settle();
     expect(vm.saved()[0]!.hull).toBe(4);
     expect(vm.subId()).toBe('a');

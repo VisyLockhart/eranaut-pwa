@@ -3,11 +3,13 @@ import { applyNotifyPrefsUpdate } from '@eranaut/shared';
 import type { Db } from '../db/index.js';
 import { listSubmarines, upsertSubmarines } from '../repo/submarines.js';
 import { applyProgressInput, deleteProgress } from '../repo/progress.js';
+import { deleteBuild } from '../repo/build.js';
 import { deleteUpkeep } from '../repo/upkeep.js';
 import { replaceWorkshop } from '../repo/workshops.js';
 import { getNotifyMethods, setNotifyMethods } from '../repo/users.js';
 import { syncUserReminders, syncWorkshopReminders } from './reminders.js';
 import type { ValidSubmarine } from './submarines.js';
+import { applyBuild } from './build.js';
 import { enableUpkeep } from './upkeep.js';
 import type { ValidWorkshop } from './workshops.js';
 
@@ -19,8 +21,15 @@ export function updateSubmarines(db: Db, userId: string, workshopId: string, ite
     const all = upsertSubmarines(db, userId, workshopId, items, now);
     if (!all) return undefined;
 
-    // 維修提醒的開啟 / 關閉(D-288)與潛艇更新在同一個交易:被拒絕(沒綁定配置等)整筆不生效
     const idByPos = new Map(all.map((s) => [s.position, s.id]));
+    // 配件(D-296)先於維修提醒:同一個請求裡「改配件 + 開啟維修提醒」,提醒要依新配件算上限
+    for (const v of items) {
+      if (v.build === undefined) continue;
+      const sid = idByPos.get(v.position)!;
+      if (v.build === null) deleteBuild(db, sid);
+      else applyBuild(db, sid, v.upkeep === undefined ? v.build : { ...v.build, mark_repaired: false }, now);
+    }
+    // 維修提醒的開啟 / 關閉(D-288)與潛艇更新在同一個交易:被拒絕(沒設定配件等)整筆不生效
     for (const v of items) {
       if (v.upkeep === undefined) continue;
       const sid = idByPos.get(v.position)!;

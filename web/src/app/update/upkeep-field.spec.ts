@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type { RouteSubDto, WorkshopWithSubmarines } from '@eranaut/shared';
+import type { BuildDto, WorkshopWithSubmarines } from '@eranaut/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Auth } from '../core/auth';
 import { DataStore } from '../core/data-store';
@@ -13,14 +13,13 @@ import { QuickEditDialog } from './quick-edit-dialog';
 const settle = (): Promise<void> => new Promise((r) => setTimeout(r));
 const NOW = Date.parse('2026-10-26T02:00:00Z');
 
-const config = (over: Partial<RouteSubDto> = {}): RouteSubDto => ({
-  id: 'r1', name: '主力', level: 100, hull: 3, stern: 1, bow: 2, bridge: 4, favorite: false, bound_submarine_ids: ['s1'], created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-01T00:00:00Z', ...over,
-});
-const workshop = (upkeep = false): WorkshopWithSubmarines => ({
+const build = (over: Partial<BuildDto> = {}): BuildDto => ({ hull: 3, stern: 1, bow: 2, bridge: 4, updated_at: '2026-10-01T00:00:00Z', ...over });
+const workshop = (upkeep = false, b: BuildDto | null = build()): WorkshopWithSubmarines => ({
   id: 'w1', name: '貝殼工坊', server: '迦樓羅', captain: null, address_district: null, address_ward: null, address_detail: null, notify_batched: false, notify_lead_minutes: 0, created_at: '2026-10-01T00:00:00Z',
   submarines: [
     {
       id: 's1', workshop_id: 'w1', position: 1, name: '阿爾法', status: 'complete', expected_return_at: null, last_synced_at: '2026-10-01T00:00:00Z',
+      ...(b ? { build: b } : {}),
       ...(upkeep ? { upkeep: { route_key: '1:OJ', route_sea: 1, route_points: ['O', 'J'], voyages_done: 2, limit_voyages: 6, parts_sig: '3,1,2,4', current_sig: '3,1,2,4', repaired_at: null, updated_at: '2026-10-01T00:00:00Z' } } : {}),
     },
   ],
@@ -31,7 +30,7 @@ describe('快速修改的維修提醒', () => {
   let store: DataStore;
   let routeVm: RouteVm;
 
-  function setup(opts: { saving?: boolean; configs?: RouteSubDto[]; upkeep?: boolean } = {}) {
+  function setup(opts: { saving?: boolean; build?: BuildDto | null; upkeep?: boolean } = {}) {
     localStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -42,9 +41,7 @@ describe('快速修改的維修提醒', () => {
     store = TestBed.inject(DataStore);
     routeVm = TestBed.inject(RouteVm);
     store.now.set(NOW);
-    store.fetched.set([workshop(opts.upkeep)]);
-    routeVm.saved.set(opts.configs ?? [config()]);
-    routeVm.loaded.set(true);
+    store.fetched.set([workshop(opts.upkeep, opts.build === undefined ? build() : opts.build)]);
     const fixture = TestBed.createComponent(QuickEditDialog);
     fixture.componentRef.setInput('workshopId', 'w1');
     fixture.componentRef.setInput('position', 1);
@@ -73,21 +70,24 @@ describe('快速修改的維修提醒', () => {
     expect(el.querySelector('.uk-field')).toBeNull();
   });
 
-  it('沒綁定配置:停用並說明去哪裡綁', () => {
-    const { el } = setup({ configs: [config({ bound_submarine_ids: [] })] });
-    expect(el.querySelector('.uk-field.dashed')?.textContent).toContain('先到「配件 → 清單」');
+  it('還沒設定這艘的配件:停用並說明先設定;按下去開啟潛艇配置對話框', () => {
+    const { el } = setup({ build: null });
+    expect(el.querySelector('.uk-field.dashed')?.textContent).toContain('先設定這艘的配件配置');
+    el.querySelector<HTMLElement>('.uk-field.dashed')!.click();
+    expect(routeVm.draft()?.mode).toBe('sub');
+    expect(routeVm.draft()?.sub?.submarineId).toBe('s1');
     expect(el.querySelector('.uk-field input[type="checkbox"]')).toBeNull();
   });
 
   it('配置沒有耐久資料:顯示「即將支援」', () => {
     // 10 號零件不在資料集以外的情況不存在;用資料集沒有的零件編號(11)模擬「資料還沒有」
-    const { el } = setup({ configs: [config({ hull: 11 as never })] });
+    const { el } = setup({ build: build({ hull: 11 as never }) });
     expect(el.textContent).toContain('即將支援');
   });
 
   it('預設關閉:只有一行,寫明配置與可追蹤的路線', () => {
     const { el } = setup();
-    expect(el.querySelector('.uk-field')?.textContent).toContain('配置「3124」・溺沒海 O→J 可追蹤');
+    expect(el.querySelector('.uk-field')?.textContent).toContain('配件「3124」・溺沒海 O→J 可追蹤');
     expect(el.querySelector('.uk-setup')).toBeNull();
   });
 
@@ -157,7 +157,7 @@ describe('快速修改的維修提醒', () => {
     await settle();
   });
 
-  it('伺服器拒絕(例如配置剛被解除綁定):錯誤顯示在這一列,對話框保持開啟', async () => {
+  it('伺服器拒絕(例如配件剛被清除):錯誤顯示在這一列,對話框保持開啟', async () => {
     const { el, toggle, save, fixture } = setup();
     toggle(true);
     save();

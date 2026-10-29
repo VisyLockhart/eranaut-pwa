@@ -21,8 +21,9 @@
           <button type="button" class="rt-save-btn rt-cta" (click)="findBuild()"><span aria-hidden="true">✦ </span>找配置</button>
         </div>
       </div>
-      <div class="rt-note">展示版不儲存配置,也不綁定工坊潛艇;這裡的設定只留在這個瀏覽器。按「編輯」設定等級與配件。</div>
+      <div class="rt-note">展示版不儲存配置,也沒有工坊潛艇;這裡的設定只留在這個瀏覽器。按「編輯」設定等級與配件。</div>
     }
     <app-route-subs actions="manage" />
   </section>
+  @if (vm.canSave) { <app-route-sub-builds /> }
 }

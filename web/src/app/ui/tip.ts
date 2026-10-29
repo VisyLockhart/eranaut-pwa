@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { Directive, ElementRef, OnDestroy, effect, inject, input } from '@angular/core';
+import { UiScale } from '../core/ui-scale';
 
 /** 全站共用的提示泡泡(單一 DOM 節點,樣式在 styles.scss 的 .tip-bubble,各主題用 token 改外觀) */
 let bubble: HTMLElement | null = null;
@@ -42,6 +43,7 @@ export class Tip implements OnDestroy {
   readonly tip = input<string | null | undefined>('');
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly doc = inject(DOCUMENT);
+  private readonly scale = inject(UiScale);
 
   constructor() {
     effect(() => {
@@ -88,9 +90,9 @@ export class Tip implements OnDestroy {
     b.style.left = '0px';
     b.style.top = '0px';
     b.classList.add('show');
-    const win = this.doc.defaultView;
-    const vw = win?.innerWidth ?? 1024;
-    const r = this.el.getBoundingClientRect();
+    // 介面大小放大時(D-164)整頁用 CSS zoom,固定定位的座標單位是 zoom 後的 CSS 像素:位置與視窗大小都要換算(否則泡泡會偏離、甚至跑出畫面)
+    const vw = this.scale.localViewport().width;
+    const r = this.scale.localRect(this.el);
     const w = b.offsetWidth;
     const h = b.offsetHeight;
     const gap = 8;

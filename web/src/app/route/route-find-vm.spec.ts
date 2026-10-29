@@ -6,6 +6,7 @@ import { Auth } from '../core/auth';
 import { SEA_INDEXES } from './core/data';
 import { ids } from './core/test-helpers';
 import { RouteExploreVm } from './route-explore-vm';
+import { normalizeSort } from './core/find';
 import { RouteFindVm } from './route-find-vm';
 import { RouteMap } from './route-map';
 import { RouteVm } from './route-vm';
@@ -87,7 +88,7 @@ describe('找路線的篩選與搜尋狀態(D-222)', () => {
     f.run();
     await tick();
     expect(f.stale()).toBe(false);
-    expect(f.searchedSort()).toBe('variety');
+    expect(f.searchedSort()).toEqual(['variety']);
   });
 
   it('必選 + 排除:結果每條都包含必選點、不含排除點', async () => {
@@ -177,5 +178,22 @@ describe('RouteMap 篩選模式(D-222)', () => {
     fx.componentRef.setInput('graph', null);
     fx.detectChanges();
     expect((fx.nativeElement as HTMLElement).querySelector('.badge.check')).toBeNull();
+  });
+
+  it('排序(D-298):點選的先後就是優先順序;可全部取消,搜尋時預設只照每分鐘經驗', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const f = TestBed.inject(RouteFindVm);
+    f.setSort('perMin');
+    f.toggleSort('variety');
+    expect(f.sort()).toEqual(['perMin', 'variety']);
+    f.toggleSort('perMin');
+    expect(f.sort()).toEqual(['variety']);
+    f.toggleSort('perMin');
+    expect(f.sort()).toEqual(['variety', 'perMin']);
+    f.toggleSort('variety');
+    f.toggleSort('perMin');
+    expect(f.sort()).toEqual([]);
+    expect(normalizeSort(f.sort())).toEqual(['perMin']);
   });
 });

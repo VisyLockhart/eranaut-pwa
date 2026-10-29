@@ -249,4 +249,48 @@ CREATE TABLE workshop_charts (
 );
 `,
   },
+  {
+    version: 11,
+    name: 'submarine_build',
+    // 潛艇自己的配件(D-296):取代「配置綁定潛艇」。一艘潛艇最多一列,列存在 = 已設定配件,
+    // 和 submarine_upkeep / submarine_progress 一樣主鍵就是 submarine_id;潛艇刪除時連帶刪除。
+    // 範圍(1~10)是程式常數、DB 不加 CHECK。既有綁定只搬配件(不搬等級),搬完 route_sub_bindings 不再使用(保留不刪,下次清理)。
+    sql: `
+CREATE TABLE submarine_build (
+  submarine_id TEXT PRIMARY KEY REFERENCES submarines(id) ON DELETE CASCADE,
+  hull INTEGER NOT NULL,
+  stern INTEGER NOT NULL,
+  bow INTEGER NOT NULL,
+  bridge INTEGER NOT NULL,
+  updated_at TEXT NOT NULL
+);
+INSERT OR IGNORE INTO submarine_build (submarine_id, hull, stern, bow, bridge, updated_at)
+SELECT b.submarine_id, rs.hull, rs.stern, rs.bow, rs.bridge, rs.updated_at
+FROM route_sub_bindings b JOIN route_subs rs ON rs.id = b.route_sub_id;
+`,
+  },
+  {
+    version: 12,
+    name: 'assist_modes',
+    // 練級輔助 → 航線輔助(D-297):sim_on 改名 assist_on;偏好流派 school 換成 assist_mode('level' 練級 | 'combo' 條件組合)、
+    // max_hours(練級的最長航行時間,NULL = 不限)與 filter_id(條件組合,條件被刪除時自動設回 NULL)。
+    // 舊偏好轉換:掐點 → 不限、半日 → 12 小時、整日 → 24 小時。
+    sql: `
+ALTER TABLE submarine_progress RENAME COLUMN sim_on TO assist_on;
+ALTER TABLE submarine_progress ADD COLUMN assist_mode TEXT NOT NULL DEFAULT 'level';
+ALTER TABLE submarine_progress ADD COLUMN max_hours INTEGER;
+ALTER TABLE submarine_progress ADD COLUMN filter_id TEXT REFERENCES route_filters(id) ON DELETE SET NULL;
+UPDATE submarine_progress SET max_hours = CASE school WHEN 'half' THEN 12 WHEN 'day' THEN 24 ELSE NULL END;
+ALTER TABLE submarine_progress DROP COLUMN school;
+`,
+  },
+  {
+    version: 13,
+    name: 'route_filter_multi_sort',
+    // 條件組合 spec v1 → v2(D-297):sort 由單一字串改成陣列(多重排序,只開原本那一項)。
+    sql: `
+UPDATE route_filters SET spec = json_set(spec, '$.v', 2, '$.sort', json_array(json_extract(spec, '$.sort')))
+WHERE json_extract(spec, '$.v') = 1 AND json_type(spec, '$.sort') = 'text';
+`,
+  },
 ];

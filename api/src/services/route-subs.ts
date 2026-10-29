@@ -15,7 +15,6 @@ export interface ValidRouteSub {
   stern: number;
   bow: number;
   bridge: number;
-  bound_submarine_ids: string[];
 }
 
 type Errors = Partial<Record<keyof RouteSubInput, FieldErrorCode>>;
@@ -60,16 +59,6 @@ export function validateRouteSubInput(input: unknown): RouteSubValidation {
   const parts = {} as Record<(typeof ROUTE_PART_KEYS)[number], number>;
   for (const k of ROUTE_PART_KEYS) parts[k] = intIn(body, k, 1, ROUTE_PART_MAX, errors);
 
-  let bound: string[] = [];
-  const b = body.bound_submarine_ids;
-  if (b !== undefined && b !== null) {
-    if (!Array.isArray(b) || b.some((x) => typeof x !== 'string')) errors.bound_submarine_ids = 'invalid_type';
-    else {
-      bound = [...new Set((b as string[]).filter((x) => x !== ''))];
-      if (bound.length > LIMITS.maxRouteSubBindings) errors.bound_submarine_ids = 'invalid_value';
-    }
-  }
-
   if (Object.keys(errors).length > 0) return { ok: false, fields: errors };
-  return { ok: true, value: { name, level, ...parts, bound_submarine_ids: bound } };
+  return { ok: true, value: { name, level, ...parts } };
 }

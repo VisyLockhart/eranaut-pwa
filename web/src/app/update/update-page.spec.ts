@@ -466,13 +466,14 @@ describe('UpdatePage', () => {
 
   describe('練級輔助:出發前的派出建議(D-291)', () => {
     const NOW = Date.now();
-    const prog = (over: object) => ({ level: 42, exp_in_level: 0, source: 'manual', sim_on: true, school: 'snap', pending: null, last_route: null, effective_level: 42, effective_exp: 0, updated_at: '2026-10-01T00:00:00Z', ...over });
+    const prog = (over: object) => ({ level: 42, exp_in_level: 0, source: 'manual', assist_on: true, assist_mode: 'level', max_hours: null, filter_id: null, pending: null, last_route: null, effective_level: 42, effective_exp: 0, updated_at: '2026-10-01T00:00:00Z', ...over });
     const leveled = (): WorkshopWithSubmarines => {
       // 4 艘 = 欄位都已解鎖,建議照偏好攻略(解鎖優先另有測試)
       const w = workshop('w1', '貝殼工坊', 4);
-      w.submarines[0] = { ...w.submarines[0]!, status: 'complete', expected_return_at: null, progress: prog({}) as never };
+      w.submarines[0] = { ...w.submarines[0]!, status: 'complete', expected_return_at: null, progress: prog({}) as never, build: { hull: 3, stern: 1, bow: 1, bridge: 3, updated_at: '2026-10-01T00:00:00Z' } };
       w.submarines[1] = {
         ...w.submarines[1]!,
+        build: { hull: 3, stern: 1, bow: 1, bridge: 3, updated_at: '2026-10-01T00:00:00Z' },
         expected_return_at: new Date(NOW + 2 * 3_600_000).toISOString(),
         progress: prog({ level: 40, exp_in_level: 120_000, effective_level: 40, effective_exp: 120_000, pending: { sea: 1, points: ['I', 'P', 'Q'], exp: 613_630 } }) as never,
       };
@@ -488,7 +489,7 @@ describe('UpdatePage', () => {
       return { fixture, el };
     };
 
-    it('等上傳時就列出每艘下一趟的建議;可暫時切換流派檢視', () => {
+    it('等上傳時就列出每艘下一趟的建議;可暫時切換模式檢視', () => {
       const { el, fixture } = openPage();
       const cards = el.querySelectorAll('.dp-card');
       expect(cards.length).toBe(2);
@@ -497,9 +498,10 @@ describe('UpdatePage', () => {
       // 還在航行的:加上那一趟 → 返航後 Lv 42
       expect(cards[1]!.textContent).toContain('40');
       expect(cards[1]!.textContent).toContain('42');
-      [...el.querySelectorAll<HTMLButtonElement>('.dp-seg button')].find((b) => b.textContent?.trim() === '整日')!.click();
+      expect(cards[0]!.textContent).toContain('練級・不限');
+      [...el.querySelectorAll<HTMLButtonElement>('.dp-seg button')].find((b) => b.textContent?.trim() === '練級')!.click();
       fixture.detectChanges();
-      expect(el.querySelectorAll('.dp-card')[0]!.textContent).toContain('U → S → P → Q');
+      expect(el.querySelectorAll('.dp-card')[0]!.textContent).toContain('I → P → Q');
     });
 
     it('沒有任何一艘開練級輔助:不顯示建議,上傳區維持原樣', () => {
