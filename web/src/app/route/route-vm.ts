@@ -1,3 +1,4 @@
+import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { LIMITS, type RouteSubDto, type RouteSubInput } from '@eranaut/shared';
@@ -44,6 +45,7 @@ export class RouteVm {
   private readonly api = inject(Api);
   private readonly auth = inject(Auth);
   private readonly toast = inject(Toast);
+  private readonly router = inject(Router);
   /** 能不能儲存配置與綁定工坊潛艇;展示模式為 false(沒有伺服器),此時 `saved` 恆為空 */
   readonly canSave = inject(ROUTE_FEATURES).saving;
 
@@ -135,10 +137,17 @@ export class RouteVm {
 
   // ---- 分頁 ----
 
-  /** 使用者切換分頁(會被記住) */
-  setTab(tab: RouteTab): void {
+  /** 顯示指定分頁(由路由決定,不導頁;會被記住) */
+  showTab(tab: RouteTab): void {
     this.tabTouched = true;
     this.tab.set(tab);
+  }
+
+  /** 切換分頁 = 前往對應頁面:配置 → /gear(配件清單)、航線 → /route(D-295) */
+  setTab(tab: RouteTab): void {
+    this.showTab(tab);
+    // 單元測試沒有設定路由時導頁會失敗,不影響狀態
+    void this.router.navigateByUrl(tab === 'config' ? '/gear' : '/route').catch(() => undefined);
   }
 
   /** 載入儲存潛艇後決定預設分頁:沒有儲存配置 → 配置;有但沒有記錄 → 航線;有記錄 → 沿用。只在使用者還沒切過分頁時做 */

@@ -89,9 +89,21 @@ describe('UpdateVm', () => {
       ]);
     });
 
-    it('總覽正過濾某間工坊時,預設選那間', () => {
+    it('預設第一間(側欄入口,D-295),不看總覽正在看哪間;總覽按鈕帶 ?ws= 時選那間', () => {
       TestBed.inject(OverviewVm).select('w2');
       vm.open();
+      expect(vm.workshopId()).toBe('w1');
+      vm.close();
+      vm.open('w2');
+      expect(vm.workshopId()).toBe('w2');
+    });
+
+    it('指定的工坊資料晚到:到了之後補選那間', () => {
+      store.fetched.set([]);
+      vm.open('w2');
+      expect(vm.workshopId()).toBeNull();
+      store.fetched.set([workshop('w1', [1]), workshop('w2', [1])]);
+      vm.ensureSelection();
       expect(vm.workshopId()).toBe('w2');
     });
 

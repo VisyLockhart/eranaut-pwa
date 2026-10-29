@@ -77,7 +77,7 @@ html[data-theme='light'] {
   .status-pill.ready { background: var(--bg-elevated); color: var(--ready-ink); box-shadow: 0 0 0 2px var(--line); }
 
   /* 浮層:硬陰影 */
-  .modal-box, .sel-panel, .toast, .install-prompt, .update-banner, .tip-bubble, .ws-tooltip-bubble, .m-user-menu, .rt-fab-menu { border: 3px solid var(--line); box-shadow: var(--hard); }
+  .modal-box, .sel-panel, .toast, .install-prompt, .update-banner, .tip-bubble, .ws-tooltip-bubble, .m-user-menu { border: 3px solid var(--line); box-shadow: var(--hard); }
   .modal-box { border-radius: 0; }
   .install-prompt, .update-banner { border-color: var(--line); background: var(--bg-elevated); }
   .tip-bubble { border-width: 2px; box-shadow: 3px 3px 0 0 var(--drop); background: var(--line); color: var(--bg-elevated); }
@@ -116,6 +116,14 @@ html[data-theme='light'] {
   .d-sidebar { border-right: 3px solid var(--line); background: var(--bg-elevated); }
   .nav-item:not(.m-intro).active { color: var(--text); background: var(--border); box-shadow: 0 0 0 3px var(--line); }
   .d-nav-item:not(.intro-link).active { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 0 3px var(--line), var(--press); }
+  /* 子選單(D-295) */
+  .d-group.par::before { background: var(--accent); }
+  .d-subs { border-left: 2px solid var(--border); }
+  .d-sub-item.active { background: var(--border); color: var(--text); box-shadow: 0 0 0 2px var(--line); }
+  .m-subsheet { border: 3px solid var(--line); border-radius: 14px; box-shadow: 4px 4px 0 0 var(--line); }
+  .m-subsheet::after { border-width: 0 3px 3px 0; border-color: var(--line); }
+  .m-sub-btn { border: 2px solid var(--line); border-radius: 10px; color: var(--text); }
+  .m-sub-btn.active { background: var(--accent); color: var(--on-accent); border-color: var(--line); box-shadow: var(--press); }
   .nav-upload-fab { background: var(--accent); color: var(--on-accent); border: 3px solid var(--line); box-shadow: var(--press); }
   .d-install { border: 3px dashed var(--line); background: var(--bg-elevated-2); color: var(--text); }
   .d-install:hover { background: var(--border); }

@@ -134,6 +134,16 @@ html[data-theme='dark'] {
   .d-nav-item:not(.intro-link).active { background: var(--bg-elevated); color: var(--gold-b); text-shadow: 0 0 12px var(--glow); }
   .d-nav-item:not(.intro-link).active::before { background: var(--gold); opacity: 1; box-shadow: 0 0 12px var(--glow); }
   .d-sidebar.collapsed .d-nav-item:not(.intro-link) { padding-left: 0; }
+  /* 子選單(D-295) */
+  .d-group.par::before { width: 3px; border-radius: 0; background: var(--gold); opacity: 1; box-shadow: 0 0 10px var(--glow); }
+  .d-sub-item, .m-sub-btn { border-radius: 0; font-family: var(--font-head); letter-spacing: 0.08em; }
+  .d-sub-item.active { background: var(--bg-elevated); color: var(--gold-b); box-shadow: inset 2px 0 0 var(--gold); }
+  .d-subs { border-left-color: var(--steel-d); }
+  .m-subsheet { border-radius: 0; border-color: var(--gold); }
+  .m-subsheet::after { border-color: var(--gold); }
+  .m-sub-btn { border-color: var(--gold-d); }
+  .m-sub-btn.active { background: var(--bg-elevated-2); border-color: var(--gold); color: var(--gold-b); }
+  .nav-group.sel::before { background: var(--gold); }
   .d-install { border: 1px dashed var(--gold-d); background: transparent; color: var(--gold-b); font-family: var(--font-head); letter-spacing: 0.08em; }
   .d-install:hover { background: color-mix(in srgb, var(--gold) 12%, transparent); }
   .avatar { border: 1px solid var(--gold-d); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px var(--gl); color: var(--gold-b); font-family: var(--font-mono); font-weight: 700; background: var(--surface-raise); }
@@ -145,7 +155,7 @@ html[data-theme='dark'] {
   .toast-stack .toast.warn { border-color: var(--amber); color: var(--amber-text-2); }
   .install-prompt, .update-banner { background: var(--bg-elevated); border: 1px solid var(--gold); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px var(--gl), var(--float); }
   .update-banner { font-family: var(--font-head); color: var(--gold-b); }
-  .tip-bubble, .ws-tooltip-bubble, .m-user-menu, .rt-fab-menu { background: var(--bg-elevated-2); border: 1px solid var(--gold-d); box-shadow: var(--float); color: var(--text); }
+  .tip-bubble, .ws-tooltip-bubble, .m-user-menu { background: var(--bg-elevated-2); border: 1px solid var(--gold-d); box-shadow: var(--float); color: var(--text); }
 
   /* 總覽(D-290):工坊下拉標題金字、排序分段金框、分組標題金色襯線 + 細線、手機收合區塊雙線框 */
   .sel-trigger.sel-pager .sel-label { @include title-gold; font-size: 14px; letter-spacing: 0.08em; }

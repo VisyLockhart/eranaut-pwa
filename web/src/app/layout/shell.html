@@ -8,12 +8,11 @@
       </div>
       @if (layout.headerTool(); as tool) { <div class="m-head-tool"><ng-container *ngTemplateOutlet="tool" /></div> }
       <div class="m-user">
-        <button type="button" class="m-avatar-btn" [class.on]="menuOpen() || onSettings()" (click)="toggleMenu($event)" aria-haspopup="menu" [attr.aria-expanded]="menuOpen()" aria-label="帳號選單">
+        <button type="button" class="m-avatar-btn" [class.on]="menuOpen()" (click)="toggleMenu($event)" aria-haspopup="menu" [attr.aria-expanded]="menuOpen()" aria-label="帳號選單">
           <app-avatar [name]="auth.user()?.displayName ?? ''" [url]="auth.user()?.avatarUrl ?? null" />
         </button>
         @if (menuOpen()) {
           <div class="m-user-menu" role="menu" aria-label="帳號選單">
-            <a class="m-user-item" role="menuitem" routerLink="/settings" (click)="closeMenu()"><app-icon name="settings" [size]="18" /><span>設定</span></a>
             @if (up.supported) {
               <button type="button" class="m-user-item" role="menuitem" [disabled]="up.checking()" (click)="checkUpdate($event)"><app-icon name="refresh" [size]="18" /><span>{{ up.checking() ? '檢查中…' : '檢查更新' }}</span></button>
             }
@@ -25,17 +24,30 @@
 
     <router-outlet />
 
-    <div class="m-nav">
-      @if (intro) {
-        <a class="nav-item m-intro" routerLink="/intro" routerLinkActive="active"><app-icon name="plusSquare" [size]="20" /><span>加入</span><i class="intro-dot"></i></a>
+    <div class="m-nav-wrap">
+      @if (openGroup(); as gid) {
+        <div class="m-scrim" (click)="closeGroups()" aria-hidden="true"></div>
+        <div class="m-subsheet" [attr.data-g]="gid" role="menu" [attr.aria-label]="group(gid).label" (touchstart)="swipeStart($event)" (touchend)="swipeEnd($event)">
+          @for (c of group(gid).children; track c.url) {
+            <a class="m-sub-btn" role="menuitem" [routerLink]="c.url" routerLinkActive="active"><app-icon [name]="c.icon" [size]="22" /><span>{{ c.label }}</span></a>
+          }
+        </div>
       }
-      <a class="nav-item" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>總覽</span></a>
-      <a class="nav-item nav-upload" routerLink="/update" routerLinkActive="active">
-        <div class="nav-upload-fab"><app-icon name="camera" [size]="20" /></div>
-        <span>更新</span>
-      </a>
-      <a class="nav-item" routerLink="/route" routerLinkActive="active"><app-icon name="route" [size]="20" /><span>航線</span></a>
-      <a class="nav-item" routerLink="/craft" routerLinkActive="active"><app-icon name="anvil" [size]="20" /><span>製作</span></a>
+      <div class="m-nav">
+        @if (intro) {
+          <a class="nav-item m-intro" routerLink="/intro" routerLinkActive="active"><app-icon name="plusSquare" [size]="20" /><span>加入</span><i class="intro-dot"></i></a>
+        }
+        <a class="nav-item" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>工坊</span></a>
+        <button type="button" class="nav-item nav-group" [class.active]="activeGroup() === 'gear'" [class.sel]="openGroup() === 'gear'" aria-haspopup="menu" [attr.aria-expanded]="openGroup() === 'gear'" (click)="toggleSheet('gear', $event)">
+          <app-icon name="anvil" [size]="20" /><span>配件<app-icon class="nav-more" name="chevronUp" [size]="9" /></span>
+        </button>
+        <button type="button" class="nav-item nav-upload nav-group" [class.active]="activeGroup() === 'update'" [class.sel]="openGroup() === 'update'" aria-haspopup="menu" [attr.aria-expanded]="openGroup() === 'update'" (click)="toggleSheet('update', $event)">
+          <div class="nav-upload-fab"><app-icon name="camera" [size]="20" /></div>
+          <span>更新</span>
+        </button>
+        <a class="nav-item" routerLink="/route" routerLinkActive="active"><app-icon name="route" [size]="20" /><span>航線</span></a>
+        <a class="nav-item" routerLink="/settings" routerLinkActive="active"><app-icon name="settings" [size]="20" /><span>設定</span></a>
+      </div>
     </div>
     @if (maintenance.view()) {
       <app-maintenance-notice variant="line" />
@@ -60,9 +72,20 @@
       @if (intro) {
         <a class="d-nav-item intro-link" routerLink="/intro" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '加入海域' : null"><app-icon name="plusSquare" [size]="20" /><span>加入海域</span><span class="intro-new">HERE</span></a>
       }
-      <a class="d-nav-item" routerLink="/" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '總覽' : null" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>總覽</span></a>
-      <a class="d-nav-item" routerLink="/route" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '航線模擬' : null"><app-icon name="route" [size]="20" /><span>航線模擬</span></a>
-      <a class="d-nav-item" routerLink="/craft" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '配件製作' : null"><app-icon name="anvil" [size]="20" /><span>配件製作</span></a>
+      <a class="d-nav-item" routerLink="/" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '工坊' : null" [routerLinkActiveOptions]="{ exact: true }"><app-icon name="home" [size]="20" /><span>工坊</span></a>
+      @for (g of groups; track g.id) {
+        <button type="button" class="d-nav-item d-group" [class.par]="activeGroup() === g.id" [class.open]="isOpen(g.id)" [tip]="layout.sidebarCollapsed() ? g.label : null" [attr.aria-label]="g.label" aria-haspopup="true" [attr.aria-expanded]="isOpen(g.id)" [attr.aria-controls]="'d-sub-' + g.id" (click)="toggleGroup(g.id, $event)">
+          <app-icon [name]="g.icon" [size]="20" /><span>{{ g.label }}</span><app-icon class="d-group-chev" name="chevronDown" [size]="16" />
+        </button>
+        @if (isOpen(g.id)) {
+          <div class="d-subs" [id]="'d-sub-' + g.id" role="group" [attr.aria-label]="g.label">
+            @for (c of g.children; track c.url) {
+              <a class="d-sub-item" [routerLink]="c.url" routerLinkActive="active">{{ c.label }}</a>
+            }
+          </div>
+        }
+      }
+      <a class="d-nav-item" routerLink="/route" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '航線' : null"><app-icon name="route" [size]="20" /><span>航線</span></a>
       <a class="d-nav-item" routerLink="/settings" routerLinkActive="active" [tip]="layout.sidebarCollapsed() ? '設定' : null"><app-icon name="settings" [size]="20" /><span>設定</span></a>
       <div style="flex-grow: 1"></div>
       <app-maintenance-notice [variant]="layout.sidebarCollapsed() ? 'icon' : 'card'" />

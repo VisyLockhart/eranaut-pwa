@@ -686,7 +686,6 @@ app-select { display: block; position: relative; }
 
 /* 航線模擬器 P5:分頁、結果、配置編輯器、儲存面板 */
 .rt-d-wrap { max-width: 980px; display: flex; flex-direction: column; gap: 14px; }
-.rt-tabs { margin: 0; flex: 0 0 auto; }
 .rt-view-map { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .rt-view-map.rt-grid { display: grid; }
 .rt-block { background: var(--bg-elevated-2); border: var(--bw) solid var(--border); border-radius: calc(12px * var(--rs)); padding: 12px; min-width: 0; margin-bottom: 0; }
@@ -809,7 +808,6 @@ app-route-result, app-route-editor { display: flex; flex-direction: column; gap:
 .rt-bind .rt-card-actions { margin-top: 0; }
 .rt-bind-group { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 .rt-tag { overflow-wrap: anywhere; font-size: 11.5px; }
-.rt-tabs .up-tab { padding: 9px 2px; }
 
 /* 航線模擬器 P8:寬容器時配置卡改成比較表(窄時維持卡片) */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
@@ -934,14 +932,6 @@ app-route-subs { display: block; container: rt-result / inline-size; }
 .rt-ret-date { font-weight: 500; color: var(--amber-text); }
 .rt-ret-time { margin-left: 6px; font-weight: 700; }
 /* 零高度的黏底容器:黏在捲動區可視範圍的底端(正好在底部導覽列上方),不佔版面 */
-.rt-fab-wrap { position: sticky; bottom: 12px; height: 0; margin-top: -14px; align-self: stretch; z-index: 20; pointer-events: none; }
-.rt-fab-wrap > * { pointer-events: auto; }
-.rt-fab { position: absolute; right: 0; bottom: 0; width: 46px; height: 46px; border-radius: var(--r-round); display: flex; align-items: center; justify-content: center; border: var(--bw) solid var(--border-strong); background: color-mix(in srgb, var(--bg-elevated-2) 82%, transparent); color: var(--accent); backdrop-filter: blur(6px); box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 45%, transparent); cursor: pointer; padding: 0; }
-.rt-fab[aria-expanded='true'] { border-color: var(--accent); background: color-mix(in srgb, var(--bg-elevated-2) 95%, transparent); }
-.rt-fab-menu { position: absolute; right: 0; bottom: 54px; min-width: 132px; display: flex; flex-direction: column; padding: 4px; background: var(--bg-elevated-2); border: var(--bw) solid var(--border-strong); border-radius: calc(12px * var(--rs)); box-shadow: 0 12px 32px color-mix(in srgb, var(--shade) 55%, transparent); }
-.rt-fab-item { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: none; background: transparent; color: var(--text); font-size: 14px; text-align: left; border-radius: calc(8px * var(--rs)); cursor: pointer; }
-.rt-fab-item.active { color: var(--accent); font-weight: 700; background: color-mix(in srgb, var(--accent) 10%, transparent); }
-.rt-fab-item.top { margin-top: 2px; border-top: var(--bw) solid var(--border); border-radius: 0 0 calc(8px * var(--rs)) calc(8px * var(--rs)); color: var(--text-muted); }
 
 /* 航線模擬器:已選航點可展開打撈物、燈號可展開路線需求(D-210) */
 .rt-picked li.rt-stop { display: block; padding: 0; }
@@ -1697,3 +1687,30 @@ app-select { display: block; }
 .ws-del-warn { scroll-margin-bottom: 96px; }
 .ch-meta { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 0 0 10px; font-size: 12.5px; color: var(--text-muted); }
 .ch-meta-hint { color: var(--amber-text); }
+
+/* ---------- 導覽分成五大類 + 子選單(D-295) ----------
+   桌機:有子項的「配件」「更新」在側欄內往下展開(點擊,沒有 hover);目前頁面所在的群組自動展開,父層只加粗 + 左側細條,子項才是實心高亮。
+   收合成圖示列時,子項(兩個字)直接排在圖示下方。手機:點底部列的「配件」「更新」→ 貼在底部列上方的整排面板,兩顆 64px 高的大按鈕。 */
+button.d-nav-item { width: 100%; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 500; text-align: left; }
+.d-group .d-group-chev { margin-left: auto; transition: transform 0.18s; }
+.d-group.open .d-group-chev { transform: rotate(180deg); }
+.d-group.par { position: relative; color: var(--text); font-weight: 700; }
+.d-group.par::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--accent); }
+.d-sidebar.collapsed .d-group .d-group-chev { display: none !important; }
+.d-subs { margin: 2px 0 6px 22px; padding-left: 10px; border-left: 1.5px solid var(--border-strong); display: flex; flex-direction: column; gap: 2px; }
+.d-sub-item { display: flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: calc(8px * var(--rs)); color: var(--text-muted); font-size: 13.5px; text-decoration: none; cursor: pointer; }
+.d-sub-item:hover { color: var(--text); }
+.d-sub-item.active { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); font-weight: 700; }
+.d-sidebar.collapsed .d-subs { margin: 2px 0 6px; padding: 0; border-left: 0; align-items: center; }
+.d-sidebar.collapsed .d-sub-item { width: 48px; min-height: 36px; padding: 0; justify-content: center; font-size: 12px; }
+
+button.nav-item { position: relative; border: 0; background: none; font: inherit; }
+.nav-more { margin-left: 2px; opacity: 0.7; vertical-align: 1px; }
+.nav-group.sel::before { content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent); }
+.m-nav-wrap { position: relative; flex: 0 0 auto; z-index: 30; }
+.m-scrim { position: fixed; inset: 0; background: color-mix(in srgb, var(--scrim) 62%, transparent); z-index: -1; }
+.m-subsheet { position: absolute; left: 12px; right: 12px; bottom: calc(100% + 26px); display: flex; gap: 10px; padding: 10px; background: var(--bg-elevated); border: var(--bw) solid var(--border-strong); border-radius: calc(18px * var(--rs)); box-shadow: 0 12px 30px color-mix(in srgb, var(--shade) 40%, transparent); }
+.m-subsheet::after { content: ''; position: absolute; bottom: -8px; width: 14px; height: 14px; background: var(--bg-elevated); border: solid var(--border-strong); border-width: 0 var(--bw) var(--bw) 0; transform: rotate(45deg); left: calc(30% + 7.2px - 19px); }
+.m-subsheet[data-g='update']::after { left: calc(50% + 12px - 19px); }
+.m-sub-btn { flex: 1; min-height: 64px; display: flex; align-items: center; justify-content: center; gap: 10px; border: var(--bw) solid var(--border-strong); border-radius: calc(12px * var(--rs)); background: transparent; color: var(--text); font-size: 17px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.m-sub-btn.active { background: color-mix(in srgb, var(--accent) 14%, transparent); border-color: var(--accent); color: var(--accent); }

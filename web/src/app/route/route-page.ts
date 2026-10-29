@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CraftLink, pageScroller } from '../core/craft-link';
 import { Layout } from '../core/layout';
 import { IconComponent } from '../ui/icon';
@@ -32,11 +33,7 @@ import { RouteVm } from './route-vm';
   imports: [NgTemplateOutlet, IconComponent, RouteChartBar, RouteCfgBar, RouteMap, RouteEditor, RouteRecommend, RouteLoot, RouteAbout, RouteConfigDialog, RoutePerfDialog, RouteReplaceDialog, RouteSeaPager, RouteStats],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-page.html',
-  host: {
-    style: 'display: contents',
-    '(document:pointerdown)': 'onDocPointer($event)',
-    '(document:keydown.escape)': 'onEscape($event)',
-  },
+  host: { style: 'display: contents' },
 })
 export class RoutePage {
   protected readonly layout = inject(Layout);
@@ -47,11 +44,6 @@ export class RoutePage {
   protected openFind(): void {
     this.vm.findOpen.set(true);
   }
-  /** 分頁順序:先有配置才規劃航線 */
-  protected readonly tabs = [
-    { id: 'config', label: '配置' },
-    { id: 'route', label: '航線' },
-  ] as const;
   /** 試著點了不能選的航點時顯示原因 */
   protected readonly hint = signal('');
 
@@ -104,16 +96,14 @@ export class RoutePage {
     return [l('探索', j.surveillance), l('收集', j.retrieval), l('距離', j.range), l('恩惠', j.favor)];
   });
 
-  /** 手機:五個分頁按鈕捲出畫面後,右下角浮出的功能選單(D-209) */
-  private readonly tabbar = viewChild<ElementRef<HTMLElement>>('tabbar');
-  private readonly fab = viewChild<ElementRef<HTMLElement>>('fab');
-  private readonly tabsOut = signal(false);
-  protected readonly menuOpen = signal(false);
-  protected readonly fabVisible = computed(() => !this.layout.isDesktop() && this.tabsOut());
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  /** 目前是哪一頁:配件清單或航線(由路由決定,D-295) */
+  protected readonly isConfig = computed(() => this.vm.tab() === 'config');
 
   constructor() {
-    this.layout.pageTitle.set('航線模擬');
+    const routeTab = inject(ActivatedRoute, { optional: true })?.snapshot.data['routeTab'] as RouteTab | undefined;
+    if (routeTab) this.vm.showTab(routeTab);
+    effect(() => this.layout.pageTitle.set(this.vm.tab() === 'config' ? '配件清單' : '航線模擬'));
     this.vm.start();
 
     // 換了配置,地圖上「不能選」的提示就過時了
@@ -140,58 +130,15 @@ export class RoutePage {
         { injector: inject(Injector) },
       );
     }
-
-    // 分頁列離開捲動區可視範圍時顯示浮動鈕
-    effect((onCleanup) => {
-      const bar = this.tabbar()?.nativeElement;
-      const root = this.scroller();
-      if (!bar || !root || this.layout.isDesktop() || typeof IntersectionObserver === 'undefined') {
-        this.tabsOut.set(false);
-        return;
-      }
-      const io = new IntersectionObserver((entries) => {
-        const last = entries[entries.length - 1];
-        if (!last) return;
-        this.tabsOut.set(!last.isIntersecting);
-        if (last.isIntersecting) this.menuOpen.set(false);
-      }, { root, threshold: 0 });
-      io.observe(bar);
-      onCleanup(() => io.disconnect());
-    });
   }
 
   private scroller(): HTMLElement | null {
-    return this.tabbar()?.nativeElement.closest<HTMLElement>('.rt-m-body') ?? null;
-  }
-
-  protected toggleMenu(): void {
-    this.menuOpen.update((v) => !v);
-  }
-
-  protected fabPick(id: RouteTab): void {
-    this.menuOpen.set(false);
-    this.vm.setTab(id);
-    this.toTop();
-  }
-
-  protected fabTop(): void {
-    this.menuOpen.set(false);
-    this.toTop();
+    return this.host.nativeElement.querySelector<HTMLElement>('.rt-m-body');
   }
 
   private toTop(): void {
     const el = this.scroller();
     if (el) el.scrollTop = 0;
-  }
-
-  protected onDocPointer(event: Event): void {
-    if (this.menuOpen() && !(event.target instanceof Node && this.host.nativeElement.querySelector('.rt-fab-wrap')?.contains(event.target))) this.menuOpen.set(false);
-  }
-
-  protected onEscape(event: Event): void {
-    if (!this.menuOpen() || event.defaultPrevented) return;
-    this.menuOpen.set(false);
-    this.fab()?.nativeElement.focus();
   }
 
   protected pick(id: number): void {

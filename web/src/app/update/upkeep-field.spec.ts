@@ -75,7 +75,7 @@ describe('快速修改的維修提醒', () => {
 
   it('沒綁定配置:停用並說明去哪裡綁', () => {
     const { el } = setup({ configs: [config({ bound_submarine_ids: [] })] });
-    expect(el.querySelector('.uk-field.dashed')?.textContent).toContain('先到「航線 → 配置」');
+    expect(el.querySelector('.uk-field.dashed')?.textContent).toContain('先到「配件 → 清單」');
     expect(el.querySelector('.uk-field input[type="checkbox"]')).toBeNull();
   });
 

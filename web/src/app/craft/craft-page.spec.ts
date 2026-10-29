@@ -318,11 +318,11 @@ describe('從航線帶入配置(D-262)', () => {
     expect(toast.items()[0]!.text).toContain('第二組');
   });
 
-  it('提示的「回配置」切回 /route', () => {
+  it('提示的「回配置」切回 /gear', () => {
     const { toast } = mountWith(false, [1, 1, 1, 1]);
     const t = toast.items()[0]!;
     toast.act(t, t.actions.find((a) => a.label === '回配置')!);
-    expect(nav).toHaveBeenLastCalledWith('/route');
+    expect(nav).toHaveBeenLastCalledWith('/gear');
   });
 
   it('提示 3 秒後自動消失', () => {

@@ -172,19 +172,21 @@ describe('RoutePage', () => {
     expect([...el.querySelectorAll('.rt-stat .num')].map((n) => n.textContent?.trim())).toEqual(['—', '—', '—']);
   });
 
-  it('分頁順序:配置 / 航線;切換時選取狀態保留', () => {
-    const f = mount();
+  it('不再有分頁列與手機浮動鈕(入口在導覽,D-295);切換配置 / 航線時選取狀態保留,標題跟著變', () => {
+    const f = mount(true);
     vm.selectSea(2);
     vm.toggle(ids(g(), 'D')[0]!);
     f.detectChanges();
-    const tabs = [...el.querySelectorAll<HTMLButtonElement>('.rt-tabs .up-tab')];
-    expect(tabs.map((t) => t.textContent?.trim())).toEqual(['配置', '航線']);
+    expect(el.querySelector('.rt-tabs')).toBeNull();
+    expect(el.querySelector('.rt-fab')).toBeNull();
+    expect(el.querySelector('.d-title')?.textContent).toContain('航線模擬');
     expect(el.querySelector('.rt-view-map')).not.toBeNull();
     expect(el.querySelector('app-route-recommend')).toBeNull();
-    tabs[0]!.click();
+    vm.showTab('config');
     f.detectChanges();
+    expect(el.querySelector('.d-title')?.textContent).toContain('配件清單');
     expect(el.querySelector('app-route-editor')).not.toBeNull();
-    tabs[1]!.click();
+    vm.showTab('route');
     f.detectChanges();
     expect(el.querySelector('.rt-map')).not.toBeNull();
     expect(vm.seq()).toEqual(ids(g(), 'D'));
@@ -333,87 +335,6 @@ describe('RoutePage', () => {
     el.querySelectorAll<HTMLButtonElement>('.rt-x')[0]!.click();
     f.detectChanges();
     expect(vm.seq()).toHaveLength(1);
-  });
-
-  describe('手機浮動功能鈕(D-209)', () => {
-    type Cb = (entries: { isIntersecting: boolean }[]) => void;
-    let cb: Cb | null;
-    const g0 = globalThis as unknown as { IntersectionObserver?: unknown };
-    let original: unknown;
-
-    beforeEach(() => {
-      cb = null;
-      original = g0.IntersectionObserver;
-      g0.IntersectionObserver = class {
-        constructor(fn: Cb) { cb = fn; }
-        observe(): void {}
-        disconnect(): void {}
-      };
-    });
-    afterEach(() => { g0.IntersectionObserver = original; });
-
-    const fab = () => el.querySelector<HTMLButtonElement>('.rt-fab');
-    const items = () => [...el.querySelectorAll<HTMLButtonElement>('.rt-fab-item')];
-
-    it('分頁列在畫面內不顯示;捲出去才出現', () => {
-      const f = mount();
-      expect(fab()).toBeNull();
-      cb!([{ isIntersecting: false }]);
-      f.detectChanges();
-      expect(fab()).not.toBeNull();
-      cb!([{ isIntersecting: true }]);
-      f.detectChanges();
-      expect(fab()).toBeNull();
-    });
-
-    it('桌機不顯示', () => {
-      const f = mount(true);
-      cb?.([{ isIntersecting: false }]);
-      f.detectChanges();
-      expect(fab()).toBeNull();
-    });
-
-    it('點開有兩個分頁加回到頂部,目前分頁打勾;選分頁會切換、回到頂部並收起', () => {
-      const f = mount();
-      cb!([{ isIntersecting: false }]);
-      f.detectChanges();
-      const body = el.querySelector<HTMLElement>('.rt-m-body')!;
-      body.scrollTop = 400;
-      fab()!.click();
-      f.detectChanges();
-      expect(fab()!.getAttribute('aria-expanded')).toBe('true');
-      expect(items().map((b) => b.textContent?.trim())).toEqual(['配置', '航線', '回到頂部']);
-      expect(items()[1]!.getAttribute('aria-checked')).toBe('true');
-      items()[0]!.click();
-      f.detectChanges();
-      expect(vm.tab()).toBe('config');
-      expect(body.scrollTop).toBe(0);
-      expect(el.querySelector('.rt-fab-menu')).toBeNull();
-    });
-
-    it('回到頂部只捲動不換分頁;Esc 與點外面會收起', () => {
-      const f = mount();
-      cb!([{ isIntersecting: false }]);
-      f.detectChanges();
-      const body = el.querySelector<HTMLElement>('.rt-m-body')!;
-      body.scrollTop = 300;
-      fab()!.click();
-      f.detectChanges();
-      items()[2]!.click();
-      f.detectChanges();
-      expect(vm.tab()).toBe('route');
-      expect(body.scrollTop).toBe(0);
-      fab()!.click();
-      f.detectChanges();
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-      f.detectChanges();
-      expect(el.querySelector('.rt-fab-menu')).toBeNull();
-      fab()!.click();
-      f.detectChanges();
-      document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
-      f.detectChanges();
-      expect(el.querySelector('.rt-fab-menu')).toBeNull();
-    });
   });
 
   it('返航時刻上下排版:日期一行、時間一行;沒選航點時是破折號', () => {

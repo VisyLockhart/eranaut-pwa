@@ -1,3 +1,4 @@
+import { ActivatedRoute } from '@angular/router';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, inject, signal, untracked, viewChild, type TemplateRef } from '@angular/core';
 import type { SubmarineDto, WorkshopWithSubmarines } from '@eranaut/shared';
@@ -55,8 +56,8 @@ export class UpdatePage implements OnDestroy {
   private readonly wsHeader = viewChild<TemplateRef<unknown>>('wsHeader');
 
   constructor() {
-    this.layout.pageTitle.set('更新潛水艇');
-    this.vm.open();
+    this.layout.pageTitle.set('更新潛艇');
+    this.vm.open(inject(ActivatedRoute).snapshot.queryParamMap.get('ws'));
     // 只有真的導到別的頁面才丟棄表單。換螢幕(DPI 不同)等造成寬度跨過 768px 時,外殼會在手機/桌機版之間切換、
     // 頁面元件被銷毀重建,這時表單與辨識結果要留著(狀態在 UpdateVm,不在元件裡)
     this.router.events

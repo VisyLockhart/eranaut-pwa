@@ -26,7 +26,7 @@ function validParts(parts: readonly number[]): parts is CraftImport['parts'] {
  * 讓航線頁的 chunk 不必把配方資料一起載進來。
  * - 航線端 `send()`:記下要帶的配置與目前捲動位置,切到 /craft。
  * - 製作端 `take()`:頁面建立時取走並套用。
- * - 提示上的「回配置」`back()`:切回 /route,航線頁建立時用 `takeRestore()` 還原捲動位置。
+ * - 提示上的「回配置」`back()`:切回 /gear(配件清單),該頁建立時用 `takeRestore()` 還原捲動位置。
  */
 @Injectable({ providedIn: 'root' })
 export class CraftLink {
@@ -51,7 +51,7 @@ export class CraftLink {
 
   back(): void {
     this.restoreTop = this.returnTop;
-    void this.router.navigateByUrl('/route');
+    void this.router.navigateByUrl('/gear');
   }
 
   takeRestore(): number | null {

@@ -1,8 +1,8 @@
 @if (layout.isDesktop()) {
   <div class="d-topbar">
     <div>
-      <div class="d-title">航線模擬</div>
-      <div class="d-subtitle">選航點,算航行時間、返航時刻與燃料</div>
+      <div class="d-title">{{ isConfig() ? '配件清單' : '航線模擬' }}</div>
+      <div class="d-subtitle">{{ isConfig() ? '設定配置、查看能力與耐久' : '選航點,算航行時間、返航時刻與燃料' }}</div>
     </div>
   </div>
   <div class="rt-d-wrap"><ng-container *ngTemplateOutlet="body" /></div>
@@ -11,11 +11,6 @@
 }
 
 <ng-template #body>
-  <div #tabbar class="up-tabs rt-tabs" role="tablist" aria-label="航線功能">
-    @for (t of tabs; track t.id) {
-      <button type="button" class="up-tab" role="tab" [class.active]="vm.tab() === t.id" [attr.aria-selected]="vm.tab() === t.id" (click)="vm.setTab(t.id)">{{ t.label }}</button>
-    }
-  </div>
   @switch (vm.tab()) {
     @case ('config') { <app-route-editor /> }
     @case ('route') {
@@ -35,19 +30,6 @@
   <app-route-config-dialog />
   <app-route-perf-dialog />
   <app-route-replace-dialog />
-  @if (fabVisible()) {
-    <div class="rt-fab-wrap">
-      @if (menuOpen()) {
-        <div class="rt-fab-menu" id="rt-fab-menu" role="menu" aria-label="航線功能">
-          @for (t of tabs; track t.id) {
-            <button type="button" role="menuitemradio" class="rt-fab-item" [class.active]="vm.tab() === t.id" [attr.aria-checked]="vm.tab() === t.id" (click)="fabPick(t.id)">{{ t.label }}</button>
-          }
-          <button type="button" role="menuitem" class="rt-fab-item top" (click)="fabTop()"><app-icon name="chevronUp" [size]="14" />回到頂部</button>
-        </div>
-      }
-      <button #fab type="button" class="rt-fab" aria-haspopup="menu" aria-controls="rt-fab-menu" [attr.aria-expanded]="menuOpen()" aria-label="航線功能選單" (click)="toggleMenu()"><app-icon name="list" [size]="20" /></button>
-    </div>
-  }
 </ng-template>
 
 <ng-template #mapView>

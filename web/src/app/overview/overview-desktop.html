@@ -12,7 +12,7 @@
     } @else if (vm.stats().workshops > 0) {
       <button type="button" class="ghost-btn ov-cta-btn" (click)="wsVm.openManage()"><app-icon name="workshops" [size]="18" />工坊管理</button>
     }
-    <a class="upload-cta" routerLink="/update"><app-icon name="camera" [size]="20" />更新潛艇</a>
+    <a class="upload-cta" routerLink="/update" [queryParams]="vm.currentWorkshop() ? { ws: vm.currentWorkshop()!.id } : null"><app-icon name="camera" [size]="20" />更新潛艇</a>
   </div>
 </div>
 

@@ -96,7 +96,7 @@ html[data-theme='notebook'] {
   /* 浮層 */
   .modal-box { border: var(--bw) solid var(--line); border-radius: var(--w1); background: var(--bg-elevated); box-shadow: none; outline: 1px solid var(--pencil); outline-offset: 4px; }
   .modal-title { text-align: left; }
-  .sel-panel, .m-user-menu, .rt-fab-menu, .ws-tooltip-bubble { background: var(--bg-elevated); border: var(--bw) solid var(--line); border-radius: var(--w2); box-shadow: 3px 4px 0 0 var(--pencil); }
+  .sel-panel, .m-user-menu, .ws-tooltip-bubble { background: var(--bg-elevated); border: var(--bw) solid var(--line); border-radius: var(--w2); box-shadow: 3px 4px 0 0 var(--pencil); }
   .install-prompt, .update-banner { background: var(--bg-elevated); border: var(--bw) solid var(--line); border-radius: var(--w1); box-shadow: none; outline: 1px solid var(--pencil); outline-offset: 3px; }
   .update-banner { font-family: var(--font-ui); }
   .tip-bubble { background: var(--mus-p); color: var(--text); border: 0; border-radius: 3px 10px 4px 9px; box-shadow: none; transform: rotate(-1deg); }
@@ -259,6 +259,20 @@ html[data-theme='notebook'] {
   .d-nav-item.active { background: var(--bg); color: var(--line); font-weight: 700; border-color: var(--line); }
   .d-nav-item.active app-icon { color: var(--rose-d); }
   .d-sidebar.collapsed .d-nav-item { margin-right: -8px; }
+  /* 子選單(D-295):手繪虛線導線、子項是小紙籤;所屬群組用書籤小圓點 */
+  .d-group.par::before { left: 10px; top: auto; bottom: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--rose-p); }
+  .d-subs { border-left: var(--bw) dashed var(--sage); }
+  .d-sub-item { border-radius: 10px 0 0 10px / 12px 0 0 12px; margin-right: -14px; color: color-mix(in srgb, var(--cover-ink) 88%, transparent); border: var(--bw) solid transparent; border-right: 0; font-size: 15px; }
+  .d-sub-item:hover { background: color-mix(in srgb, var(--bg) 14%, transparent); color: var(--cover-ink); }
+  .d-sub-item.active { background: var(--bg); color: var(--line); border-color: var(--line); }
+  .d-sidebar.collapsed .d-sub-item { margin-right: -8px; }
+  .m-subsheet { border: var(--bw) solid var(--line); border-radius: var(--w1); background: var(--bg-elevated); box-shadow: none; }
+  .m-subsheet::after { border-width: 0 var(--bw) var(--bw) 0; border-color: var(--line); }
+  .m-sub-btn { border: var(--bw) solid var(--line); border-radius: var(--w2); color: var(--text); }
+  .m-sub-btn.active { background: var(--sage-p); border-color: var(--line); color: var(--text); }
+  .m-sub-btn.active app-icon { color: var(--rose-d); }
+  .nav-group.sel:not(.nav-upload)::before { top: calc(var(--bw) * -1); left: 50%; right: auto; margin-left: -7px; width: 14px; height: 13px; border-radius: 0; background: var(--rose); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%); }
+  .nav-group.nav-upload.sel::before { display: none; }
   .d-sidebar.collapsed .d-brand { padding: 6px; }
   .d-install { border: var(--bw) dashed var(--cover-ink); background: transparent; color: var(--cover-ink); border-radius: var(--w2); margin-right: 14px; }
   .d-install:hover { background: color-mix(in srgb, var(--bg) 16%, transparent); }

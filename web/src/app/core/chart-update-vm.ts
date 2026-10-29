@@ -7,7 +7,6 @@ import { Api } from './api';
 import { UNLOCK_GRAPH, changedSeas, foundIn, foundOf, pointCode, seaName } from './charts';
 import { DataStore } from './data-store';
 import { ImageTools, isImageFile } from './image-input';
-import { OverviewVm } from './overview-vm';
 import { Toast } from './toast';
 import { OCR_MAX_BYTES, fileProblem } from './update-vm';
 
@@ -57,7 +56,6 @@ export function chartErrorMessage(error: unknown): string {
 export class ChartUpdateVm {
   private readonly api = inject(Api);
   private readonly store = inject(DataStore);
-  private readonly overview = inject(OverviewVm);
   private readonly tools = inject(ImageTools);
   private readonly toast = inject(Toast);
 
@@ -157,10 +155,10 @@ export class ChartUpdateVm {
     if (!visible.some((t) => t.sea === this.viewSea())) this.viewSea.set(visible[0]?.sea ?? SEAS[0]!.sea);
   }
 
-  /** 進入頁面:表單進行中(同一間工坊)就沿用;否則以總覽正在看的工坊(或指定的)開始 */
+  /** 進入頁面:表單進行中(同一間工坊)就沿用;否則以指定的工坊(總覽按鈕帶 ?ws=)開始,沒指定就是第一間(側欄入口,D-295) */
   open(preferId: string | null = null): void {
     if (this.active && (preferId === null || preferId === this.workshopId())) return;
-    const id = preferId ?? this.overview.currentWorkshop()?.id ?? this.store.workshops()[0]?.id ?? null;
+    const id = preferId ?? this.store.workshops()[0]?.id ?? null;
     this.active = true;
     this.reset(id);
   }

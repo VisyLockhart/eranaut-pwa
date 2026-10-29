@@ -130,12 +130,17 @@ export class UpdateVm {
     });
   }
 
+  /** 進入頁面時指定的工坊(總覽按鈕帶 ?ws=);資料晚到時 ensureSelection 也用它。沒指定就是第一間(側欄入口,D-295) */
+  private preferId: string | null = null;
+
   /** 進入頁面:選好工坊、建立表單、開始計時(已在進行中則沿用目前的表單) */
-  open(): void {
+  open(preferId: string | null = null): void {
+    this.preferId = preferId;
     // 頁面元件因版面切換被重建時(狀態還在),不重建表單
     const kept = this.workshopId();
-    if (this.timer !== null && kept !== null && this.store.workshops().some((w) => w.id === kept)) return;
-    const preferred = this.overview.currentWorkshop()?.id ?? this.store.workshops()[0]?.id ?? null;
+    if (this.timer !== null && kept !== null && this.store.workshops().some((w) => w.id === kept) && (preferId === null || preferId === kept)) return;
+    const list = this.store.workshops();
+    const preferred = (preferId !== null && list.some((w) => w.id === preferId) ? preferId : null) ?? list[0]?.id ?? null;
     this.selectWorkshop(preferred);
     if (this.timer === null) this.timer = setInterval(() => this.tick(Date.now()), TICK_MS);
   }
@@ -152,7 +157,7 @@ export class UpdateVm {
       if (current !== null) this.selectWorkshop(null);
       return;
     }
-    this.selectWorkshop(this.overview.currentWorkshop()?.id ?? list[0].id);
+    this.selectWorkshop((this.preferId !== null && list.some((w) => w.id === this.preferId) ? this.preferId : null) ?? list[0].id);
   }
 
   /** 離開頁面:停止計時、丟棄表單 */

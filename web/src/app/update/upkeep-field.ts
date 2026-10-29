@@ -11,7 +11,7 @@ import { IconComponent } from '../ui/icon';
 
 /**
  * 快速修改裡的「配件維修提醒」一列(D-288)。關閉時只佔一行;開啟才展開路線、趟數、起算方式。
- * 需要潛艇已綁定一組配置(航線 → 配置),且資料集有那組零件在該路線的耐久資料;否則停用並說明還差什麼。
+ * 需要潛艇已綁定一組配置(配件 → 清單),且資料集有那組零件在該路線的耐久資料;否則停用並說明還差什麼。
  * 填寫狀態放在 OverviewVm.quickUpkeep(換版面重建對話框時保留)。
  */
 @Component({
@@ -25,9 +25,9 @@ import { IconComponent } from '../ui/icon';
           <div class="uk-field dim"><app-icon name="wrench" [size]="20" /><span class="uk-main"><b>配件維修提醒</b><small>讀取配置中…</small></span></div>
         }
         @case ('unbound') {
-          <a class="uk-field dim dashed" routerLink="/route" (click)="leave()">
+          <a class="uk-field dim dashed" routerLink="/gear" (click)="leave()">
             <app-icon name="wrench" [size]="20" />
-            <span class="uk-main"><b>配件維修提醒</b><small>先到「航線 → 配置」把這艘綁到一組配置</small></span>
+            <span class="uk-main"><b>配件維修提醒</b><small>先到「配件 → 清單」把這艘綁到一組配置</small></span>
             <app-icon name="chevronRight" [size]="14" />
           </a>
         }
@@ -229,7 +229,7 @@ export class UpkeepField {
     this.draft.update((d) => (d ? { ...d, ...change } : d));
   }
 
-  /** 到航線頁綁定配置：先關掉快速修改，避免對話框蓋住頁面 */
+  /** 到配件清單綁定配置：先關掉快速修改，避免對話框蓋住頁面 */
   protected leave(): void {
     this.overview.closeQuickEdit();
   }

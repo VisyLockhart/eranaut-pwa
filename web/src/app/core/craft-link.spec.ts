@@ -30,10 +30,10 @@ describe('CraftLink(D-262)', () => {
     expect(link.take()).toBeNull();
   });
 
-  it('back:切回 /route,離開時的捲動位置交給航線頁還原一次', () => {
+  it('back:切回 /gear,離開時的捲動位置交給航線頁還原一次', () => {
     link.send([1, 1, 1, 1], 'x');
     link.back();
-    expect(nav).toHaveBeenLastCalledWith('/route');
+    expect(nav).toHaveBeenLastCalledWith('/gear');
     expect(link.takeRestore()).not.toBeUndefined();
     expect(link.takeRestore()).toBeNull();
   });
