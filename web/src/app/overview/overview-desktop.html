@@ -25,19 +25,6 @@
     </div>
     <div class="ov-meter" aria-hidden="true"><i [style.width.%]="readyPct()"></i></div>
   </div>
-  @if (vm.reminder(); as r) {
-    <button type="button" class="d-stat ov-rem" (click)="wsVm.edit(vm.currentWorkshop()!.id)" aria-label="提醒設定，開啟工坊設定">
-      <div class="label">提醒</div>
-      @if (r.batched || r.lead) {
-        <div class="ov-rem-chips">
-          @if (r.batched) { <span class="ov-rem-chip">整批提醒</span> }
-          @if (r.lead) { <span class="ov-rem-chip">提前 {{ r.lead }}</span> }
-        </div>
-      } @else {
-        <div class="ov-rem-none">逐艘返航提醒</div>
-      }
-    </button>
-  }
   @if (vm.upkeepSummary(); as u) {
     @if (u.state !== 'none') {
       <div class="d-stat ov-uk" [attr.data-state]="u.state" [attr.data-phase]="u.repairNow > 0 ? 'repair_now' : 'repair_after_return'">
@@ -66,6 +53,17 @@
       <div class="ov-next-name" style="color: var(--text-faint)">－</div>
     }
   </div>
+  @if (vm.reminder(); as r) {
+    @if (r.batched || r.lead) {
+      <div class="d-stat ov-rem">
+        <div class="label">提醒</div>
+        <div class="ov-rem-chips">
+          @if (r.batched) { <span class="ov-rem-chip">整批提醒</span> }
+          @if (r.lead) { <span class="ov-rem-chip">提前 {{ r.lead }}</span> }
+        </div>
+      </div>
+    }
+  }
 </div>
 
 <div class="ov-toolbar">

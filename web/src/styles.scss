@@ -1676,12 +1676,10 @@ app-select { display: block; }
 .ch-actions .ch-sum, .ch-actions-m .ch-sum { flex: 1 1 auto; }
 .uf-actions-d.ch-actions { margin-bottom: 56px; }
 /* 工坊管理搬進總覽(D-294) */
-.ov-rem { text-align: left; font: inherit; color: var(--text); cursor: pointer; flex: 0 0 auto; width: 260px; }
-.ov-rem:hover { border-color: var(--accent); }
-.ov-rem-chips, .ov-m-rem { display: flex; flex-wrap: wrap; gap: 6px; }
+.ov-rem { flex: 0 0 auto; }
+.ov-m-rem { display: flex; flex-wrap: wrap; gap: 6px; }
+.ov-rem-chips { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .ov-rem-chip { display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: var(--r-pill); font-size: 12.5px; font-weight: 600; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); white-space: nowrap; }
-.ov-rem-none { font-size: 13px; color: var(--text-dim); }
-.ov-strip:has(.ov-rem) .ov-fleet { flex: 0 0 250px; }
 .ov-m-rem { padding: 0 18px 6px; }
 .ov-ibtn { position: relative; flex: 0 0 auto; width: 44px; height: 44px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; border-radius: calc(12px * var(--rs)); border: var(--bw) solid var(--border-strong); background: var(--bg-elevated); color: var(--text-muted); cursor: pointer; text-decoration: none; padding: 0; }
 .ov-ibtn.chart { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
