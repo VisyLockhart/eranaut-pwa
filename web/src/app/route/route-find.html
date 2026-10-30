@@ -24,7 +24,7 @@
   }
   @if (x.mapOpen()) {
     <div id="rt-find-map">
-      <app-route-sea-pager [sea]="x.viewSea()" (seaChange)="x.viewSea.set($event)" />
+      <app-route-sea-pager [sea]="x.viewSea()" (seaChange)="onViewSea($event)" />
       <app-route-map
         [sea]="seaIdx()"
         [explored]="f.mode() === 'visit' && !x.chartActive() ? x.explored() : null"
@@ -155,7 +155,7 @@
               <div class="rt-card-opens">返航時有機會解鎖新航點:{{ c.opens }}</div>
             }
             <div class="rt-find-items">
-              <b>可撈到 {{ c.itemsCount }} 種物品</b>
+              <b>可撈到 {{ c.itemsCount }} 種物品</b><span class="rt-count">價值 {{ c.value }}</span>
               <button type="button" class="rt-link-btn" aria-haspopup="dialog" (click)="showAllItems(c)">看全部</button>
               @if (c.got.length > 0) {
                 <ul class="rt-hit-items" aria-label="指定的物品">

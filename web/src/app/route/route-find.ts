@@ -22,7 +22,7 @@ const GOT_PREVIEW = 3;
 
 export const SORT_OPTIONS: readonly { id: FindSort; label: string; title: string }[] = [
   { id: 'perMin', label: '每分鐘經驗', title: '練級:每分鐘經驗最高的路線' },
-  { id: 'variety', label: '最多物品', title: '一趟撈到最多種不同物品的路線' },
+  { id: 'value', label: '最高價值', title: '一趟撈到物品總價值最高的路線(高階 10 分、中階 3 分、低階 1 分)' },
   { id: 'opens', label: '可能解鎖', title: '探索:回來後可能開出最多新航點的路線' },
 ];
 
@@ -38,6 +38,8 @@ interface Card {
   /** 只在排序為可能解鎖時有;「返航時有機會解鎖新航點:X、X、X」 */
   opens: string | null;
   itemsCount: number;
+  /** 物品總價值(D-300) */
+  value: number;
   got: string[];
   gotMore: number;
   exp: string;
@@ -109,7 +111,7 @@ export class RouteFind {
 
   protected readonly sortLabel = computed(() => {
     const sort = this.f.searchedSort();
-    const names = { perMin: '每分鐘經驗', variety: '物品種類數', opens: '可能開出的新航點數' };
+    const names = { perMin: '每分鐘經驗', value: '物品總價值', opens: '可能開出的新航點數' };
     return sort ? sort.map((k) => names[k]).join(' → ') : '';
   });
 
@@ -142,12 +144,13 @@ export class RouteFind {
       order: r.order,
       seaName: si.sea.name,
       stops: r.order.map((id) => { const p = si.byId.get(id)!; return { code: p.code, name: p.name }; }),
-      headline: sort === 'perMin' ? `每分鐘 ${r.perMin.toFixed(1)} 經驗` : sort === 'opens' ? `最多開 ${r.opens.length} 點` : `共 ${r.items.length} 種物品`,
+      headline: sort === 'perMin' ? `每分鐘 ${r.perMin.toFixed(1)} 經驗` : sort === 'opens' ? `最多開 ${r.opens.length} 點` : `物品價值 ${r.value}`,
       opens:
         sorts.includes('opens') && r.opens.length > 0
           ? r.opens.map((id) => { const o = graph.seaOf.get(id)!; const code = o.byId.get(id)!.code; return o === si ? code : `${o.sea.name} ${code}`; }).join('、')
           : null,
       itemsCount: r.items.length,
+      value: r.value,
       got: gotNames.slice(0, GOT_PREVIEW),
       gotMore: Math.max(0, gotNames.length - GOT_PREVIEW),
       exp: r.exp.toLocaleString('en-US'),
@@ -160,8 +163,13 @@ export class RouteFind {
     };
   }
 
+  /** 海域下拉(D-300):指定海域時海圖跟著換;選「全部海域」不動海圖 */
   protected onSea(v: SelectValue): void {
-    this.f.sea.set(v === 'all' ? 'all' : Number(v));
+    this.f.setSea(v === 'all' ? 'all' : Number(v));
+  }
+  /** 海圖翻到另一個海域(D-300):下拉已指定海域時,下拉跟著換,兩邊保持一致;「全部海域」不受影響 */
+  protected onViewSea(sea: number): void {
+    this.f.setViewSea(sea);
   }
   protected onHours(v: SelectValue): void {
     this.f.maxHours.set(v === 'any' ? null : Number(v));

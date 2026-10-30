@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildStats } from './build';
 import { SEA_INDEXES, TABLES } from './data';
-import { checkRequired, findRoutes, opensFor, pointItems, searchSeas, type FindQuery } from './find';
+import { checkRequired, findRoutes, opensFor, pointItemScores, pointItems, searchSeas, TIER_SCORE, type FindQuery, type FindRoute } from './find';
 import { MAX_STOPS, permutations, routeCost, travelMinutes } from './route';
 import { codes, ids } from './test-helpers';
 import { buildUnlockGraph, isAvailable } from './unlock';
@@ -51,16 +51,82 @@ describe('排序與基本案例', () => {
     }
   });
 
-  it('最多物品:由多到少,一樣多時航行時間短的在前;items 是這條路線拿得到的不同物品', () => {
-    const rs = findRoutes(SEA_INDEXES, q({ sort: ['variety'], level: 70 }));
+  it('最高價值(D-300):由高到低,一樣高時航行時間短的在前;items 是這條路線拿得到的不同物品', () => {
+    const rs = findRoutes(SEA_INDEXES, q({ sort: ['value'], level: 70 }));
     for (let i = 1; i < rs.length; i++) {
-      expect(rs[i - 1]!.items.length).toBeGreaterThanOrEqual(rs[i]!.items.length);
-      if (rs[i - 1]!.items.length === rs[i]!.items.length) expect(rs[i - 1]!.minutes).toBeLessThanOrEqual(rs[i]!.minutes);
+      expect(rs[i - 1]!.value).toBeGreaterThanOrEqual(rs[i]!.value);
+      if (rs[i - 1]!.value === rs[i]!.value) expect(rs[i - 1]!.minutes).toBeLessThanOrEqual(rs[i]!.minutes);
     }
     const r = rs[0]!;
     const si = SEA_INDEXES.find((s) => s.sea.sea === r.sea)!;
     const want = new Set(r.order.flatMap((id) => pointItems(si.byId.get(id)!, stats130.surveillance)));
     expect(new Set(r.items)).toEqual(want);
+  });
+
+  it('價值的算法(D-300):高階 10、中階 3、低階 1;同一物品只算一次,以已解鎖的最高階計;與獨立算法逐條比對', () => {
+    expect(TIER_SCORE).toEqual({ high: 10, mid: 3, low: 1 });
+    // 獨立算法:逐物品找路線上所有點裡已解鎖的最高階
+    const valueOf = (r: FindRoute, surveillance: number): number => {
+      const si = SEA_INDEXES.find((s) => s.sea.sea === r.sea)!;
+      const best = new Map<number, number>();
+      for (const id of r.order) {
+        const p = si.byId.get(id)!;
+        const tiers: [readonly number[], number, boolean][] = [
+          [p.drop.low, 1, true],
+          [p.drop.mid, 3, surveillance >= p.statReq.surveillanceMid],
+          [p.drop.high, 10, surveillance >= p.statReq.surveillanceHigh],
+        ];
+        for (const [list, score, open] of tiers) if (open) for (const it of list) best.set(it, Math.max(best.get(it) ?? 0, score));
+      }
+      return [...best.values()].reduce((a, b) => a + b, 0);
+    };
+    for (const surveillance of [stats50.surveillance, stats130.surveillance]) {
+      const stats = { ...stats130, surveillance };
+      for (const sort of [['value'], ['perMin', 'value']] as const) {
+        const rs = findRoutes(SEA_INDEXES, q({ sort, stats, level: 130, limit: 60 }));
+        expect(rs.length).toBeGreaterThan(0);
+        for (const r of rs) expect(r.value).toBe(valueOf(r, surveillance));
+      }
+    }
+  });
+
+  it('價值排序找到的是真正的最高:與逐一列舉單一海域的所有 1~2 點組合比對', () => {
+    const si = grey;
+    const stats = stats50;
+    const pts = si.sea.points.filter((p) => p.rankReq <= 50);
+    const scoreOf = (set: typeof pts): number => {
+      const best = new Map<number, number>();
+      for (const p of set) for (const [it, sc] of pointItemScores(p, stats.surveillance)) best.set(it, Math.max(best.get(it) ?? 0, sc));
+      return [...best.values()].reduce((a, b) => a + b, 0);
+    };
+    const feasible = (set: typeof pts): boolean => {
+      const ids2 = set.map((p) => p.id);
+      return ids2.length > 0 && routeCost(si, ids2).range <= stats.range;
+    };
+    let best = 0;
+    for (let i = 0; i < pts.length; i++) {
+      if (feasible([pts[i]!])) best = Math.max(best, scoreOf([pts[i]!]));
+      for (let j = i + 1; j < pts.length; j++) if (feasible([pts[i]!, pts[j]!])) best = Math.max(best, scoreOf([pts[i]!, pts[j]!]));
+    }
+    const rs = findRoutes(SEA_INDEXES, q({ sort: ['value'], level: 50, stats, sea: si.sea.sea, limit: 3 }));
+    // 搜尋最多 5 點,所以至少不低於 1~2 點組合的最大值
+    expect(rs[0]!.value).toBeGreaterThanOrEqual(best);
+  });
+
+  it('pointItemScores:物品集合同 pointItems;探索不足時中 / 高階不算進價值', () => {
+    for (const si of SEA_INDEXES) {
+      for (const p of si.sea.points) {
+        for (const sv of [0, 100, 9999]) {
+          const sc = pointItemScores(p, sv);
+          expect(new Set(sc.map(([id]) => id))).toEqual(new Set(pointItems(p, sv)));
+          for (const [, v] of sc) expect([1, 3, 10]).toContain(v);
+        }
+      }
+    }
+    const p = SEA_INDEXES.flatMap((s) => s.sea.points).find((x) => x.drop.high.length > 0 && x.drop.mid.length > 0)!;
+    const low = pointItemScores(p, 0).reduce((a, [, v]) => a + v, 0);
+    const all = pointItemScores(p, 99999).reduce((a, [, v]) => a + v, 0);
+    expect(all).toBeGreaterThan(low);
   });
 
   it('可能解鎖:什麼都沒去過時只有溺沒海的 A、B 可去,A + B 一起去回來解鎖 C、D、E', () => {
@@ -256,7 +322,7 @@ describe('極端輸入與效能', () => {
   });
 
   it('三種排序各自在全部海域跑完不超過 5 秒(開發機實測約 1 秒內)', () => {
-    for (const sort of ['perMin', 'opens', 'variety'] as const) {
+    for (const sort of ['perMin', 'opens', 'value'] as const) {
       const t = performance.now();
       findRoutes(SEA_INDEXES, q({ sort: [sort], explored: new Set(ids(drowned, 'AB')) }));
       expect(performance.now() - t).toBeLessThan(5000);

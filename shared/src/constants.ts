@@ -53,7 +53,7 @@ export const ROUTE_PART_MAX = 10;
  * 找路線的條件組合 `spec`(D-229)的排序選項,與前端 `FindSort` 一致。
  * D-297:可複選(多重排序),權重固定依這個順序由左到右:每分鐘經驗 → 物品種類 → 可能解鎖。
  */
-export const ROUTE_FILTER_SORTS = ['perMin', 'variety', 'opens'] as const;
+export const ROUTE_FILTER_SORTS = ['perMin', 'value', 'opens'] as const;
 export type RouteFilterSort = (typeof ROUTE_FILTER_SORTS)[number];
 /** 條件組合 `spec` 的範圍上限:API 不認識航點與物品資料集(D-202),只擋明顯異常的輸入;實際存不存在由前端帶入時處理 */
 export const ROUTE_FILTER_LIMITS = {

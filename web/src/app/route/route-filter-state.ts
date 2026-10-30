@@ -103,7 +103,7 @@ export function specSummary(s: RouteFilterSpec): string {
   if (s.required.length > 0) parts.push(`${s.required.length} 點`);
   if (s.excluded.length > 0) parts.push(`排除 ${s.excluded.length}`);
   if (s.item_ids.length > 0) parts.push(`${s.item_ids.length} 種物品`);
-  if (!(s.sort.length === 1 && s.sort[0] === 'perMin')) parts.push(s.sort.map((k) => ({ perMin: '經驗', variety: '物品', opens: '解鎖' })[k]).join('+'));
+  if (!(s.sort.length === 1 && s.sort[0] === 'perMin')) parts.push(s.sort.map((k) => ({ perMin: '經驗', value: '價值', opens: '解鎖' })[k]).join('+'));
   return parts.filter((p) => p !== '').join(' · ');
 }
 

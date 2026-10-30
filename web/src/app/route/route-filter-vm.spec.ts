@@ -80,6 +80,15 @@ describe('RouteFilterVm(條件組合,D-229)', () => {
     expect(fv.modified()).toBe(true);
   });
 
+  it('apply:指定了海域時,海圖就是那個海域(與海域下拉一致),不管必選點在哪(D-300)', async () => {
+    const d = dto({ spec: { ...dto().spec, sea: SEAS[1]!.sea, required: [SEA_INDEXES[0]!.sea.points[0]!.id] } });
+    await load([d]);
+    f.x.viewSea.set(SEAS[2]!.sea);
+    fv.apply(d);
+    expect(f.sea()).toBe(SEAS[1]!.sea);
+    expect(f.x.viewSea()).toBe(SEAS[1]!.sea);
+  });
+
   it('load:套用後自動搜尋,收合海圖與條件區', async () => {
     await load([dto()]);
     f.x.mapOpen.set(true);
@@ -114,11 +123,11 @@ describe('RouteFilterVm(條件組合,D-229)', () => {
   it('saveCurrent / overwrite / rename / remove 成功才更新畫面', async () => {
     await load([]);
     f.maxHours.set(12);
-    f.sort.set(['variety']);
+    f.sort.set(['value']);
     const p = fv.saveCurrent('  新組  ');
     const req = http.expectOne('/api/route-filters');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toMatchObject({ name: '新組', spec: { max_hours: 12, sort: ['variety'], sea: 'all' } });
+    expect(req.request.body).toMatchObject({ name: '新組', spec: { max_hours: 12, sort: ['value'], sea: 'all' } });
     req.flush(dto({ id: 'n', name: '新組' }), { status: 201, statusText: 'Created' });
     await p;
     expect(fv.saved().map((s) => s.id)).toEqual(['n']);

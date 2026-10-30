@@ -162,8 +162,8 @@ test('常用:PATCH 只切換星號,不動 spec 與 updated_at;PUT 不會重設�
 test('排序(D-297、D-298):v1 單一字串轉成陣列;多選保留順序(優先順序)、去重;空的當作只照每分鐘經驗', async () => {
   const t = makeApp();
   const api = await asUser(t, ID_A);
-  const old = await api('POST', '/api/route-filters', { name: '舊', spec: { ...spec, v: 1, sort: 'variety' } });
-  assert.deepEqual((old.json() as RouteFilterDto).spec.sort, ['variety']);
+  const old = await api('POST', '/api/route-filters', { name: '舊', spec: { ...spec, v: 1, sort: 'value' } });
+  assert.deepEqual((old.json() as RouteFilterDto).spec.sort, ['value']);
   assert.equal((old.json() as RouteFilterDto).spec.v, 2);
   const multi = await api('POST', '/api/route-filters', { name: '多', spec: { ...spec, sort: ['opens', 'perMin', 'opens'] } });
   assert.deepEqual((multi.json() as RouteFilterDto).spec.sort, ['opens', 'perMin']);

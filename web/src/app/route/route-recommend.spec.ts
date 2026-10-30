@@ -207,12 +207,29 @@ describe('推薦頁(D-212、D-222)', () => {
       expect(el.querySelector('#rt-find-results [role=status]')!.textContent).toContain('依可能開出的新航點數排序');
     });
 
-    it('排序「最多物品」:右側顯示共幾種物品', async () => {
-      btn('最多物品', el.querySelector('[aria-label=排序]')!).click();
+    it('排序「最高價值」:右側顯示物品價值,物品列也列出價值(D-300)', async () => {
+      btn('最高價值', el.querySelector('[aria-label=排序]')!).click();
       btn('每分鐘經驗', el.querySelector('[aria-label=排序]')!).click();
       f.detectChanges();
       await search();
-      expect(cards()[0]!.querySelector('.rt-card-lv')!.textContent).toContain(`共 ${find.result()![0]!.items.length} 種物品`);
+      const top = find.result()![0]!;
+      expect(cards()[0]!.querySelector('.rt-card-lv')!.textContent).toContain(`物品價值 ${top.value}`);
+      expect(cards()[0]!.querySelector('.rt-find-items')!.textContent).toContain(`可撈到 ${top.items.length} 種物品`);
+      expect(cards()[0]!.querySelector('.rt-find-items')!.textContent).toContain(`價值 ${top.value}`);
+    });
+
+    it('海圖翻頁與海域下拉連動(D-300):指定海域時下拉跟著換;全部海域時不動', () => {
+      const dot = (name: string) => el.querySelector<HTMLButtonElement>(`#rt-find-map .rt-dot[aria-label=${name}]`)!;
+      find.sea.set(grey().sea.sea);
+      dot('溺沒海').click();
+      f.detectChanges();
+      expect(find.x.viewSea()).toBe(drowned().sea.sea);
+      expect(find.sea()).toBe(drowned().sea.sea);
+      find.sea.set('all');
+      dot('灰海').click();
+      f.detectChanges();
+      expect(find.x.viewSea()).toBe(grey().sea.sea);
+      expect(find.sea()).toBe('all');
     });
 
     it('篩選:選中的點會出現在每條路線,排除的點不會;跨海域合併', async () => {
@@ -288,7 +305,7 @@ describe('推薦頁(D-212、D-222)', () => {
       expect(el.textContent).toContain('下面的結果是舊的');
       await search();
       expect(el.textContent).not.toContain('下面的結果是舊的');
-      find.setSort('variety');
+      find.setSort('value');
       f.detectChanges();
       expect(el.textContent).toContain('下面的結果是舊的');
     }, 30_000);

@@ -44,6 +44,6 @@ describe('條件組合的純函式(D-229)', () => {
     expect(autoName(spec())).toBe('條件組合');
     const grey = SEAS[1]!;
     expect(autoName(spec({ sea: grey.sea, max_hours: 6, required: [1, 2, 3] }))).toBe(`${grey.name} · 6 小時內 · 3 點`);
-    expect([...autoName(spec({ sea: grey.sea, max_hours: 48, required: [1, 2, 3], excluded: [4, 5], item_ids: [1, 2], sort: ['variety'] }))].length).toBeLessThanOrEqual(20);
+    expect([...autoName(spec({ sea: grey.sea, max_hours: 48, required: [1, 2, 3], excluded: [4, 5], item_ids: [1, 2], sort: ['value'] }))].length).toBeLessThanOrEqual(20);
   });
 });

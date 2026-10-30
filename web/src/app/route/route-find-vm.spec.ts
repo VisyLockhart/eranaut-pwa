@@ -83,12 +83,36 @@ describe('找路線的篩選與搜尋狀態(D-222)', () => {
     expect(f.busy()).toBe(false);
     expect(f.result()!.length).toBeGreaterThan(0);
     expect(f.stale()).toBe(false);
-    f.setSort('variety');
+    f.setSort('value');
     expect(f.stale()).toBe(true);
     f.run();
     await tick();
     expect(f.stale()).toBe(false);
-    expect(f.searchedSort()).toEqual(['variety']);
+    expect(f.searchedSort()).toEqual(['value']);
+  });
+
+  it('海域下拉與海圖連動(D-300):指定海域 → 海圖跟著換;全部海域 → 海圖不動;海圖翻頁 → 指定海域時下拉跟著換', () => {
+    f.x.viewSea.set(drowned.sea.sea);
+    f.setSea(grey.sea.sea);
+    expect(f.sea()).toBe(grey.sea.sea);
+    expect(f.x.viewSea()).toBe(grey.sea.sea);
+    f.setViewSea(drowned.sea.sea);
+    expect(f.sea()).toBe(drowned.sea.sea);
+    expect(f.x.viewSea()).toBe(drowned.sea.sea);
+    f.setSea('all');
+    expect(f.x.viewSea()).toBe(drowned.sea.sea); // 選全部:海圖停在原地
+    f.setViewSea(grey.sea.sea);
+    expect(f.sea()).toBe('all'); // 全部海域時,海圖翻頁不會把下拉改掉
+    expect(f.x.viewSea()).toBe(grey.sea.sea);
+  });
+
+  it('航線頁選的點帶入當必選:指定海域時下拉一起換到那個海域', () => {
+    f.setSea(grey.sea.sea);
+    vm.selectSea(drowned.sea.sea);
+    vm.toggle(ids(drowned, 'A')[0]!);
+    f.useRouteAsRequired();
+    expect(f.sea()).toBe(drowned.sea.sea);
+    expect(f.x.viewSea()).toBe(drowned.sea.sea);
   });
 
   it('必選 + 排除:結果每條都包含必選點、不含排除點', async () => {
@@ -185,13 +209,13 @@ describe('RouteMap 篩選模式(D-222)', () => {
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     const f = TestBed.inject(RouteFindVm);
     f.setSort('perMin');
-    f.toggleSort('variety');
-    expect(f.sort()).toEqual(['perMin', 'variety']);
+    f.toggleSort('value');
+    expect(f.sort()).toEqual(['perMin', 'value']);
     f.toggleSort('perMin');
-    expect(f.sort()).toEqual(['variety']);
+    expect(f.sort()).toEqual(['value']);
     f.toggleSort('perMin');
-    expect(f.sort()).toEqual(['variety', 'perMin']);
-    f.toggleSort('variety');
+    expect(f.sort()).toEqual(['value', 'perMin']);
+    f.toggleSort('value');
     f.toggleSort('perMin');
     expect(f.sort()).toEqual([]);
     expect(normalizeSort(f.sort())).toEqual(['perMin']);

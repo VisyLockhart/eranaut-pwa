@@ -293,4 +293,12 @@ UPDATE route_filters SET spec = json_set(spec, '$.v', 2, '$.sort', json_array(js
 WHERE json_extract(spec, '$.v') = 1 AND json_type(spec, '$.sort') = 'text';
 `,
   },
+  {
+    version: 14,
+    name: 'route_filter_sort_value',
+    // 排序「最多物品」(variety)改成「最高價值」(value,D-300):資料一起改名,不留舊值。sort 只有這個字串會出現 "variety"。
+    sql: `
+UPDATE route_filters SET spec = replace(spec, '"variety"', '"value"') WHERE spec LIKE '%"variety"%';
+`,
+  },
 ];

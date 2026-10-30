@@ -34,8 +34,8 @@ test('連線啟用外鍵', () => {
 
 test('migrate 建立全部資料表,且可重複執行', () => {
   const db = openDatabase(':memory:');
-  assert.equal(migrate(db), 13);
-  assert.equal(migrate(db), 13);
+  assert.equal(migrate(db), 14);
+  assert.equal(migrate(db), 14);
   const names = (db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all() as { name: string }[]).map((r) => r.name);
   assert.deepEqual(names, ['push_subscriptions', 'reminder_deliveries', 'reminders', 'route_filters', 'route_sub_bindings', 'route_subs', 'server_maintenance', 'sessions', 'submarine_build', 'submarine_progress', 'submarine_upkeep', 'submarines', 'users', 'workshop_charts', 'workshops']);
 });
@@ -151,7 +151,7 @@ test('migration 4:舊的單艘綁定搬進綁定表,舊欄位清空', () => {
   const sub = addSub(db, addWorkshop(db, u), 1);
   const rs = randomUUID();
   db.prepare('INSERT INTO route_subs (id, user_id, name, level, hull, stern, bow, bridge, bound_submarine_id, created_at, updated_at) VALUES (?, ?, ?, 1, 1, 1, 1, 1, ?, ?, ?)').run(rs, u, 'R', sub, NOW, NOW);
-  assert.equal(migrate(db), 13);
+  assert.equal(migrate(db), 14);
   assert.deepEqual(db.prepare('SELECT route_sub_id, submarine_id FROM route_sub_bindings').all(), [{ route_sub_id: rs, submarine_id: sub }]);
   assert.equal((db.prepare('SELECT bound_submarine_id AS b FROM route_subs').get() as { b: string | null }).b, null);
   // migration 11:既有綁定搬成各艇自己的配件(只搬配件)
@@ -167,7 +167,7 @@ test('migration 12:練級輔助改名航線輔助,舊的流派偏好轉成最長
     db.prepare("INSERT INTO submarines (id, workshop_id, position, name, status, last_synced_at) VALUES (?, 'w', ?, 'S', 'complete', 'x')").run(`s${i}`, i);
     db.prepare("INSERT INTO submarine_progress (submarine_id, level, sim_on, school, updated_at) VALUES (?, 20, ?, ?, 'x')").run(`s${i}`, i === 4 ? 0 : 1, school);
   }
-  assert.equal(migrate(db), 13);
+  assert.equal(migrate(db), 14);
   const rows = db.prepare('SELECT submarine_id AS id, assist_on AS on_, assist_mode AS mode, max_hours AS h, filter_id AS f FROM submarine_progress ORDER BY id').all();
   assert.deepEqual(rows, [
     { id: 's1', on_: 1, mode: 'level', h: null, f: null },
@@ -183,7 +183,20 @@ test('migration 13:條件組合的排序 v1 單值轉成 v2 陣列', () => {
   migrate(db, migrations.filter((m) => m.version <= 12));
   const uid = addUser(db);
   db.prepare("INSERT INTO route_filters (id, user_id, name, spec, created_at, updated_at) VALUES ('f', ?, 'x', ?, 'x', 'x')").run(uid, JSON.stringify({ v: 1, sea: 'all', sort: 'opens', required: [] }));
-  assert.equal(migrate(db), 13);
+  assert.equal(migrate(db), 14);
   const spec = JSON.parse((db.prepare("SELECT spec FROM route_filters WHERE id = 'f'").get() as { spec: string }).spec) as { v: number; sort: string[] };
   assert.deepEqual([spec.v, spec.sort], [2, ['opens']]);
+});
+
+test('migration 14:條件組合的排序「variety」改名 value(D-300),其他內容不動', () => {
+  const db = openDatabase(':memory:');
+  migrate(db, migrations.filter((m) => m.version <= 13));
+  const uid = addUser(db);
+  const ins = db.prepare("INSERT INTO route_filters (id, user_id, name, spec, created_at, updated_at) VALUES (?, ?, 'x', ?, 'x', 'x')");
+  ins.run('a', uid, JSON.stringify({ v: 2, sea: 'all', sort: ['perMin', 'variety', 'opens'], required: [1, 2] }));
+  ins.run('b', uid, JSON.stringify({ v: 2, sea: 2, sort: ['opens'], required: [] }));
+  assert.equal(migrate(db), 14);
+  const get = (id: string) => JSON.parse((db.prepare('SELECT spec FROM route_filters WHERE id = ?').get(id) as { spec: string }).spec) as { sort: string[]; required: number[]; sea: unknown };
+  assert.deepEqual(get('a'), { v: 2, sea: 'all', sort: ['perMin', 'value', 'opens'], required: [1, 2] });
+  assert.deepEqual(get('b'), { v: 2, sea: 2, sort: ['opens'], required: [] });
 });

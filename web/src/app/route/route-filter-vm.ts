@@ -131,10 +131,10 @@ export class RouteFilterVm {
     f.l.match.set(spec.match);
     f.tapNote.set('');
     f.mode.set('filter');
-    // 海圖跳到最相關的海域:第一個必選點所在的海域,否則所選的海域
+    // 海圖跳到最相關的海域:指定了海域就是那個海域(D-300,與下拉一致),否則第一個必選點所在的海域
     const first = spec.required[0];
     const bySeaOfPoint = first !== undefined ? SEA_INDEXES.find((s) => s.byId.has(first))?.sea.sea : undefined;
-    const target = bySeaOfPoint ?? (spec.sea === 'all' ? undefined : spec.sea);
+    const target = spec.sea === 'all' ? bySeaOfPoint : spec.sea;
     if (target !== undefined) f.x.viewSea.set(target);
     this.activeId.set(dto.id);
     if (dropped > 0) this.toast.show(`已略過 ${dropped} 個已不存在的項目`, { tone: 'info' });

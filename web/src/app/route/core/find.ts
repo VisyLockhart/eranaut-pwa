@@ -3,17 +3,20 @@ import type { BuildStats, SeaPoint } from './types';
 import { isAvailable, type UnlockGraph } from './unlock';
 
 // 統一的找路線引擎(D-222):取代練級(recommend.ts)、探索(explore.ts)、距離(variety.ts)、掉落(loot.ts)四支引擎。
-// 條件 = 過濾(必選 / 排除航點、海域、最長航行時間、指定物品);排序 = 每分鐘經驗 / 可能解鎖數 / 最多物品 三選一。
+// 條件 = 過濾(必選 / 排除航點、海域、最長航行時間、指定物品);排序 = 每分鐘經驗 / 可能解鎖數 / 最高價值(可多選,D-297、D-300)。
 // 路線只在單一海域內,所以「必選航點」是各海域各自 AND、結果取聯集(見 `searchSeas`)。
 // 航行順序:在耗用不超過距離上限的排列中,總距離(航行時間)最短者。
 
 export const FIND_ROUTE_LIMIT = 100;
 
-/** perMin = 每分鐘經驗(練級);opens = 回來後可能解鎖的新航點數(探索);variety = 撈得到的不同物品種類數(最多物品) */
-export type FindSort = 'perMin' | 'opens' | 'variety';
+/** perMin = 每分鐘經驗(練級);opens = 回來後可能解鎖的新航點數(探索);value = 撈得到的物品總價值(最高價值,D-300) */
+export type FindSort = 'perMin' | 'opens' | 'value';
+
+/** 物品價值(D-300):高階 10 分、中階 3 分、低階 1 分 */
+export const TIER_SCORE = { high: 10, mid: 3, low: 1 } as const;
 /** 多重排序(D-297):順序就是優先順序(使用者點選的先後,D-298);不重複、去掉不認得的;空的(都沒選)預設只照每分鐘經驗 */
 export function normalizeSort(s: readonly FindSort[]): FindSort[] {
-  const out = [...new Set(s)].filter((k): k is FindSort => k === 'perMin' || k === 'variety' || k === 'opens');
+  const out = [...new Set(s)].filter((k): k is FindSort => k === 'perMin' || k === 'value' || k === 'opens');
   return out.length > 0 ? out : ['perMin'];
 }
 
@@ -58,6 +61,8 @@ export interface FindRoute {
   opens: number[];
   /** 這條路線拿得到的不同物品(物品 id,由小到大) */
   items: number[];
+  /** 物品總價值(D-300):每個不同的物品只算一次,以它在這條路線上已解鎖的最高階計分(高 10、中 3、低 1) */
+  value: number;
   /** 拿得到的「指定物品」(物品 id,依指定順序);沒指定物品時為空 */
   got: number[];
 }
@@ -65,6 +70,21 @@ export interface FindRoute {
 /** 這個探索值下,該航點能拿到的物品 id(低階一定有、探索 ≥ 中 / 高階門檻才有中 / 高階) */
 export function pointItems(p: SeaPoint, surveillance: number): number[] {
   return [...p.drop.low, ...(surveillance >= p.statReq.surveillanceMid ? p.drop.mid : []), ...(surveillance >= p.statReq.surveillanceHigh ? p.drop.high : [])];
+}
+
+/**
+ * 這個探索值下,該航點能拿到的物品與它的階層分數(D-300);同一個物品在同一站出現在好幾階時取最高。
+ * 物品集合與 {@link pointItems} 相同。
+ */
+export function pointItemScores(p: SeaPoint, surveillance: number): [number, number][] {
+  const best = new Map<number, number>();
+  const put = (ids: readonly number[], score: number): void => {
+    for (const id of ids) if ((best.get(id) ?? 0) < score) best.set(id, score);
+  };
+  put(p.drop.low, TIER_SCORE.low);
+  if (surveillance >= p.statReq.surveillanceMid) put(p.drop.mid, TIER_SCORE.mid);
+  if (surveillance >= p.statReq.surveillanceHigh) put(p.drop.high, TIER_SCORE.high);
+  return [...best];
 }
 
 /**
@@ -112,8 +132,8 @@ export function checkRequired(si: SeaIndex, required: ReadonlySet<number>, level
 }
 
 /** 結果清單的多重排序(由好到壞):依序比每個開啟的條件;全部相同回 0(D-297) */
-export function compareRoutes(a: Pick<FindRoute, 'perMin' | 'opens' | 'items'>, b: Pick<FindRoute, 'perMin' | 'opens' | 'items'>, sort: readonly FindSort[]): number {
-  const m = (r: Pick<FindRoute, 'perMin' | 'opens' | 'items'>, k: FindSort): number => (k === 'perMin' ? r.perMin : k === 'opens' ? r.opens.length : r.items.length);
+export function compareRoutes(a: Pick<FindRoute, 'perMin' | 'opens' | 'value'>, b: Pick<FindRoute, 'perMin' | 'opens' | 'value'>, sort: readonly FindSort[]): number {
+  const m = (r: Pick<FindRoute, 'perMin' | 'opens' | 'value'>, k: FindSort): number => (k === 'perMin' ? r.perMin : k === 'opens' ? r.opens.length : r.value);
   for (const k of sort) {
     const d = m(b, k) - m(a, k);
     if (d !== 0) return d;
@@ -121,10 +141,10 @@ export function compareRoutes(a: Pick<FindRoute, 'perMin' | 'opens' | 'items'>, 
   return 0;
 }
 
-type Cmp = Pick<FindRoute, 'minutes' | 'exp' | 'perMin' | 'sea' | 'order'> & { opensN: number; itemsN: number };
+type Cmp = Pick<FindRoute, 'minutes' | 'exp' | 'perMin' | 'sea' | 'order'> & { opensN: number; valueN: number };
 
 function metricOf(r: Cmp, sort: FindSort): number {
-  return sort === 'perMin' ? r.perMin : sort === 'opens' ? r.opensN : r.itemsN;
+  return sort === 'perMin' ? r.perMin : sort === 'opens' ? r.opensN : r.valueN;
 }
 
 /** 由好到壞;依序比每個開啟的條件,全部相同時航行時間短者在前,再看經驗,最後依海域與航點編號固定順序 */
@@ -175,29 +195,38 @@ export function findRoutes(seas: readonly SeaIndex[], q: FindQuery): FindRoute[]
 
     // 目前選中的點:前 reqPts.length 個是必選點,後面是 DFS 挑的
     const pts: SeaPoint[] = [...reqPts];
-    const itemSets = new Map<number, number[]>();
-    const itemsOfPoint = (p: SeaPoint): number[] => {
+    const itemSets = new Map<number, [number, number][]>();
+    const itemsOfPoint = (p: SeaPoint): [number, number][] => {
       let s = itemSets.get(p.id);
-      if (!s) itemSets.set(p.id, (s = pointItems(p, surveillance)));
+      if (!s) itemSets.set(p.id, (s = pointItemScores(p, surveillance)));
       return s;
     };
-    // 每個物品被選到幾次,DFS 進退時維護,不必每個子集重算聯集
-    const count = new Map<number, number>();
-    let distinct = 0;
+    // 每個物品在選到的點裡各階層出現幾次(低 / 中 / 高),DFS 進退時維護,不必每個子集重算聯集與價值;
+    // 物品的分數 = 出現過的最高階(D-300)
+    const count = new Map<number, [number, number, number]>();
+    const slot = (score: number): number => (score === TIER_SCORE.high ? 2 : score === TIER_SCORE.mid ? 1 : 0);
+    const SLOT_SCORE = [TIER_SCORE.low, TIER_SCORE.mid, TIER_SCORE.high] as const;
+    const scoreOf = (c: readonly [number, number, number] | undefined): number => (!c ? 0 : c[2] > 0 ? SLOT_SCORE[2] : c[1] > 0 ? SLOT_SCORE[1] : c[0] > 0 ? SLOT_SCORE[0] : 0);
+    let value = 0;
     const add = (p: SeaPoint): void => {
-      for (const it of itemsOfPoint(p)) {
-        const c = count.get(it) ?? 0;
-        if (c === 0) distinct++;
-        count.set(it, c + 1);
+      for (const [it, sc] of itemsOfPoint(p)) {
+        let c = count.get(it);
+        const before = scoreOf(c);
+        if (!c) count.set(it, (c = [0, 0, 0]));
+        c[slot(sc)]++;
+        value += scoreOf(c) - before;
       }
     };
     const remove = (p: SeaPoint): void => {
-      for (const it of itemsOfPoint(p)) {
-        const c = count.get(it)! - 1;
-        if (c === 0) {
+      for (const [it, sc] of itemsOfPoint(p)) {
+        const c = count.get(it)!;
+        const before = scoreOf(c);
+        c[slot(sc)]--;
+        const after = scoreOf(c);
+        if (after === 0) {
           count.delete(it);
-          distinct--;
-        } else count.set(it, c);
+        }
+        value += after - before;
       }
     };
     for (const p of reqPts) add(p);
@@ -217,8 +246,8 @@ export function findRoutes(seas: readonly SeaIndex[], q: FindQuery): FindRoute[]
         if (primary === 'perMin') {
           if (sumExp / lbMinutes < worst.perMin) return;
         } else {
-          const m = primary === 'opens' ? opensN : distinct;
-          const wm = primary === 'opens' ? worst.opensN : worst.itemsN;
+          const m = primary === 'opens' ? opensN : value;
+          const wm = primary === 'opens' ? worst.opensN : worst.valueN;
           if (m < wm) return;
           if (sort.length === 1 && m === wm && lbMinutes > worst.minutes) return;
         }
@@ -255,9 +284,10 @@ export function findRoutes(seas: readonly SeaIndex[], q: FindQuery): FindRoute[]
         perMin: sumExp / minutes,
         opens,
         items,
+        value,
         got: wanted.filter((id) => count.has(id)),
         opensN: opens.length,
-        itemsN: items.length,
+        valueN: value,
       });
     };
 
@@ -291,5 +321,5 @@ export function findRoutes(seas: readonly SeaIndex[], q: FindQuery): FindRoute[]
     if (reqPts.length > 0) evaluate(r0, d0, e0);
     dfs(0, r0, d0, e0);
   }
-  return top.map(({ opensN: _o, itemsN: _i, ...r }) => r);
+  return top.map(({ opensN: _o, valueN: _v, ...r }) => r);
 }

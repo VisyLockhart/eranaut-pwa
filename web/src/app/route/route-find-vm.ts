@@ -74,6 +74,16 @@ export class RouteFindVm {
   readonly tapNote = signal('');
 
   readonly sea = signal<number | 'all'>('all');
+  /** 選海域(D-300):指定海域時海圖也翻到那個海域;'all' 不動海圖 */
+  setSea(v: number | 'all'): void {
+    this.sea.set(v);
+    if (v !== 'all') this.x.viewSea.set(v);
+  }
+  /** 海圖翻到另一個海域(D-300):下拉已指定海域時一起換,保持一致(否則選中的點會被當成「不在所選海域內」忽略);'all' 不變 */
+  setViewSea(sea: number): void {
+    this.x.viewSea.set(sea);
+    if (this.sea() !== 'all') this.sea.set(sea);
+  }
   readonly maxHours = signal<number | null>(null);
   /** 開啟的排序條件(多重排序,D-297);至少一項,依固定權重 */
   readonly sort = signal<FindSort[]>(['perMin']);
@@ -221,7 +231,7 @@ export class RouteFindVm {
     }
     this.required.set(req);
     this.excluded.set(exc);
-    this.x.viewSea.set(this.vm.sea());
+    this.setViewSea(this.vm.sea());
     this.mode.set('filter');
     this.tapNote.set('');
   }
