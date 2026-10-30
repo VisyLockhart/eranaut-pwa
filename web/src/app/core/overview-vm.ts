@@ -378,6 +378,8 @@ export class OverviewVm {
    * 手機/桌機版面會整個重建,元件內的狀態會消失(D-163)
    */
   readonly quickRow = signal<SubRow | null>(null);
+  /** 開啟當下的那一列(D-305):和 quickRow 比較,得知「這一區有沒有改」 */
+  readonly quickRowInit = signal<SubRow | null>(null);
   readonly quickError = signal<string | null>(null);
   readonly quickFormError = signal<string | null>(null);
   readonly quickSaving = signal(false);
@@ -403,6 +405,7 @@ export class OverviewVm {
   }
   private resetQuick(): void {
     this.quickRow.set(null);
+    this.quickRowInit.set(null);
     this.quickError.set(null);
     this.quickFormError.set(null);
     this.quickSaving.set(false);

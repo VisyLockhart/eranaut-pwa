@@ -41,7 +41,8 @@ export function progressRequest(draft: QuickProgressDraft | null, hasRow: boolea
   if (draft === null) return undefined;
   // 關閉:有紀錄只關掉練級輔助;關掉之前改過的等級與經驗照樣記下(等級是潛艇的資料,和有沒有開練級輔助無關)
   if (!draft.enabled) {
-    if (!hasRow) return undefined;
+    // 沒有紀錄但填了等級:只記等級(不開輔助),等級是潛艇的資料(D-305)
+    if (!hasRow && !draft.edited) return undefined;
     return draft.edited ? { assist_on: false, level: draft.level, exp_in_level: clampExp(draft.level, draft.exp) } : { assist_on: false };
   }
   const req: ProgressInput = { assist_on: true, assist_mode: draft.mode, max_hours: draft.maxHours, filter_id: draft.filterId };
@@ -52,12 +53,12 @@ export function progressRequest(draft: QuickProgressDraft | null, hasRow: boolea
   return req;
 }
 
-/** 開啟時的預設值:有紀錄就沿用(含截圖辨識的等級),沒有從 1 級、經驗取中間 */
+/** 開啟時的預設值:有紀錄就沿用(含截圖辨識的等級)與它的開關狀態,沒有從 1 級、經驗取中間、輔助關閉(D-305:等級與開關脫鉤) */
 export function defaultDraft(sub: SubmarineDto | null): QuickProgressDraft {
   const p = sub?.progress;
   const level = p ? Math.min(p.effective_level, MAX_RECORDED_LEVEL) : 1;
   const exp = p ? p.effective_exp : middleExp(level);
-  return { enabled: true, level, exp, mode: p?.assist_mode ?? 'level', maxHours: p?.max_hours ?? null, filterId: p?.filter_id ?? null, edited: false };
+  return { enabled: !!p?.assist_on, level, exp, mode: p?.assist_mode ?? 'level', maxHours: p?.max_hours ?? null, filterId: p?.filter_id ?? null, edited: false };
 }
 
 /** 滑桿預設值:這一級所需經驗的中間,對齊到步距 */

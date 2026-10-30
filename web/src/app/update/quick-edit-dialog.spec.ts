@@ -135,6 +135,57 @@ describe('QuickEditDialog', () => {
     expect(closed).not.toHaveBeenCalled();
   });
 
+  describe('沒送出的修改(D-305)', () => {
+    it('沒改任何東西:X、取消直接關閉', () => {
+      const { el, fixture, closed } = open(1);
+      expect(el.querySelector('.qe-pending')).toBeNull();
+      el.querySelector<HTMLButtonElement>('.modal-close')!.click();
+      fixture.detectChanges();
+      expect(el.querySelector('.qe-cfm')).toBeNull();
+      expect(closed).toHaveBeenCalledTimes(1);
+    });
+
+    it('改了名稱:標題旁顯示「有 1 處未送出」、區塊標「已改」;按 X 先跳確認,繼續編輯不關閉,放棄才關閉', () => {
+      const { el, fixture, closed, type } = open(1);
+      type('name', '貝塔');
+      expect(el.querySelector('.qe-pending')?.textContent).toContain('有 1 處未送出');
+      expect(el.querySelector('[data-qs="quick"] .qs-tag')).not.toBeNull();
+      el.querySelector<HTMLButtonElement>('.modal-close')!.click();
+      fixture.detectChanges();
+      expect(el.querySelector('.qe-cfm')?.textContent).toContain('潛水艇名稱');
+      expect(closed).not.toHaveBeenCalled();
+      el.querySelectorAll<HTMLButtonElement>('.qe-cfm .modal-actions button')[0]!.click();
+      fixture.detectChanges();
+      expect(el.querySelector('.qe-cfm')).toBeNull();
+      expect(closed).not.toHaveBeenCalled();
+      el.querySelector<HTMLButtonElement>('.qe-ft .btn-secondary')!.click();
+      fixture.detectChanges();
+      el.querySelector<HTMLButtonElement>('.qe-cfm .btn-danger')!.click();
+      fixture.detectChanges();
+      expect(closed).toHaveBeenCalledTimes(1);
+    });
+
+    it('改了等級:列在確認清單,Esc 先關確認、再按 Esc 才進確認', () => {
+      const { el, fixture, closed } = open(1);
+      el.querySelector<HTMLButtonElement>('button[aria-label="等級加 1"]')!.click();
+      fixture.detectChanges();
+      expect(el.querySelector('[data-qs="config"] .qs-tag')).not.toBeNull();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      fixture.detectChanges();
+      expect(el.querySelector('.qe-cfm')?.textContent).toContain('記錄等級');
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      fixture.detectChanges();
+      expect(el.querySelector('.qe-cfm')).toBeNull();
+      expect(closed).not.toHaveBeenCalled();
+    });
+
+    it('功能選單:四個項目對應四個區塊', () => {
+      const { el } = open(1);
+      const keys = Array.from(el.querySelectorAll('[data-qs]')).map((x) => x.getAttribute('data-qs'));
+      expect(keys).toEqual(['quick', 'config', 'upkeep', 'assist']);
+    });
+  });
+
   it('被編輯的潛艇已不存在(例如工坊被刪)時自動關閉', async () => {
     const { closed, fixture } = open(1);
     store.fetched.set([]);

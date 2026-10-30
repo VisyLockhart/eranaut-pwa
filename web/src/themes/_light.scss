@@ -168,3 +168,18 @@ html[data-theme='light'] {
 }
 @keyframes mo-blink { 50% { opacity: 0.5; } }
 html[data-theme='light'][data-motion='reduced'] .sk { animation: none; }
+
+/* 快速修改的區塊與功能選單(D-305):像素方塊 + 粗框,選取的格子有凹凸高光 */
+html[data-theme='light'] {
+  .qs { border-width: 3px; border-color: var(--line); border-radius: 0; }
+  .qs:not(.pri) { border-color: var(--bevel); }
+  .qs-i { border-color: var(--line); border-radius: 0; }
+  .qs-t, .qs-s { font-family: var(--font-head); }
+  .qs-tag, .qe-pending { border-radius: 0; }
+  .qe-rail-h { border-block-width: 3px; border-block-color: var(--line); }
+  .qe-rh, .qe-rv { border-radius: 0; border-color: var(--bevel); background: var(--bg-elevated-2); }
+  .qe-rh.on, .qe-rv.on { border-color: var(--line); background: var(--accent); box-shadow: inset 3px 3px 0 var(--lift), inset -3px -3px 0 var(--bevel); }
+  .qe-rail-v { border-width: 3px; border-color: var(--line); border-radius: 0; }
+  .qe-dot { border-radius: 0; }
+  .qe-cfm { border-width: 3px; border-color: var(--line); border-radius: 0; }
+}

@@ -1,6 +1,6 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 import type { SubmarineDto, SubmarineValidationErrorBody } from '@eranaut/shared';
 import { DataStore } from '../core/data-store';
 import { Layout } from '../core/layout';
@@ -17,6 +17,9 @@ import { DispatchVm, isDispatch, resolveRoute, type RouteSel } from '../core/dis
 import { DispatchLine } from './dispatch-line';
 import { upkeepRequest } from '../core/upkeep-vm';
 import { SubRowEditor } from './sub-row-editor';
+import { changeCount, quickChanges } from '../core/quick-dirty';
+import { upkeepItem } from '../core/upkeep-vm';
+import type { IconName } from '../ui/icons';
 
 /**
  * 單艘快速修改(D-117):從總覽點一艘潛艇開啟。
@@ -30,38 +33,94 @@ import { SubRowEditor } from './sub-row-editor';
   template: `
     @if (workshop(); as ws) {
       @if (row(); as r) {
-        <div class="modal-overlay" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
-          <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="qe-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px">
-              <div class="modal-title" id="qe-title">快速修改</div>
-              <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
-            </div>
-            <div class="uf-ws"><app-icon name="server" [size]="14" /><b>{{ ws.name }}</b></div>
-            <app-sub-row-editor
-              [row]="r"
-              [error]="error()"
-              [eta]="eta()"
-              (nameChange)="update({ name: $event })"
-              (statusChange)="update({ status: $event })"
-              (timeChange)="setTime($event.field, $event.value)"
-            >
-              <app-dispatch-line
-                [sub]="dispatchSub() ?? undefined"
-                [status]="r.status"
-                [sel]="r.route"
-                [filled]="filled()"
-                [wsName]="ws.name"
-                [desktop]="layout.isDesktop()"
-                (routeChange)="setRoute($event)"
-              />
-            </app-sub-row-editor>
-            @if (sub(); as s) { <app-build-field [sub]="s" /> }
-            @if (sub(); as s) { <app-upkeep-field [sub]="s" [status]="r.status" /> }
-            @if (sub(); as s) { <app-leveling-field [sub]="s" /> }
-            @if (formError()) { <div class="modal-error-text" role="alert">{{ formError() }}</div> }
-            <div class="modal-actions">
-              <button type="button" class="btn-secondary" (click)="close()">取消</button>
-              <button type="button" class="btn-primary-modal" [disabled]="saving()" (click)="save()">{{ saving() ? '送出中…' : '送出更新' }}</button>
+        <div class="modal-overlay qe-ov" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
+          <div class="qe-shell">
+            @if (layout.isDesktop()) {
+              <nav class="qe-rail-v" aria-label="跳到區塊">
+                @for (it of rail(); track it.key) {
+                  <button type="button" class="qe-rv" [class.on]="active() === it.key" [attr.aria-label]="it.label" [attr.aria-current]="active() === it.key ? 'true' : null" (click)="goTo(it.key)">
+                    <app-icon [name]="it.icon" [size]="18" />
+                    @if (it.attn) { <i class="qe-dot attn"></i> } @else if (it.on) { <i class="qe-dot"></i> }
+                    <span class="qe-tip">{{ it.label }}</span>
+                  </button>
+                }
+              </nav>
+            }
+            <div class="modal-box rt-dlg qe-box" role="dialog" aria-modal="true" aria-labelledby="qe-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+              <div class="qe-hd">
+                <div class="modal-title" id="qe-title">快速修改</div>
+                @if (count() > 0) { <span class="qe-pending" role="status">有 {{ count() }} 處未送出</span> }
+                <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+              </div>
+              <div class="uf-ws qe-ws"><app-icon name="server" [size]="14" /><b>{{ ws.name }}</b></div>
+              @if (!layout.isDesktop()) {
+                <nav class="qe-rail-h" aria-label="跳到區塊">
+                  @for (it of rail(); track it.key) {
+                    <button type="button" class="qe-rh" [class.on]="active() === it.key" [attr.aria-current]="active() === it.key ? 'true' : null" (click)="goTo(it.key)">
+                      <span class="qe-rh-i"><app-icon [name]="it.icon" [size]="17" />@if (it.attn) { <i class="qe-dot attn"></i> } @else if (it.on) { <i class="qe-dot"></i> }</span>
+                      <span class="qe-rh-t">{{ it.short }}</span>
+                    </button>
+                  }
+                </nav>
+              }
+              <div class="qe-body" #body (scroll)="onScroll()">
+                <section class="qs pri" data-qs="quick" aria-labelledby="qs-quick-t">
+                  <div class="qs-h">
+                    <span class="qs-i"><app-icon name="server" [size]="18" /></span>
+                    <span class="qs-m">
+                      <span class="qs-t" id="qs-quick-t">快速修改@if (changes().quick.length > 0) { <em class="qs-tag">已改</em> }</span>
+                      <span class="qs-s">名稱、狀態、剩餘時間與這次派出</span>
+                    </span>
+                  </div>
+                  <div class="qs-b">
+                    <app-sub-row-editor
+                      [row]="r"
+                      [error]="error()"
+                      [eta]="eta()"
+                      (nameChange)="update({ name: $event })"
+                      (statusChange)="update({ status: $event })"
+                      (timeChange)="setTime($event.field, $event.value)"
+                    >
+                      <app-dispatch-line
+                        [sub]="dispatchSub() ?? undefined"
+                        [status]="r.status"
+                        [sel]="r.route"
+                        [filled]="filled()"
+                        [wsName]="ws.name"
+                        [desktop]="layout.isDesktop()"
+                        (routeChange)="setRoute($event)"
+                      />
+                    </app-sub-row-editor>
+                  </div>
+                </section>
+                @if (sub(); as s) {
+                  <app-build-field [sub]="s" [dirty]="changes().config.length > 0" />
+                  <app-upkeep-field [sub]="s" [status]="r.status" [dirty]="changes().upkeep.length > 0" />
+                  <app-leveling-field [sub]="s" [dirty]="changes().assist.length > 0" (jump)="goTo('config')" />
+                }
+                @if (formError()) { <div class="modal-error-text" role="alert">{{ formError() }}</div> }
+              </div>
+              <div class="qe-ft">
+                <button type="button" class="btn-secondary" (click)="close()">取消</button>
+                <button type="button" class="btn-primary-modal" [disabled]="saving()" (click)="save()">{{ saving() ? '送出中…' : '送出更新' }}</button>
+              </div>
+
+              @if (confirming()) {
+                <div class="qe-cfm-ov" (click)="$event.stopPropagation()">
+                  <div class="qe-cfm" role="alertdialog" aria-modal="true" aria-labelledby="qe-cfm-t">
+                    <div class="qe-cfm-t" id="qe-cfm-t">有 {{ count() }} 處修改還沒送出</div>
+                    <ul class="qe-cfm-l">
+                      @for (g of groups(); track g.title) {
+                        @for (line of g.lines; track line) { <li><b>{{ g.title }}</b>{{ line }}</li> }
+                      }
+                    </ul>
+                    <div class="modal-actions">
+                      <button type="button" class="btn-secondary" (click)="confirming.set(false)">繼續編輯</button>
+                      <button type="button" class="btn-danger" (click)="discard()">放棄並關閉</button>
+                    </div>
+                  </div>
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -93,6 +152,66 @@ export class QuickEditDialog {
     return r === null ? '' : etaText(r, this.store.now());
   });
   protected downOnOverlay = false;
+
+  // ---- 區塊、功能選單與未送出修改(D-305) ----
+  private readonly bodyEl = viewChild<ElementRef<HTMLElement>>('body');
+  protected readonly active = signal<'quick' | 'config' | 'upkeep' | 'assist'>('quick');
+  protected readonly confirming = signal(false);
+  protected readonly changes = computed(() =>
+    quickChanges(this.sub(), this.overview.quickRowInit(), this.row(), this.overview.quickUpkeep(), this.overview.quickProgress()),
+  );
+  protected readonly count = computed(() => changeCount(this.changes()));
+  protected readonly groups = computed(() => {
+    const c = this.changes();
+    return [
+      { title: '快速修改', lines: c.quick },
+      { title: '潛艇配置', lines: c.config },
+      { title: '維修提醒', lines: c.upkeep },
+      { title: '航線輔助', lines: c.assist },
+    ].filter((g) => g.lines.length > 0);
+  });
+  protected readonly rail = computed(() => {
+    const s = this.sub();
+    const up = this.overview.quickUpkeep();
+    const pr = this.overview.quickProgress();
+    const upOn = up ? up.enabled : !!s?.upkeep;
+    const asOn = pr ? pr.enabled : !!s?.progress?.assist_on;
+    const changed = s && upOn && !up ? (upkeepItem(s, this.store.now())?.configChanged ?? false) : false;
+    return [
+      { key: 'quick' as const, label: '快速修改', short: '快速', icon: 'server' as IconName, on: false, attn: false },
+      { key: 'config' as const, label: '潛艇配置', short: '配置', icon: 'settings' as IconName, on: false, attn: false },
+      { key: 'upkeep' as const, label: '維修提醒', short: '維修', icon: 'wrench' as IconName, on: upOn, attn: changed },
+      { key: 'assist' as const, label: '航線輔助', short: '輔助', icon: 'levelUp' as IconName, on: asOn, attn: asOn && !s?.build },
+    ];
+  });
+
+  protected goTo(key: 'quick' | 'config' | 'upkeep' | 'assist'): void {
+    const body = this.bodyEl()?.nativeElement;
+    const el = body?.querySelector<HTMLElement>(`[data-qs="${key}"]`);
+    if (!body || !el) return;
+    const reduced = document.documentElement.dataset['motion'] === 'reduced';
+    this.active.set(key);
+    body.scrollTo({ top: Math.max(0, el.offsetTop - 4), behavior: reduced ? 'auto' : 'smooth' });
+  }
+
+  /** 捲動時標示目前所在的區塊(最後一個頂端已捲過的區塊;捲到底就是最後一個) */
+  protected onScroll(): void {
+    const body = this.bodyEl()?.nativeElement;
+    if (!body) return;
+    const keys = ['quick', 'config', 'upkeep', 'assist'] as const;
+    let cur: (typeof keys)[number] = 'quick';
+    for (const k of keys) {
+      const el = body.querySelector<HTMLElement>(`[data-qs="${k}"]`);
+      if (el && el.offsetTop - 24 <= body.scrollTop) cur = k;
+    }
+    if (body.scrollTop + body.clientHeight >= body.scrollHeight - 2 && body.scrollTop > 0) cur = 'assist';
+    if (cur !== this.active()) this.active.set(cur);
+  }
+
+  protected discard(): void {
+    this.confirming.set(false);
+    this.closed.emit();
+  }
   protected readonly filled = computed(() => {
     const r = this.row();
     return r !== null && (r.status !== 'exploring' || (rowMinutes(r) ?? 0) > 0);
@@ -153,7 +272,11 @@ export class QuickEditDialog {
       const sub = ws?.submarines.find((s) => s.position === this.position());
       untracked(() => {
         if (!sub) this.closed.emit();
-        else if (this.row() === null) this.row.set(rowWithRemaining(1, sub, Date.now()));
+        else if (this.row() === null) {
+          const init = rowWithRemaining(1, sub, Date.now());
+          this.overview.quickRowInit.set(init);
+          this.row.set(init);
+        }
       });
     });
   }
@@ -174,11 +297,16 @@ export class QuickEditDialog {
 
   /** 疊在上面的潛艇配置對話框已先處理這次 Esc(它會 preventDefault),這裡就不關快速修改 */
   protected onEscape(event: Event): void {
-    if (!event.defaultPrevented) this.close();
+    if (event.defaultPrevented) return;
+    if (this.confirming()) this.confirming.set(false);
+    else this.close();
   }
 
+  /** 「X」、取消、點背景、Esc 都走這裡:有沒送出的修改先跳確認(D-305) */
   protected close(): void {
-    if (!this.saving()) this.closed.emit();
+    if (this.saving()) return;
+    if (this.count() > 0) this.confirming.set(true);
+    else this.closed.emit();
   }
 
   protected async save(): Promise<void> {

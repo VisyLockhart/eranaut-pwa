@@ -1878,3 +1878,87 @@ html[data-motion='reduced'] .sk::after { animation: none; display: none; }
 .up-steps li.done i { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .up-steps li.done i svg { animation: mo-pop var(--mo-dur) var(--mo-ease); }
 @keyframes mo-pop { from { transform: scale(0.4); opacity: 0; } }
+
+/* ---------- 快速修改:四區塊 + 左側功能選單 (D-305) ---------- */
+.modal-box.rt-dlg.qe-box { position: relative; max-width: 640px; gap: 0; }
+.qe-shell { position: relative; width: 100%; max-width: 640px; display: flex; justify-content: center; }
+.qe-hd { display: flex; align-items: center; gap: 10px; padding: 18px 20px 4px; }
+.qe-hd .modal-title { flex: 1 1 auto; text-align: left; }
+.qe-ws { margin: 0; padding: 0 20px 10px; }
+.qe-pending { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 1px 9px; border-radius: var(--r-pill); border: var(--bw) solid color-mix(in srgb, var(--amber) 55%, transparent); background: color-mix(in srgb, var(--amber) 12%, transparent); color: var(--amber-text); font-size: 11.5px; font-weight: 700; }
+.qe-pending::before { content: ''; width: 7px; height: 7px; background: var(--amber); transform: rotate(45deg); }
+.qe-body { position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 16px; overscroll-behavior: contain; }
+.qe-ft { flex: 0 0 auto; display: flex; gap: 10px; padding: 12px 20px calc(14px + env(safe-area-inset-bottom) / var(--vu-div)); background: var(--bg-elevated); border-top: var(--bw) solid var(--border); }
+.qe-ft > button { flex: 1; }
+.qe-ft > .btn-primary-modal { flex: 1.6; }
+
+/* 區塊 */
+.qs { flex: 0 0 auto; border: var(--bw) solid var(--border); border-radius: calc(14px * var(--rs)); background: var(--bg-elevated-2); }
+.qs.pri { background: var(--bg-elevated); border-color: var(--border-strong); }
+.qs-h { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 12px; }
+.qs-i { flex: 0 0 auto; width: 38px; height: 38px; display: grid; place-items: center; border-radius: calc(10px * var(--rs)); border: var(--bw) solid var(--border); background: var(--bg-elevated); color: var(--accent); }
+.qs-m { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.qs-t { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--text); }
+.qs-s { font-size: 12.5px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qs-tag { font-style: normal; display: inline-flex; align-items: center; gap: 4px; min-height: 20px; padding: 0 8px; border-radius: var(--r-pill); border: var(--bw) solid color-mix(in srgb, var(--amber) 55%, transparent); background: color-mix(in srgb, var(--amber) 12%, transparent); color: var(--amber-text); font-size: 11px; font-weight: 700; }
+.qs-tag::before { content: ''; width: 6px; height: 6px; background: var(--amber); transform: rotate(45deg); }
+.qs-b { display: flex; flex-direction: column; gap: 12px; padding: 12px 12px 14px; border-top: var(--bw) dashed var(--border); }
+.qs-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 16px; }
+.qs.off .qs-i { color: var(--text-dim); }
+.qs.off .qs-t { color: var(--text-muted); }
+.qs.off > .qs-b { padding-top: 10px; padding-bottom: 12px; }
+.qs-h > .rt-save-btn { flex: 0 0 auto; }
+.qs-b .lv-link.end { align-self: flex-start; }
+
+/* 開合:grid-template-rows 0fr ↔ 1fr(兩個方向都有動畫;精簡模式 token 歸零) */
+.qs-w { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--mo-dur) var(--mo-ease-out); }
+.qs-w.open { grid-template-rows: 1fr; }
+.qs-wi { min-height: 0; overflow: hidden; opacity: 0; transition: opacity var(--mo-dur) var(--mo-ease-out); }
+.qs-w.open > .qs-wi { opacity: 1; }
+
+/* 潛艇配置:配件四格摘要、等級 / 經驗 */
+.bf-parts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; max-width: 360px; }
+.bf-parts.dashed { display: block; max-width: none; }
+.bf-part { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; border-radius: calc(10px * var(--rs)); border: var(--bw) solid var(--border); background: var(--bg-elevated); }
+.bf-part small { font-size: 10.5px; color: var(--text-dim); }
+.bf-part b { font-size: 16px; }
+.bf-none { display: block; padding: 10px 12px; border-radius: calc(10px * var(--rs)); border: var(--bw) dashed var(--border-strong); font-size: 13px; color: var(--text-dim); }
+.lv-cur { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.lv-cur b { font-size: 18px; }
+.qs-b .rt-lv-slider { margin-top: 0; }
+.qs-b .rt-lv-bubble { min-width: 40px; }
+
+/* 功能選單:手機是標題下的橫向四格,桌機是對話框左外側的直條 */
+.qe-rail-h { position: relative; flex: 0 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 8px 12px; background: var(--bg-elevated); border-block: var(--bw) solid var(--border); }
+.qe-rh { position: relative; z-index: 1; min-height: 56px; padding: 6px 2px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: var(--bw) solid transparent; border-radius: calc(10px * var(--rs)); background: transparent; color: var(--text-dim); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: color var(--mo-dur-f) var(--mo-ease-out), translate var(--mo-dur-f) var(--mo-ease-out); }
+.qe-rh-i { position: relative; display: grid; place-items: center; }
+.qe-rh.on { color: var(--on-accent); background: var(--accent); }
+.qe-rh:active { translate: 0 var(--mo-press-y); }
+.qe-dot { position: absolute; top: -4px; right: -9px; width: 9px; height: 9px; border-radius: var(--r-round); background: var(--ok); border: 2px solid var(--bg-elevated); box-sizing: content-box; }
+.qe-dot.attn { background: var(--amber); border-radius: 0; transform: rotate(45deg); }
+.on > .qe-dot, .on .qe-dot { border-color: var(--accent); }
+.qe-rail-v { position: absolute; right: 100%; top: 72px; margin-right: 10px; display: flex; flex-direction: column; gap: 8px; padding: 8px; background: var(--bg-elevated); border: var(--bw) solid var(--border-strong); border-radius: calc(14px * var(--rs)); z-index: 1; }
+.qe-rv { position: relative; width: 48px; height: 48px; display: grid; place-items: center; border: var(--bw) solid transparent; border-radius: calc(10px * var(--rs)); background: transparent; color: var(--text-dim); cursor: pointer; transition: color var(--mo-dur-f) var(--mo-ease-out), background-color var(--mo-dur) var(--mo-ease-out), translate var(--mo-dur-f) var(--mo-ease-out); }
+.qe-rv:hover { color: var(--text); background: var(--bg-elevated-2); }
+.qe-rv.on { color: var(--on-accent); background: var(--accent); }
+.qe-rv:active { translate: 0 var(--mo-press-y); }
+.qe-rv .qe-dot { top: 4px; right: 4px; }
+.qe-tip { position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); padding: 4px 10px; border-radius: calc(8px * var(--rs)); background: var(--text); color: var(--bg-elevated); font-size: 12.5px; font-weight: 700; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity var(--mo-dur-f) var(--mo-ease-out); }
+.qe-rv:hover .qe-tip, .qe-rv:focus-visible .qe-tip { opacity: 1; }
+
+/* 離開確認(有未送出的修改時按 X / 取消 / 背景 / Esc) */
+.qe-cfm-ov { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; padding: 16px; background: color-mix(in srgb, var(--scrim) 72%, transparent); animation: mo-fade var(--mo-dur) var(--mo-ease-out); }
+.qe-cfm { width: 100%; max-width: 420px; max-height: 100%; overflow-y: auto; padding: 18px; border-radius: calc(16px * var(--rs)); border: var(--bw) solid var(--border-strong); background: var(--bg-elevated); animation: mo-dialog var(--mo-dur) var(--mo-ease); }
+.qe-cfm-t { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+.qe-cfm-l { margin: 0 0 4px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text-muted); }
+.qe-cfm-l li { display: flex; gap: 8px; align-items: baseline; }
+.qe-cfm-l b { flex: 0 0 auto; min-width: 4.6em; font-size: 12px; color: var(--accent); }
+
+@media (max-width: 767.98px) {
+  .modal-overlay.qe-ov { padding: 0; align-items: flex-end; }
+  .qe-shell { max-width: none; }
+  .modal-box.rt-dlg.qe-box { max-width: none; border-radius: calc(20px * var(--rs)) calc(20px * var(--rs)) 0 0; border-bottom: 0; max-height: calc(94vh / var(--vu-div)); }
+  .qe-body { padding: 10px 12px 12px; }
+  .qe-hd { padding: 14px 16px 4px; }
+  .qe-ws { padding: 0 16px 8px; }
+}

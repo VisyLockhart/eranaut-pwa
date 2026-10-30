@@ -49,7 +49,7 @@ describe('快速修改的練級輔助', () => {
     document.body.appendChild(el);
     fixture.detectChanges();
     const toggle = (checked: boolean): void => {
-      const box = el.querySelector<HTMLInputElement>('.lv-field input[type="checkbox"]')!;
+      const box = el.querySelector<HTMLInputElement>('[data-qs="assist"] input[type="checkbox"]')!;
       box.checked = checked;
       box.dispatchEvent(new Event('change'));
       fixture.detectChanges();
@@ -77,13 +77,15 @@ describe('快速修改的練級輔助', () => {
   beforeEach(() => localStorage.clear());
 
   it('展示模式(不能儲存)整列不出現', () => {
-    expect(setup(sub(), false).el.querySelector('.lv-field')).toBeNull();
+    const { el } = setup(sub(), false);
+    expect(el.querySelector('[data-qs="assist"]')).toBeNull();
+    expect(el.querySelector('[data-qs="config"]')).toBeNull();
   });
 
   it('沒填等級:只有一行,不碰就不帶 progress(請求和原本一樣)', async () => {
     const { el, save } = setup();
-    expect(el.querySelector('.lv-field')?.textContent).toContain('航線輔助');
-    expect(el.querySelector('.lv-setup')).toBeNull();
+    expect(el.querySelector('[data-qs="assist"]')?.textContent).toContain('關閉中');
+    expect(el.querySelector('[data-qs="assist"] .qs-w.open')).toBeNull();
     save();
     const req = http.expectOne('/api/workshops/w1/submarines/1');
     expect('progress' in req.request.body).toBe(false);
@@ -93,10 +95,10 @@ describe('快速修改的練級輔助', () => {
     await settle();
   });
 
-  it('開啟:自動展開設定(1 級、經驗取中間),送出帶等級、經驗與 assist_on', async () => {
+  it('開啟:設定在區塊內展開(1 級、經驗取中間),送出帶等級、經驗與 assist_on', async () => {
     const { el, toggle, save } = setup();
     toggle(true);
-    expect(el.querySelector('.lv-setup')).not.toBeNull();
+    expect(el.querySelector('[data-qs="assist"] .qs-w.open')).not.toBeNull();
     expect((el.querySelector('input[aria-label="目前等級"]') as HTMLInputElement).value).toBe('1');
     save();
     await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { assist_on: true, assist_mode: 'level', max_hours: null, filter_id: null, level: 1, exp_in_level: middleExp(1) } });
@@ -108,18 +110,18 @@ describe('快速修改的練級輔助', () => {
     click('button[aria-label="等級加 1"]');
     click('button[aria-label="等級加 1"]');
     expect((el.querySelector('input[aria-label="目前等級"]') as HTMLInputElement).value).toBe('3');
-    expect(el.querySelector('.lv-head')?.textContent).toContain('18,972');
+    expect(el.querySelectorAll('[data-qs="config"] .lv-head')[1]?.textContent).toContain('18,972');
     click('.lv-hours button', 2);
     save();
     await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { assist_on: true, assist_mode: 'level', max_hours: 12, filter_id: null, level: 3, exp_in_level: middleExp(3) } });
   });
 
-  it('已有等級且開著:收合顯示 Lv,點齒輪才展開;沒動數字就不送等級(保留待結算路線)', async () => {
-    const { el, click, save } = setup(sub({ progress: progress() }));
-    expect(el.querySelector('.lv-field')?.textContent).toContain('Lv 20');
-    expect(el.querySelector('.lv-setup')).toBeNull();
-    click('.lv-field .uk-ico');
-    expect(el.querySelector('.lv-setup')).not.toBeNull();
+  it('已有等級且開著:區塊展開並唯讀顯示 Lv(在潛艇配置調整);沒動數字就不送等級(保留待結算路線)', async () => {
+    const { el, save } = setup(sub({ progress: progress() }));
+    expect(el.querySelector('[data-qs="assist"] .qs-w.open')).not.toBeNull();
+    expect(el.querySelector('[data-qs="assist"] .lv-cur')?.textContent).toContain('Lv 20');
+    expect(el.querySelector('[data-qs="assist"] input[aria-label="目前等級"]')).toBeNull();
+    expect((el.querySelector('[data-qs="config"] input[aria-label="目前等級"]') as HTMLInputElement).value).toBe('20');
     save();
     const req = http.expectOne('/api/workshops/w1/submarines/1');
     expect('progress' in req.request.body).toBe(false);
@@ -136,17 +138,32 @@ describe('快速修改的練級輔助', () => {
     await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { assist_on: false } });
   });
 
-  it('超過 85 級(D-298):一樣有開關;開啟後沒有經驗滑桿,等級可到 130', () => {
+  it('超過 85 級(D-298):一樣有開關;潛艇配置沒有經驗滑桿,等級可到 130', () => {
     const { el, fixture } = setup(sub({ progress: progress({ level: 90, effective_level: 90, effective_exp: 0, source: 'ocr', assist_on: false }) }));
-    const sw = el.querySelector<HTMLInputElement>('.lv-field input[type="checkbox"]')!;
+    const sw = el.querySelector<HTMLInputElement>('[data-qs="assist"] input[type="checkbox"]')!;
     expect(sw).not.toBeNull();
     sw.click();
     fixture.detectChanges();
-    el.querySelector<HTMLButtonElement>('.lv-field .uk-ico')!.click();
-    fixture.detectChanges();
-    expect(el.querySelector('.rt-lv-range')).toBeNull();
-    expect(el.querySelector<HTMLInputElement>('.lv-num input')!.value).toBe('90');
-    expect(el.querySelector('.lv-setup')!.textContent).toContain('沒有攻略與每級經驗資料');
+    expect(el.querySelector('input[aria-label="這一級的目前經驗（滑桿）"]')).toBeNull();
+    expect(el.querySelector<HTMLInputElement>('input[aria-label="目前等級"]')!.value).toBe('90');
+    expect(el.querySelector('[data-qs="config"]')!.textContent).toContain('沒有攻略與每級經驗資料');
+    expect(el.querySelector<HTMLInputElement>('input[aria-label="目前等級（滑桿）"]')!.max).toBe('130');
+  });
+
+  it('等級與航線輔助脫鉤(D-305):沒開輔助也能記等級 / 經驗,送出只帶 assist_on: false 與數字', async () => {
+    const { el, click, save } = setup();
+    click('button[aria-label="等級加 1"]');
+    click('button[aria-label="等級加 1"]');
+    expect(el.querySelector('[data-qs="assist"] .qs-w.open')).toBeNull();
+    save();
+    await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { assist_on: false, level: 3, exp_in_level: middleExp(3) } });
+  });
+
+  it('輔助關閉的艇改等級:只送等級與經驗,不會被打開', async () => {
+    const { click, save } = setup(sub({ progress: progress({ assist_on: false }) }));
+    click('button[aria-label="等級加 1"]');
+    save();
+    await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { assist_on: false, level: 21, exp_in_level: middleExp(21) } });
   });
 
   it('已返航又派出(開著航線輔助):「這次派出」預設帶入建議(欄位未解鎖時優先含解鎖點),隨更新一起送(D-291)', async () => {
@@ -186,8 +203,7 @@ describe('快速修改的練級輔助', () => {
 
   it('清除等級:立即呼叫 DELETE,不需送出更新', async () => {
     const { el, click, fixture } = setup(sub({ progress: progress() }));
-    click('.lv-field .uk-ico');
-    click('.lv-setup .lv-link.end');
+    click('[data-qs="config"] .lv-link.end');
     const req = http.expectOne('/api/submarines/s1/progress');
     expect(req.request.method).toBe('DELETE');
     req.flush(sub());
@@ -195,7 +211,7 @@ describe('快速修改的練級輔助', () => {
     http.expectOne('/api/overview').flush({ workshops: [workshop(sub())] });
     await settle();
     fixture.detectChanges();
-    expect(el.querySelector('.lv-setup')).toBeNull();
+    expect(el.querySelector('[data-qs="config"] .lv-link.end')).toBeNull();
     expect(store.workshops()[0]!.submarines[0]!.progress).toBeUndefined();
   });
 });

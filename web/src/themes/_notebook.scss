@@ -327,3 +327,20 @@ html[data-theme='notebook'] {
 }
 @keyframes mo-breathe { 50% { opacity: 0.55; } }
 html[data-theme='notebook'][data-motion='reduced'] .sk { animation: none; }
+
+/* 快速修改的區塊與功能選單(D-305):書籤頁籤(手機在上方、桌機貼在左側),選取的頁籤填色;不做滑動底色 */
+html[data-theme='notebook'] {
+  .qs { border-color: var(--line); border-radius: var(--w3); }
+  .qs:not(.pri) { border-color: var(--border); }
+  .qs-i { border-color: var(--line); border-radius: 0 100% 0 100% / 0 60% 0 60%; }
+  .qs-b { border-top-style: dashed; }
+  .qe-rail-h { padding-bottom: 0; gap: 8px; border-bottom-color: var(--line); }
+  .qe-rh { border: var(--bw) solid var(--border); border-bottom: 0; border-radius: 12px 12px 0 0 / 10px 10px 0 0; background: var(--bg-elevated-2); margin-bottom: calc(var(--bw) * -1); }
+  .qe-rh.on { border-color: var(--line); background: linear-gradient(var(--accent), var(--accent)); }
+  .qe-rv { border: var(--bw) solid var(--border); border-right: 0; border-radius: 10px 0 0 10px / 10px 0 0 10px; background: var(--bg-elevated-2); }
+  .qe-rv.on { border-color: var(--line); background: linear-gradient(var(--accent), var(--accent)); }
+  .qe-rail-v { padding: 8px 0 8px 8px; margin-right: -1px; gap: 8px; border: 0; background: transparent; }
+  .qe-dot { border-color: var(--bg-elevated-2); }
+  .qe-tip { background: var(--line); color: var(--bg-elevated); border-radius: 8px 10px 9px 11px / 10px 8px 11px 9px; }
+  .qe-cfm { border-color: var(--line); border-radius: var(--w3); }
+}

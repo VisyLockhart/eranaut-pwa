@@ -19,122 +19,120 @@ import { IconComponent } from '../ui/icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (routeVm.canSave) {
-      @switch (mode()) {
-        @case ('nobuild') {
-          <button type="button" class="uk-field dim dashed" (click)="setBuild()">
-            <app-icon name="wrench" [size]="20" />
-            <span class="uk-main"><b>配件維修提醒</b><small>先設定這艘的配件配置</small></span>
-            <app-icon name="chevronRight" [size]="14" />
-          </button>
-        }
-        @case ('unsupported') {
-          <div class="uk-field dim">
-            <app-icon name="wrench" [size]="20" />
-            <span class="uk-main"><b>配件維修提醒</b><small>配件「{{ configLabel() }}」還沒有耐久資料，暫不支援</small></span>
-            <span class="uk-chip">即將支援</span>
-          </div>
-        }
-        @default {
-          <div class="uk-field" [class.on]="mode() !== 'off'">
-            @if (mode() === 'tracked') {
-              <button type="button" class="uk-ico" [class.open]="adjusting()" [attr.aria-expanded]="adjusting()" aria-label="調整維修提醒" (click)="adjusting.set(!adjusting())"><app-icon name="wrench" [size]="18" /></button>
-            } @else {
-              <app-icon name="wrench" [size]="20" />
-            }
-            <span class="uk-main">
-              <b>配件維修提醒</b>
-              @switch (mode()) {
-                @case ('tracked') { <small>{{ tracked()!.label }}・{{ routeLabel() }}</small> }
-                @case ('setup') { <small>配件「{{ configLabel() }}」・{{ routeLabel() }}</small> }
-                @default { <small>配件「{{ configLabel() }}」・{{ options()[0]!.route.label }} 可追蹤</small> }
-              }
-            </span>
+      <section class="qs" data-qs="upkeep" [class.off]="!active()" aria-labelledby="qs-upkeep-t">
+        <div class="qs-h">
+          <span class="qs-i"><app-icon name="wrench" [size]="18" /></span>
+          <span class="qs-m">
+            <span class="qs-t" id="qs-upkeep-t">維修提醒@if (dirty()) { <em class="qs-tag">已改</em> }</span>
+            <span class="qs-s">{{ subtitle() }}</span>
+          </span>
+          @if (switchable()) {
             <label class="switch">
-              <input type="checkbox" [checked]="mode() !== 'off'" (change)="toggle($any($event.target).checked)" aria-label="配件維修提醒" />
+              <input type="checkbox" [checked]="active()" (change)="toggle($any($event.target).checked)" aria-label="維修提醒" />
               <span class="slider"></span>
             </label>
-          </div>
-          @if (mode() === 'tracked' && tracked()!.configChanged) {
-            <div class="uk-warn" role="status">這艘的配件和開啟提醒時不同。若已換新零件，請到「總覽」的維修面板標示已維修，或在配件配置裡勾選「同時標示已維修」。</div>
           }
-          @if (mode() === 'tracked' && adjusting() && tracked(); as t) {
-            <div class="uk-setup">
-              <div class="uk-line">
-                <span class="uk-k">路線</span>
-                <span class="uk-v">{{ upkeepRouteLabel(t.upkeep.route_key) }}</span>
-              </div>
-              <div class="uk-line">
-                <span class="uk-k">已跑趟數</span>
-                <span class="uk-step">
-                  <button type="button" [disabled]="busy() || t.upkeep.voyages_done <= 0" (click)="adjust({ voyages_done: t.upkeep.voyages_done - 1 })" aria-label="少算一趟">−</button>
-                  <b class="mono">{{ t.upkeep.voyages_done }}</b>
-                  <button type="button" [disabled]="busy() || t.upkeep.voyages_done >= t.upkeep.limit_voyages" (click)="adjust({ voyages_done: t.upkeep.voyages_done + 1 })" aria-label="多算一趟">＋</button>
-                </span>
-              </div>
-              <div class="uk-line">
-                <span class="uk-k">可跑趟數</span>
-                <span class="uk-step">
-                  <button type="button" [disabled]="busy() || t.upkeep.limit_voyages <= minV" (click)="adjust({ limit_voyages: t.upkeep.limit_voyages - 1 })" aria-label="減少可跑趟數">−</button>
-                  <b class="mono">{{ t.upkeep.limit_voyages }}</b>
-                  <button type="button" [disabled]="busy() || t.upkeep.limit_voyages >= maxV" (click)="adjust({ limit_voyages: t.upkeep.limit_voyages + 1 })" aria-label="增加可跑趟數">＋</button>
-                </span>
-              </div>
-              <small class="uk-note">調整會立即儲存，不需按「送出更新」。已跑趟數用來修正漏更新或剛維修完的情況。</small>
+        </div>
+        @switch (mode()) {
+          @case ('nobuild') {
+            <div class="qs-b">
+              <small class="uk-hint">先設定這艘的配件，才能追蹤配件耐久。</small>
+              <button type="button" class="lv-link end" style="color: var(--accent)" (click)="setBuild()">設定配件配置</button>
             </div>
           }
-          @if (mode() === 'setup' && draft(); as d) {
-            <div class="uk-setup">
-              <div class="uk-line">
-                <span class="uk-k">路線</span>
-                @if (options().length > 1) {
-                  <select class="field-select" [value]="d.routeKey" (change)="setRoute($any($event.target).value)" aria-label="路線">
-                    @for (o of options(); track o.route.key) { <option [value]="o.route.key">{{ o.route.label }}</option> }
-                  </select>
-                } @else {
-                  <span class="uk-v">{{ upkeepRouteLabel(d.routeKey) }}</span>
-                }
-              </div>
-              <div class="uk-line">
-                <span class="uk-k">可跑趟數</span>
-                <span class="uk-step">
-                  <button type="button" (click)="step('limit', -1)" [disabled]="d.limit <= minV" aria-label="減少可跑趟數">−</button>
-                  <b class="mono">{{ d.limit }}</b>
-                  <button type="button" (click)="step('limit', 1)" [disabled]="d.limit >= maxV" aria-label="增加可跑趟數">＋</button>
-                </span>
-              </div>
-              <small class="uk-hint">依配置：取四個配件中最先壞的，預設 {{ defaultLimit() }} 趟（玩家實測值）。可手動修改。</small>
-              <div class="uk-seg" role="group" aria-label="起算方式">
-                <button type="button" [class.on]="d.mode === 'fresh'" [attr.aria-pressed]="d.mode === 'fresh'" (click)="setMode('fresh')">剛維修完（滿耐久）</button>
-                <button type="button" [class.on]="d.mode === 'ran'" [attr.aria-pressed]="d.mode === 'ran'" (click)="setMode('ran')">已跑過幾趟…</button>
-              </div>
-              @if (d.mode === 'ran') {
-                <div class="uk-line">
-                  <span class="uk-k">已跑過</span>
-                  <span class="uk-step">
-                    <button type="button" (click)="step('ran', -1)" [disabled]="d.ran <= 1" aria-label="減少已跑趟數">−</button>
-                    <b class="mono">{{ d.ran }}</b>
-                    <button type="button" (click)="step('ran', 1)" [disabled]="d.ran >= d.limit - 1" aria-label="增加已跑趟數">＋</button>
-                  </span>
+          @case ('unsupported') {
+            <div class="qs-b"><small class="uk-hint">配件「{{ configLabel() }}」還沒有耐久資料，暫不支援。<span class="uk-chip">即將支援</span></small></div>
+          }
+          @default {
+            <div class="qs-w" [class.open]="active()" [attr.inert]="active() ? null : ''">
+              <div class="qs-wi">
+                <div class="qs-b">
+                  @if (mode() === 'tracked' && tracked(); as t) {
+                    @if (t.configChanged) {
+                      <div class="uk-warn" role="status">這艘的配件和開啟提醒時不同。若已換新零件，請到「總覽」的維修面板標示已維修，或在配件配置裡勾選「同時標示已維修」。</div>
+                    }
+                    <div class="uk-line">
+                      <span class="uk-k">路線</span>
+                      <span class="uk-v">{{ upkeepRouteLabel(t.upkeep.route_key) }}</span>
+                    </div>
+                    <div class="qs-cols">
+                      <div class="uk-line">
+                        <span class="uk-k">已跑趟數</span>
+                        <span class="uk-step">
+                          <button type="button" [disabled]="busy() || t.upkeep.voyages_done <= 0" (click)="adjust({ voyages_done: t.upkeep.voyages_done - 1 })" aria-label="少算一趟">−</button>
+                          <b class="mono">{{ t.upkeep.voyages_done }}</b>
+                          <button type="button" [disabled]="busy() || t.upkeep.voyages_done >= t.upkeep.limit_voyages" (click)="adjust({ voyages_done: t.upkeep.voyages_done + 1 })" aria-label="多算一趟">＋</button>
+                        </span>
+                      </div>
+                      <div class="uk-line">
+                        <span class="uk-k">可跑趟數</span>
+                        <span class="uk-step">
+                          <button type="button" [disabled]="busy() || t.upkeep.limit_voyages <= minV" (click)="adjust({ limit_voyages: t.upkeep.limit_voyages - 1 })" aria-label="減少可跑趟數">−</button>
+                          <b class="mono">{{ t.upkeep.limit_voyages }}</b>
+                          <button type="button" [disabled]="busy() || t.upkeep.limit_voyages >= maxV" (click)="adjust({ limit_voyages: t.upkeep.limit_voyages + 1 })" aria-label="增加可跑趟數">＋</button>
+                        </span>
+                      </div>
+                    </div>
+                    <small class="uk-note">趟數調整會立即儲存，不需按「送出更新」。已跑趟數用來修正漏更新或剛維修完的情況。</small>
+                  }
+                  @if (mode() === 'setup' && draft(); as d) {
+                    <div class="uk-line">
+                      <span class="uk-k">路線</span>
+                      @if (options().length > 1) {
+                        <select class="field-select" [value]="d.routeKey" (change)="setRoute($any($event.target).value)" aria-label="路線">
+                          @for (o of options(); track o.route.key) { <option [value]="o.route.key">{{ o.route.label }}</option> }
+                        </select>
+                      } @else {
+                        <span class="uk-v">{{ upkeepRouteLabel(d.routeKey) }}</span>
+                      }
+                    </div>
+                    <div class="uk-line">
+                      <span class="uk-k">可跑趟數</span>
+                      <span class="uk-step">
+                        <button type="button" (click)="step('limit', -1)" [disabled]="d.limit <= minV" aria-label="減少可跑趟數">−</button>
+                        <b class="mono">{{ d.limit }}</b>
+                        <button type="button" (click)="step('limit', 1)" [disabled]="d.limit >= maxV" aria-label="增加可跑趟數">＋</button>
+                      </span>
+                    </div>
+                    <small class="uk-hint">依配置：取四個配件中最先壞的，預設 {{ defaultLimit() }} 趟（玩家實測值）。可手動修改。</small>
+                    <div class="uk-seg" role="group" aria-label="起算方式">
+                      <button type="button" [class.on]="d.mode === 'fresh'" [attr.aria-pressed]="d.mode === 'fresh'" (click)="setMode('fresh')">剛維修完（滿耐久）</button>
+                      <button type="button" [class.on]="d.mode === 'ran'" [attr.aria-pressed]="d.mode === 'ran'" (click)="setMode('ran')">已跑過幾趟…</button>
+                    </div>
+                    @if (d.mode === 'ran') {
+                      <div class="uk-line">
+                        <span class="uk-k">已跑過</span>
+                        <span class="uk-step">
+                          <button type="button" (click)="step('ran', -1)" [disabled]="d.ran <= 1" aria-label="減少已跑趟數">−</button>
+                          <b class="mono">{{ d.ran }}</b>
+                          <button type="button" (click)="step('ran', 1)" [disabled]="d.ran >= d.limit - 1" aria-label="增加已跑趟數">＋</button>
+                        </span>
+                      </div>
+                    }
+                    <small class="uk-note">{{ note() }}</small>
+                  }
                 </div>
-              }
-              <small class="uk-note">{{ note() }}</small>
+              </div>
             </div>
+            @if (mode() === 'off') {
+              <div class="qs-b"><small class="uk-hint">開啟後追蹤這艘配件的耐久，跑滿趟數時提醒維修（配件「{{ configLabel() }}」・{{ options()[0]!.route.label }} 可追蹤）。</small></div>
+            }
           }
         }
-      }
+      </section>
     }
   `,
 })
 export class UpkeepField {
   readonly sub = input.required<SubmarineDto>();
   readonly status = input.required<SubmarineStatus>();
+  /** 這一區有未送出的修改 */
+  readonly dirty = input(false);
 
   protected readonly routeVm = inject(RouteVm);
   private readonly overview = inject(OverviewVm);
   private readonly store = inject(DataStore);
   private readonly toast = inject(Toast);
-  /** 已開啟的艇:展開調整區(點左邊的扳手) */
-  protected readonly adjusting = signal(false);
   protected readonly busy = signal(false);
   protected readonly draft = this.overview.quickUpkeep;
   protected readonly minV = UPKEEP_LIMITS.minVoyages;
@@ -171,6 +169,20 @@ export class UpkeepField {
     if (!this.build()) return 'nobuild';
     if (this.options().length === 0) return 'unsupported';
     return 'off';
+  });
+
+  /** 已開啟(追蹤中或正在設定) */
+  protected readonly active = computed(() => this.mode() === 'tracked' || this.mode() === 'setup');
+  /** 沒設定配件 / 資料集不支援時沒有開關 */
+  protected readonly switchable = computed(() => this.mode() !== 'nobuild' && this.mode() !== 'unsupported');
+  protected readonly subtitle = computed(() => {
+    switch (this.mode()) {
+      case 'tracked': return `${this.tracked()!.label}・${this.routeLabel()}`;
+      case 'setup': return `配件「${this.configLabel()}」・${this.routeLabel()}`;
+      case 'nobuild': return '先設定這艘的配件配置';
+      case 'unsupported': return `配件「${this.configLabel()}」暫不支援`;
+      default: return '關閉中';
+    }
   });
 
   /** 立即儲存已跑 / 可跑趟數(和總覽維修面板的「調整」相同的端點) */

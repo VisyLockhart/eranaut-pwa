@@ -193,3 +193,24 @@ html[data-theme='dark'] {
   --mo-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --mo-press-y: 1px; --mo-press-s: 1; --mo-stretch: 1.15; --mo-pop-s: 0.97;
 }
+
+/* 快速修改的區塊與功能選單(D-305):金邊方框,選取項目底部(直條為左側)一道金線 + 淡金暈 */
+html[data-theme='dark'] {
+  .qs { border-color: var(--steel-d); border-radius: 0; }
+  .qs.pri { border-color: var(--gold-d); }
+  .qs-i { border-color: var(--gold-d); border-radius: 0; color: var(--gold); }
+  .qs-t { font-family: var(--font-head); color: var(--gold-b); letter-spacing: 0.03em; }
+  .qs-tag, .qe-pending { border-radius: 0; }
+  .qe-rail-h { border-block-color: var(--gold-d); }
+  .qe-rh, .qe-rv { border-radius: 0; font-family: var(--font-head); letter-spacing: 0.06em; }
+  .qe-rh.on { color: var(--gold-b); background: linear-gradient(to top, color-mix(in srgb, var(--gold) 22%, transparent), transparent 70%); border-bottom: 2px solid var(--gold); }
+  .qe-rv.on { color: var(--gold-b); background: linear-gradient(to right, color-mix(in srgb, var(--gold) 24%, transparent), transparent 80%); border-left: 2px solid var(--gold); }
+  .qe-rail-v { border-color: var(--gold-d); border-radius: 0; box-shadow: var(--frame); }
+  .qe-dot { border-color: var(--bg-elevated); background: var(--gold-b); }
+  .qe-dot.attn { background: var(--amber); }
+  .on > .qe-dot, .on .qe-dot { border-color: var(--bg-elevated); }
+  .qe-tip { background: var(--bg-elevated-2); color: var(--gold-b); border: 1px solid var(--gold-d); border-radius: 0; }
+  .qe-cfm { border-color: var(--gold-d); border-radius: 0; box-shadow: var(--frame); }
+  .qe-cfm-t { font-family: var(--font-head); color: var(--gold-b); }
+  .qe-cfm-l b { color: var(--gold); }
+}

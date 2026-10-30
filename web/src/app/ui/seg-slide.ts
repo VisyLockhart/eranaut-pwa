@@ -8,6 +8,8 @@ const GROUPS: readonly { container: string; item: string }[] = [
   { container: '.rt-seg', item: '.rt-seg-btn.active' },
   { container: '.uk-seg', item: 'button.on' },
   { container: '.uf-seg', item: 'button.on' },
+  { container: '.qe-rail-h', item: '.qe-rh.on' },
+  { container: '.qe-rail-v', item: '.qe-rv.on' },
   { container: '.pill-toggle', item: '.icon-btn.active' },
   { container: '.d-sidebar', item: '.d-nav-item.active, .d-sub-item.active' },
 ];

@@ -53,7 +53,7 @@ describe('快速修改的維修提醒', () => {
       fixture.detectChanges();
     };
     const toggle = (checked: boolean): void => {
-      const box = el.querySelector<HTMLInputElement>('.uk-field input[type="checkbox"]')!;
+      const box = el.querySelector<HTMLInputElement>('[data-qs="upkeep"] input[type="checkbox"]')!;
       box.checked = checked;
       box.dispatchEvent(new Event('change'));
       fixture.detectChanges();
@@ -67,16 +67,16 @@ describe('快速修改的維修提醒', () => {
 
   it('展示模式(不能儲存配置)整列不出現', () => {
     const { el } = setup({ saving: false });
-    expect(el.querySelector('.uk-field')).toBeNull();
+    expect(el.querySelector('[data-qs="upkeep"]')).toBeNull();
   });
 
   it('還沒設定這艘的配件:停用並說明先設定;按下去開啟潛艇配置對話框', () => {
     const { el } = setup({ build: null });
-    expect(el.querySelector('.uk-field.dashed')?.textContent).toContain('先設定這艘的配件配置');
-    el.querySelector<HTMLElement>('.uk-field.dashed')!.click();
+    expect(el.querySelector('[data-qs="upkeep"]')?.textContent).toContain('先設定這艘的配件配置');
+    el.querySelector<HTMLElement>('[data-qs="upkeep"] .lv-link.end')!.click();
     expect(routeVm.draft()?.mode).toBe('sub');
     expect(routeVm.draft()?.sub?.submarineId).toBe('s1');
-    expect(el.querySelector('.uk-field input[type="checkbox"]')).toBeNull();
+    expect(el.querySelector('[data-qs="upkeep"] input[type="checkbox"]')).toBeNull();
   });
 
   it('配置沒有耐久資料:顯示「即將支援」', () => {
@@ -87,14 +87,14 @@ describe('快速修改的維修提醒', () => {
 
   it('預設關閉:只有一行,寫明配置與可追蹤的路線', () => {
     const { el } = setup();
-    expect(el.querySelector('.uk-field')?.textContent).toContain('配件「3124」・溺沒海 O→J 可追蹤');
-    expect(el.querySelector('.uk-setup')).toBeNull();
+    expect(el.querySelector('[data-qs="upkeep"]')?.textContent).toContain('配件「3124」・溺沒海 O→J 可追蹤');
+    expect(el.querySelector('[data-qs="upkeep"] .qs-w.open')).toBeNull();
   });
 
   it('開啟:預設 6 趟(船尾鯊魚級)、剛維修完;送出時帶 upkeep,這趟算第 1 趟', async () => {
     const { el, click, toggle, save, fixture } = setup();
     toggle(true);
-    expect(el.querySelector('.uk-setup')?.textContent).toContain('溺沒海 O→J');
+    expect(el.querySelector('[data-qs="upkeep"] .qs-w.open')?.textContent).toContain('溺沒海 O→J');
     expect(el.querySelector('.uk-step b')?.textContent).toBe('6');
     // 探索完成的艇,先改成探索中並填時間
     click('.uf-seg button', 0);
@@ -146,7 +146,7 @@ describe('快速修改的維修提醒', () => {
 
   it('已開啟的艇:顯示目前進度;關閉開關送出 upkeep: null', async () => {
     const { el, toggle, save } = setup({ upkeep: true });
-    expect(el.querySelector('.uk-field.on')?.textContent).toContain('維修 2/6 趟');
+    expect(el.querySelector('[data-qs="upkeep"]:not(.off)')?.textContent).toContain('維修 2/6 趟');
     toggle(false);
     save();
     const req = http.expectOne('/api/workshops/w1/submarines/1');
@@ -166,21 +166,17 @@ describe('快速修改的維修提醒', () => {
     fixture.detectChanges();
     expect(el.textContent).toContain('無法開啟維修提醒');
   });
-  it('已開啟的艇:點左邊的扳手展開調整區,步進器立即儲存', async () => {
+  it('已開啟的艇:區塊直接展開調整區,步進器立即儲存', async () => {
     const { el, click, fixture } = setup({ upkeep: true });
-    expect(el.querySelector('.uk-setup')).toBeNull();
-    click('.uk-ico');
-    expect(el.querySelector('.uk-setup')?.textContent).toContain('已跑趟數');
-    click('.uk-setup .uk-step button', 1); // 已跑 ＋
+    expect(el.querySelector('[data-qs="upkeep"] .qs-w.open')?.textContent).toContain('已跑趟數');
+    click('[data-qs="upkeep"] .uk-step button', 1); // 已跑 ＋
     const req = http.expectOne('/api/submarines/s1/upkeep');
     expect([req.request.method, req.request.body]).toEqual(['PUT', { voyages_done: 3 }]);
     req.flush({ ...workshop(true).submarines[0]!, upkeep: { ...workshop(true).submarines[0]!.upkeep!, voyages_done: 3 } });
     await settle();
     fixture.detectChanges();
-    expect(el.querySelectorAll('.uk-setup .uk-step b')[0]?.textContent).toBe('3');
+    expect(el.querySelectorAll('[data-qs="upkeep"] .uk-step b')[0]?.textContent).toBe('3');
     http.expectOne('/api/overview').flush({ workshops: [workshop(true)] });
     await settle();
-    click('.uk-ico');
-    expect(el.querySelector('.uk-setup')).toBeNull();
   });
 });

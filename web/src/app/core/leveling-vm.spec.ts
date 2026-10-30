@@ -63,7 +63,7 @@ describe('練級輔助:快速修改的草稿', () => {
 
   it('預設值:沒有紀錄從 1 級、經驗取中間;有紀錄沿用(含超過經驗上限時夾回)', () => {
     const d = defaultDraft(null);
-    expect(d).toMatchObject({ enabled: true, level: 1, edited: false });
+    expect(d).toMatchObject({ enabled: false, level: 1, edited: false });
     expect(d.exp).toBe(middleExp(1));
     expect(defaultDraft(sub({ progress: progress({ assist_mode: 'combo', max_hours: 24, filter_id: 'f1' }) }))).toMatchObject({ level: 20, exp: 52_000, mode: 'combo', maxHours: 24, filterId: 'f1' });
   });
