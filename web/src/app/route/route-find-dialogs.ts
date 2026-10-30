@@ -1,5 +1,5 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Layout } from '../core/layout';
 import { IconComponent } from '../ui/icon';
@@ -31,6 +31,7 @@ export class RouteFindDialogs {
   protected readonly f = inject(RouteFindVm);
   protected readonly l = inject(RouteLootVm);
   protected readonly layout = inject(Layout);
+  protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected downOnOverlay = false;
 
   protected readonly itemsShown = signal(ITEM_PAGE);
@@ -48,6 +49,52 @@ export class RouteFindDialogs {
     const points = r.order.map((id) => si.byId.get(id)!);
     return aggregateLoot(points, stats.surveillance, new Set(r.got)).map((g) => ({ ...g, id: `${g.locked ? 'l' : 'o'}-${g.key}` }));
   });
+  /** 「看全部」的找物品輸入(D-301):綁在開啟的那條路線上,換路線或關閉後自動失效;注音/拼音組字中不查 */
+  private readonly find = signal<{ route: unknown; q: string }>({ route: null, q: '' });
+  private composing = false;
+  /** 第一個符合的物品:名稱開頭相符優先,沒有再找名稱包含;只找展開中的段落 */
+  protected readonly hit = computed<string | null>(() => {
+    const f = this.find();
+    const q = f.q.trim().toLowerCase();
+    if (!q || f.route !== this.f.itemsFor()) return null;
+    const open = this.groups().filter((g) => !this.f.isFolded(g.id));
+    for (const mode of ['start', 'any'] as const) {
+      for (const g of open) {
+        for (const i of g.items) {
+          const n = i.name.toLowerCase();
+          if (mode === 'start' ? n.startsWith(q) : n.includes(q)) return `${g.id}:${i.id}`;
+        }
+      }
+    }
+    return null;
+  });
+  protected onFindInput(event: Event): void {
+    if (this.composing || (event as InputEvent).isComposing) return;
+    this.commitFind((event.target as HTMLInputElement).value);
+  }
+  protected onCompositionStart(): void {
+    this.composing = true;
+  }
+  protected onCompositionEnd(event: Event): void {
+    this.composing = false;
+    this.commitFind((event.target as HTMLInputElement).value);
+  }
+  private commitFind(q: string): void {
+    this.find.set({ route: this.f.itemsFor(), q });
+    // 等畫面更新出高亮,再把那一列捲到清單最上面(位在黏住的段落標題之下)
+    requestAnimationFrame(() => this.scrollToHit());
+  }
+  private scrollToHit(): void {
+    const key = this.hit();
+    const body = this.host.nativeElement.querySelector<HTMLElement>('.rt-items-body');
+    if (!key || !body) return;
+    const li = [...body.querySelectorAll<HTMLElement>('[data-item]')].find((e) => e.dataset['item'] === key);
+    if (!li) return;
+    const head = li.closest('.rt-items-group')?.querySelector<HTMLElement>('.rt-items-head');
+    const offset = li.getBoundingClientRect().top - body.getBoundingClientRect().top - (head ? head.offsetHeight + 4 : 0);
+    body.scrollTo({ top: body.scrollTop + offset });
+  }
+
   /** 判定依據:搜尋當時配置的探索值 */
   protected readonly basisSurveillance = computed(() => this.f.searchedStats()?.surveillance ?? null);
   protected readonly routeTitle = computed(() => {

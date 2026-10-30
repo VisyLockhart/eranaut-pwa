@@ -31,7 +31,11 @@
         <button type="button" class="modal-close" (click)="closeItems()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
       </div>
       <div class="rt-perf-route">{{ routeTitle() }}@if (basisSurveillance() !== null) { · 依搜尋時的配置,探索 {{ basisSurveillance() }} }</div>
-      <div class="rt-dlg-body">
+      <div class="rt-items-find">
+        <input class="rt-text-input" type="text" placeholder="輸入物品名稱,自動捲到第一個符合的" aria-label="找物品" autocomplete="off" enterkeyhint="search"
+          (input)="onFindInput($event)" (compositionstart)="onCompositionStart()" (compositionend)="onCompositionEnd($event)" />
+      </div>
+      <div class="rt-dlg-body rt-items-body">
         @for (g of groups(); track g.id) {
           <section class="rt-items-group" [class.locked]="g.locked" [attr.aria-label]="(g.locked ? '未解鎖 ' : '') + g.label">
             <button type="button" class="rt-items-head" [attr.aria-expanded]="!f.isFolded(g.id)" (click)="f.toggleFold(g.id)">
@@ -41,7 +45,7 @@
             @if (!f.isFolded(g.id)) {
               <ul class="rt-items-list">
                 @for (i of g.items; track i.id) {
-                  <li [class.wanted]="i.wanted"><span>{{ i.name }}</span><i>{{ i.stops.join('、') }}@if (g.locked) { · 差 {{ i.gap }} }</i></li>
+                  <li [class.wanted]="i.wanted" [class.hit]="hit() === g.id + ':' + i.id" [attr.data-item]="g.id + ':' + i.id"><span>{{ i.name }}</span><i>{{ i.stops.join('、') }}@if (g.locked) { · 差 {{ i.gap }} }</i></li>
                 }
               </ul>
             }

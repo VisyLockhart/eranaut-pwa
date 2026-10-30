@@ -218,6 +218,32 @@ describe('推薦頁(D-212、D-222)', () => {
       expect(cards()[0]!.querySelector('.rt-find-items')!.textContent).toContain(`價值 ${top.value}`);
     });
 
+    it('「看全部」找物品(D-301):逐字比對第一個符合的並高亮;組字中不查,組字結束才查', async () => {
+      await search();
+      btn('看全部', cards()[0]!).click();
+      f.detectChanges();
+      const input = el.querySelector<HTMLInputElement>('.rt-items-find input')!;
+      const names = [...el.querySelectorAll('.rt-items-list li > span')].map((e) => e.textContent!);
+      const target = names.find((n) => n.length >= 3)!;
+      const type = (v: string) => { input.value = v; input.dispatchEvent(new Event('input')); f.detectChanges(); };
+      const hit = () => [...el.querySelectorAll('.rt-items-list li.hit > span')].map((e) => e.textContent);
+      type(target.slice(0, 2));
+      expect(hit()).toEqual([names.find((n) => n.toLowerCase().startsWith(target.slice(0, 2).toLowerCase()))]);
+      type(target);
+      expect(hit()).toEqual([target]);
+      type('');
+      expect(hit()).toEqual([]);
+      // 組字中(拼音)輸入不觸發查詢,compositionend 才查
+      input.dispatchEvent(new CompositionEvent('compositionstart'));
+      type(target);
+      expect(hit()).toEqual([]);
+      input.dispatchEvent(new CompositionEvent('compositionend'));
+      f.detectChanges();
+      expect(hit()).toEqual([target]);
+      type('不存在的物品名稱zzz');
+      expect(hit()).toEqual([]);
+    });
+
     it('海圖翻頁與海域下拉連動(D-300):指定海域時下拉跟著換;全部海域時不動', () => {
       const dot = (name: string) => el.querySelector<HTMLButtonElement>(`#rt-find-map .rt-dot[aria-label=${name}]`)!;
       find.sea.set(grey().sea.sea);

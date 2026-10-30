@@ -1126,6 +1126,8 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .rt-items-group.locked .rt-items-list { opacity: 0.6; }
 .rt-items-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .rt-items-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 6px 10px; border-radius: calc(8px * var(--rs)); border: var(--bw) solid var(--border); font-size: 12.5px; overflow-wrap: anywhere; }
+.rt-items-find { padding: 0 20px 8px; }
+.rt-items-list li.hit { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, transparent); box-shadow: 0 0 0 1px var(--accent); }
 .rt-items-list li i { flex: 0 0 auto; font-style: normal; font-size: 11px; color: var(--text-dim); }
 .rt-items-list li.wanted { border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
 .rt-dlg-body .rt-text-input { flex: 0 0 auto; }
