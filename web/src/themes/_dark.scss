@@ -187,3 +187,9 @@ html[data-theme='dark'] {
   .theme-opt.active .theme-nm { color: var(--gold-b); }
   .theme-opt.active .theme-sw { border-color: var(--gold); box-shadow: 0 0 0 3px var(--bg-elevated), 0 0 0 4px var(--gold), 0 0 14px var(--glow); }
 }
+
+/* 動態語氣(D-302):沉穩金屬 —— 不過衝,只靠位移與微光 */
+html[data-theme='dark'] {
+  --mo-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --mo-press-y: 1px; --mo-press-s: 1; --mo-stretch: 1.15; --mo-pop-s: 0.97;
+}

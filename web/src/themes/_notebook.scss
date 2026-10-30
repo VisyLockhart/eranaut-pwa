@@ -312,3 +312,18 @@ html[data-theme='notebook'] {
 
 /* iOS 主畫面 App 的狀態列是 black-translucent(執行中無法改):在最上方補一條苔綠安全區色帶(非 iOS 時 env() 為 0,不會出現) */
 html[data-theme='notebook']::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: calc(env(safe-area-inset-top) / var(--vu-div)); background: var(--accent); z-index: 2147483000; pointer-events: none; }
+
+/* 動態語氣(D-302):手繪微彈,節奏稍慢 */
+html[data-theme='notebook'] {
+  --mo-ease: cubic-bezier(0.3, 1.3, 0.4, 1);
+  --mo-dur: 0.26s; --mo-dur-f: 0.11s;
+  --mo-press-y: 2px; --mo-press-s: 0.985; --mo-pop-s: 0.95;
+}
+
+/* 骨架(D-302):手札用緩慢的呼吸(只動 opacity),不用掃光 */
+html[data-theme='notebook'] {
+  .sk::after { display: none; }
+  .sk { animation: mo-breathe 1.6s ease-in-out infinite; }
+}
+@keyframes mo-breathe { 50% { opacity: 0.55; } }
+html[data-theme='notebook'][data-motion='reduced'] .sk { animation: none; }

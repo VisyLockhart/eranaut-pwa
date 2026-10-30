@@ -3,6 +3,7 @@ import { AuthScreen } from './auth/auth-screen';
 import { Auth } from './core/auth';
 import { DataStore } from './core/data-store';
 import { InstallPrompt } from './core/install-prompt';
+import { MotionService } from './core/motion';
 import { PushVm } from './core/push-vm';
 import { ThemeService } from './core/theme';
 import { UiScale } from './core/ui-scale';
@@ -10,6 +11,7 @@ import { clearRouteCache } from './route/route-cache';
 import { RouteConfigDialog } from './route/route-config-dialog';
 import { Shell } from './layout/shell';
 import { InstallPromptCard } from './ui/install-prompt';
+import { SegSlide } from './ui/seg-slide';
 import { UpdateBanner } from './ui/update-banner';
 import { ToastHost } from './ui/toast-host';
 
@@ -29,8 +31,12 @@ export class App {
   private readonly theme = inject(ThemeService);
   /** 開機就建立,才收得到瀏覽器很早送出的 `beforeinstallprompt` */
   private readonly installPrompt = inject(InstallPrompt);
+  /** 開機就建立,讓動態效果設定(D-302)在第一次繪製前套用 */
+  private readonly motion = inject(MotionService);
+  private readonly segSlide = inject(SegSlide);
 
   constructor() {
+    this.segSlide.start();
     // 登入後開始載入與倒數;登出或 session 失效就停止並清掉本機快取
     effect(() => {
       const authenticated = this.auth.status() === 'authenticated';

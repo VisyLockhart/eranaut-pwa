@@ -333,6 +333,8 @@ describe('從航線帶入配置(D-262)', () => {
       vi.advanceTimersByTime(2900);
       expect(toast.items()).toHaveLength(1);
       vi.advanceTimersByTime(200);
+      expect(toast.items()[0]!.leaving).toBe(true); // 淡出中(D-302)
+      vi.advanceTimersByTime(300);
       expect(toast.items()).toHaveLength(0);
     } finally {
       vi.useRealTimers();

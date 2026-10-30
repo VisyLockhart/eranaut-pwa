@@ -1023,10 +1023,12 @@ app-route-find > .rt-block, app-route-find > .rt-dirty, app-route-find > .rt-fin
 .rt-pcell .l { font-size: 10.5px; line-height: 1.3; color: var(--text-dim); }
 .rt-pcell .v { font-size: 16px; line-height: 1.3; font-weight: 700; white-space: nowrap; }
 /* 配置頁的「找配置」:醒目的琥珀色(與青綠色的「＋ 新增配置」區分),脈動 3 次後靜止 */
-.rt-cta { background: var(--grad-cta); border-color: transparent; color: var(--on-amber-cta); font-weight: 700; box-shadow: 0 4px 14px color-mix(in srgb, var(--amber-strong) 28%, transparent); animation: rt-cta-pulse 2.4s ease-out 3; }
+.rt-cta { position: relative; background: var(--grad-cta); border-color: transparent; color: var(--on-amber-cta); font-weight: 700; box-shadow: 0 4px 14px color-mix(in srgb, var(--amber-strong) 28%, transparent); }
 .rt-cta:hover { filter: brightness(1.07); }
-@keyframes rt-cta-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--amber) 55%, transparent), 0 4px 14px color-mix(in srgb, var(--amber-strong) 28%, transparent); } 70%, 100% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--amber) 0%, transparent), 0 4px 14px color-mix(in srgb, var(--amber-strong) 28%, transparent); } }
-@media (prefers-reduced-motion: reduce) { .rt-cta { animation: none; } }
+/* 脈動 3 次後靜止(D-302 改:光圈改畫在偽元素上,只動 transform / opacity,不再逐幀重繪 box-shadow) */
+.rt-cta::after { content: ''; position: absolute; inset: -2px; border: 2px solid var(--amber); border-radius: inherit; opacity: 0; pointer-events: none; animation: rt-cta-pulse 2.4s ease-out 3; }
+@keyframes rt-cta-pulse { 0% { opacity: 0.55; transform: scale(1); } 70%, 100% { opacity: 0; transform: scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { .rt-cta::after { animation: none; } }
 .rt-head-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .rt-find-top:not(.rt-grid) { display: contents; }
 .rt-find-top:not(.rt-grid) > .rt-block { margin-top: 12px; }
@@ -1777,3 +1779,100 @@ button.nav-item { position: relative; border: 0; background: none; font: inherit
 .m-subsheet[data-g='update']::after { left: calc(50% + 12px - 19px); }
 .m-sub-btn { flex: 1; min-height: 64px; display: flex; align-items: center; justify-content: center; gap: 10px; border: var(--bw) solid var(--border-strong); border-radius: calc(12px * var(--rs)); background: transparent; color: var(--text); font-size: 17px; font-weight: 700; text-decoration: none; cursor: pointer; }
 .m-sub-btn.active { background: color-mix(in srgb, var(--accent) 14%, transparent); border-color: var(--accent); color: var(--accent); }
+
+
+/* =====================================================================
+   動態回饋層(D-302)
+   只動 transform / opacity(與少量 box-shadow 過渡),不使用 backdrop-filter、filter、mix-blend、Canvas。
+   動態語氣由 --mo-* token 決定:經典在這裡,淺色 / 深色 / 手札各自在 themes/ 覆寫;
+   設定頁「動態效果:精簡」(html[data-motion='reduced'])把時長歸零。元件只讀 token,新增功能不必做多套樣式。
+   ===================================================================== */
+:root {
+  --mo-ease: cubic-bezier(0.3, 1.4, 0.5, 1);      /* 輕彈 */
+  --mo-ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);  /* 無過衝 */
+  --mo-dur: 0.22s; --mo-dur-f: 0.1s; --mo-shake-dur: 0.45s;
+  --mo-shake-ease: cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  --mo-press-y: 1px; --mo-press-s: 0.975; --mo-stretch: 1.3; --mo-pop-s: 0.96;
+}
+html[data-motion='reduced'] { --mo-dur: 0.01ms; --mo-dur-f: 0.01ms; --mo-shake-dur: 0.01ms; }
+
+/* ① 按鈕按壓:individual transform 屬性(translate / scale),不與主題自己的 transform 互相覆蓋 */
+.primary-btn, .btn-primary-modal, .btn-danger, .btn-secondary, .ghost-btn, .rt-save-btn, .rt-chip, .rt-icon-btn, .pager-btn, .ct-tool, .ct-step, .camera-btn { transition: translate var(--mo-dur-f) var(--mo-ease-out), scale var(--mo-dur-f) var(--mo-ease-out); }
+.primary-btn:active:not(:disabled), .btn-primary-modal:active:not(:disabled), .btn-danger:active:not(:disabled), .btn-secondary:active:not(:disabled), .ghost-btn:active:not(:disabled), .rt-save-btn:active:not(:disabled), .rt-chip:active, .rt-icon-btn:active:not(:disabled), .pager-btn:active:not(:disabled), .ct-tool:active, .ct-step:active, .camera-btn:active { translate: 0 var(--mo-press-y); scale: var(--mo-press-s); }
+
+/* ② 開關:旋鈕按住時橫向拉長,放開帶一點過衝(用 scale 屬性,主題的 transform 不受影響) */
+.switch .slider { transition: background-color var(--mo-dur) var(--mo-ease-out), border-color var(--mo-dur) var(--mo-ease-out), box-shadow var(--mo-dur) var(--mo-ease-out); }
+.switch .slider:before { transform-origin: left center; transition: transform var(--mo-dur) var(--mo-ease), scale var(--mo-dur-f) var(--mo-ease-out), background-color var(--mo-dur) var(--mo-ease-out); }
+.switch input:checked + .slider:before { transform-origin: right center; }
+.switch:active .slider:before { scale: var(--mo-stretch) 1; }
+
+/* ③ 分段控制 / 側欄:選取底色滑動(SegSlide 暫時放進來的底色塊;只動 transform) */
+.seg-anim { isolation: isolate; }
+.seg-rel { position: relative; }
+.seg-ghost { position: absolute; z-index: -1; left: 0; top: 0; pointer-events: none; transform-origin: 0 0; }
+.seg-hide { background: transparent !important; box-shadow: none !important; color: var(--text-muted) !important; }
+.up-tab, .rt-seg-btn, .ct-seg button, .uk-seg button, .uf-seg button { transition: color var(--mo-dur-f) var(--mo-ease-out); }
+
+/* ④ ★ 常用:按下時放大、放開彈回 */
+.rt-star { transition: scale var(--mo-dur) var(--mo-ease); }
+.rt-star:active { scale: 1.35; }
+
+/* ⑤ 欄位錯誤:左右震動(出現錯誤狀態時播一次) */
+.modal-input.error, .sel-trigger.error-select, .field-select.error-select { animation: mo-shake var(--mo-shake-dur) var(--mo-shake-ease); }
+@keyframes mo-shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-4px); } 40%, 60% { transform: translateX(4px); } }
+
+/* ⑥ 下拉選單:面板展開 + 前 6 個選項依序滑入;往上展開時以底邊為軸 */
+.sel-trigger app-icon { transition: transform var(--mo-dur) var(--mo-ease); }
+.sel-panel { transform-origin: top center; animation: mo-panel var(--mo-dur) var(--mo-ease-out); }
+.sel-panel.up { transform-origin: bottom center; }
+.sel-panel > * { animation: mo-opt var(--mo-dur) var(--mo-ease-out) backwards; }
+@for $i from 2 through 6 { .sel-panel > :nth-child(#{$i}) { animation-delay: calc(#{$i - 1} * 28ms); } }
+@keyframes mo-panel { from { opacity: 0; transform: scaleY(0.94); } }
+@keyframes mo-opt { from { opacity: 0; transform: translateY(-5px); } }
+.sel-panel.up > * { animation-name: mo-opt-up; }
+@keyframes mo-opt-up { from { opacity: 0; transform: translateY(5px); } }
+html[data-motion='reduced'] .sel-panel, html[data-motion='reduced'] .sel-panel > * { animation: none; }
+
+/* ⑦ 對話框:遮罩淡入(不使用背景模糊)+ 對話框縮放浮出。手機底部面板仍用原本的 uk-rise */
+.modal-overlay { animation: mo-fade var(--mo-dur) var(--mo-ease-out); }
+.modal-box { animation: mo-dialog var(--mo-dur) var(--mo-ease); }
+@keyframes mo-fade { from { opacity: 0; } }
+@keyframes mo-dialog { from { opacity: 0; transform: translateY(8px) scale(var(--mo-pop-s)); } }
+
+/* ⑧ 收合區展開(統計區、看全部的段落):淡入並下滑;收合維持即時 */
+.ov-mstats, .rt-items-list { animation: mo-open var(--mo-dur) var(--mo-ease-out); }
+@keyframes mo-open { from { opacity: 0; transform: translateY(-6px); } }
+
+/* ⑨ Toast:進場彈入、離場淡出右移(其餘提示補位由瀏覽器重排) */
+.toast-stack .toast { animation: mo-toast-in var(--mo-dur) var(--mo-ease); }
+.toast-stack .toast.leaving { animation: mo-toast-out var(--mo-dur-f) var(--mo-ease-out) forwards; }
+@keyframes mo-toast-in { from { opacity: 0; transform: translateY(16px) scale(0.96); } }
+@keyframes mo-toast-out { to { opacity: 0; transform: translateX(22px); } }
+
+/* ⑩ 骨架:唯一的循環動畫。光澤塊用 transform 掃過(不動 background-position);載入結束元件即移除 */
+.sk { position: relative; overflow: hidden; background: var(--surface-raise); border-radius: calc(6px * var(--rs)); }
+.sk::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; background: color-mix(in srgb, var(--tone) 10%, transparent); transform: translateX(-120%) skewX(-18deg); animation: mo-shimmer 1.3s linear infinite; }
+@keyframes mo-shimmer { to { transform: translateX(320%) skewX(-18deg); } }
+html[data-motion='reduced'] .sk::after { animation: none; display: none; }
+.sk-rows { width: 72%; max-width: 360px; display: flex; flex-direction: column; gap: 10px; }
+.sk-line { height: 14px; }
+
+/* ⑪ 側欄指示條:見 ③(SegSlide 也處理 .d-sidebar) */
+
+/* ⑫ 卡片 hover 微浮起:只有桌機(有 hover 的精細指標)才生效 */
+@media (hover: hover) and (pointer: fine) {
+  .rt-card, .d-card { transition: translate var(--mo-dur) var(--mo-ease-out); }
+  .rt-card:hover, .d-card:hover { translate: 0 -2px; }
+}
+
+/* ⑬ 更新頁「截圖辨識」三步驟:選圖 → 辨識 → 核對 */
+.up-steps { list-style: none; margin: 0 0 14px; padding: 0; display: flex; position: relative; }
+.up-steps::before, .up-steps::after { content: ''; position: absolute; top: 11px; left: calc(100% / 6); right: calc(100% / 6); height: 2px; background: var(--border-strong); }
+.up-steps::after { background: var(--accent); transform: scaleX(calc(var(--step, 0) / 2)); transform-origin: left center; transition: transform var(--mo-dur) var(--mo-ease-out); }
+.up-steps li { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-dim); }
+.up-steps li i { width: 24px; height: 24px; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 700; border-radius: var(--r-round); background: var(--bg-elevated-2); border: var(--bw) solid var(--border-strong); color: var(--text-muted); transition: scale var(--mo-dur) var(--mo-ease), background-color var(--mo-dur) var(--mo-ease-out), border-color var(--mo-dur) var(--mo-ease-out); }
+.up-steps li.on { color: var(--text); font-weight: 600; }
+.up-steps li.on i { border-color: var(--accent); color: var(--accent); scale: 1.12; }
+.up-steps li.done i { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.up-steps li.done i svg { animation: mo-pop var(--mo-dur) var(--mo-ease); }
+@keyframes mo-pop { from { transform: scale(0.4); opacity: 0; } }

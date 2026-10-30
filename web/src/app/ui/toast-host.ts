@@ -7,7 +7,7 @@ import { Toast } from '../core/toast';
   template: `
     <div class="toast-stack" role="status" aria-live="polite">
       @for (t of toast.items(); track t.id) {
-        <div class="toast" [class.warn]="t.tone === 'warn'" [class.has-actions]="t.actions.length > 0">
+        <div class="toast" [class.warn]="t.tone === 'warn'" [class.has-actions]="t.actions.length > 0" [class.leaving]="t.leaving">
           <span class="toast-text">{{ t.text }}</span>
           @for (a of t.actions; track a.label) {
             <button type="button" class="toast-act" (click)="toast.act(t, a)">{{ a.label }}</button>

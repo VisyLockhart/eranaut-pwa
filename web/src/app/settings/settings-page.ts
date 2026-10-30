@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AppUpdate } from '../core/app-update';
 import { Auth } from '../core/auth';
 import { Layout } from '../core/layout';
+import { MOTION_MODES, MotionService } from '../core/motion';
 import { PushVm } from '../core/push-vm';
 import { SettingsVm } from '../core/settings-vm';
 import { THEMES, ThemeService } from '../core/theme';
@@ -28,6 +29,8 @@ export class SettingsPage {
   protected readonly theme = inject(ThemeService);
   protected readonly up = inject(AppUpdate);
   protected readonly sizes = UI_SIZES;
+  protected readonly motion = inject(MotionService);
+  protected readonly motionModes = MOTION_MODES;
 
   constructor() {
     this.layout.pageTitle.set('設定');

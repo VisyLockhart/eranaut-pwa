@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CraftLink } from './craft-link';
-import { Toast } from './toast';
+import { TOAST_LEAVE_MS, Toast } from './toast';
 
 describe('CraftLink(D-262)', () => {
   let nav: ReturnType<typeof vi.fn>;
@@ -53,6 +53,9 @@ describe('Toast 按鈕', () => {
     expect(toast.items()).toHaveLength(0);
     toast.show('a', { ms: 100 });
     vi.advanceTimersByTime(101);
+    expect(toast.items()).toHaveLength(1); // 先標記淡出(D-302),動畫結束才移除
+    expect(toast.items()[0]!.leaving).toBe(true);
+    vi.advanceTimersByTime(TOAST_LEAVE_MS);
     expect(toast.items()).toHaveLength(0);
     vi.useRealTimers();
   });

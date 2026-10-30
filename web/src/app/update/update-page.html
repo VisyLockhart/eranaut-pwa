@@ -37,6 +37,15 @@
       <button type="button" role="tab" class="up-tab" [class.active]="vm.mode() === 'ocr'" [attr.aria-selected]="vm.mode() === 'ocr'" (click)="vm.setMode('ocr')">截圖辨識</button>
       <button type="button" role="tab" class="up-tab" [class.active]="vm.mode() === 'manual'" [attr.aria-selected]="vm.mode() === 'manual'" (click)="vm.setMode('manual')">手動輸入</button>
     </div>
+    @if (vm.mode() === 'ocr' && vm.workshop()) {
+      <ol class="up-steps" aria-label="截圖辨識的進度" [style.--step]="step() - 1">
+        @for (s of steps; track s.n) {
+          <li [class.done]="step() > s.n" [class.on]="step() === s.n" [attr.aria-current]="step() === s.n ? 'step' : null">
+            <i aria-hidden="true">@if (step() > s.n) { <svg viewBox="0 0 16 16" width="12" height="12"><path d="M3 8.5l3.2 3.2L13 5" fill="none" stroke="currentColor" stroke-width="2.4" /></svg> } @else { {{ s.n }} }</i><span>{{ s.label }}</span>
+          </li>
+        }
+      </ol>
+    }
     @if (layout.isDesktop() && !split()) {
       <ng-container *ngTemplateOutlet="wsPick" />
     }
@@ -123,7 +132,10 @@
 
 <ng-template #upload>
   @if (vm.ocrPhase() === 'busy') {
-    <div class="ocr-busy" role="status"><div class="ocr-spinner"></div><div style="color: var(--text-muted); font-size: 13px">辨識中…</div></div>
+    <div class="ocr-busy" role="status">
+      <div class="sk-rows" aria-hidden="true"><div class="sk sk-line" style="width: 78%"></div><div class="sk sk-line" style="width: 92%"></div><div class="sk sk-line" style="width: 64%"></div><div class="sk sk-line" style="width: 84%"></div></div>
+      <div style="color: var(--text-muted); font-size: 13px">辨識中…</div>
+    </div>
   } @else {
     @if (!layout.isDesktop() && split()) {
       <label class="dropzone compact" [class.drag]="dragging()" [class.pasted]="pasted()" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">

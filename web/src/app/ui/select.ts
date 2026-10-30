@@ -66,7 +66,7 @@ const GROUP_MEMORY = new Map<string, Map<string, boolean>>();
       <app-icon name="chevronDown" [size]="14" />
     </button>
     @if (open()) {
-      <ul class="sel-panel" role="listbox" [id]="listId" [style.left.px]="pos().left" [style.top.px]="pos().top" [style.bottom.px]="pos().bottom" [style.min-width.px]="pos().width" [style.max-height.px]="pos().maxHeight">
+      <ul class="sel-panel" [class.up]="pos().bottom !== null" role="listbox" [id]="listId" [style.left.px]="pos().left" [style.top.px]="pos().top" [style.bottom.px]="pos().bottom" [style.min-width.px]="pos().width" [style.max-height.px]="pos().maxHeight">
         @for (r of rows(); track r.key; let i = $index) {
           @if (r.kind === 'group') {
             <li

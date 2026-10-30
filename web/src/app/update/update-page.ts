@@ -38,6 +38,9 @@ export class UpdatePage implements OnDestroy {
   protected readonly pasted = signal(false);
   protected readonly capturing = signal(false);
   protected readonly pasteKey = pasteShortcut();
+  /** 截圖辨識的三個步驟(D-302):選圖 → 辨識 → 核對;送出後就離開本頁 */
+  protected readonly steps = [{ n: 1, label: '選圖' }, { n: 2, label: '辨識' }, { n: 3, label: '核對' }] as const;
+  protected readonly step = computed(() => ({ idle: 1, busy: 2, review: 3 })[this.vm.ocrPhase()]);
   private readonly tools = inject(ImageTools);
   protected readonly captureSupported = this.tools.canCapture();
   private pasteTimer: ReturnType<typeof setTimeout> | undefined;

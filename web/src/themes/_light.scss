@@ -152,3 +152,18 @@ html[data-theme='light'] {
 /* iOS 主畫面 App 的狀態列是 black-translucent(執行中無法改):淺色底配白色狀態列文字會看不見,
    所以在最上方補一條墨色安全區色帶(非 iOS / 沒有瀏覽器列的環境 env() 為 0,不會出現) */
 html[data-theme='light']::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: calc(env(safe-area-inset-top) / var(--vu-div)); background: var(--line); z-index: 2147483000; pointer-events: none; }
+
+/* 動態語氣(D-302):像素風 —— 階梯、不插值、不過衝、不縮放 */
+html[data-theme='light'] {
+  --mo-ease: steps(3, end); --mo-ease-out: steps(3, end); --mo-shake-ease: steps(1, end);
+  --mo-dur: 0.18s; --mo-dur-f: 0.08s;
+  --mo-press-y: 2px; --mo-press-s: 1; --mo-stretch: 1.2; --mo-pop-s: 1;
+}
+
+/* 骨架(D-302):像素風用階梯閃爍,不用掃光 */
+html[data-theme='light'] {
+  .sk::after { display: none; }
+  .sk { animation: mo-blink 1s steps(2, end) infinite; }
+}
+@keyframes mo-blink { 50% { opacity: 0.5; } }
+html[data-theme='light'][data-motion='reduced'] .sk { animation: none; }
