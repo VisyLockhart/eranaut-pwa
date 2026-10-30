@@ -215,7 +215,7 @@ CREATE TABLE submarine_upkeep (
     // 放在潛艇身上而不是配置:同一組配置常綁多艘、各艘等級不同。不動 submarines 表;潛艇刪除時連帶刪除。
     // pending_*:派出時記下的路線與它的經驗,返航後(下一次讀取或更新時)才加進等級,不需要排程。
     // last_*:最近一次記下的路線(結算後也保留),讓下次一鍵「跟上次一樣」。
-    // level 可記到 130(截圖辨識可能讀到);練級輔助只算到 85。驗證在 API。
+    // level 可記到 130(截圖辨識可能讀到);每級經驗表到 145 級;驗證在 API。
     sql: `
 CREATE TABLE submarine_progress (
   submarine_id TEXT PRIMARY KEY REFERENCES submarines(id) ON DELETE CASCADE,

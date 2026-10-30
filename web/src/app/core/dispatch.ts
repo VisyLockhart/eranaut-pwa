@@ -157,7 +157,7 @@ export function unlockTarget(subs: readonly Pick<SubmarineDto, 'progress' | 'pos
  * `ok` 可再加條件(例如工坊海圖:路線的點都已發現)。沒有符合的回 undefined。
  */
 export function guideFor(goal: Goal, level: number, parts: Parts, ok: (r: LevelingRoute) => boolean = () => true): LevelingRoute | undefined {
-  // 攻略資料集只到 85 級;再高沒有攻略可參考,一律交給系統推算(D-298)
+  // 攻略路線只寫到 85 級(每級經驗表另外有到 145 級);再高沒有攻略可參考,一律交給系統推算(D-298)
   if (level > MAX_LEVELING_LEVEL) return undefined;
   let best: { r: LevelingRoute; exp: number; minutes: number } | undefined;
   for (const school of goal === null ? (['snap'] as const) : LEVELING_SCHOOLS) {

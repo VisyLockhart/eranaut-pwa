@@ -14,12 +14,16 @@ import {
 } from '../src/index.js';
 
 describe('練級資料', () => {
-  it('每級經驗表:Lv1~85,升到下一級所需', () => {
-    assert.equal(LEVEL_EXP.length, 85);
+  it('每級經驗表:Lv1~145,升到下一級所需(86 級以上取自遊戲資料,與航線資料集 1~130 級一致)', () => {
+    assert.equal(LEVEL_EXP.length, 145);
     assert.equal(levelExp(1), 6180);
     assert.equal(levelExp(20), 149799);
     assert.equal(levelExp(85), 3041931);
-    assert.equal(levelExp(86), null);
+    assert.equal(levelExp(86), 3372592);
+    assert.equal(levelExp(100), 11257414);
+    assert.equal(levelExp(130), 31922973);
+    assert.equal(levelExp(145), 46234004);
+    assert.equal(levelExp(146), null);
     assert.equal(levelExp(0), null);
     assert.equal(LEVEL_EXP.slice(0, 84).reduce((a, b) => a + b, 0), 69473015);
   });
@@ -62,8 +66,14 @@ describe('經驗結算', () => {
   it('剛好等於升級所需:進位、餘 0', () => {
     assert.deepEqual(applyExp({ level: 1, exp_in_level: 100 }, 6080), { level: 2, exp_in_level: 0, capped: false });
   });
-  it('超過 85 級:停在 86、經驗歸 0', () => {
-    assert.deepEqual(applyExp({ level: 85, exp_in_level: 0 }, 3041931), { level: 86, exp_in_level: 0, capped: true });
+  it('85 級以上照樣進位(經驗表到 145 級)', () => {
+    assert.deepEqual(applyExp({ level: 85, exp_in_level: 0 }, 3041931), { level: 86, exp_in_level: 0, capped: false });
+    assert.deepEqual(applyExp({ level: 85, exp_in_level: 10 }, 3041931 + 5), { level: 86, exp_in_level: 15, capped: false });
+  });
+  it('可記錄的等級上限 130:再升就停在 130、經驗歸 0', () => {
+    assert.deepEqual(applyExp({ level: 129, exp_in_level: 0 }, 77860906), { level: 130, exp_in_level: 0, capped: false });
+    assert.deepEqual(applyExp({ level: 130, exp_in_level: 0 }, 31922973), { level: 130, exp_in_level: 0, capped: true });
+    assert.deepEqual(applyExp({ level: 130, exp_in_level: 0 }, 100), { level: 130, exp_in_level: 100, capped: false });
   });
 });
 
@@ -73,13 +83,14 @@ describe('經驗滑桿', () => {
     assert.equal(expSliderStep(20), 1000); // 1497.99 → 1.5 → 2? 見下
   });
   it('步距恆為整數且 ≥ 1,滑桿格數在 50~200 之間', () => {
-    for (let lv = 1; lv <= 85; lv++) {
+    for (let lv = 1; lv <= 145; lv++) {
       const step = expSliderStep(lv);
       assert.ok(Number.isInteger(step) && step >= 1);
       const cells = levelExp(lv)! / step;
       assert.ok(cells >= 40 && cells <= 210, `Lv${lv} 格數 ${cells}`);
     }
-    assert.equal(expSliderStep(86), 1);
+    assert.equal(expSliderStep(86), 20000); // 3,372,592 / 100 = 33,726 → 2 × 10^4
+    assert.equal(expSliderStep(146), 1); // 沒有資料
   });
   it('換等級時經驗夾回範圍', () => {
     assert.equal(clampExp(1, 99999), 6179);

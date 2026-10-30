@@ -6,13 +6,13 @@ import { LEVEL_EXP, LEVELING_POINTS, LEVELING_ROUTES, type LevelingPoint, type L
 export { LEVEL_EXP, LEVELING_POINTS, LEVELING_ROUTES };
 export type { LevelingPoint, LevelingRoute, LevelingSchool };
 
-/** 攻略(每級經驗表)只到 85 級;資料庫與截圖辨識可以記到更高的等級 */
+/** 練級攻略路線只寫到 85 級(更高的等級由系統推算路線);每級經驗表有到 145 級,可記錄的等級上限是 130 */
 export const MAX_LEVELING_LEVEL = 85;
 export const MAX_RECORDED_LEVEL = 130;
 export const LEVELING_SCHOOLS: readonly LevelingSchool[] = ['snap', 'half', 'day'];
 export const LEVELING_SCHOOL_LABEL: Record<LevelingSchool, string> = { snap: '掐點收', half: '半日收', day: '整日收' };
 
-/** 這一級升到下一級要多少經驗;超出資料範圍(86 級以上)回 null */
+/** 這一級升到下一級要多少經驗(1~145 級有資料);超出資料範圍回 null */
 export function levelExp(level: number): number | null {
   return Number.isInteger(level) && level >= 1 && level <= LEVEL_EXP.length ? LEVEL_EXP[level - 1]! : null;
 }
@@ -39,7 +39,7 @@ export interface LevelState {
   exp_in_level: number;
 }
 
-/** 加上經驗並逐級進位。超過 85 級(練級輔助的範圍)就停在 86 級、經驗歸 0 */
+/** 加上經驗並逐級進位。到了可記錄的等級上限(130)再升就停在上限、經驗歸 0 */
 export function applyExp(state: LevelState, gain: number): LevelState & { capped: boolean } {
   let { level, exp_in_level } = state;
   exp_in_level += gain;
@@ -47,12 +47,13 @@ export function applyExp(state: LevelState, gain: number): LevelState & { capped
     const need = levelExp(level);
     if (need === null) return { level, exp_in_level: 0, capped: true };
     if (exp_in_level < need) return { level, exp_in_level, capped: false };
+    if (level >= MAX_RECORDED_LEVEL) return { level, exp_in_level: 0, capped: true };
     exp_in_level -= need;
     level += 1;
   }
 }
 
-/** 經驗滑桿每格的步距:約該級所需的 1%,取 1 / 2 / 5 × 10 的次方(Lv1 約 50、Lv20 約 1,000、Lv85 約 20,000) */
+/** 經驗滑桿每格的步距:約該級所需的 1%,取 1 / 2 / 5 × 10 的次方(Lv1 約 50、Lv20 約 1,000、Lv85 約 20,000、Lv130 約 300,000) */
 export function expSliderStep(level: number): number {
   const need = levelExp(level);
   if (need === null) return 1;

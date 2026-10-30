@@ -85,7 +85,7 @@ export function changeExp(d: QuickProgressDraft, exp: number): QuickProgressDraf
 
 export interface ProgressView {
   level: number;
-  /** 這一級的目前經驗與升級所需;86 級以上沒有資料 */
+  /** 這一級的目前經驗與升級所需;沒有資料(146 級以上)為 null */
   exp: number | null;
   need: number | null;
   /** 0~100;沒有資料為 null */

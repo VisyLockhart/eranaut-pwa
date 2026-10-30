@@ -100,9 +100,14 @@ describe('總覽的等級顯示', () => {
     expect(v?.pending).toBeNull();
   });
 
-  it('超過 85 級:沒有經驗條(沒有每級經驗資料),航線輔助照樣開', () => {
-    const v = progressView(sub({ progress: progress({ level: 87, effective_level: 87, effective_exp: 0, source: 'ocr' }) }));
-    expect(v).toMatchObject({ level: 87, exp: null, need: null, pct: null, fromOcr: true, sim: true });
+  it('85 級以上:一樣有經驗條(經驗表到 145 級)', () => {
+    const v = progressView(sub({ progress: progress({ level: 87, effective_level: 87, effective_exp: 1_868_159, source: 'ocr' }) }));
+    expect(v).toMatchObject({ level: 87, exp: 1_868_159, need: 3_736_319, pct: 50, fromOcr: true, sim: true });
+  });
+
+  it('沒有經驗資料的等級(146 級以上):沒有經驗條', () => {
+    const v = progressView(sub({ progress: progress({ level: 150, effective_level: 150, effective_exp: 0 }) }));
+    expect(v).toMatchObject({ level: 150, exp: null, need: null, pct: null });
   });
 });
 

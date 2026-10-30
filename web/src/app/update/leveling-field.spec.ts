@@ -138,15 +138,16 @@ describe('快速修改的練級輔助', () => {
     await finish({ position: 1, name: '阿爾法', status: 'complete', progress: { assist_on: false } });
   });
 
-  it('超過 85 級(D-298):一樣有開關;潛艇配置沒有經驗滑桿,等級可到 130', () => {
+  it('超過 85 級(D-298):一樣有開關;潛艇配置也有經驗滑桿,等級可到 130', () => {
     const { el, fixture } = setup(sub({ progress: progress({ level: 90, effective_level: 90, effective_exp: 0, source: 'ocr', assist_on: false }) }));
     const sw = el.querySelector<HTMLInputElement>('[data-qs="assist"] input[type="checkbox"]')!;
     expect(sw).not.toBeNull();
     sw.click();
     fixture.detectChanges();
-    expect(el.querySelector('input[aria-label="這一級的目前經驗（滑桿）"]')).toBeNull();
+    expect(el.querySelector('input[aria-label="這一級的目前經驗（滑桿）"]')).not.toBeNull();
     expect(el.querySelector<HTMLInputElement>('input[aria-label="目前等級"]')!.value).toBe('90');
-    expect(el.querySelector('[data-qs="config"]')!.textContent).toContain('沒有攻略與每級經驗資料');
+    expect(el.querySelector('[data-qs="config"]')!.textContent).toContain('升級需要 4,620,540');
+    expect(el.querySelector('[data-qs="config"]')!.textContent).not.toContain('沒有攻略與每級經驗資料');
     expect(el.querySelector<HTMLInputElement>('input[aria-label="目前等級（滑桿）"]')!.max).toBe('130');
   });
 
