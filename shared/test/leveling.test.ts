@@ -24,11 +24,11 @@ describe('練級資料', () => {
     assert.equal(LEVEL_EXP.slice(0, 84).reduce((a, b) => a + b, 0), 69473015);
   });
 
-  it('練級點位:溺沒海 30 點、灰海 20 點,只含 85 級以內', () => {
-    assert.equal(levelingPoints(1).length, 30);
-    assert.equal(levelingPoints(2).length, 20);
-    assert.equal(levelingPoints(3).length, 0);
-    assert.ok([...levelingPoints(1), ...levelingPoints(2)].every((p) => p.rank <= 85));
+  it('選點器點位:全部 6 個海域(D-304 取消 85 級上限)', () => {
+    assert.deepEqual([1, 2, 3, 4, 5, 6].map((s) => levelingPoints(s).length), [30, 20, 20, 20, 20, 13]);
+    assert.equal(levelingPoints(7).length, 0);
+    assert.equal(levelingPoints(4)[0]!.rank, 90);
+    assert.equal(levelingPoints(4)[0]!.exp, 1751567);
     const marks = Object.fromEntries(levelingPoints(1).filter((p) => p.mark).map((p) => [p.code, p.mark]));
     assert.deepEqual(marks, { J: '艇2', O: '艇3', T: '艇4', AD: '灰海' });
   });

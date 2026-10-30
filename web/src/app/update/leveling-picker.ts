@@ -1,16 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { applyExp, levelingPoints, type ProgressRoute } from '@eranaut/shared';
+import { applyExp, LEVELING_POINTS, levelingPoints, type ProgressRoute } from '@eranaut/shared';
 import { fmtExp, lvUp, minutesText, planRoute, statsFor, type RoutePlan } from '../core/leveling-vm';
 import { MAX_STOPS, selectability, type Selectability } from '../route/core/route';
 import { seaIndex } from '../route/core/data';
 
-const SEAS = [
-  { sea: 1, label: '溺沒海' },
-  { sea: 2, label: '灰海' },
-];
+/** 全部有點位資料的海域(D-304:取消 85 級上限後不再只列溺沒海與灰海) */
+const SEAS = LEVELING_POINTS.map((s) => ({ sea: s.sea, label: seaIndex(s.sea).sea.name, minRank: Math.min(...s.points.map((p) => p.rank)) }));
 
 /**
- * 練級輔助的簡化選點器(D-289):只留點位按鈕(代碼 + 需要的等級 + 解鎖標示),沒有地圖和連結。
+ * 航線輔助的簡化選點器(D-289、D-304):只留點位按鈕(代碼 + 需要的等級 + 解鎖標示),沒有地圖和連結。
  * 計算沿用航線模擬器的核心函式:一次最多 5 點、距離(耗用)不能超過配置的上限、等級不夠的點不能選;
  * 選取的順序就是航行順序。沒有綁定配置時沒有距離上限可比,只算經驗。
  */
@@ -77,8 +75,8 @@ export class LevelingPicker {
   protected readonly seas = SEAS;
   protected readonly maxStops = MAX_STOPS;
   private readonly seaPick = signal<number | null>(null);
-  /** 預設:50 級以上看灰海,其餘溺沒海 */
-  protected readonly sea = computed(() => this.seaPick() ?? (this.level() >= 50 ? 2 : 1));
+  /** 預設:等級已達標的最後一個海域(例:50 級以上看灰海、70 級以上看翠浪海) */
+  protected readonly sea = computed(() => this.seaPick() ?? SEAS.filter((s) => s.minRank <= this.level()).at(-1)?.sea ?? SEAS[0]!.sea);
   protected readonly seq = signal<string[]>([]);
   protected readonly fmt = fmtExp;
   protected readonly up = lvUp;

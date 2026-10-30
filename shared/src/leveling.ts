@@ -6,7 +6,7 @@ import { LEVEL_EXP, LEVELING_POINTS, LEVELING_ROUTES, type LevelingPoint, type L
 export { LEVEL_EXP, LEVELING_POINTS, LEVELING_ROUTES };
 export type { LevelingPoint, LevelingRoute, LevelingSchool };
 
-/** 練級輔助只到 85 級;資料庫與截圖辨識可以記到更高的等級 */
+/** 攻略(每級經驗表)只到 85 級;資料庫與截圖辨識可以記到更高的等級 */
 export const MAX_LEVELING_LEVEL = 85;
 export const MAX_RECORDED_LEVEL = 130;
 export const LEVELING_SCHOOLS: readonly LevelingSchool[] = ['snap', 'half', 'day'];
