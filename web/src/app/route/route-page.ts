@@ -6,7 +6,6 @@ import { Layout } from '../core/layout';
 import { IconComponent } from '../ui/icon';
 import { lootTiers } from './core/need';
 import { MAX_STOPS } from './core/route';
-import { RouteAbout } from './route-about';
 import { RouteEditor } from './route-editor';
 import { RouteLoot } from './route-loot';
 import { RouteChartBar } from './route-chart-bar';
@@ -29,7 +28,7 @@ import { RouteVm } from './route-vm';
  */
 @Component({
   selector: 'app-route-page',
-  imports: [NgTemplateOutlet, IconComponent, RouteChartBar, RouteCfgBar, RouteMap, RouteEditor, RouteRecommend, RouteLoot, RouteAbout, RoutePerfDialog, RouteReplaceDialog, RouteSeaPager, RouteStats],
+  imports: [NgTemplateOutlet, IconComponent, RouteChartBar, RouteCfgBar, RouteMap, RouteEditor, RouteRecommend, RouteLoot, RoutePerfDialog, RouteReplaceDialog, RouteSeaPager, RouteStats],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './route-page.html',
   host: { style: 'display: contents' },

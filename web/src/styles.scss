@@ -877,11 +877,6 @@ app-route-subs { display: block; container: rt-result / inline-size; }
 .rt-pick-row .rt-star { margin: 0; }
 .rt-fm-row .rt-star { margin: 0 4px 0 -4px; }
 
-/* 航線模擬器 P9:資料來源與授權 */
-.rt-about { margin-top: 4px; border-top: var(--bw) solid var(--border); padding-top: 8px; font-size: 11.5px; color: var(--text-dim); }
-.rt-about summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; font-weight: 600; }
-.rt-about-body p { margin: 6px 0; line-height: 1.7; overflow-wrap: anywhere; }
-.rt-about-body a { color: var(--accent); }
 
 /* 航線模擬器:共用配置對話框、查看性能、航點頁配置列(D-208) */
 .rt-block-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -1317,10 +1312,10 @@ input:-webkit-autofill, input:-webkit-autofill:focus { -webkit-text-fill-color: 
 .tip-bubble.show { opacity: 1; visibility: visible; }
 @media (hover: none) { .tip-bubble { display: none; } }
 /* details / summary:隱藏瀏覽器的三角形,改用 token 色的箭頭 */
-.rt-details > summary, .rt-about > summary { list-style: none; gap: 8px; }
-.rt-details > summary::-webkit-details-marker, .rt-about > summary::-webkit-details-marker { display: none; }
-.rt-details > summary::before, .rt-about > summary::before { content: ''; flex: 0 0 auto; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .12s; margin: 0 2px 0 1px; }
-.rt-details[open] > summary::before, .rt-about[open] > summary::before { transform: rotate(45deg); }
+.rt-details > summary { list-style: none; gap: 8px; }
+.rt-details > summary::-webkit-details-marker { display: none; }
+.rt-details > summary::before { content: ''; flex: 0 0 auto; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .12s; margin: 0 2px 0 1px; }
+.rt-details[open] > summary::before { transform: rotate(45deg); }
 
 /* ---------- 配件維修提醒(D-288):色彩全部用主題 token,紅 = 現在不能出航、琥珀 = 這趟回來後要維修 ---------- */
 .uk-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; line-height: 1.3; color: var(--text-dim); }

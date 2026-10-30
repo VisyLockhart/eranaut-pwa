@@ -269,18 +269,9 @@ describe('RoutePage', () => {
     expect((f.nativeElement as HTMLElement).querySelector('app-route-editor')).not.toBeNull();
   });
 
-  it('頁尾有「資料來源與授權」說明(CC BY-NC-SA 3.0、不適用 MIT、非官方)', () => {
+  it('航線頁不再內嵌資料授權說明(改由 /licenses 頁,D-308)', () => {
     mount();
-    const about = el.querySelector('.rt-about')!;
-    expect(about.querySelector('summary')?.textContent).toContain('資料來源與授權');
-    const text = about.textContent!;
-    expect(text).toContain('灰機 wiki');
-    expect(text).toContain('Eclair Falcie@Hades');
-    expect(text).toContain('CC BY-NC-SA 3.0');
-    expect(text).toContain('不適用本專案的 MIT 授權');
-    expect(text).toContain('非官方');
-    expect(about.querySelector('a')?.getAttribute('rel')).toContain('noopener');
-    expect(about.querySelector('a[href="/licenses"]')).not.toBeNull();
+    expect(el.querySelector('.rt-about')).toBeNull();
   });
   it('燈號可點開路線需求:沒選航點有說明,選了之後列出門檻', () => {
     const f = mount();
