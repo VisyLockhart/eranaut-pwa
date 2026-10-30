@@ -1,3 +1,4 @@
+import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -20,7 +21,7 @@ describe('SettingsPage', () => {
 
   beforeEach(() => {
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
     http = TestBed.inject(HttpTestingController);
     const auth = TestBed.inject(Auth);
     auth.status.set('authenticated');
@@ -33,6 +34,11 @@ describe('SettingsPage', () => {
     return fixture;
   }
 
+  it('有聲明與授權連結(D-308)', async () => {
+    const fixture = await render();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(Array.from(el.querySelectorAll('a[href^="/"]')).map((a) => a.getAttribute('href'))).toEqual(['/licenses', '/privacy', '/terms']);
+  });
   it('顯示目前版本號(關於)', async () => {
     const fixture = await render();
     http.expectOne('/api/notify-prefs').flush({ dm: true, channel: false });
@@ -188,7 +194,7 @@ describe('SettingsPage', () => {
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: SwUpdate, useValue: { isEnabled: true, versionUpdates: new Subject(), unrecoverable: new Subject() } }],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: SwUpdate, useValue: { isEnabled: true, versionUpdates: new Subject(), unrecoverable: new Subject() } }],
     });
     http = TestBed.inject(HttpTestingController);
     const auth = TestBed.inject(Auth);

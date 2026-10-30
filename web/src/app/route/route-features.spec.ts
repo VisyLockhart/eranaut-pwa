@@ -1,3 +1,4 @@
+import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -18,7 +19,7 @@ describe('RouteVm(展示模式:不儲存配置)', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ROUTE_FEATURES, useValue: { saving: false } }] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: ROUTE_FEATURES, useValue: { saving: false } }] });
     TestBed.inject(Auth).status.set('authenticated');
     http = TestBed.inject(HttpTestingController);
     vm = TestBed.inject(RouteVm);
@@ -68,7 +69,7 @@ describe('條件組合(展示模式:不儲存)', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ROUTE_FEATURES, useValue: { saving: false } }] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: ROUTE_FEATURES, useValue: { saving: false } }] });
     TestBed.inject(Auth).status.set('authenticated');
     http = TestBed.inject(HttpTestingController);
     fv = TestBed.inject(RouteFilterVm);

@@ -17,6 +17,8 @@
    取用內容:航點座標、等級門檻、距離與航行耗用、探索需求、經驗、燃料、中高階掉落物 ID、航點連線(由 unlocks 推得)。
 2. GitHub `cxzzsf0896753245657-hue/Final-Fantasy-XIV-watre`(該 repo 未附授權條款):僅取用繁體中文名稱(航點、物品、配件)、配件數值表、等級獎勵表、重量上限與低階物品對照。
 
+3. 開源專案 `xivapi/ffxiv-datamining`(https://github.com/xivapi/ffxiv-datamining):僅用於核對航點座標與距離公式(`tools/route-data/verify-csv.mjs`)與各等級升級經驗(`tools/leveling-data/`);未直接收錄其檔案。
+
 ## 改動說明
 
 - 名稱改為繁體中文;GitHub 沒有繁中名稱的項目以 wiki 簡中名簡轉繁補上(列於 TODO.md,尚待實機校正);完全查不到名稱的內容未收錄。

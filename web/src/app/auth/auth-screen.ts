@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Auth } from '../core/auth';
 import { Layout } from '../core/layout';
+import { CopyrightComponent } from '../ui/copyright';
 import { IconComponent } from '../ui/icon';
 
 interface FailCopy {
@@ -17,7 +18,7 @@ interface FailCopy {
  */
 @Component({
   selector: 'app-auth-screen',
-  imports: [IconComponent, NgTemplateOutlet],
+  imports: [IconComponent, NgTemplateOutlet, CopyrightComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './auth-screen.html',
 })

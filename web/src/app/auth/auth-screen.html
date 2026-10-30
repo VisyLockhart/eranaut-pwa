@@ -41,6 +41,7 @@
           <div class="auth-hero-sub-m">為 FFXIV 潛水艇公會打造的簡單工具，串接 Discord bot，隨時掌握每一艘潛艇的狀態。</div>
           <button class="discord-btn" (click)="auth.login()"><app-icon name="discord" [size]="20" />使用 Discord 登入</button>
           <div class="auth-features-m"><ng-container *ngTemplateOutlet="features" /></div>
+          <div class="auth-legal"><app-copyright variant="footer" /></div>
         </div>
       }
       @case ('processing') {
@@ -82,6 +83,7 @@
         <div class="auth-hero-sub-d">為 FFXIV 潛水艇公會打造的簡單工具，串接 Discord bot，隨時掌握每一艘潛艇的狀態。</div>
         <button class="discord-btn" style="width: auto; margin-bottom: 64px" (click)="auth.login()"><app-icon name="discord" [size]="20" />使用 Discord 登入</button>
         <div class="auth-features-d"><ng-container *ngTemplateOutlet="features" /></div>
+        <div class="auth-legal"><app-copyright variant="footer" /></div>
       </div>
     }
     @case ('processing') {

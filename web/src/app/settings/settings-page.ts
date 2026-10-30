@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { APP_VERSION } from '@eranaut/shared';
 import { AppUpdate } from '../core/app-update';
 import { Auth } from '../core/auth';
@@ -15,7 +16,7 @@ import { IconComponent } from '../ui/icon';
 /** 設定頁:帳號(登出入口,D-108)、顯示(主題 D-277、介面大小 D-164)與提醒方式(D-72;含這台裝置的瀏覽器推播,D-165)。手機的「我的」分頁、桌機側欄的「設定」 */
 @Component({
   selector: 'app-settings-page',
-  imports: [NgTemplateOutlet, IconComponent, AvatarComponent],
+  imports: [NgTemplateOutlet, RouterLink, IconComponent, AvatarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings-page.html',
   host: { style: 'display: contents' },

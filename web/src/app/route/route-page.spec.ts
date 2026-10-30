@@ -1,3 +1,4 @@
+import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -18,7 +19,7 @@ describe('RoutePage', () => {
 
   function mount(desktop = false, tab: 'config' | 'route' = 'route') {
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
     TestBed.inject(Auth).status.set('authenticated');
     TestBed.inject(Layout).isDesktop.set(desktop);
     vm = TestBed.inject(RouteVm);
@@ -259,7 +260,7 @@ describe('RoutePage', () => {
 
   it('沒記錄過分頁時第一次進來是配置頁', () => {
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
     TestBed.inject(Auth).status.set('authenticated');
     vm = TestBed.inject(RouteVm);
     const f = TestBed.createComponent(RoutePage);
@@ -279,6 +280,7 @@ describe('RoutePage', () => {
     expect(text).toContain('不適用本專案的 MIT 授權');
     expect(text).toContain('非官方');
     expect(about.querySelector('a')?.getAttribute('rel')).toContain('noopener');
+    expect(about.querySelector('a[href="/licenses"]')).not.toBeNull();
   });
   it('燈號可點開路線需求:沒選航點有說明,選了之後列出門檻', () => {
     const f = mount();
