@@ -141,7 +141,7 @@
     @if (rs.length === 0) {
       <div class="rt-empty">{{ emptyText() }}</div>
     } @else {
-      <div class="rt-block-title" role="status">共 {{ rs.length }} 條路線,依{{ sortLabel() }}排序@if (fv.enabled) { <button type="button" class="rt-link-btn" [disabled]="fv.isEmpty() && !fv.modified()" (click)="fv.dialog.set('save')">儲存這組條件</button> }</div>
+      <div class="rt-block-title" role="status">共 {{ rs.length }} 條路線,依{{ sortLabel() }}排序@if (fv.enabled) { <button type="button" class="rt-link-btn rt-title-btn" [disabled]="fv.isEmpty() && !fv.modified()" (click)="fv.dialog.set('save')">儲存這組條件</button> }</div>
       @for (c of visible(); track c.key) {
         <article class="rt-card rt-hit">
           <div class="rt-hit-main">
@@ -155,7 +155,7 @@
               <div class="rt-card-opens">返航時有機會解鎖新航點:{{ c.opens }}</div>
             }
             <div class="rt-find-items">
-              <b>可撈到 {{ c.itemsCount }} 種物品</b><span class="rt-count">價值 {{ c.value }}</span>
+              <b>共 {{ c.itemsCount }} 種物品</b><span class="rt-count">價值 {{ c.value }}</span>
               <button type="button" class="rt-link-btn" aria-haspopup="dialog" (click)="showAllItems(c)">看全部</button>
               @if (c.got.length > 0) {
                 <ul class="rt-hit-items" aria-label="指定的物品">
@@ -172,7 +172,7 @@
             </div>
           </div>
           <div class="rt-hit-side">
-            <span class="rt-card-lv">{{ c.headline }}</span>
+            @if (c.headline) { <span class="rt-card-lv">{{ c.headline }}</span> }
             <button type="button" class="rt-save-btn primary" (click)="load(c)">模擬路線</button>
           </div>
         </article>

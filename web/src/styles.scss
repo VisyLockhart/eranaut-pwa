@@ -265,8 +265,6 @@
   .d-user-sub { font-size: 10.5px; color: var(--text-dim); }
 
   .d-main { flex-grow: 1; padding: 26px 32px; overflow-y: auto; min-width: 0; }
-  /* 加入海域(展示版):子頁切換列要 sticky 在視窗上緣,.d-main 不能是捲動容器(它本來就不會自己捲) */
-  .d-main:has(.sea-desktop) { overflow: visible; }
   .d-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 16px; flex-wrap: wrap; }
   .d-title { font-size: 20px; font-weight: 700; }
   .d-subtitle { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
@@ -741,6 +739,7 @@ app-route-result, app-route-editor { display: flex; flex-direction: column; gap:
 .rt-hop + .rt-hop::before { content: '›'; margin: 0 7px; color: var(--accent); font-weight: 700; opacity: 0.8; }
 .rt-hop-code { min-width: 1.6em; padding: 0 5px; border-radius: calc(6px * var(--rs)); background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--text); font-family: var(--font-mono); font-size: 13px; font-weight: 700; text-align: center; }
 .rt-hop-name { color: var(--text-muted); }
+.rt-title-btn { margin-left: 12px; }
 .rt-card-lv { font-size: 11.5px; color: var(--text-dim); }
 .rt-chips5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 8px 0; }
 .rt-chip5 { display: flex; flex-direction: column; align-items: center; padding: 6px 2px; border-radius: calc(8px * var(--rs)); background: color-mix(in srgb, var(--tone) 6%, transparent); text-align: center; min-width: 0; }

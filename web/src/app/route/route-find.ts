@@ -55,7 +55,7 @@ interface Card {
 /**
  * 找路線(D-222):取代原本推薦頁的練級、探索、距離、掉落四個目標。
  * 上面是海圖(「篩選航點」與「標記去過」兩種模式,說明用「?」彈出),中間是條件(海域、航行時間、指定物品、排序),
- * 按「找路線」才計算。結果卡的右側主指標隨排序變化,物品區預設「可撈到 N 種物品」,有指定物品時另列指定的。
+ * 按「找路線」才計算。結果卡的右側主指標隨排序變化,物品區預設「共 N 種物品」,有指定物品時另列指定的。
  */
 @Component({
   selector: 'app-route-find',
@@ -144,7 +144,7 @@ export class RouteFind {
       order: r.order,
       seaName: si.sea.name,
       stops: r.order.map((id) => { const p = si.byId.get(id)!; return { code: p.code, name: p.name }; }),
-      headline: sort === 'perMin' ? `每分鐘 ${r.perMin.toFixed(1)} 經驗` : sort === 'opens' ? `最多開 ${r.opens.length} 點` : `物品價值 ${r.value}`,
+      headline: sort === 'perMin' ? `每分鐘 ${r.perMin.toFixed(1)} 經驗` : sort === 'opens' ? `最多開 ${r.opens.length} 點` : '',
       opens:
         sorts.includes('opens') && r.opens.length > 0
           ? r.opens.map((id) => { const o = graph.seaOf.get(id)!; const code = o.byId.get(id)!.code; return o === si ? code : `${o.sea.name} ${code}`; }).join('、')

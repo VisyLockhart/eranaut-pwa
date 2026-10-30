@@ -185,7 +185,7 @@ describe('推薦頁(D-212、D-222)', () => {
       expect(first.querySelectorAll('.rt-card-lights .rt-light')).toHaveLength(4);
       expect(first.querySelector('.rt-card-lights')!.textContent).toMatch(/探索.*收集.*距離.*恩惠/);
       expect(first.querySelector('.rt-card-opens')).toBeNull();
-      expect(first.textContent).toContain(`可撈到 ${rs[0]!.items.length} 種物品`);
+      expect(first.textContent).toContain(`共 ${rs[0]!.items.length} 種物品`);
     });
 
     it('排序「可能解鎖」:右側顯示最多開幾點,文案是「返航時有機會解鎖新航點:…」;只列可去的點', async () => {
@@ -207,14 +207,14 @@ describe('推薦頁(D-212、D-222)', () => {
       expect(el.querySelector('#rt-find-results [role=status]')!.textContent).toContain('依可能開出的新航點數排序');
     });
 
-    it('排序「最高價值」:右側顯示物品價值,物品列也列出價值(D-300)', async () => {
+    it('排序「最高價值」:價值只顯示在物品列(D-300)', async () => {
       btn('最高價值', el.querySelector('[aria-label=排序]')!).click();
       btn('每分鐘經驗', el.querySelector('[aria-label=排序]')!).click();
       f.detectChanges();
       await search();
       const top = find.result()![0]!;
-      expect(cards()[0]!.querySelector('.rt-card-lv')!.textContent).toContain(`物品價值 ${top.value}`);
-      expect(cards()[0]!.querySelector('.rt-find-items')!.textContent).toContain(`可撈到 ${top.items.length} 種物品`);
+      expect(cards()[0]!.querySelector('.rt-card-lv')).toBeNull(); // 價值已在物品列,右側不重複顯示
+      expect(cards()[0]!.querySelector('.rt-find-items')!.textContent).toContain(`共 ${top.items.length} 種物品`);
       expect(cards()[0]!.querySelector('.rt-find-items')!.textContent).toContain(`價值 ${top.value}`);
     });
 
@@ -265,7 +265,7 @@ describe('推薦頁(D-212、D-222)', () => {
       expect(cards()[0]!.querySelector('[aria-label=指定的物品]')!.textContent).toContain(target.name);
       btn('看全部', cards()[0]!).click();
       f.detectChanges();
-      expect(el.querySelector('#rt-items-title')!.textContent).toContain(`可撈到 ${rs[0]!.items.length} 種物品`);
+      expect(el.querySelector('#rt-items-title')!.textContent).toContain(`共 ${rs[0]!.items.length} 種物品`);
       expect(el.querySelectorAll('.rt-items-group').length).toBeGreaterThan(0);
       expect(el.querySelector('.rt-items-list li.wanted')!.textContent).toContain(target.name);
       // 分段順序:已解鎖 高 → 中 → 低,未解鎖(預設收合)在最後(D-263)

@@ -27,7 +27,7 @@
   <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event, closeItems)">
     <div class="modal-box rt-dlg" role="dialog" aria-modal="true" aria-labelledby="rt-items-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
       <div class="rt-dlg-head">
-        <div class="modal-title" id="rt-items-title">可撈到 {{ r.items.length }} 種物品</div>
+        <div class="modal-title" id="rt-items-title">共 {{ r.items.length }} 種物品</div>
         <button type="button" class="modal-close" (click)="closeItems()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
       </div>
       <div class="rt-perf-route">{{ routeTitle() }}@if (basisSurveillance() !== null) { · 依搜尋時的配置,探索 {{ basisSurveillance() }} }</div>
