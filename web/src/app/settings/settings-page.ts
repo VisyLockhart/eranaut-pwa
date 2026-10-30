@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { APP_VERSION } from '@eranaut/shared';
 import { AppUpdate } from '../core/app-update';
 import { Auth } from '../core/auth';
 import { Layout } from '../core/layout';
@@ -30,6 +31,7 @@ export class SettingsPage {
   protected readonly up = inject(AppUpdate);
   protected readonly sizes = UI_SIZES;
   protected readonly motion = inject(MotionService);
+  protected readonly version = APP_VERSION;
   protected readonly motionModes = MOTION_MODES;
 
   constructor() {

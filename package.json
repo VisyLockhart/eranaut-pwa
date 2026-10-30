@@ -1,7 +1,7 @@
 {
   "name": "eranaut",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "description": "Aequor Eranos - Eranaut (PWA + API) monorepo",
   "workspaces": ["shared", "api", "web"],
   "engines": { "node": ">=22" },

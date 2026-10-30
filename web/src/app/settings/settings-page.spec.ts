@@ -10,6 +10,7 @@ import { Layout } from '../core/layout';
 import { PushVm } from '../core/push-vm';
 import { ThemeService } from '../core/theme';
 import { UiScale } from '../core/ui-scale';
+import { APP_VERSION } from '@eranaut/shared';
 import { SettingsPage } from './settings-page';
 
 const settle = (): Promise<void> => new Promise((r) => setTimeout(r));
@@ -31,6 +32,15 @@ describe('SettingsPage', () => {
     fixture.detectChanges();
     return fixture;
   }
+
+  it('顯示目前版本號(關於)', async () => {
+    const fixture = await render();
+    http.expectOne('/api/notify-prefs').flush({ dm: true, channel: false });
+    await settle();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="app-version"]')?.textContent?.trim()).toBe(`v${APP_VERSION}`);
+  });
 
   it('顯示帳號與兩個提醒開關,頻道有公開訊息警示', async () => {
     const fixture = await render();

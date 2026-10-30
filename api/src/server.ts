@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import { APP_VERSION } from '@eranaut/shared';
 import cookie from '@fastify/cookie';
 import type { AppConfig } from './config.js';
 import type { Db } from './db/index.js';
@@ -53,7 +54,7 @@ export function buildPublicServer(deps: AppDeps, opts: { logger?: boolean } = {}
     }
   });
 
-  app.get('/api/healthz', async () => ({ ok: true }));
+  app.get('/api/healthz', async () => ({ ok: true, version: APP_VERSION }));
   // 登入前就要用的公開設定(登入失敗畫面的伺服器名稱,D-123);不含任何機密
   app.get('/api/public-config', async () => ({ guildName: deps.config.guildName }));
   const requireSession = registerSessionAuth(app, deps);
