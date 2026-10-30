@@ -143,7 +143,9 @@ export class BuildField {
   });
 
   protected open(): void {
-    this.routeVm.openSubBuild(this.sub().id);
+    // 等級調整過還沒送出,配置對話框也要看到調整後的數值(D-305)
+    const d = this.draft();
+    this.routeVm.openSubBuild(this.sub().id, d?.edited ? d.level : undefined);
   }
 
   protected setLevel(level: number): void {

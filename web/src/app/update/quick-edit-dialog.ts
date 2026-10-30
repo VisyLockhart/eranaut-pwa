@@ -69,7 +69,7 @@ import type { IconName } from '../ui/icons';
                     <span class="qs-i"><app-icon name="server" [size]="18" /></span>
                     <span class="qs-m">
                       <span class="qs-t" id="qs-quick-t">快速修改@if (changes().quick.length > 0) { <em class="qs-tag">已改</em> }</span>
-                      <span class="qs-s">名稱、狀態、剩餘時間與這次派出</span>
+                      <span class="qs-s">航況調整</span>
                     </span>
                   </div>
                   <div class="qs-b">

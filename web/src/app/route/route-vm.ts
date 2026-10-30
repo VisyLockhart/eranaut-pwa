@@ -382,15 +382,16 @@ export class RouteVm {
   }
 
   /**
-   * 開啟「潛艇配置」(D-296):編輯某艘工坊潛艇自己的配件。等級用潛艇自己的(唯讀);沒填等級的艇以目前模擬等級為起點,
+   * 開啟「潛艇配置」(D-296):編輯某艘工坊潛艇自己的配件。等級用潛艇自己的(唯讀;`draftLevel` = 快速修改裡尚未送出的等級);沒填等級的艇以目前模擬等級為起點,
    * 儲存時一併存成這艘的等級。沒設定過配件的艇從全 1 級開始。
    */
-  openSubBuild(submarineId: string): void {
+  openSubBuild(submarineId: string, draftLevel?: number): void {
     const ws = this.store.workshops().find((w) => w.submarines.some((s) => s.id === submarineId));
     const sub = ws?.submarines.find((s) => s.id === submarineId);
     if (!ws || !sub) return;
-    const levelFixed = sub.progress !== undefined;
-    const level = sub.progress ? sub.progress.effective_level : Math.min(LIMITS.maxRouteSubLevel, Math.max(1, this.level()));
+    // 快速修改裡已調整、還沒送出的等級(draftLevel)優先顯示;這時等級由快速修改的「送出更新」一起存,配置對話框不動它
+    const levelFixed = sub.progress !== undefined || draftLevel !== undefined;
+    const level = draftLevel !== undefined ? Math.min(LIMITS.maxRouteSubLevel, Math.max(1, draftLevel)) : sub.progress ? sub.progress.effective_level : Math.min(LIMITS.maxRouteSubLevel, Math.max(1, this.level()));
     const baseParts: Parts | null = sub.build ? [sub.build.hull, sub.build.stern, sub.build.bow, sub.build.bridge] : null;
     const parts: Parts = baseParts ? [...baseParts] : [...DEFAULT_PARTS];
     this.draft.set({

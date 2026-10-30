@@ -99,6 +99,17 @@ describe('工坊潛艇作為配置來源(D-296)', () => {
   });
 
   describe('潛艇配置對話框', () => {
+    it('快速修改裡調整了還沒送出的等級:對話框帶入該等級並唯讀,儲存不動等級', () => {
+      store.fetched.set([ws([sub('s1', 1, { progress: prog(80), build: build() })])]);
+      vm.openSubBuild('s1', 95);
+      expect(vm.draft()!.level).toBe(95);
+      expect(vm.draft()!.sub!.levelFixed).toBe(true);
+      store.fetched.set([ws([sub('s2', 1, { build: build() })])]);
+      vm.openSubBuild('s2', 12);
+      expect(vm.draft()!.level).toBe(12);
+      expect(vm.draft()!.sub!.levelFixed).toBe(true);
+    });
+
     it('已有等級:唯讀;儲存只送配件;開著維修提醒且勾選時帶 mark_repaired', async () => {
       store.fetched.set([ws([sub('s1', 1, { progress: prog(80), build: build(), upkeep: { route_key: '1:OJ', route_sea: 1, route_points: [], voyages_done: 2, limit_voyages: 6, parts_sig: '3,1,2,4', current_sig: '3,1,2,4', repaired_at: null, updated_at: T } })])]);
       vm.openSubBuild('s1');
