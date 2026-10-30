@@ -129,6 +129,8 @@
       <div class="uf-comp ch-msg" role="status"><span>⚠</span><span>畫面顯示已發現 {{ m.screen }},目前標了 {{ m.draft }}。請對照截圖核對{{ uncertainCodes() ? '(可能是 ' + uncertainCodes() + ')' : '' }}。</span></div>
     } @else if (shot()?.result?.screen_count != null) {
       <div class="ch-ok" role="status">✓ 與畫面「已發現 {{ shot()!.result.screen_count }}」相符</div>
+    } @else if (shot()) {
+      <div class="uf-note ch-note">這張截圖沒有顯示「已發現目的地數」(例如派出畫面),無法自動核對點數,請對照截圖確認。</div>
     }
     @if (filledCodes()) {
       <div class="uf-note ch-note">{{ filledCodes() }} 在截圖上沒認出來,因為後面的點已發現而補上。</div>
