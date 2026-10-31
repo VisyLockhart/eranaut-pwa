@@ -182,7 +182,7 @@ describe('QuickEditDialog', () => {
     it('功能選單:四個項目對應四個區塊', () => {
       const { el } = open(1);
       const keys = Array.from(el.querySelectorAll('[data-qs]')).map((x) => x.getAttribute('data-qs'));
-      expect(keys).toEqual(['quick', 'config', 'upkeep', 'assist']);
+      expect(keys).toEqual(['quick', 'config', 'assist', 'upkeep']);
     });
   });
 

@@ -95,8 +95,8 @@ import type { IconName } from '../ui/icons';
                 </section>
                 @if (sub(); as s) {
                   <app-build-field [sub]="s" [dirty]="changes().config.length > 0" />
-                  <app-upkeep-field [sub]="s" [status]="r.status" [dirty]="changes().upkeep.length > 0" />
                   <app-leveling-field [sub]="s" [dirty]="changes().assist.length > 0" (jump)="goTo('config')" />
+                  <app-upkeep-field [sub]="s" [status]="r.status" [dirty]="changes().upkeep.length > 0" />
                 }
                 @if (formError()) { <div class="modal-error-text" role="alert">{{ formError() }}</div> }
               </div>
@@ -166,8 +166,8 @@ export class QuickEditDialog {
     return [
       { title: '快速修改', lines: c.quick },
       { title: '潛艇配置', lines: c.config },
-      { title: '維修提醒', lines: c.upkeep },
       { title: '航線輔助', lines: c.assist },
+      { title: '維修提醒', lines: c.upkeep },
     ].filter((g) => g.lines.length > 0);
   });
   protected readonly rail = computed(() => {
@@ -180,8 +180,8 @@ export class QuickEditDialog {
     return [
       { key: 'quick' as const, label: '快速修改', short: '快速', icon: 'server' as IconName, on: false, attn: false },
       { key: 'config' as const, label: '潛艇配置', short: '配置', icon: 'settings' as IconName, on: false, attn: false },
-      { key: 'upkeep' as const, label: '維修提醒', short: '維修', icon: 'wrench' as IconName, on: upOn, attn: changed },
       { key: 'assist' as const, label: '航線輔助', short: '輔助', icon: 'levelUp' as IconName, on: asOn, attn: asOn && !s?.build },
+      { key: 'upkeep' as const, label: '維修提醒', short: '維修', icon: 'wrench' as IconName, on: upOn, attn: changed },
     ];
   });
 
@@ -198,13 +198,13 @@ export class QuickEditDialog {
   protected onScroll(): void {
     const body = this.bodyEl()?.nativeElement;
     if (!body) return;
-    const keys = ['quick', 'config', 'upkeep', 'assist'] as const;
+    const keys = ['quick', 'config', 'assist', 'upkeep'] as const;
     let cur: (typeof keys)[number] = 'quick';
     for (const k of keys) {
       const el = body.querySelector<HTMLElement>(`[data-qs="${k}"]`);
       if (el && el.offsetTop - 24 <= body.scrollTop) cur = k;
     }
-    if (body.scrollTop + body.clientHeight >= body.scrollHeight - 2 && body.scrollTop > 0) cur = 'assist';
+    if (body.scrollTop + body.clientHeight >= body.scrollHeight - 2 && body.scrollTop > 0) cur = 'upkeep';
     if (cur !== this.active()) this.active.set(cur);
   }
 

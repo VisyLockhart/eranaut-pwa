@@ -107,9 +107,9 @@ html[data-theme='dark'] {
   /* 符文撥桿開關:方形滑軌 + 菱形滑塊 */
   .switch { width: 54px; height: 26px; }
   .switch .slider { background: var(--bg-elevated-2); border: 1px solid var(--steel-d); }
-  .switch .slider:before { width: 12px; height: 12px; left: 7px; top: 6px; background: var(--text-dim); transform: rotate(45deg); }
+  .switch .slider:before { width: 12px; height: 12px; left: 7px; top: 6px; background: var(--text-dim); transform: rotate(45deg); transform-origin: center; }
   .switch input:checked + .slider { background: var(--surface-raise); border-color: var(--gold); box-shadow: 0 0 10px var(--glow); }
-  .switch input:checked + .slider:before { transform: translateX(26px) rotate(45deg); background: var(--gold-b); }
+  .switch input:checked + .slider:before { transform: translateX(26px) rotate(45deg); transform-origin: center; background: var(--gold-b); }
   .switch input:focus-visible + .slider { outline: 1px solid var(--steel); outline-offset: 4px; }
 
   /* 分頁 / 符文分段:上下細線,選中的下方一顆金色菱形 */
