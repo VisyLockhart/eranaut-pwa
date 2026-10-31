@@ -95,7 +95,7 @@ describe('快速修改的維修提醒', () => {
     const { el, click, toggle, save, fixture } = setup();
     toggle(true);
     expect(el.querySelector('[data-qs="upkeep"] .qs-w.open')?.textContent).toContain('溺沒海 O→J');
-    expect(el.querySelector('.uk-step b')?.textContent).toBe('6');
+    expect(el.querySelector('[data-qs="upkeep"] .uk-step b')?.textContent).toBe('6');
     // 探索完成的艇,先改成探索中並填時間
     click('.uf-seg button', 0);
     for (const [f, v] of [['d', '0'], ['h', '2'], ['m', '0']] as const) {
@@ -104,7 +104,7 @@ describe('快速修改的維修提醒', () => {
       input.dispatchEvent(new Event('input'));
     }
     fixture.detectChanges();
-    expect(el.querySelector('.uk-note')?.textContent).toBe('送出後這趟算第 1 趟;第 6 趟返航時提醒維修。');
+    expect(el.querySelector('[data-qs="upkeep"] .uk-note')?.textContent).toBe('送出後這趟算第 1 趟;第 6 趟返航時提醒維修。');
     save();
     const req = http.expectOne('/api/workshops/w1/submarines/1');
     expect(req.request.body).toEqual({ position: 1, name: '阿爾法', status: 'exploring', remaining_minutes: 120, upkeep: { route_key: '1:OJ', limit_voyages: 6, already_done: 0 } });
@@ -117,12 +117,12 @@ describe('快速修改的維修提醒', () => {
   it('「已跑過幾趟」:步進器與說明跟著變,送出 already_done', async () => {
     const { el, click, toggle, save } = setup();
     toggle(true);
-    click('.uk-seg button', 1);
-    click('.uk-step button', 3); // 已跑過 ＋ → 2
-    expect(el.querySelectorAll('.uk-step b')[1]?.textContent).toBe('2');
-    expect(el.querySelector('.uk-note')?.textContent).toContain('記錄已跑 2 趟');
-    click('.uk-step button', 0); // 可跑趟數 − → 5
-    expect(el.querySelector('.uk-step b')?.textContent).toBe('5');
+    click('[data-qs="upkeep"] .uk-seg button', 1);
+    click('[data-qs="upkeep"] .uk-step button', 3); // 已跑過 ＋ → 2
+    expect(el.querySelectorAll('[data-qs="upkeep"] .uk-step b')[1]?.textContent).toBe('2');
+    expect(el.querySelector('[data-qs="upkeep"] .uk-note')?.textContent).toContain('記錄已跑 2 趟');
+    click('[data-qs="upkeep"] .uk-step button', 0); // 可跑趟數 − → 5
+    expect(el.querySelector('[data-qs="upkeep"] .uk-step b')?.textContent).toBe('5');
     save();
     const req = http.expectOne('/api/workshops/w1/submarines/1');
     expect(req.request.body.upkeep).toEqual({ route_key: '1:OJ', limit_voyages: 5, already_done: 2 });

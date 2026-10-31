@@ -1,12 +1,15 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import type { ProgressRoute } from '@eranaut/shared';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { foundOf, pointCode } from '../core/charts';
+import { DataStore } from '../core/data-store';
 import { circled } from '../core/format';
+import { unlockPayload } from '../core/pending-unlock';
+import { Toast } from '../core/toast';
 import { fmtExp, lvUp, minutesText, routeText } from '../core/leveling-vm';
 import { selFromKey, type DispatchInfo, type RouteSel } from '../core/dispatch-vm';
 import { unlockText } from '../core/dispatch';
 import { IconComponent } from '../ui/icon';
-import { LevelingPicker } from './leveling-picker';
+import { LevelingPicker, type PickerResult } from './leveling-picker';
 
 /**
  * 「這次派出哪條?」的選擇面板(D-291):手機是底部面板,桌機是置中對話框(沿用維修面板的 `uk-panel`)。
@@ -31,7 +34,7 @@ import { LevelingPicker } from './leveling-picker';
         </div>
         <div class="lv-body">
           @if (picking()) {
-            <app-leveling-picker [level]="i.start.level" [exp]="i.start.exp" [parts]="i.parts" (picked)="own($event)" (back)="pickingSet.set(false)" />
+            <app-leveling-picker [level]="i.start.level" [exp]="i.start.exp" [parts]="i.parts" [found]="found()" [busy]="saving()" [error]="saveError()" (confirmed)="confirmPick($event)" (back)="pickingSet.set(false)" />
           } @else {
             @for (o of i.options; track o.key) {
               <button type="button" class="lv-opt" [class.pref]="o.key === selected()" [attr.aria-pressed]="o.key === selected()" (click)="pick(o.key)">
@@ -65,7 +68,7 @@ import { LevelingPicker } from './leveling-picker';
             </div>
           }
         </div>
-        <div class="uk-foot"><div class="uk-foot-note">只改這一艘的選擇，按「送出更新」時才會存。</div></div>
+        <div class="uk-foot"><div class="uk-foot-note">{{ picking() && found() !== null ? '解鎖的航點按確認就會存到工坊；派出的路線只改這一艘，按「送出更新」時才會存。' : '只改這一艘的選擇，按「送出更新」時才會存。' }}</div></div>
       </div>
     </div>
   `,
@@ -91,6 +94,12 @@ export class DispatchSheet {
   protected readonly pickingSet = signal<boolean | null>(null);
   protected readonly picking = computed(() => this.pickingSet() ?? this.startPicking());
   protected downOn = false;
+  private readonly store = inject(DataStore);
+  private readonly toast = inject(Toast);
+  protected readonly saving = signal(false);
+  protected readonly saveError = signal<string | null>(null);
+  /** 這間工坊已發現的航點(D-311 快速解鎖);沒有海圖紀錄為 null */
+  protected readonly found = computed(() => foundOf(this.store.workshops().find((w) => w.id === this.info().sub.workshop_id)));
 
   // 模板事件處理式回傳 false 會被 preventDefault,所以用回傳 void 的方法(同快速修改)
   protected overlayDown(event: Event): void {
@@ -105,7 +114,24 @@ export class DispatchSheet {
     this.chosen.emit(selFromKey(key));
   }
 
-  protected own(route: ProgressRoute): void {
-    this.chosen.emit({ kind: 'own', route });
+  /** 選點器按下確認:有待解鎖的點先存到工坊(其他艇的建議由工坊資料即時重算),再處理路線 */
+  protected async confirmPick(r: PickerResult): Promise<void> {
+    const base = this.found();
+    if (r.unlock.length > 0 && base !== null) {
+      this.saving.set(true);
+      this.saveError.set(null);
+      try {
+        await this.store.saveCharts(this.info().sub.workshop_id, unlockPayload(base, r.unlock));
+      } catch {
+        this.saveError.set('解鎖沒有存成功，請檢查網路後再試一次。');
+        return;
+      } finally {
+        this.saving.set(false);
+      }
+      this.toast.show(`已解鎖 ${r.unlock.map(pointCode).join('、')}，其他艇的建議已更新`);
+    }
+    if (r.route) this.chosen.emit({ kind: 'own', route: r.route });
+    else if (this.startPicking()) this.closed.emit();
+    else this.pickingSet.set(false);
   }
 }

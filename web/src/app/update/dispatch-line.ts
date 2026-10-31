@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import type { SubmarineDto } from '@eranaut/shared';
+import { foundOf } from '../core/charts';
 import { DataStore } from '../core/data-store';
 import { matchByTime, unlockText } from '../core/dispatch';
 import { DispatchVm, isDispatch, resolveRoute, selKey, type RouteSel } from '../core/dispatch-vm';
@@ -50,6 +51,7 @@ import { DispatchSheet } from './dispatch-sheet';
           } @else if (matchedLabel(); as l) {
             <small class="dp-note">剩餘時間與「{{ l }}」吻合，派的是那條的話請改選。</small>
           }
+          @if (newUnlock()) { <small class="dp-note" role="status">有新解鎖的點，這一列選的路線沒有變；想看新的建議請改選。</small> }
           @if (chosen()?.plan?.problem === 'range') { <small class="dp-note warn">以這艘的配置，距離不夠（{{ chosen()!.plan.range }} / {{ chosen()!.plan.rangeCap }}）</small> }
           @if (i.current?.fallback; as f) { <small class="dp-note warn">條件組合：{{ f }}，這次改用練級推薦。</small> }
           @else if (i.current?.relaxedTo; as h) { <small class="dp-note">最長 {{ i.maxHours }} 小時內沒有路線，放寬到 {{ h }} 小時。</small> }
@@ -93,7 +95,24 @@ export class DispatchLine {
   protected readonly sheet = signal<'choose' | 'pick' | null>(null);
   protected readonly nonce = signal(0);
 
+  /** 這間工坊已發現的點數;選了路線(自己選、跟上一趟、不記)後若變多,提示有新解鎖的點(D-311):預設建議的列會自己跟著換,不必提示 */
+  private readonly foundSize = computed(() => {
+    const s = this.sub();
+    return foundOf(s ? this.store.workshops().find((w) => w.id === s.workshop_id) : undefined)?.size ?? 0;
+  });
+  private readonly baseline = signal<number | null>(null);
+  protected readonly newUnlock = computed(() => {
+    const k = this.sel()?.kind;
+    const base = this.baseline();
+    return (k === 'own' || k === 'last' || k === 'none') && base !== null && this.foundSize() > base;
+  });
+
   constructor() {
+    // 每次改選就重設基準
+    effect(() => {
+      this.sel();
+      untracked(() => this.baseline.set(this.foundSize()));
+    });
     // 條件組合要用已儲存的條件清單:載入(已載入則不重複)
     effect(() => {
       if (this.sub()?.progress?.assist_on) untracked(() => this.dispatch.start());
