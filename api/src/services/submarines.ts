@@ -1,7 +1,7 @@
 import { validateBuildInput } from './build.js';
 import {
   LIMITS,
-  SUBMARINE_STATUSES,
+  SUBMARINE_INPUT_STATUSES,
   ASSIST_MAX_HOURS,
   MAX_RECORDED_LEVEL,
   UPKEEP_LIMITS,
@@ -11,7 +11,7 @@ import {
   type ProgressInput,
   type UpkeepInput,
   type SubmarineFieldErrors,
-  type SubmarineStatus,
+  type SubmarineInputStatus,
   type SubmarinesBatchValidationErrorBody,
 } from '@eranaut/shared';
 
@@ -21,7 +21,7 @@ import {
 export interface ValidSubmarine {
   position: number;
   name: string | null;
-  status: SubmarineStatus;
+  status: SubmarineInputStatus;
   /** 只有探索中才有值 */
   remaining_minutes: number | null;
   /** 維修提醒(D-288):物件 = 開啟;null = 關閉;undefined = 不變 */
@@ -43,11 +43,11 @@ export function validateSubmarineInput(input: unknown): ItemResult {
   }
   const b = input as Record<string, unknown>;
 
-  // 位置:1~4 的整數(固定位置,D-43)
+  // 位置:1~20 的整數(1~4 = 排入格子、5~20 = 未排入,D-43、D-314)
   let position = 0;
   if (b.position === undefined || b.position === null) errors.position = 'required';
   else if (typeof b.position !== 'number') errors.position = 'invalid_type';
-  else if (!Number.isInteger(b.position) || b.position < 1 || b.position > LIMITS.maxSubmarinesPerWorkshop) errors.position = 'invalid_value';
+  else if (!Number.isInteger(b.position) || b.position < 1 || b.position > LIMITS.maxSubmarineRecords) errors.position = 'invalid_value';
   else position = b.position;
 
   // 名稱:選填,去頭尾空白,≤20 字
@@ -61,11 +61,11 @@ export function validateSubmarineInput(input: unknown): ItemResult {
     }
   }
 
-  let status: SubmarineStatus | null = null;
+  let status: SubmarineInputStatus | null = null;
   if (b.status === undefined || b.status === null) errors.status = 'required';
   else if (typeof b.status !== 'string') errors.status = 'invalid_type';
-  else if (!(SUBMARINE_STATUSES as readonly string[]).includes(b.status)) errors.status = 'invalid_value';
-  else status = b.status as SubmarineStatus;
+  else if (!(SUBMARINE_INPUT_STATUSES as readonly string[]).includes(b.status)) errors.status = 'invalid_value';
+  else status = b.status as SubmarineInputStatus;
 
   // 探索中:剩餘時間必填、正整數(D-118:總和必須 > 0)、不超過 UI 上限;探索完成:忽略
   let remaining: number | null = null;
@@ -184,7 +184,7 @@ export function validateSubmarinesBatch(input: unknown): BatchResult {
   if (list === undefined || list === null) return fail({ fields: { submarines: 'required' } });
   if (!Array.isArray(list)) return fail({ fields: { submarines: 'invalid_type' } });
   if (list.length === 0) return fail({ fields: { submarines: 'required' } });
-  if (list.length > LIMITS.maxSubmarinesPerWorkshop) return fail({ fields: { submarines: 'invalid_value' } });
+  if (list.length > LIMITS.maxSubmarineRecords) return fail({ fields: { submarines: 'invalid_value' } });
 
   const items: ValidSubmarine[] = [];
   const bad: { index: number; fields: SubmarineFieldErrors }[] = [];

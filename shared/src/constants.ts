@@ -8,9 +8,15 @@ export type Server = (typeof SERVERS)[number];
 export const DISTRICTS = ['海霧村', '薰衣草苗圃', '穹頂皓天', '高腳孤丘', '白銀鄉'] as const;
 export type District = (typeof DISTRICTS)[number];
 
-/** 潛艇狀態 */
-export const SUBMARINE_STATUSES = ['exploring', 'complete'] as const;
+/**
+ * 潛艇狀態。`registered` = 新登記(D-315):管理模式新增 / 複製出來、還沒派出過的潛艇;
+ * 只能由新增 / 複製產生,更新潛艇的請求只接受下面的 `SUBMARINE_INPUT_STATUSES`,第一次派出(探索中)後就不再有此狀態。
+ */
+export const SUBMARINE_STATUSES = ['exploring', 'complete', 'registered'] as const;
 export type SubmarineStatus = (typeof SUBMARINE_STATUSES)[number];
+/** 更新潛艇請求可以送的狀態(不含新登記) */
+export const SUBMARINE_INPUT_STATUSES = ['exploring', 'complete'] as const;
+export type SubmarineInputStatus = (typeof SUBMARINE_INPUT_STATUSES)[number];
 
 /** 預先提醒允許值,0 = 不預先提醒(D-135);前端下拉為 5、10、15、30、60、120 */
 export const NOTIFY_LEAD_MINUTES = [0, 5, 10, 15, 30, 60, 120] as const;
@@ -32,7 +38,10 @@ export const LIMITS = {
   captain: 20,
   addressDetail: 30,
   submarineName: 20,
+  /** 一間工坊的潛艇「格子」數(位置 1~4 = 排入,參與提醒與統計)= 建議上限;超過只提醒、不阻擋(D-313、D-314) */
   maxSubmarinesPerWorkshop: 4,
+  /** 一間工坊最多存幾艘(位置 5~20 = 未排入,不參與提醒與統計;技術上限,D-314) */
+  maxSubmarineRecords: 20,
   /** 儲存潛艇(航線模擬器,RS-25、RS-26):名稱字數、每位使用者組數上限、等級上限(繁中服,RS-20) */
   routeSubName: 20,
   maxRouteSubsPerUser: 30,

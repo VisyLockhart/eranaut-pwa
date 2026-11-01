@@ -5,7 +5,7 @@ import { DispatchVm, type DispatchInfo } from './dispatch-vm';
 import { DataStore } from './data-store';
 import { chartSummary, type ChartSummary } from './charts';
 import type { SubRow } from './submarine-form';
-import { circled, displayFor, isReady, type SubDisplay } from './format';
+import { circled, displayFor, isPlaced, isReady, stateDisplay, type SubDisplay } from './format';
 import { readJson, writeJson } from './storage';
 import { leadLabel } from './workshop-form';
 import type { SelectMeta, SelectOption } from '../ui/select';
@@ -21,6 +21,10 @@ export interface OverviewItem {
   workshop: WorkshopWithSubmarines;
   position: number;
   name: string;
+  /** 排入格子 ①~④(D-314);未排入的艇不提醒、不算待收,列表淡色顯示 */
+  placed: boolean;
+  /** 新登記(D-315):新增 / 複製出來、還沒派出過 */
+  registered: boolean;
   ready: boolean;
   etaMs: number | null;
   display: SubDisplay;
@@ -240,17 +244,21 @@ export class OverviewVm {
     const items: OverviewItem[] = [];
     for (const w of this.store.workshops()) {
       for (const s of w.submarines) {
+        const placed = isPlaced(s.position);
+        const registered = s.status === 'registered';
         const ready = isReady(s, now);
-        const etaMs = s.expected_return_at === null ? null : Date.parse(s.expected_return_at);
+        const etaMs = !placed || s.expected_return_at === null ? null : Date.parse(s.expected_return_at);
         items.push({
           id: s.id,
           workshop: w,
           position: s.position,
           name: s.name ?? `潛水艇 ${circled(s.position)}`,
+          placed,
+          registered,
           ready,
           etaMs,
-          display: displayFor(ready, etaMs, now),
-          upkeep: upkeepItem(s, now),
+          display: !placed ? stateDisplay('unplaced') : registered ? stateDisplay('registered') : displayFor(ready, etaMs, now),
+          upkeep: placed ? upkeepItem(s, now) : null,
           level: progressView(s),
           next: ready ? nextRoute(this.dispatch.info(s, now, 'pref')) : null,
         });

@@ -69,7 +69,7 @@ export class DemoRejected extends Error {
 type Phase = Pick<SubmarineDto, 'status' | 'expected_return_at'>;
 
 export function hasReturned(s: Phase, now: number): boolean {
-  return s.status === 'complete' || (s.expected_return_at !== null && Date.parse(s.expected_return_at) <= now);
+  return s.status !== 'exploring' || (s.expected_return_at !== null && Date.parse(s.expected_return_at) <= now);
 }
 
 /** 這艘潛艇自己的配件(D-296);沒設定回 undefined */

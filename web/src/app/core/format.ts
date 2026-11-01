@@ -1,4 +1,4 @@
-import type { SubmarineDto } from '@eranaut/shared';
+import { LIMITS, type SubmarineDto } from '@eranaut/shared';
 
 // 潛艇時間的顯示規則(沿用 demo 的 buildDisplay)。時間一律以台北時間(GMT+8)顯示(D-46:DB 存 UTC,轉換在前端)。
 
@@ -43,13 +43,20 @@ export interface SubDisplay {
   hint: string;
 }
 
-const CIRCLED = ['', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'];
+const CIRCLED = ['', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
 export function circled(position: number): string {
   return CIRCLED[position] || `#${position}`;
 }
 
-/** 潛艇是否可收:標記完成,或預計返航時間已到(前端倒數到 0 即視為可收,不必等重新抓資料) */
-export function isReady(sub: Pick<SubmarineDto, 'status' | 'expected_return_at'>, now: number): boolean {
+/** 位置 1~4 = 排入格子(參與提醒與統計);5 以後 = 未排入(D-314) */
+export function isPlaced(position: number): boolean {
+  return position <= LIMITS.maxSubmarinesPerWorkshop;
+}
+
+/** 潛艇是否可收:標記完成,或預計返航時間已到(前端倒數到 0 即視為可收,不必等重新抓資料)。未排入、新登記的不算 */
+export function isReady(sub: Pick<SubmarineDto, 'status' | 'expected_return_at'> & { position?: number }, now: number): boolean {
+  if (sub.position !== undefined && !isPlaced(sub.position)) return false;
+  if (sub.status === 'registered') return false;
   if (sub.status === 'complete') return true;
   return sub.expected_return_at !== null && Date.parse(sub.expected_return_at) <= now;
 }
@@ -61,6 +68,13 @@ export function formatRemaining(mins: number): string {
   if (d > 0) return `${d} 日 ${h} 時 ${pad2(m)} 分`;
   if (h > 0) return `${h} 時 ${pad2(m)} 分`;
   return `${m} 分`;
+}
+
+/** 新登記(D-315)與未排入(D-314)的顯示:沒有倒數,不算待收 */
+export function stateDisplay(kind: 'registered' | 'unplaced'): SubDisplay {
+  return kind === 'registered'
+    ? { time: '－', shortTime: '－', eta: '－', shortEta: '－', label: '新登記', hint: '尚未派出' }
+    : { time: '－', shortTime: '－', eta: '－', shortEta: '－', label: '未排入', hint: '不提醒・編排位置可排入' };
 }
 
 export function displayFor(ready: boolean, etaMs: number | null, now: number): SubDisplay {

@@ -7,7 +7,7 @@ import {
   NOTIFY_LEAD_MINUTES,
   ROUTE_FILTER_SORTS,
   SERVERS,
-  SUBMARINE_STATUSES,
+  SUBMARINE_INPUT_STATUSES,
   type FieldErrorCode,
   type NotifyLeadMinutes,
   type ChartOcrResultDto,
@@ -24,6 +24,7 @@ import {
 import { Observable, delay, of, throwError } from 'rxjs';
 import { SEAS } from '../route/core/data';
 import { DemoStore } from './demo-store';
+import { manageRoute } from './demo-manage';
 import {
   DemoRejected,
   applyProgressInput,
@@ -142,7 +143,7 @@ function validateWorkshop(b: Record<string, unknown>): { fields: Fields; value: 
 function validateSubmarine(b: Record<string, unknown>): { fields: Fields; value: SubmarineInput | null } {
   const fields: Fields = {};
   if (!isInt(b['position'])) fields['position'] = b['position'] === undefined ? 'required' : 'invalid_type';
-  else if (b['position'] < 1 || b['position'] > LIMITS.maxSubmarinesPerWorkshop) fields['position'] = 'invalid_value';
+  else if (b['position'] < 1 || b['position'] > LIMITS.maxSubmarineRecords) fields['position'] = 'invalid_value';
 
   let name: string | null = null;
   if (b['name'] !== undefined && b['name'] !== null) {
@@ -156,7 +157,7 @@ function validateSubmarine(b: Record<string, unknown>): { fields: Fields; value:
 
   const status = b['status'];
   if (typeof status !== 'string') fields['status'] = status === undefined ? 'required' : 'invalid_type';
-  else if (!(SUBMARINE_STATUSES as readonly string[]).includes(status)) fields['status'] = 'invalid_value';
+  else if (!(SUBMARINE_INPUT_STATUSES as readonly string[]).includes(status)) fields['status'] = 'invalid_value';
 
   let minutes: number | null = null;
   if (status === 'exploring') {
@@ -324,6 +325,10 @@ export class DemoBackend extends HttpBackend {
       }
     }
     if (path === '/api/charts/ocr' && method === 'POST') return ok(fakeChartOcr(), OCR_LATENCY_MS);
+
+    // 工坊管理模式(D-313~D-315):新增 / 刪除 / 位置編輯 / 搬移與複製
+    const managed = manageRoute({ store: this.store, decorate: (s, now) => this.decorate(s, now) }, method, path, b);
+    if (managed) return new Reply(managed.status, managed.body);
 
     const ws = /^\/api\/workshops\/([^/]+)(?:\/submarines(?:\/(\d+))?)?$/.exec(path);
     if (ws) {
@@ -649,7 +654,7 @@ export class DemoBackend extends HttpBackend {
 
   private updateBatch(workshop: WorkshopWithSubmarines, b: Record<string, unknown>): Reply {
     const list = b['submarines'];
-    if (!Array.isArray(list) || list.length === 0 || list.length > LIMITS.maxSubmarinesPerWorkshop) {
+    if (!Array.isArray(list) || list.length === 0 || list.length > LIMITS.maxSubmarineRecords) {
       return fail(400, { error: 'validation_failed', fields: { submarines: Array.isArray(list) ? 'invalid_value' : 'required' } });
     }
     const items: { index: number; fields: Fields }[] = [];

@@ -4,7 +4,7 @@
 // 資料來源:耐久損耗在遊戲資料採礦檔裡沒有,目前只有玩家實測的「零件撐到壞掉的趟數」(單一來源)。
 // 因此資料集每筆都帶 `source` / `verified`,來源待補,Claude 不自填;趟數可由使用者手動修改。
 
-import type { RoutePartKey } from './constants.js';
+import type { RoutePartKey, SubmarineStatus } from './constants.js';
 
 export type UpkeepParts = Record<RoutePartKey, number>;
 
@@ -108,12 +108,12 @@ export function upkeepPhase(voyagesDone: number, limit: number, returned: boolea
 export function nextVoyagesDone(
   current: number,
   limit: number,
-  prev: { status: 'exploring' | 'complete'; expected_return_at: string | null },
-  next: { status: 'exploring' | 'complete' },
+  prev: { status: SubmarineStatus; expected_return_at: string | null },
+  next: { status: SubmarineStatus },
   now: Date,
 ): { voyages_done: number; repaired: boolean } {
   if (next.status !== 'exploring') return { voyages_done: current, repaired: false };
-  const prevReturned = prev.status === 'complete' || (prev.expected_return_at !== null && new Date(prev.expected_return_at).getTime() <= now.getTime());
+  const prevReturned = prev.status !== 'exploring' || (prev.expected_return_at !== null && new Date(prev.expected_return_at).getTime() <= now.getTime());
   if (!prevReturned) return { voyages_done: current, repaired: false };
   if (current >= limit) return { voyages_done: 1, repaired: true };
   return { voyages_done: current + 1, repaired: false };

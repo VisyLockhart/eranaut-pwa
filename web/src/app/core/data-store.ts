@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { BuildInput, MaintenanceDto, OverviewDto, ProgressInput, SubmarineDto, SubmarineInput, UpkeepPatch, SubmarinesUpdateResult, WorkshopChartsInput, WorkshopDto, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
+import type { BuildInput, MaintenanceDto, SubmarineCreateInput, SubmarinesChangeResult, SubmarinesLayoutInput, SubmarinesTransferInput, OverviewDto, ProgressInput, SubmarineDto, SubmarineInput, UpkeepPatch, SubmarinesUpdateResult, WorkshopChartsInput, WorkshopDto, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
 import { Api } from './api';
 import { Auth } from './auth';
 import { isReady } from './format';
@@ -148,6 +148,30 @@ export class DataStore {
   async updateSubmarine(workshopId: string, input: SubmarineInput): Promise<SubmarinesUpdateResult> {
     const result = await this.api.updateSubmarine(workshopId, input);
     this.applySubmarines(workshopId, result.submarines);
+    return result;
+  }
+
+  // ---- 工坊管理模式(D-313~D-315) ----
+  // 回應含受影響工坊的「全部」潛艇,直接整坊取代(刪除、重排後不能用位置合併)。
+
+  async createSubmarine(workshopId: string, input: SubmarineCreateInput): Promise<SubmarinesChangeResult> {
+    return this.applyChange(await this.api.createSubmarine(workshopId, input));
+  }
+  async deleteSubmarines(workshopId: string, submarineIds: string[]): Promise<SubmarinesChangeResult> {
+    return this.applyChange(await this.api.deleteSubmarines(workshopId, { submarine_ids: submarineIds }));
+  }
+  async layoutSubmarines(workshopId: string, input: SubmarinesLayoutInput): Promise<SubmarinesChangeResult> {
+    return this.applyChange(await this.api.layoutSubmarines(workshopId, input));
+  }
+  async transferSubmarines(input: SubmarinesTransferInput): Promise<SubmarinesChangeResult> {
+    return this.applyChange(await this.api.transferSubmarines(input));
+  }
+
+  private applyChange(result: SubmarinesChangeResult): SubmarinesChangeResult {
+    const byId = new Map(result.workshops.map((w) => [w.workshop_id, w.submarines]));
+    this.fetched.update((list) => list.map((w) => (byId.has(w.id) ? { ...w, submarines: byId.get(w.id)! } : w)));
+    this.persist();
+    void this.refresh();
     return result;
   }
 

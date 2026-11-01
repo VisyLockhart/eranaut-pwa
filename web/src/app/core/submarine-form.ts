@@ -6,7 +6,7 @@ import {
   type SubmarineDto,
   type SubmarineFieldErrors,
   type SubmarineInput,
-  type SubmarineStatus,
+  type SubmarineInputStatus,
 } from '@eranaut/shared';
 import type { RouteSel } from './dispatch-vm';
 import { displayFor } from './format';
@@ -32,7 +32,7 @@ export interface SubRow {
   /** 1~4,固定位置,送出時以位置識別潛艇(D-43) */
   position: number;
   name: string;
-  status: SubmarineStatus;
+  status: SubmarineInputStatus;
   /** 日、時、分以字串保存(輸入框內容);空白視為 0(D-156) */
   d: string;
   h: string;
@@ -53,7 +53,7 @@ export interface SubRow {
   route?: RouteSel;
 }
 
-export function newRow(key: number, position: number, name: string, status: SubmarineStatus, added: boolean): SubRow {
+export function newRow(key: number, position: number, name: string, status: SubmarineInputStatus, added: boolean): SubRow {
   return { key, position, name, status, d: '', h: '', m: '', added, base: null, startedAt: 0, paused: false };
 }
 
@@ -122,7 +122,8 @@ export function toSubmarineInput(row: SubRow, remainingMinutes: number | null): 
 
 /** 從既有潛艇建立一列:名稱與狀態沿用,時間讓使用者重填(對照遊戲畫面,與 demo 一致) */
 export function rowFromSubmarine(key: number, sub: SubmarineDto): SubRow {
-  return newRow(key, sub.position, sub.name ?? '', sub.status, false);
+  // 新登記(D-315)的艇在表單裡預設填「探索中」:第一次派出就是填剩餘時間送出
+  return newRow(key, sub.position, sub.name ?? '', sub.status === 'registered' ? 'exploring' : sub.status, false);
 }
 
 /**

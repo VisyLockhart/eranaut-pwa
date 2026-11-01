@@ -3,18 +3,21 @@ import type { WorkshopDto } from '@eranaut/shared';
 import { RouterLink } from '@angular/router';
 import { DataStore } from '../core/data-store';
 import { circled } from '../core/format';
-import { OverviewVm, addressLine, upkeepText, wsInfo, wsMeta } from '../core/overview-vm';
+import { ManageVm } from '../core/manage-vm';
+import { OverviewVm, addressLine, upkeepText, wsInfo, wsMeta, type OverviewItem } from '../core/overview-vm';
 import { UpkeepVm } from '../core/upkeep-vm';
 import { WorkshopsVm } from '../core/workshops-vm';
 import { IconComponent } from '../ui/icon';
 import { SelectField } from '../ui/select';
 import { LevelBadge, LevelTag, NextRouteTag } from './level-tag';
+import { ManageBar } from './manage-bar';
+import { MgBox, SubFlags } from './manage-bits';
 import { OverviewSort } from './overview-sort';
 import { UpkeepTag } from './upkeep-bits';
 
 @Component({
   selector: 'app-overview-desktop',
-  imports: [IconComponent, RouterLink, UpkeepTag, LevelBadge, LevelTag, NextRouteTag, SelectField, OverviewSort],
+  imports: [IconComponent, RouterLink, UpkeepTag, LevelBadge, LevelTag, NextRouteTag, SelectField, OverviewSort, ManageBar, MgBox, SubFlags],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './overview-desktop.html',
   host: { style: 'display: contents' },
@@ -23,6 +26,17 @@ export class OverviewDesktop {
   protected readonly vm = inject(OverviewVm);
   protected readonly store = inject(DataStore);
   protected readonly wsVm = inject(WorkshopsVm);
+  protected readonly mg = inject(ManageVm);
+  /** 管理模式開著:點一列 = 勾選 / 取消;平常 = 快速修改 */
+  protected tap(item: OverviewItem): void {
+    if (this.mg.active()) this.mg.toggle(item.id);
+    else this.vm.openQuickEdit(item);
+  }
+  protected tapSpace(event: Event, item: OverviewItem): void {
+    if (!this.mg.active()) return;
+    event.preventDefault();
+    this.mg.toggle(item.id);
+  }
   private readonly upkeep = inject(UpkeepVm);
   protected readonly circled = circled;
   protected readonly wsMeta = wsMeta;

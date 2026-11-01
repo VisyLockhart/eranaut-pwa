@@ -93,6 +93,7 @@
   </div>
 </div>
 <div class="ov-sort-sum">{{ vm.sortSummary().long }}</div>
+<app-manage-bar />
 
 @if (store.loadError() && !store.loaded()) {
   <div class="up-empty">讀取資料失敗。<br /><button class="ghost-btn" style="margin-top: 12px; max-width: 160px" (click)="store.refresh()">重試</button></div>
@@ -108,8 +109,8 @@
     }
   </div>
 } @else if (store.view() === 'list') {
-  <div class="table-wrap ov-table" [class.with-ws]="showWsCol()" [class.no-prog]="!showProgCol()">
-    <div class="table-head"><div></div><div title="潛艇編號">編號</div><div>潛水艇</div>@if (showWsCol()) { <div>工坊</div> }@if (showProgCol()) { <div>練級・維修</div> }<div>狀態</div><div>剩餘時間</div><div>預計返航</div></div>
+  <div class="table-wrap ov-table" [class.managing]="mg.active()" [class.with-ws]="showWsCol()" [class.no-prog]="!showProgCol()">
+    <div class="table-head">@if (mg.active()) { <button type="button" class="mg-allbox" (click)="mg.toggleAll()" [attr.aria-label]="mg.selectState() === 'all' ? '取消全選' : '全選'" [attr.aria-checked]="mg.selectState() === 'all' ? true : mg.selectState() === 'some' ? 'mixed' : false" role="checkbox"><app-mg-box [state]="mg.selectState()" /></button> } @else { <div></div> }<div title="潛艇編號">編號</div><div>潛水艇</div>@if (showWsCol()) { <div>工坊</div> }@if (showProgCol()) { <div>練級・維修</div> }<div>狀態</div><div>剩餘時間</div><div>預計返航</div></div>
     @for (g of sections(); track g.key) {
       @if (g.group; as grp) {
         <div class="ov-ghead table-ghead">
@@ -121,13 +122,17 @@
         </div>
       }
       @for (item of g.items; track item.id) {
-        <div class="qe table-row" [class.ready]="item.ready" role="button" tabindex="0" [attr.aria-label]="'快速修改 ' + item.name" (click)="vm.openQuickEdit(item)" (keydown.enter)="vm.openQuickEdit(item)">
+        <div class="qe table-row" [class.ready]="item.ready" [attr.role]="mg.active() ? 'checkbox' : 'button'" tabindex="0" [attr.aria-checked]="mg.active() ? mg.isPicked(item.id) : null" [attr.aria-label]="(mg.active() ? '選取 ' : '快速修改 ') + item.name" [class.picked]="mg.isPicked(item.id)" [class.is-idle]="!item.placed || item.registered" [class.dim]="!item.placed" (click)="tap(item)" (keydown.enter)="tap(item)" (keydown.space)="tapSpace($event, item)">
+          @if (mg.active()) {
+            <div class="mg-cell"><app-mg-box [state]="mg.isPicked(item.id) ? 'all' : 'none'" /></div>
+          } @else {
           <div style="display: flex; align-items: center; justify-content: center; position: relative">
             @if (!item.ready) { <span class="row-ring pulse-ring" style="border-color: var(--accent)"></span> }
             <span class="row-dot" [class.pulse-dot]="!item.ready" style="width: 8px; height: 8px" [style.background]="item.ready ? 'var(--amber)' : 'var(--progress)'"></span>
           </div>
+          }
           <div class="sub-no">{{ circled(item.position) }}</div>
-          <div class="t-sub">{{ item.name }}<app-level-badge [item]="item.level" /><app-next-route [item]="item.next" /></div>
+          <div class="t-sub">{{ item.name }}<app-sub-flags [registered]="item.registered" [placed]="item.placed" /><app-level-badge [item]="item.level" /><app-next-route [item]="item.next" /></div>
           @if (showWsCol()) {
             <div class="t-ws ws-tooltip-wrap">
               <div class="t-ws-name">{{ item.workshop.name }}</div>
@@ -147,6 +152,7 @@
         </div>
       }
     }
+    @if (mg.active()) { <button type="button" class="mg-addrow" (click)="mg.addSubmarine()" [disabled]="mg.busy()"><app-icon name="plus" [size]="16" />新增潛艇</button> }
   </div>
 } @else {
   @for (g of sections(); track g.key) {
@@ -161,8 +167,9 @@
     }
     <div class="card-grid" [class.ov-grouped]="g.group">
       @for (item of g.items; track item.id) {
-        <div class="qe d-card" [class.ready]="item.ready" role="button" tabindex="0" [attr.aria-label]="'快速修改 ' + item.name" (click)="vm.openQuickEdit(item)" (keydown.enter)="vm.openQuickEdit(item)">
+        <div class="qe d-card" [class.ready]="item.ready" [attr.role]="mg.active() ? 'checkbox' : 'button'" tabindex="0" [attr.aria-checked]="mg.active() ? mg.isPicked(item.id) : null" [attr.aria-label]="(mg.active() ? '選取 ' : '快速修改 ') + item.name" [class.picked]="mg.isPicked(item.id)" [class.is-idle]="!item.placed || item.registered" [class.dim]="!item.placed" (click)="tap(item)" (keydown.enter)="tap(item)" (keydown.space)="tapSpace($event, item)">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px">
+            @if (mg.active()) { <span class="mg-card-box"><app-mg-box [state]="mg.isPicked(item.id) ? 'all' : 'none'" /></span> }
             <div class="status-pill" [class.ready]="item.ready">
               <span class="pill-dot-wrap">
                 @if (!item.ready) { <span class="pill-ring pulse-ring" style="border-color: var(--accent)"></span> }
@@ -172,7 +179,7 @@
             </div>
             <div class="sub-no">{{ circled(item.position) }}</div>
           </div>
-          <div class="d-card-sub">{{ item.name }}<app-level-badge [item]="item.level" /></div>
+          <div class="d-card-sub">{{ item.name }}<app-sub-flags [registered]="item.registered" [placed]="item.placed" /><app-level-badge [item]="item.level" /></div>
           <app-next-route [item]="item.next" />
           @if (item.upkeep) { <div class="card-uk"><app-upkeep-tag [item]="item.upkeep" /></div> }
           @if (item.level) { <div class="card-lv"><app-level-tag [item]="item.level" /></div> }

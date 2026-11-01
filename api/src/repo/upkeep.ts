@@ -1,4 +1,4 @@
-import type { SubmarineDto, UpkeepDto, UpkeepParts } from '@eranaut/shared';
+import type { SubmarineDto, SubmarineStatus, UpkeepDto, UpkeepParts } from '@eranaut/shared';
 import { nextVoyagesDone, upkeepPartsSig } from '@eranaut/shared';
 import type { Db } from '../db/index.js';
 
@@ -120,8 +120,8 @@ export function resyncAfterRepair(db: Db, submarineId: string, partsSig: string,
 export function countVoyage(
   db: Db,
   submarineId: string,
-  prev: { status: 'exploring' | 'complete'; expected_return_at: string | null },
-  next: { status: 'exploring' | 'complete' },
+  prev: { status: SubmarineStatus; expected_return_at: string | null },
+  next: { status: SubmarineStatus },
   now: Date,
 ): void {
   const cur = getUpkeepRow(db, submarineId);

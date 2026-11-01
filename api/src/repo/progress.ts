@@ -36,7 +36,7 @@ type Phase = { status: SubmarineStatus; expected_return_at: string | null };
 
 /** 這艘潛艇在 `now` 是否已返航(探索完成,或預計返航時間已過) */
 export function hasReturned(s: Phase, now: Date): boolean {
-  return s.status === 'complete' || (s.expected_return_at !== null && new Date(s.expected_return_at).getTime() <= now.getTime());
+  return s.status !== 'exploring' || (s.expected_return_at !== null && new Date(s.expected_return_at).getTime() <= now.getTime());
 }
 
 function pendingOf(r: Row): (ProgressRoute & { exp: number }) | null {

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { OverviewDto, SubmarineDto } from '@eranaut/shared';
+import type { OverviewDto, SubmarineDto, SubmarineStatus } from '@eranaut/shared';
 import type { Db } from '../db/index.js';
 import { expectedReturnAt, type ValidSubmarine } from '../services/submarines.js';
 import { attachBuild } from './build.js';
@@ -70,7 +70,7 @@ export function upsertSubmarines(db: Db, userId: string, workshopId: string, ite
     (db.prepare('SELECT id, position, status, expected_return_at FROM submarines WHERE workshop_id = ?').all(workshopId) as {
       id: string;
       position: number;
-      status: 'exploring' | 'complete';
+      status: SubmarineStatus;
       expected_return_at: string | null;
     }[]).map((r) => [r.position, r]),
   );

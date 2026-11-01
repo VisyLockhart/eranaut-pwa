@@ -1,4 +1,4 @@
-import type { District, NotifyLeadMinutes, RouteFilterSort, Server, SubmarineStatus } from './constants.js';
+import type { District, NotifyLeadMinutes, RouteFilterSort, Server, SubmarineInputStatus, SubmarineStatus } from './constants.js';
 
 // 公開 API 的請求/回應型別(D-140)。JSON 欄位沿用資料表的 snake_case(SCHEMA §8)。
 
@@ -42,7 +42,7 @@ export interface ValidationErrorBody {
 export interface SubmarineDto {
   id: string;
   workshop_id: string;
-  /** 1~4,固定位置;前端顯示為圈號 ①②③④ */
+  /** 1~4 = 排入格子(圈號 ①②③④,參與提醒與統計);5~20 = 未排入(停放,D-314) */
   position: number;
   name: string | null;
   status: SubmarineStatus;
@@ -183,7 +183,7 @@ export interface UpkeepRepairedInput {
 export interface SubmarineInput {
   position: number;
   name?: string | null;
-  status: SubmarineStatus;
+  status: SubmarineInputStatus;
   remaining_minutes?: number | null;
   /** 維修提醒:物件 = 開啟;null = 關閉;省略 = 不變(D-288) */
   upkeep?: UpkeepInput | null;
@@ -257,6 +257,45 @@ export interface SubmarinesUpdateResult {
   reminder_skipped_positions: number[];
 }
 
+// ---- 工坊管理模式(D-313、D-314、D-315) ----
+
+/** `POST /api/workshops/:id/submarines`:新增一艘「新登記」的潛艇(名稱選填),放在第一個空位 */
+export interface SubmarineCreateInput {
+  name?: string | null;
+}
+
+/** `POST /api/workshops/:id/submarines/delete`:刪除多艘;刪除後該工坊剩下的潛艇依原順序重排成 1、2、3… */
+export interface SubmarinesDeleteInput {
+  submarine_ids: string[];
+}
+
+export type SubmarineTransferMode = 'move' | 'copy';
+
+/**
+ * `POST /api/submarines/transfer`:搬移 / 複製。
+ * `move`:`target_workshop_ids` 只能一間、且不是來源工坊;原艇換工坊(等級、配件、維修提醒、航線輔助、狀態一起帶走)。
+ * `copy`:可多間(含來源工坊 = 原地複製);複本只帶名稱、配件、等級與經驗,狀態是「新登記」(D-313 ②)。
+ * 放進目的工坊的第一個空位;超過 4 艘的放在「未排入」(位置 5~),不阻擋;超過 20 艘回 409。
+ */
+export interface SubmarinesTransferInput {
+  source_workshop_id: string;
+  submarine_ids: string[];
+  mode: SubmarineTransferMode;
+  target_workshop_ids: string[];
+}
+
+/** `POST /api/workshops/:id/submarines/layout`:位置編輯。`slots` 固定 4 格(null = 空位),`unplaced` = 其餘未排入的潛艇;兩者合起來必須剛好是該工坊全部的潛艇 */
+export interface SubmarinesLayoutInput {
+  slots: (string | null)[];
+  unplaced?: string[];
+}
+
+/** 管理模式端點的共同回應:受影響工坊的全部潛艇;新增 / 複製另帶新潛艇的 id */
+export interface SubmarinesChangeResult {
+  workshops: { workshop_id: string; submarines: SubmarineDto[] }[];
+  created_ids: string[];
+}
+
 // ---- 截圖辨識(D-49、D-61、D-62、D-119、D-125、D-126;SCHEMA §8.1) ----
 // OCR API 只辨識、不寫資料庫、不存圖片;辨識結果交給前端確認後,再走更新潛艇端點(D-49)。
 
@@ -290,7 +329,7 @@ export interface OcrSubmarineDto {
   position: number;
   /** 辨識到的名稱;預設名稱的前綴字形誤認會校正成「潛水艇-N」。讀不到為 null(前端沿用既有名稱) */
   name: string | null;
-  status: SubmarineStatus;
+  status: SubmarineInputStatus;
   /** `exploring` 才有值;沒出現的單位為 0。`complete` 或讀不出時間時三者皆 null */
   days: number | null;
   hours: number | null;

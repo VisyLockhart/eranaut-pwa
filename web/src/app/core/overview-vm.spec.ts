@@ -180,3 +180,30 @@ describe('OverviewVm 統計區收合(D-166)', () => {
     expect(TestBed.inject(OverviewVm).statsOpen()).toBe(false);
   });
 });
+
+describe('OverviewVm 未排入與新登記(D-314、D-315)', () => {
+  it('位置 5 以上與新登記:不算待收、不進下一艘返航、顯示專屬標籤', () => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+    const store = TestBed.inject(DataStore);
+    const vm = TestBed.inject(OverviewVm);
+    store.now.set(NOW);
+    store.fetched.set([
+      ws('A', [
+        sub('A', 1, 120),
+        sub('A', 2, null, 'complete'),
+        { ...sub('A', 3, null), status: 'registered' },
+        sub('A', 5, 10),
+        sub('A', 6, null, 'complete'),
+      ]),
+    ]);
+    const byId = new Map(vm.items().map((i) => [i.id, i]));
+    expect(vm.stats()).toMatchObject({ submarines: 5, ready: 1 });
+    expect(vm.nextReturn()?.id).toBe('A-1');
+    expect(byId.get('A-3')).toMatchObject({ registered: true, placed: true, ready: false });
+    expect(byId.get('A-3')!.display.label).toBe('新登記');
+    expect(byId.get('A-5')).toMatchObject({ placed: false, ready: false, etaMs: null });
+    expect(byId.get('A-5')!.display.label).toBe('未排入');
+    expect(byId.get('A-6')!.ready).toBe(false);
+  });
+});

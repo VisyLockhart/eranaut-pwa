@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { applyExp, type AssistMode, type ProgressInput, type ProgressRoute, type RouteFilterDto, type SubmarineDto } from '@eranaut/shared';
 import { comboSuggest } from './assist-combo';
 import { foundCodes, hasReturned, modeFor, nextStart, sameRoute, suggestLevel, suggestTiers, unlockTarget, type AssistView, type FoundCodes, type Goal, type NextStart, type Parts, type Suggestion, type UnlockTarget } from './dispatch';
+import { isPlaced } from './format';
 import { foundOf } from './charts';
 import { DataStore } from './data-store';
 import { planRoute, routeText, type RoutePlan } from './leveling-vm';
@@ -225,7 +226,7 @@ export class DispatchVm {
     const foundIds = foundOf(ws);
     return {
       // 工坊有海圖紀錄時,建議先避開還沒發現的點(D-293)
-      unlock: ws ? unlockTarget(ws.submarines, sub) : null,
+      unlock: ws ? unlockTarget(ws.submarines.filter((s) => isPlaced(s.position)), sub) : null,
       found: foundCodes(foundIds),
       foundIds,
       filters: { saved: this.filters.saved(), loaded: this.filters.loaded() },

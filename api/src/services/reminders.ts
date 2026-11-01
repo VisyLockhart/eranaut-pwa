@@ -1,4 +1,4 @@
-import { NotifyMethod } from '@eranaut/shared';
+import { LIMITS, NotifyMethod, type SubmarineStatus } from '@eranaut/shared';
 import type { Db } from '../db/index.js';
 import {
   deleteDelivery,
@@ -32,7 +32,7 @@ interface WorkshopRow {
 interface SubmarineRow {
   id: string;
   position: number;
-  status: 'exploring' | 'complete';
+  status: SubmarineStatus;
   expected_return_at: string | null;
 }
 
@@ -82,7 +82,7 @@ export function syncWorkshopReminders(db: Db, workshopId: string, now: Date): Sy
   if (!ws) return { leadSkipped: [] };
   const bits = (db.prepare('SELECT notify_methods FROM users WHERE id = ?').get(ws.user_id) as { notify_methods: number }).notify_methods;
   const methods = methodsFromBits(bits);
-  const subs = db.prepare('SELECT id, position, status, expected_return_at FROM submarines WHERE workshop_id = ?').all(workshopId) as SubmarineRow[];
+  const subs = db.prepare('SELECT id, position, status, expected_return_at FROM submarines WHERE workshop_id = ? AND position <= ?').all(workshopId, LIMITS.maxSubmarinesPerWorkshop) as SubmarineRow[];
 
   const candidates = methods.length === 0 ? [] : computeCandidates(ws.notify_batched === 1, ws.notify_lead_minutes, subs);
   const existing = listRemindersForWorkshop(db, workshopId);

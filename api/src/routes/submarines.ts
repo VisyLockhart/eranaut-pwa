@@ -11,6 +11,7 @@ import { validateProgressInput, validateSubmarineInput, validateSubmarinesBatch 
 import { applyBuild, validateBuildInput } from '../services/build.js';
 import { applyUpkeepPatch, repairSubmarines, UpkeepRejected } from '../services/upkeep.js';
 import { updateSubmarines } from '../services/updates.js';
+import { createSubmarine, deleteSubmarines, layoutSubmarines, ManageRejected, transferSubmarines } from '../services/manage.js';
 
 // 路由只處理 HTTP;驗證與時間計算在 services/,SQL 在 repo/(D-131 ③)。
 
@@ -52,6 +53,20 @@ export function registerSubmarineRoutes(app: FastifyInstance, deps: AppDeps, req
       return reply.code(400).send({ error: 'validation_failed', fields: {}, items: [{ index, fields: { [field]: 'invalid_value' } }], [`${field}_reason`]: e.reason });
     }
   });
+
+  // 工坊管理模式(D-313~D-315):新增 / 刪除 / 位置編輯 / 搬移與複製。回受影響工坊的全部潛艇(created_ids = 新增或複製出來的)
+  const manage = <P>(run: (userId: string, params: P, body: unknown) => unknown) => async (req: { session?: { userId: string } | null; params: P; body: unknown }, reply: { code: (n: number) => { send: (b: unknown) => unknown } }) => {
+    try {
+      return run(req.session!.userId, req.params, req.body);
+    } catch (e) {
+      if (!(e instanceof ManageRejected)) throw e;
+      return reply.code(e.status).send(e.code === 'not_found' ? notFound : { error: e.code });
+    }
+  };
+  app.post<{ Params: { id: string } }>('/api/workshops/:id/submarines', opts, manage((u, p: { id: string }, b) => createSubmarine(db, u, p.id, b, deps.now())));
+  app.post<{ Params: { id: string } }>('/api/workshops/:id/submarines/delete', opts, manage((u, p: { id: string }, b) => deleteSubmarines(db, u, p.id, b, deps.now())));
+  app.post<{ Params: { id: string } }>('/api/workshops/:id/submarines/layout', opts, manage((u, p: { id: string }, b) => layoutSubmarines(db, u, p.id, b, deps.now())));
+  app.post('/api/submarines/transfer', opts, manage((u, _p: unknown, b) => transferSubmarines(db, u, b, deps.now())));
 
   // 單艘快速修改(D-117),回應格式同上但 submarines 只有那一艘;位置在網址,body 的 position 省略時以網址為準,有帶則必須一致
   app.put<{ Params: { id: string; position: string } }>('/api/workshops/:id/submarines/:position', opts, async (req, reply) => {

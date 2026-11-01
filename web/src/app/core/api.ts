@@ -23,6 +23,11 @@ import type {
   RouteSubInput,
   SubmarineDto,
   SubmarineInput,
+  SubmarinesChangeResult,
+  SubmarineCreateInput,
+  SubmarinesDeleteInput,
+  SubmarinesLayoutInput,
+  SubmarinesTransferInput,
   SubmarinesUpdateResult,
   UpkeepPatch,
   WorkshopDto,
@@ -72,6 +77,20 @@ export class Api {
   /** 單艘快速修改:位置取自網址 */
   updateSubmarine(workshopId: string, input: SubmarineInput): Promise<SubmarinesUpdateResult> {
     return firstValueFrom(this.http.put<SubmarinesUpdateResult>(`/api/workshops/${encodeURIComponent(workshopId)}/submarines/${input.position}`, input));
+  }
+
+  // ---- 工坊管理模式(D-313~D-315):新增 / 刪除 / 位置編輯 / 搬移與複製 ----
+  createSubmarine(workshopId: string, input: SubmarineCreateInput): Promise<SubmarinesChangeResult> {
+    return firstValueFrom(this.http.post<SubmarinesChangeResult>(`/api/workshops/${encodeURIComponent(workshopId)}/submarines`, input));
+  }
+  deleteSubmarines(workshopId: string, input: SubmarinesDeleteInput): Promise<SubmarinesChangeResult> {
+    return firstValueFrom(this.http.post<SubmarinesChangeResult>(`/api/workshops/${encodeURIComponent(workshopId)}/submarines/delete`, input));
+  }
+  layoutSubmarines(workshopId: string, input: SubmarinesLayoutInput): Promise<SubmarinesChangeResult> {
+    return firstValueFrom(this.http.post<SubmarinesChangeResult>(`/api/workshops/${encodeURIComponent(workshopId)}/submarines/layout`, input));
+  }
+  transferSubmarines(input: SubmarinesTransferInput): Promise<SubmarinesChangeResult> {
+    return firstValueFrom(this.http.post<SubmarinesChangeResult>('/api/submarines/transfer', input));
   }
 
   // ---- 配件維修提醒(D-288);開啟隨「更新潛艇」一起送(SubmarineInput.upkeep),這裡是手動調整 ----

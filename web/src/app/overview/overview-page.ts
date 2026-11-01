@@ -7,17 +7,20 @@ import { WorkshopsVm } from '../core/workshops-vm';
 import { QuickEditDialog } from '../update/quick-edit-dialog';
 import { WorkshopFormDialog } from '../workshops/workshop-form-dialog';
 import { WorkshopManageDialog } from '../workshops/workshop-manage-dialog';
+import { ManageDialogs } from './manage-dialogs';
 import { UpkeepPanel } from './upkeep-panel';
 import { OverviewDesktop } from './overview-desktop';
 import { OverviewMobile } from './overview-mobile';
 
 @Component({
   selector: 'app-overview-page',
-  imports: [OverviewMobile, OverviewDesktop, QuickEditDialog, UpkeepPanel, WorkshopFormDialog, WorkshopManageDialog],
+  imports: [OverviewMobile, OverviewDesktop, ManageDialogs, QuickEditDialog, UpkeepPanel, WorkshopFormDialog, WorkshopManageDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (layout.isDesktop()) { <app-overview-desktop /> } @else { <app-overview-mobile /> }
     @if (upkeep.openId()) { <app-upkeep-panel /> }
+    <!-- 工坊管理模式(D-313~D-315):刪除確認、搬移 / 複製的目的工坊、位置編輯 -->
+    <app-manage-dialogs />
     @if (vm.quickEdit(); as q) {
       <app-quick-edit [workshopId]="q.workshopId" [position]="q.position" (closed)="vm.closeQuickEdit()" />
     }

@@ -3,7 +3,8 @@ import { DataStore } from '../core/data-store';
 import { circled } from '../core/format';
 import { chartLabel } from '../core/charts';
 import { RouterLink } from '@angular/router';
-import { OverviewVm, upkeepText, wsInfo, wsMeta } from '../core/overview-vm';
+import { ManageVm } from '../core/manage-vm';
+import { OverviewVm, upkeepText, wsInfo, wsMeta, type OverviewItem } from '../core/overview-vm';
 import { UpkeepVm } from '../core/upkeep-vm';
 import { WorkshopsVm } from '../core/workshops-vm';
 import { SelectField } from '../ui/select';
@@ -11,6 +12,9 @@ import { OverviewSort } from './overview-sort';
 import { IconComponent } from '../ui/icon';
 import { PULL_THRESHOLD, PullRefresh } from '../ui/pull-refresh';
 import { LevelBadge, LevelTag, NextRouteTag } from './level-tag';
+import { ManageBar } from './manage-bar';
+import { MgBox, SubFlags } from './manage-bits';
+import { LongPress } from '../ui/long-press';
 import { UpkeepTag } from './upkeep-bits';
 
 /** 重新整理中,指示區停留的高度 */
@@ -20,7 +24,7 @@ const MIN_REFRESH_MS = 600;
 
 @Component({
   selector: 'app-overview-mobile',
-  imports: [IconComponent, RouterLink, PullRefresh, UpkeepTag, LevelBadge, LevelTag, NextRouteTag, SelectField, OverviewSort],
+  imports: [IconComponent, RouterLink, PullRefresh, UpkeepTag, LevelBadge, LevelTag, NextRouteTag, SelectField, OverviewSort, ManageBar, MgBox, SubFlags, LongPress],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './overview-mobile.html',
   host: { style: 'display: contents' },
@@ -29,6 +33,17 @@ export class OverviewMobile {
   protected readonly vm = inject(OverviewVm);
   protected readonly store = inject(DataStore);
   protected readonly wsVm = inject(WorkshopsVm);
+  protected readonly mg = inject(ManageVm);
+  /** 管理模式開著:點一列 = 勾選 / 取消;平常 = 快速修改 */
+  protected tap(item: OverviewItem): void {
+    if (this.mg.active()) this.mg.toggle(item.id);
+    else this.vm.openQuickEdit(item);
+  }
+  protected tapSpace(event: Event, item: OverviewItem): void {
+    if (!this.mg.active()) return;
+    event.preventDefault();
+    this.mg.toggle(item.id);
+  }
   protected readonly circled = circled;
   protected readonly wsMeta = wsMeta;
   protected readonly wsInfo = wsInfo;

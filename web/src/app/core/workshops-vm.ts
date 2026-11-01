@@ -2,7 +2,7 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 import type { FieldErrorCode, WorkshopInput, WorkshopWithSubmarines } from '@eranaut/shared';
 import { Auth } from './auth';
 import { DataStore } from './data-store';
-import { isReady } from './format';
+import { isPlaced, isReady } from './format';
 import { OverviewVm } from './overview-vm';
 import type { WorkshopFormValue } from './workshop-form';
 
@@ -39,6 +39,7 @@ export class WorkshopsVm {
       let ready = 0;
       let exploring = 0;
       for (const s of ws.submarines) {
+        if (!isPlaced(s.position) || s.status === 'registered') continue; // 未排入、新登記不計(D-314、D-315)
         if (isReady(s, now)) ready++;
         else exploring++;
       }

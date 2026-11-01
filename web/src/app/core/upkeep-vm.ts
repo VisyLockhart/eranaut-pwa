@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import type { SubmarineDto, SubmarineInput, UpkeepDto, UpkeepPatch, WorkshopWithSubmarines } from '@eranaut/shared';
 import { UPKEEP_LIMITS, repairMaterialsForSig, upkeepPhase, upkeepRoute, type UpkeepPhase } from '@eranaut/shared';
 import { DataStore } from './data-store';
-import { displayFor, isReady } from './format';
+import { displayFor, isPlaced, isReady } from './format';
 
 // 配件維修提醒(D-288)的前端資料:每艘的階段文字、同工坊 4 艘的面板狀態、快速修改的草稿轉成請求。
 // 趟數與提醒由 API 計算並推進;這裡只負責顯示與送出使用者的操作。
@@ -69,6 +69,7 @@ export function workshopUpkeep(ws: Pick<WorkshopWithSubmarines, 'submarines'>, n
   const items: UpkeepItem[] = [];
   const untracked: SubmarineDto[] = [];
   for (const s of ws.submarines) {
+    if (!isPlaced(s.position)) continue; // 未排入的艇不參與(D-314)
     const item = upkeepItem(s, now);
     if (item) items.push(item);
     else untracked.push(s);

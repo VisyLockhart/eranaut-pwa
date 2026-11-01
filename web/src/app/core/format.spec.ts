@@ -9,7 +9,17 @@ describe('format', () => {
   it('circled 超出範圍退回 #n', () => {
     expect(circled(1)).toBe('①');
     expect(circled(4)).toBe('④');
-    expect(circled(12)).toBe('#12');
+    expect(circled(12)).toBe('⑫');
+    expect(circled(20)).toBe('⑳');
+    expect(circled(21)).toBe('#21');
+  });
+
+  it('isReady:未排入(位置 5 以上)與新登記不算可收(D-314、D-315)', () => {
+    const base = { expected_return_at: null };
+    expect(isReady({ ...base, status: 'complete', position: 4 }, 0)).toBe(true);
+    expect(isReady({ ...base, status: 'complete', position: 5 }, 0)).toBe(false);
+    expect(isReady({ expected_return_at: '2020-01-01T00:00:00Z', status: 'exploring', position: 6 }, Date.now())).toBe(false);
+    expect(isReady({ ...base, status: 'registered', position: 1 }, 0)).toBe(false);
   });
 
   it('formatRemaining', () => {

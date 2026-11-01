@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import type { UpkeepPatch } from '@eranaut/shared';
 import { Toast } from '../core/toast';
-import { UPKEEP_LIMITS, upkeepOptionsFor, upkeepPartsLabel, upkeepPartsSig, type SubmarineDto, type SubmarineStatus } from '@eranaut/shared';
+import { UPKEEP_LIMITS, upkeepOptionsFor, upkeepPartsLabel, upkeepPartsSig, type SubmarineDto, type SubmarineInputStatus } from '@eranaut/shared';
 import { OverviewVm } from '../core/overview-vm';
 import { clampLimit, upkeepItem, upkeepNote, upkeepRouteLabel, type QuickUpkeepDraft } from '../core/upkeep-vm';
 import { DataStore } from '../core/data-store';
@@ -125,7 +125,7 @@ import { IconComponent } from '../ui/icon';
 })
 export class UpkeepField {
   readonly sub = input.required<SubmarineDto>();
-  readonly status = input.required<SubmarineStatus>();
+  readonly status = input.required<SubmarineInputStatus>();
   /** 這一區有未送出的修改 */
   readonly dirty = input(false);
 

@@ -115,17 +115,17 @@ test('單艘驗證:每個欄位的錯誤碼', async () => {
   assert.equal(subCount(t), 0);
 });
 
-test('位置只能是 1~4 的整數;批次內不可重複位置;最多 4 艘;空陣列與非陣列', async () => {
+test('位置只能是 1~20 的整數(5~20 = 未排入,D-314);批次內不可重複位置;最多 20 艘;空陣列與非陣列', async () => {
   const t = makeApp();
   const api = await asUser(t, ID_A);
   const wid = await mkWorkshop(api);
   const sub = (position: unknown) => ({ position, status: 'complete' });
   const batch = (submarines: unknown) => api('PUT', `/api/workshops/${wid}/submarines`, { submarines });
-  for (const bad of [0, 5, -1, 1.5]) assert.equal((await batch([sub(bad)])).statusCode, 400, `position ${bad}`);
+  for (const bad of [0, 21, -1, 1.5]) assert.equal((await batch([sub(bad)])).statusCode, 400, `position ${bad}`);
   assert.deepEqual((await batch([sub('1')])).json().items, [{ index: 0, fields: { position: 'invalid_type' } }]);
   assert.deepEqual((await batch([{ status: 'complete' }])).json().items, [{ index: 0, fields: { position: 'required' } }]);
   assert.deepEqual((await batch([sub(1), sub(1)])).json().items, [{ index: 1, fields: { position: 'invalid_value' } }]);
-  assert.deepEqual((await batch([sub(1), sub(2), sub(3), sub(4), sub(1)])).json().fields, { submarines: 'invalid_value' });
+  assert.deepEqual((await batch(Array.from({ length: 21 }, (_, i) => sub(i + 1)))).json().fields, { submarines: 'invalid_value' });
   assert.deepEqual((await batch([])).json().fields, { submarines: 'required' });
   assert.deepEqual((await batch('x')).json().fields, { submarines: 'invalid_type' });
   assert.equal((await api('PUT', `/api/workshops/${wid}/submarines`, {})).statusCode, 400);
@@ -181,7 +181,7 @@ test('單艘:網址位置不合法或與 body 不一致回 400', async () => {
   const api = await asUser(t, ID_A);
   const wid = await mkWorkshop(api);
   const body = { status: 'complete' };
-  for (const p of ['0', '5', 'abc', '1.5']) assert.equal((await api('PUT', `/api/workshops/${wid}/submarines/${p}`, body)).statusCode, 400, p);
+  for (const p of ['0', '21', 'abc', '1.5']) assert.equal((await api('PUT', `/api/workshops/${wid}/submarines/${p}`, body)).statusCode, 400, p);
   const mismatch = await api('PUT', `/api/workshops/${wid}/submarines/1`, { ...body, position: 2 });
   assert.equal(mismatch.statusCode, 400);
   assert.deepEqual(mismatch.json().fields, { position: 'invalid_value' });

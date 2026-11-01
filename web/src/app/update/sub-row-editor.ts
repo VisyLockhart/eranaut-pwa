@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output } from '@angular/core';
-import type { SubmarineStatus } from '@eranaut/shared';
+import type { SubmarineInputStatus } from '@eranaut/shared';
 import { circled } from '../core/format';
 import type { SubRow, TimeField } from '../core/submarine-form';
 
@@ -67,7 +67,7 @@ export class SubRowEditor {
   readonly flagLevel = input(false);
 
   readonly nameChange = output<string>();
-  readonly statusChange = output<SubmarineStatus>();
+  readonly statusChange = output<SubmarineInputStatus>();
   readonly timeChange = output<{ field: TimeField; value: string }>();
   /** 進入時間欄位:暫停補正(D-124) */
   readonly timeFocus = output<void>();

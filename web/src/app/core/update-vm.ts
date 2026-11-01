@@ -5,7 +5,7 @@ import { Api } from './api';
 import { Auth } from './auth';
 import { MINUTE_MS, compensated, displayMinutes, submitMinutes, toParts } from './compensation';
 import { DataStore } from './data-store';
-import { circled } from './format';
+import { circled, isPlaced } from './format';
 import { ImageTools, isImageFile } from './image-input';
 import { hasReturned, nextStart } from './dispatch';
 import { DispatchVm, rowProgress, type RouteSel } from './dispatch-vm';
@@ -185,7 +185,8 @@ export class UpdateVm {
       this.rows.set([]);
       return;
     }
-    const rows = ws.submarines.map((s) => rowFromSubmarine(this.nextKey++, s));
+    // 更新頁只處理排入格子 ①~④ 的潛艇(OCR 也只認 4 艘,D-314);未排入的艇到總覽管理模式處理
+    const rows = ws.submarines.filter((s) => isPlaced(s.position)).map((s) => rowFromSubmarine(this.nextKey++, s));
     if (rows.length === 0) rows.push(newRow(this.nextKey++, 1, defaultName(1), 'exploring', true));
     const now = Date.now();
     this.now.set(now);

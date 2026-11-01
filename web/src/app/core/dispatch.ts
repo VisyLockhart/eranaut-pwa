@@ -42,7 +42,7 @@ export interface NextStart {
 
 /** 與伺服器一致(`hasReturned`):探索完成,或預計返航時間已過 */
 export function hasReturned(sub: Pick<SubmarineDto, 'status' | 'expected_return_at'>, now: number): boolean {
-  return sub.status === 'complete' || (sub.expected_return_at !== null && Date.parse(sub.expected_return_at) <= now);
+  return sub.status !== 'exploring' || (sub.expected_return_at !== null && Date.parse(sub.expected_return_at) <= now);
 }
 
 /** 航線輔助開著的艇才有;沒填等級或沒開回 null */
