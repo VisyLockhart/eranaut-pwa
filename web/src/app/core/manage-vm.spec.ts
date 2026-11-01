@@ -184,4 +184,25 @@ describe('ManageVm', () => {
     expect(mg.dialog()).toBeNull();
     http.match('/api/overview');
   });
+
+  it('切回視窗重新抓資料(工坊物件換新、id 不變)不會退出管理模式;換工坊或刪光才退出', () => {
+    store.fetched.set([ws('A', 3), ws('B', 1)]);
+    vm.select('A');
+    TestBed.tick();
+    mg.enter();
+    mg.toggle('A-1');
+    expect(mg.active()).toBe(true);
+    store.fetched.set([ws('A', 3), ws('B', 1)]);
+    TestBed.tick();
+    expect(mg.active()).toBe(true);
+    expect(mg.count()).toBe(1);
+    store.fetched.set([ws('A', 0), ws('B', 1)]);
+    TestBed.tick();
+    expect(mg.active()).toBe(false);
+    vm.select('A');
+    mg.enter();
+    vm.select('B');
+    TestBed.tick();
+    expect(mg.active()).toBe(false);
+  });
 });

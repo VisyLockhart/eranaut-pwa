@@ -2024,9 +2024,6 @@ html[data-motion='reduced'] .sk::after { animation: none; display: none; }
 .mg-bar.mobile .mg-actions { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
 .mg-bar.mobile .mg-act { min-height: 44px; padding: 0 6px; }
 .mg-bar.mobile .mg-sep { display: none; }
-.mg-addrow { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 48px; box-sizing: border-box; border: 1.5px dashed var(--border-strong); border-radius: calc(10px * var(--rs)); background: transparent; color: var(--text-muted); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
-.mg-addrow:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-.ov-table .mg-addrow { border-width: 0; border-top: 1.5px dashed var(--border-strong); border-radius: 0 0 calc(10px * var(--rs)) calc(10px * var(--rs)); }
 
 /* 新登記(D-315)與未排入(D-314)標籤 */
 .mg-new { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; padding: 0 8px; height: 20px; box-sizing: border-box; border-radius: var(--r-pill); background: color-mix(in srgb, var(--amber) 18%, transparent); border: 1px solid var(--amber); color: var(--amber-text); font-size: 11.5px; font-weight: 700; line-height: 1; vertical-align: middle; white-space: nowrap; }

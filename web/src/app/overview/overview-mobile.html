@@ -69,7 +69,7 @@
     <a class="ov-ibtn chart" routerLink="/charts" [queryParams]="{ ws: ws.id }" [attr.aria-label]="vm.chart() ? chartLabel(vm.chart()!) : '更新海圖'">
       <app-icon name="seaChart" [size]="20" />@if (vm.chart()?.returnedSince) { <i class="ov-chart-dot" aria-hidden="true"></i> }
     </a>
-    <button type="button" class="ov-manage-btn m" [class.on]="mg.active()" [attr.aria-pressed]="mg.active()" [attr.aria-label]="mg.active() ? '完成管理' : '管理潛水艇：勾選後新增、刪除、搬移、複製'" (click)="mg.toggleMode()"><app-icon name="list" [size]="15" />{{ mg.active() ? '完成' : '管理' }}</button>
+    @if (vm.items().length > 0) { <button type="button" class="ov-manage-btn m" [class.on]="mg.active()" [attr.aria-pressed]="mg.active()" [attr.aria-label]="mg.active() ? '完成管理' : '管理潛水艇：勾選後新增、刪除、搬移、複製'" (click)="mg.toggleMode()"><app-icon name="list" [size]="15" />{{ mg.active() ? '完成' : '管理' }}</button> }
     <button type="button" class="ov-ibtn" (click)="wsVm.edit(ws.id)" aria-label="工坊設定"><app-icon name="settings" [size]="20" /></button>
   </div>
   @if (vm.reminder(); as r) {
@@ -105,6 +105,7 @@
       <div style="margin-top: 12px"><button type="button" class="primary-btn" style="width: auto; padding: 10px 20px" (click)="wsVm.add()">新增工坊</button></div>
     } @else {
       目前沒有潛水艇記錄。到「更新」輸入潛艇的剩餘時間。
+      @if (vm.currentWorkshop()) { <div style="margin-top: 12px"><button type="button" class="primary-btn" style="width: auto; padding: 10px 20px" (click)="mg.addSubmarine()" [disabled]="mg.busy()">新增潛艇</button></div> }
     }
   </div>
 } @else if (store.view() === 'list') {

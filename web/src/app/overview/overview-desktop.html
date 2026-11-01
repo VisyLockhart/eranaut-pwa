@@ -105,6 +105,7 @@
       <div style="margin-top: 12px"><button type="button" class="primary-btn" style="width: auto; padding: 10px 20px" (click)="wsVm.add()">新增工坊</button></div>
     } @else {
       目前沒有潛水艇記錄。按右上角的「更新潛艇」輸入潛艇的剩餘時間。
+      @if (vm.currentWorkshop()) { <div style="margin-top: 12px"><button type="button" class="primary-btn" style="width: auto; padding: 10px 20px" (click)="mg.addSubmarine()" [disabled]="mg.busy()">新增潛艇</button></div> }
     }
   </div>
 } @else if (store.view() === 'list') {
@@ -151,7 +152,6 @@
         </div>
       }
     }
-    @if (mg.active()) { <button type="button" class="mg-addrow" (click)="mg.addSubmarine()" [disabled]="mg.busy()"><app-icon name="plus" [size]="16" />新增潛艇</button> }
   </div>
 } @else {
   @for (g of sections(); track g.key) {

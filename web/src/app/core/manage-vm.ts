@@ -64,9 +64,16 @@ export class ManageVm {
 
   constructor() {
     // 回到「全部」檢視、換工坊:離開管理模式,丟棄選取與未送出的對話框
+    // (用 computed 取 id:切回視窗後重新抓資料,工坊物件會換新,但 id 沒變就不能退出)
+    const wsId = computed(() => this.vm.currentWorkshop()?.id ?? null);
     effect(() => {
-      this.vm.currentWorkshop()?.id;
+      wsId();
       untracked(() => this.exit());
+    });
+    // 潛艇全刪光:沒東西可管理了
+    const hasItems = computed(() => this.vm.items().length > 0);
+    effect(() => {
+      if (!hasItems()) untracked(() => this.exit());
     });
   }
 

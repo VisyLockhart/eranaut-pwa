@@ -13,7 +13,7 @@ import { MultiSort, type SortField as Field } from '../ui/multi-sort';
   imports: [IconComponent, MultiSort],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (vm.currentWorkshop() && showManage()) {
+    @if (vm.currentWorkshop() && showManage() && vm.items().length > 0) {
       <button type="button" class="ov-manage-btn" [class.on]="mg.active()" [attr.aria-pressed]="mg.active()" [attr.aria-label]="mg.active() ? '完成管理' : '管理潛水艇：勾選後新增、刪除、搬移、複製'" (click)="mg.toggleMode()">
         <app-icon name="list" [size]="15" />{{ mg.active() ? '完成' : '管理' }}
       </button>
