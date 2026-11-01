@@ -32,6 +32,8 @@ html[data-theme='notebook'] {
   --lav: #9a8fae; --lav-d: #5a4d73; --lav-p: #e3dfec; --lav-ink: #43365c; --mus-ink: #5a4617; --blue-ink: #2f4452; --blue-time: #2b566f;
   /* 待收艇:玫瑰淡底配深玫瑰字 */
   --cover-ink: #faf7ef; --ready-bg: #ecd6d0; --ready-ink: #6e3b34; --ready-dot: #b98a82;
+  /* D-318 多色筆跡:赭橘(維修)、蜜桃便利貼、萊姆螢光筆(限量)、櫻粉螢光(新登記 / 拖曳落點)、檸檬黃便利貼 */
+  --terra: #8a4620; --peach: #f2cdb4; --lime: #dcec8c; --sakura: #f6c9d8; --sakura-d: #7a3f62; --yel: #f3e19a;
 }
 
 @mixin tape($c: var(--mus-p), $rot: -3deg) {
@@ -343,4 +345,134 @@ html[data-theme='notebook'] {
   .qe-dot { border-color: var(--bg-elevated-2); }
   .qe-tip { background: var(--line); color: var(--bg-elevated); border-radius: 8px 10px 9px 11px / 10px 8px 11px 9px; }
   .qe-cfm { border-color: var(--line); border-radius: var(--w3); }
+}
+
+/* ===== D-318 多色筆跡 × 森林精靈元件 =====
+   顏色 = 意義:森綠 練級 / 玫瑰 待收 / 霧藍 時間 / 赭橘 維修 / 檸檬黃 提醒 / 薰衣草 工坊識別(統一)。
+   螢光筆限量(萊姆:升級預告、新標籤;櫻粉:拖曳落點)。顏色之外一律有圖示或形狀當第二線索。純 CSS,不改模板。 */
+$nb-berry: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='14' r='6'/%3E%3Cpath d='M12 8c0-2 1-4 4-4'/%3E%3C/svg%3E");
+$nb-mushroom: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12c0-5 4-8 8-8s8 3 8 8zM10 12v7h4v-7'/%3E%3C/svg%3E");
+$nb-leaf: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 19C5 10 10 5 20 4c0 10-5 15-14 15zM5 19 14 10'/%3E%3C/svg%3E");
+@mixin nb-icon($m, $s: 14px) { content: ''; display: inline-block; width: $s; height: $s; margin-right: 4px; vertical-align: -2px; background: currentColor; -webkit-mask: $m center / contain no-repeat; mask: $m center / contain no-repeat; }
+
+html[data-theme='notebook'] {
+  --mint: #cfe3df;
+
+  /* 時間 = 霧藍筆;狀態字(進行中)也用藍 */
+  .table-row:not(.ready) .t-time, .row:not(.ready) .row-time, .card:not(.ready) .card-time, .d-card:not(.ready) .d-card-time { color: var(--blue-time); }
+  .t-eta, .d-card-eta, .d-card-eta-full { color: var(--blue-d); }
+  .table-row:not(.ready) .t-status, .row:not(.ready) .row-status { color: var(--blue-d); }
+  /* 待收 = 果實圖示 + 玫瑰標籤 */
+  .table-row.ready .t-time::before, .row.ready .row-time::before, .card.ready .card-time::before, .d-card.ready .d-card-time::before { @include nb-icon($nb-berry, 13px); }
+
+  /* 等級:葉形徽章;升級預告用萊姆螢光筆 */
+  .lv-badge { border-radius: 2px 11px 2px 11px; border-color: var(--accent); background: var(--sage-p); color: var(--accent-dark); }
+  .lv-gain { background: var(--lime); color: var(--text); padding: 0 4px; border-radius: 3px; align-self: flex-start; width: fit-content; }
+  /* 練級進度 = 藤蔓:虛線軌道 + 實線藤蔓 + 尖端葉片 */
+  .lv-bar { position: relative; height: 0; margin: 7px 0 6px; overflow: visible; background: transparent; border-top: 2px dotted var(--link-line); border-radius: 0; }
+  .lv-bar > i { position: absolute; left: 0; top: -2px; height: 0; background: transparent; border-top: 2px solid var(--accent); }
+  .lv-bar > i::after { content: ''; position: absolute; right: -7px; top: -9px; width: 12px; height: 12px; border-radius: 0 100% 0 100%; background: var(--sage); border: 1.5px solid var(--accent); transform: rotate(-35deg); }
+  .lv-bar > i[style*='width: 0%']::after { display: none; }
+  /* 維修 = 赭橘便利貼 */
+  .uk-tag[data-phase='repair_now'], .uk-tag[data-phase='repair_after_return'] { background: var(--peach); color: var(--terra); padding: 1px 8px; border-radius: 3px 8px 3px 8px; font-weight: 700; }
+
+  /* 工坊分組 = 薰衣草索引條(統一識別色)+ 蘑菇圖示 */
+  .ov-ghead { background: var(--lav-p); border: var(--bw) solid var(--lav-d); border-radius: var(--w2); padding: 4px 10px; margin-bottom: 6px; color: var(--lav-ink); }
+  .ov-ghead b { color: var(--lav-ink); font-family: var(--font-ui); font-size: 17px; }
+  .ov-ghead b::before { @include nb-icon($nb-mushroom, 17px); margin-right: 6px; color: var(--lav-d); }
+  .table-ghead { background: var(--lav-p); border-top: var(--bw) solid var(--lav-d); border-bottom: var(--bw) solid var(--lav-d); border-radius: 0; padding: 6px 16px; margin-bottom: 0; }
+
+  /* 統計便利貼:待收粉 / 維修蜜桃 / 返航天藍 / 提醒檸檬黃,各貼一段膠帶、微傾 */
+  .d-stat.ov-fleet.ready, .m-stat.ov-fleet.ready { background: var(--rose-p); border-color: var(--rose-d); color: var(--ready-ink); }
+  .ov-fleet.ready .num, .ov-fleet.ready .ov-fleet-ready, .ov-fleet.ready .ov-mval-t, .ov-fleet.ready .ov-fleet-of { color: var(--ready-ink); }
+  .ov-fleet.ready .label { color: var(--rose-d); }
+  .ov-fleet.ready .ov-meter i { background: var(--rose-d); }
+  .d-stat.ov-uk[data-state='alert'], .m-stat.ov-uk[data-state='alert'] { background: var(--peach); border-color: var(--terra); }
+  .ov-uk[data-state='alert'] .label { color: var(--terra); }
+  .ov-uk[data-state='alert'] .ov-uk-head, .ov-uk[data-state='alert'] .ov-mval { color: var(--terra); }
+  .ov-uk-chip { border-color: var(--terra); box-shadow: 2px 2px 0 0 color-mix(in srgb, var(--terra) 35%, transparent); }
+  .ov-uk-chip b { color: var(--terra); }
+  .d-stat.ov-rem { background: var(--yel); border-color: var(--mus-d); color: var(--mus-ink); }
+  .ov-rem .label { color: var(--mus-d); }
+  .ov-rem-chip { color: var(--mus-ink); border-color: var(--mus-d); }
+  .ov-m-rem .ov-rem-chip { background: var(--yel); }
+  .d-stats.ov-strip .d-stat { position: relative; box-shadow: 2px 3px 0 0 var(--pencil); }
+  .d-stats.ov-strip .d-stat::before { @include tape(var(--mus-p), -3deg); width: 52px; margin-left: -26px; height: 16px; }
+  .d-stats.ov-strip .d-stat:nth-child(2)::before { background: var(--sage-p); transform: rotate(3deg); }
+  .d-stats.ov-strip .d-stat:nth-child(3)::before { background: var(--lav-p); }
+  .d-stats.ov-strip .d-stat:nth-child(4)::before { background: var(--rose-p); transform: rotate(2deg); }
+  .d-stats.ov-strip .d-stat:nth-child(odd) { transform: rotate(-0.5deg); }
+  .d-stats.ov-strip .d-stat:nth-child(even) { transform: rotate(0.4deg); }
+  /* 手機摘要列:三塊小便利貼 */
+  .m-stats-toggle .summary b.mono { background: var(--rose-p); color: var(--ready-ink); padding: 0 6px; border-radius: 3px 8px 3px 8px; margin-right: 3px; }
+  .m-stats-toggle .summary .ov-s-uk { background: var(--peach); color: var(--terra); padding: 0 6px; border-radius: 3px 8px 3px 8px; font-weight: 700; }
+  .m-stats-toggle .summary .ov-s-next { background: var(--blue-p); color: var(--blue-time); padding: 0 6px; border-radius: 8px 3px 8px 3px; }
+
+  /* 導覽:手機未選中圖示各用筆色;桌機封面側邊索引標籤(色 = 該頁的筆色) */
+  .m-nav .nav-item:not(.active) { color: var(--text-nav); }
+  .m-nav .nav-group:not(.nav-upload):not(.active) { color: var(--terra); }
+  .m-nav a.nav-item[href='/route']:not(.active) { color: var(--blue-d); }
+  .m-nav a.nav-item[href='/']:not(.active) { color: var(--accent-dark); }
+  .d-nav-item { --tabc: var(--bg-elevated-2); }
+  .d-nav-item[href='/'] { --tabc: var(--sage-p); }
+  .d-nav-item[aria-label='配件'] { --tabc: var(--peach); }
+  .d-nav-item[aria-label='更新'] { --tabc: var(--blue-p); }
+  .d-nav-item[href='/route'] { --tabc: var(--mint); }
+  .d-nav-item:not(.active):not(.intro-link)::after { content: ''; position: absolute; right: 0; top: 8px; bottom: 8px; width: 12px; background: var(--tabc); border: var(--bw) solid var(--line); border-left: 0; border-radius: 0 9px 9px 0; }
+  a.d-nav-item:not(.active):not(.intro-link)::after { right: 14px; }
+  .d-sidebar.collapsed a.d-nav-item:not(.active):not(.intro-link)::after { right: 8px; }
+  /* 更新鍵長出葉翼 */
+  .nav-upload-fab::before, .nav-upload-fab::after { content: ''; position: absolute; top: 14px; width: 17px; height: 13px; background: var(--sage); border: 1.6px solid var(--accent-dark); }
+  .nav-upload-fab::before { left: -15px; border-radius: 100% 0 100% 0; transform: rotate(-22deg); }
+  .nav-upload-fab::after { right: -15px; border-radius: 0 100% 0 100%; transform: rotate(22deg); }
+
+  /* 開關旋鈕:傾斜保留,改繞中心轉,消除 transform-origin 造成的偏移 */
+  .switch .slider:before, .switch input:checked + .slider:before { transform-origin: center; }
+
+  /* 管理模式(D-313~D-316):勾選框 = 薰衣草手繪打勾;操作列 = 便利貼牆;刪除維持虛線 + 玫瑰 */
+  .mg-box { border-radius: 7px 3px 8px 3px; border-color: var(--lav-d); background: var(--bg-elevated); color: var(--lav-ink); }
+  .mg-box.on { background: var(--lav-p); border-color: var(--lav-d); }
+  .mg-count b { background: var(--lime); color: var(--text); padding: 0 8px; border-radius: 4px 9px 4px 9px; font-family: var(--font-mono); font-weight: 400; }
+  .mg-bar { background: var(--bg-elevated); border: var(--bw) dashed var(--text-muted); border-radius: var(--w1); }
+  .mg-bar.mobile { border-radius: 0; border-style: solid; border-width: var(--bw) 0 0; border-color: var(--line); box-shadow: none; }
+  .mg-act { border: 0; border-radius: var(--w2); box-shadow: 2px 3px 0 0 var(--pencil); background: var(--bg-elevated-2); color: var(--text); }
+  .mg-act:hover:not(:disabled) { box-shadow: 3px 4px 0 0 var(--pencil); }
+  .mg-actions .mg-act:nth-of-type(1) { background: var(--yel); color: var(--mus-ink); }
+  .mg-actions .mg-act:nth-of-type(2) { background: var(--blue-p); color: var(--blue-ink); }
+  .mg-actions .mg-act:nth-of-type(3) { background: var(--lav-p); color: var(--lav-ink); }
+  .mg-actions .mg-act:nth-of-type(5) { background: var(--sage-p); color: var(--accent-dark); }
+  .mg-actions .mg-act:nth-of-type(6) { background: var(--peach); color: var(--terra); }
+  .mg-act.danger, .mg-actions .mg-act.danger { background: var(--rose-p); color: var(--rose-d); border: var(--bw) dashed var(--rose-d); box-shadow: none; }
+  .mg-act.hot { background: var(--lime); border: 0; }
+  .mg-badge { background: var(--rose-d); color: var(--on-amber); }
+  .mg-new { background: var(--lime); border-color: var(--mus-d); color: var(--text); animation: none; }
+  .mg-new i { background: var(--mus-d); animation: none; }
+  .mg-tag { background: var(--sage-p); color: var(--accent-dark); border-radius: 2px 9px 2px 9px; }
+  /* 編排位置:格子是手繪紙卡,拿起 = 薰衣草,落點 = 櫻粉螢光 + 隱藏底層內容 */
+  .mg-slot, .mg-pitem { border-radius: var(--w1); border-color: var(--line); }
+  .mg-slot.empty { border-style: dashed; border-color: var(--text-muted); }
+  .mg-slot-no { width: 32px; height: 32px; margin: 0; font-size: 19px; color: var(--text); background: var(--yel); border: 1.8px solid var(--line); border-radius: 50%; font-family: var(--font-mono); }
+  .mg-slot.hold, .mg-pitem.hold { border-color: var(--lav-d); box-shadow: 0 0 0 2px color-mix(in srgb, var(--lav-d) 30%, transparent); }
+  .mg-slot.drop-target, .mg-pool.drop-target { border-color: var(--sakura-d); background: var(--sakura); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sakura-d) 16%, transparent); }
+  .mg-slot.drop-target::after, .mg-pool.drop-target::after { color: var(--sakura-d); }
+  .mg-pool { border-color: var(--text-muted); border-radius: var(--w1); }
+  .mg-hint { background: var(--mus-p); color: var(--mus-ink); border-radius: 3px 9px 4px 8px; border: 0; }
+  .mg-hint.on { background: var(--sakura); color: var(--sakura-d); }
+  .mg-drag-preview.cdk-drag-preview { border-radius: var(--w1); border-color: var(--line); box-shadow: 3px 6px 0 0 var(--pencil); background: var(--bg-elevated); }
+  .mg-drag-preview.cdk-drag-preview::before { @include tape(var(--blue-p), 3deg); top: -9px; width: 54px; margin-left: -27px; }
+
+  /* 螢火蟲:只在標題區、共 3 顆、慢速閃爍;減少動態時靜止 */
+  .m-header, .d-topbar { position: relative; }
+  .m-header::before, .m-header::after, .d-topbar::before, .d-topbar::after { content: ''; position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--lime); pointer-events: none; animation: nb-firefly 5.5s ease-in-out infinite; }
+  .m-header::before { top: 10px; right: 78px; box-shadow: 0 0 7px 3px color-mix(in srgb, var(--lime) 75%, transparent), -30px 18px 0 -1px var(--lime); }
+  .m-header::after { top: 30px; right: 52px; opacity: 0.6; animation-delay: -2.4s; box-shadow: 0 0 7px 3px color-mix(in srgb, var(--lime) 60%, transparent); }
+  .d-topbar::before { top: 4px; right: 330px; box-shadow: 0 0 7px 3px color-mix(in srgb, var(--lime) 75%, transparent), -34px 20px 0 -1px var(--lime); }
+  .d-topbar::after { top: 34px; right: 292px; opacity: 0.6; animation-delay: -2.4s; box-shadow: 0 0 7px 3px color-mix(in srgb, var(--lime) 60%, transparent); }
+}
+@keyframes nb-firefly { 50% { opacity: 0.35; transform: translate(3px, -4px); } }
+html[data-theme='notebook'][data-motion='reduced'] {
+  .m-header::before, .m-header::after, .d-topbar::before, .d-topbar::after { animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme='notebook'] .m-header::before, html[data-theme='notebook'] .m-header::after, html[data-theme='notebook'] .d-topbar::before, html[data-theme='notebook'] .d-topbar::after { animation: none; }
 }

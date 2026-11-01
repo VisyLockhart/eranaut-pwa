@@ -2109,7 +2109,7 @@ html[data-motion='reduced'] .mg-new, html[data-motion='reduced'] .mg-new i { ani
 .mg-slot { position: relative; }
 /* 拖到的格子:虛線框 + 淡掉內容 + 中央寫出放開後會發生什麼(仿工坊管理的「放開即放在這裡」) */
 .mg-slot.drop-target, .mg-pool.drop-target { border: var(--bw) dashed var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); }
-.mg-slot.drop-target > *, .mg-pool.drop-target > * { opacity: 0.22; }
+.mg-slot.drop-target > *, .mg-pool.drop-target > * { visibility: hidden; }
 .mg-slot.drop-target::after, .mg-pool.drop-target::after { content: attr(data-hint); position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-start; padding-left: 16px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.04em; color: var(--accent); pointer-events: none; }
 .mg-pool { position: relative; }
 /* 被抓起來的那一格:原位留一個淡淡的虛影 */
