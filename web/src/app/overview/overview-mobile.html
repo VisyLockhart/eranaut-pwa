@@ -104,7 +104,7 @@
       還沒有工坊，先新增第一間工坊吧。
       <div style="margin-top: 12px"><button type="button" class="primary-btn" style="width: auto; padding: 10px 20px" (click)="wsVm.add()">新增工坊</button></div>
     } @else {
-      目前沒有潛水艇記錄。到「更新」輸入潛艇的剩餘時間。
+      目前沒有潛水艇記錄。
       @if (vm.currentWorkshop()) { <div style="margin-top: 12px"><button type="button" class="primary-btn" style="width: auto; padding: 10px 20px" (click)="mg.addSubmarine()" [disabled]="mg.busy()">新增潛艇</button></div> }
     }
   </div>
