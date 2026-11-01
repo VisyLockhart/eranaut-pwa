@@ -18,6 +18,7 @@ import { MultiSort, type SortField as Field } from '../ui/multi-sort';
         <app-icon name="list" [size]="15" />{{ mg.active() ? '完成' : '管理' }}
       </button>
     }
+    @if (showLabel()) { <span class="ov-tools-label">排序</span> }
     <app-multi-sort [fields]="fields()" [on]="on()" [compact]="compact()" (toggled)="vm.toggleSortField($any($event))">
       <button
         type="button"
@@ -39,6 +40,8 @@ export class OverviewSort {
   readonly compact = input(false);
   /** 手機的管理鈕放在工坊資訊列,不放在收合的排序區 */
   readonly showManage = input(true);
+  /** 桌機:在管理鈕與排序按鈕組之間放「排序」文字(放在管理鈕前會被誤認成管理鈕的標籤) */
+  readonly showLabel = input(false);
   protected readonly fields = computed<Field[]>(() =>
     SORT_FIELDS.filter((f) => !(f === 'ws' && this.vm.wsSortDisabled())).map((f) => ({
       id: f,

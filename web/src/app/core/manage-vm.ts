@@ -54,7 +54,7 @@ export class ManageVm {
   readonly active = signal(false);
   private readonly picked = signal<ReadonlySet<string>>(new Set());
   readonly dialog = signal<ManageDialog>(null);
-  /** 搬移 / 複製+搬移 對話框裡勾選的目的工坊 */
+  /** 搬移 / 複製到... 對話框裡勾選的目的工坊 */
   readonly targets = signal<string[]>([]);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
@@ -277,6 +277,10 @@ export class ManageVm {
   /** 拖曳開始 = 拿起 */
   layoutHold(id: string): void {
     this.setLayout((l) => ({ ...l, held: id }));
+  }
+  /** 拖曳在沒有目標的地方放開 = 放下手上的(不動位置) */
+  layoutRelease(): void {
+    this.setLayout((l) => ({ ...l, held: null }));
   }
   layoutDropPool(): void {
     this.setLayout((l) => dropOnPool(l));

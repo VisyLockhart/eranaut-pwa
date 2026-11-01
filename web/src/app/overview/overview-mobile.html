@@ -126,7 +126,7 @@
           @if (mg.active()) { <app-mg-box class="mg-rowbox" [state]="mg.isPicked(item.id) ? 'all' : 'none'" /> }
           <span class="row-pos sub-no">{{ circled(item.position) }}</span>
           <div class="row-main">
-            <div class="row-sub">{{ item.name }}<app-sub-flags [registered]="item.registered" [placed]="item.placed" /><app-level-badge [item]="item.level" /></div>
+            <div class="row-sub">{{ item.name }}<app-level-badge [item]="item.level" /></div>
             <app-next-route [item]="item.next" />
             @if (showWs()) { <div class="row-ws">{{ item.workshop.name }}{{ wsMeta(item.workshop) }}</div> }
             @if (item.upkeep) { <div class="row-uk"><app-upkeep-tag [item]="item.upkeep" /></div> }
@@ -134,7 +134,7 @@
           </div>
           <div class="row-right">
             <div class="row-time mono" [style.color]="item.ready ? 'var(--amber)' : null">{{ item.display.time }}</div>
-            <div class="row-status" [style.color]="item.ready ? 'var(--amber-text)' : null">{{ item.display.label }}</div>
+            <div class="row-status" [style.color]="item.ready ? 'var(--amber-text)' : null">@if (item.registered || !item.placed) { <app-sub-flags [registered]="item.registered" [placed]="item.placed" /> } @else { {{ item.display.label }} }</div>
           </div>
         </div>
       }
@@ -159,15 +159,15 @@
               <div class="card-top">
                 @if (mg.active()) { <span class="mg-card-box"><app-mg-box [state]="mg.isPicked(item.id) ? 'all' : 'none'" /></span> }
                 <span class="card-pos sub-no">{{ circled(item.position) }}</span>
-                <div class="status-pill" [class.ready]="item.ready">
+                @if (item.registered || !item.placed) { <app-sub-flags class="card-flags" [registered]="item.registered" [placed]="item.placed" /> } @else { <div class="status-pill" [class.ready]="item.ready">
                   <span class="pill-dot-wrap">
                     @if (!item.ready) { <span class="pill-ring pulse-ring" style="border-color: var(--accent)"></span> }
                     <span class="pill-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--progress)'"></span>
                   </span>
                   {{ item.display.label }}
-                </div>
+                </div> }
               </div>
-              <div class="card-sub">{{ item.name }}<app-sub-flags [registered]="item.registered" [placed]="item.placed" /><app-level-badge [item]="item.level" /></div>
+              <div class="card-sub">{{ item.name }}<app-level-badge [item]="item.level" /></div>
               <app-next-route [item]="item.next" />
               @if (item.upkeep) { <div class="card-uk"><app-upkeep-tag [item]="item.upkeep" /></div> }
               @if (item.level) { <div class="card-lv"><app-level-tag [item]="item.level" /></div> }
@@ -185,16 +185,16 @@
             <div class="card-top">
                 @if (mg.active()) { <span class="mg-card-box"><app-mg-box [state]="mg.isPicked(item.id) ? 'all' : 'none'" /></span> }
               <div class="card-head"><span class="card-pos sub-no">{{ circled(item.position) }}</span>@if (showWs()) { <span class="card-ws">{{ item.workshop.name }}</span> }</div>
-              <div class="status-pill" [class.ready]="item.ready">
+              @if (item.registered || !item.placed) { <app-sub-flags class="card-flags" [registered]="item.registered" [placed]="item.placed" /> } @else { <div class="status-pill" [class.ready]="item.ready">
                 <span class="pill-dot-wrap">
                   @if (!item.ready) { <span class="pill-ring pulse-ring" style="border-color: var(--accent)"></span> }
                   <span class="pill-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--progress)'"></span>
                 </span>
                 {{ item.display.label }}
-              </div>
+              </div> }
             </div>
             @if (showWs() && wsInfo(item.workshop)) { <div class="card-meta">{{ wsInfo(item.workshop) }}</div> }
-            <div class="card-sub">{{ item.name }}<app-sub-flags [registered]="item.registered" [placed]="item.placed" /><app-level-badge [item]="item.level" /></div>
+            <div class="card-sub">{{ item.name }}<app-level-badge [item]="item.level" /></div>
               <app-next-route [item]="item.next" />
             @if (item.upkeep) { <div class="card-uk"><app-upkeep-tag [item]="item.upkeep" /></div> }
             @if (item.level) { <div class="card-lv"><app-level-tag [item]="item.level" /></div> }

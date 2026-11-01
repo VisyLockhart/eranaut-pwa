@@ -7,7 +7,7 @@ import { IconComponent } from '../ui/icon';
 import { PositionEditor } from './position-editor';
 
 /**
- * 管理模式的對話框(D-313、D-314):刪除確認、搬移 / 複製+搬移的目的工坊、位置編輯。
+ * 管理模式的對話框(D-313、D-314):刪除確認、搬移 / 複製到...的目的工坊、位置編輯。
  * 桌機是置中視窗,手機是貼底的面板(沿用工坊管理的 rt-sheet 樣式)。
  */
 @Component({

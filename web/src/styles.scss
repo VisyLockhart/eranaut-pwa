@@ -2098,3 +2098,28 @@ html[data-motion='reduced'] .mg-new, html[data-motion='reduced'] .mg-new i { ani
 .mg-pitem { display: flex; align-items: center; gap: 8px; flex: 1 1 200px; min-height: 44px; padding: 4px 10px; box-sizing: border-box; border-radius: calc(10px * var(--rs)); border: var(--bw) solid var(--border-strong); background: var(--bg-elevated); color: var(--text); font: inherit; text-align: left; cursor: grab; }
 .mg-pitem.hold { border-color: var(--amber); box-shadow: 0 0 0 2px color-mix(in srgb, var(--amber) 40%, transparent); }
 .mg-dots { display: inline-flex; align-items: center; color: var(--text-dim); }
+
+/* ---- 管理模式調整(D-313~D-315 後續):狀態欄標籤、位置編輯拖曳 ---- */
+/* 「新登記」「未排入」標籤放在狀態欄;兩個同時出現時,空間夠就並排,不夠就自動上下排 */
+.mg-flags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
+.mg-flags .mg-new, .mg-flags .mg-unplaced { margin-left: 0; }
+.t-status .mg-flags { justify-content: flex-start; }
+.row-right .mg-flags { justify-content: flex-end; margin-top: 2px; }
+.card-flags { flex: 0 1 auto; }
+.mg-pe { display: flex; flex-direction: column; gap: 12px; }
+/* 拖曳把手(格子與未排入清單共用) */
+.mg-slot-btn .mg-dots, .mg-pitem .mg-dots { cursor: grab; touch-action: none; padding: 8px 4px; margin: -8px -4px; }
+.mg-slot-btn .mg-dots:active, .mg-pitem .mg-dots:active { cursor: grabbing; }
+.mg-slot { position: relative; }
+/* 拖到的格子:虛線框 + 淡掉內容 + 中央寫出放開後會發生什麼(仿工坊管理的「放開即放在這裡」) */
+.mg-slot.drop-target, .mg-pool.drop-target { border: var(--bw) dashed var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); }
+.mg-slot.drop-target > *, .mg-pool.drop-target > * { opacity: 0.22; }
+.mg-slot.drop-target::after, .mg-pool.drop-target::after { content: attr(data-hint); position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-start; padding-left: 16px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.04em; color: var(--accent); pointer-events: none; }
+.mg-pool { position: relative; }
+/* 被抓起來的那一格:原位留一個淡淡的虛影 */
+.mg-slot-btn.cdk-drag-placeholder, .mg-pitem.cdk-drag-placeholder { opacity: 0.3; }
+.mg-pe.dragging, .mg-pe.dragging * { cursor: grabbing !important; }
+/* CDK 用螢幕像素算預覽位置,介面大小(zoom)要先抵銷再放大回來(同 .ws-row.cdk-drag-preview) */
+.mg-drag-preview.cdk-drag-preview { width: auto !important; max-width: calc(250px * var(--ui-scale)); min-width: calc(150px * var(--ui-scale)); display: flex; align-items: center; box-sizing: border-box; zoom: calc(1 / var(--ui-scale)); gap: calc(10px * var(--ui-scale)); padding: calc(6px * var(--ui-scale)) calc(12px * var(--ui-scale)); border: var(--bw) solid var(--accent); border-radius: calc(12px * var(--ui-scale) * var(--rs)); background: var(--bg-elevated); color: var(--text); font: inherit; text-align: left; box-shadow: 0 14px 32px color-mix(in srgb, var(--shade) 55%, transparent); opacity: 0.96; cursor: grabbing; }
+.mg-drag-preview.cdk-drag-preview > * { zoom: var(--ui-scale); }
+.mg-drag-preview.cdk-drag-preview .mg-slot-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; }

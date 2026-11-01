@@ -93,7 +93,7 @@ describe('ManageVm', () => {
     expect(mg.selectState()).toBe('none');
   });
 
-  it('目的地列:搬移單選、複製+搬移多選;超過 4 艘標示超過但不阻擋', () => {
+  it('目的地列:搬移單選、複製到...多選;超過 4 艘標示超過但不阻擋', () => {
     vm.select('A');
     TestBed.tick();
     mg.enter();

@@ -27,7 +27,7 @@ export class MgBox {
     @if (registered()) { <span class="mg-new"><i aria-hidden="true"></i>新登記</span> }
     @if (!placed()) { <span class="mg-unplaced">未排入</span> }
   `,
-  host: { style: 'display: contents' },
+  host: { class: 'mg-flags' },
 })
 export class SubFlags {
   readonly registered = input(false);

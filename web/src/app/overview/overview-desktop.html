@@ -84,8 +84,7 @@
     </div>
   }
   <div class="ov-tools">
-    <span class="ov-tools-label">排序</span>
-    <app-overview-sort [compact]="true" />
+    <app-overview-sort [compact]="true" [showLabel]="true" />
     <div class="pill-toggle">
       <button class="icon-btn" [class.active]="store.view() === 'list'" style="width: 30px; height: 30px" (click)="store.setView('list')" aria-label="切換為表格檢視" [attr.aria-pressed]="store.view() === 'list'"><app-icon name="list" [size]="15" /></button>
       <button class="icon-btn" [class.active]="store.view() === 'card'" style="width: 30px; height: 30px" (click)="store.setView('card')" aria-label="切換為卡片檢視" [attr.aria-pressed]="store.view() === 'card'"><app-icon name="grid" [size]="15" /></button>
@@ -132,7 +131,7 @@
           </div>
           }
           <div class="sub-no">{{ circled(item.position) }}</div>
-          <div class="t-sub">{{ item.name }}<app-sub-flags [registered]="item.registered" [placed]="item.placed" /><app-level-badge [item]="item.level" /><app-next-route [item]="item.next" /></div>
+          <div class="t-sub">{{ item.name }}<app-level-badge [item]="item.level" /><app-next-route [item]="item.next" /></div>
           @if (showWsCol()) {
             <div class="t-ws ws-tooltip-wrap">
               <div class="t-ws-name">{{ item.workshop.name }}</div>
@@ -146,7 +145,7 @@
               @if (item.level) { <div class="t-lv"><app-level-tag [item]="item.level" /></div> }
             </div>
           }
-          <div class="t-status" [class.ready]="item.ready">{{ item.display.label }}</div>
+          <div class="t-status" [class.ready]="item.ready">@if (item.registered || !item.placed) { <app-sub-flags [registered]="item.registered" [placed]="item.placed" /> } @else { {{ item.display.label }} }</div>
           <div class="t-time mono" [style.color]="item.ready ? 'var(--amber)' : null">{{ item.display.time }}</div>
           <div class="t-eta mono">{{ item.display.eta }}</div>
         </div>
@@ -170,16 +169,16 @@
         <div class="qe d-card" [class.ready]="item.ready" [attr.role]="mg.active() ? 'checkbox' : 'button'" tabindex="0" [attr.aria-checked]="mg.active() ? mg.isPicked(item.id) : null" [attr.aria-label]="(mg.active() ? '選取 ' : '快速修改 ') + item.name" [class.picked]="mg.isPicked(item.id)" [class.is-idle]="!item.placed || item.registered" [class.dim]="!item.placed" (click)="tap(item)" (keydown.enter)="tap(item)" (keydown.space)="tapSpace($event, item)">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px">
             @if (mg.active()) { <span class="mg-card-box"><app-mg-box [state]="mg.isPicked(item.id) ? 'all' : 'none'" /></span> }
-            <div class="status-pill" [class.ready]="item.ready">
+            @if (item.registered || !item.placed) { <app-sub-flags class="card-flags" [registered]="item.registered" [placed]="item.placed" /> } @else { <div class="status-pill" [class.ready]="item.ready">
               <span class="pill-dot-wrap">
                 @if (!item.ready) { <span class="pill-ring pulse-ring" style="border-color: var(--accent)"></span> }
                 <span class="pill-dot" [class.pulse-dot]="!item.ready" [style.background]="item.ready ? 'var(--amber)' : 'var(--progress)'"></span>
               </span>
               {{ item.display.label }}
-            </div>
+            </div> }
             <div class="sub-no">{{ circled(item.position) }}</div>
           </div>
-          <div class="d-card-sub">{{ item.name }}<app-sub-flags [registered]="item.registered" [placed]="item.placed" /><app-level-badge [item]="item.level" /></div>
+          <div class="d-card-sub">{{ item.name }}<app-level-badge [item]="item.level" /></div>
           <app-next-route [item]="item.next" />
           @if (item.upkeep) { <div class="card-uk"><app-upkeep-tag [item]="item.upkeep" /></div> }
           @if (item.level) { <div class="card-lv"><app-level-tag [item]="item.level" /></div> }
