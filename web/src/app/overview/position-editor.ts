@@ -39,7 +39,7 @@ type DropTarget = number | 'pool' | null;
               @if (id) { <span class="mg-dots" cdkDragHandle aria-label="拖曳排列" role="img"><app-icon name="dragDots" [size]="18" /></span> }
               <span class="mg-slot-no">{{ circled(i + 1) }}</span>
               @if (id && info(id); as s) {
-                <span class="mg-slot-main"><b>{{ s.name }}</b>@if (s.level) { <span class="mg-lv">Lv {{ s.level }}</span> }@if (isMoved(id, i)) { <span class="mg-tag">原 {{ s.from }}</span> }</span>
+                <span class="mg-slot-main"><b>{{ s.name }}</b>@if (s.level) { <span class="mg-lv">Lv {{ s.level }}</span> }@if (isMoved(id, i)) { <span class="mg-tag">{{ s.from ? '原 ' + s.from : '原未排入' }}</span> }</span>
               } @else {
                 <span class="mg-slot-main muted">空位 ・ {{ held() ? '點此放入' : '拖入潛艇' }}</span>
               }
@@ -59,7 +59,7 @@ type DropTarget = number | 'pool' | null;
             <button type="button" class="mg-pitem" cdkDrag cdkDragPreviewClass="mg-drag-preview" [class.hold]="id === held() && !drag()" [attr.aria-pressed]="id === held()" (cdkDragStarted)="dragStart(id, null)" (cdkDragMoved)="dragMove($event)" (click)="tapPool(id)">
               <span class="mg-dots" cdkDragHandle aria-label="拖曳排列" role="img"><app-icon name="dragDots" [size]="16" /></span>
               <span class="mg-slot-main"><b>{{ info(id)?.name }}</b>@if (info(id)?.level; as lv) { <span class="mg-lv">Lv {{ lv }}</span> }</span>
-              <span class="mg-tag">原 {{ info(id)?.from }}</span>
+              @if (info(id)?.from; as f) { <span class="mg-tag">原 {{ f }}</span> }
             </button>
           }
         </div>

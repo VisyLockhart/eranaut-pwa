@@ -61,6 +61,8 @@ export class ManageVm {
   /** 位置編輯的目前狀態(對話框開著才有) */
   readonly layout = signal<LayoutState | null>(null);
   private layoutBase: LayoutState | null = null;
+  /** 開窗當下各潛艇所在的格子標號(D-324);原本未排入的不在內 */
+  private readonly layoutOrigin = signal<ReadonlyMap<string, string>>(new Map());
 
   constructor() {
     // 回到「全部」檢視、換工坊:離開管理模式,丟棄選取與未送出的對話框
@@ -143,6 +145,7 @@ export class ManageVm {
     const ws = this.workshop();
     if (!ws) return;
     this.layoutBase = initLayout(ws.submarines);
+    this.layoutOrigin.set(new Map(this.layoutBase.slots.flatMap((id, i) => (id ? [[id, circled(i + 1)] as [string, string]] : []))));
     this.layout.set(this.layoutBase);
     this.open('layout');
   }
@@ -262,7 +265,7 @@ export class ManageVm {
 
   readonly layoutSubs = computed(() => {
     const m = new Map<string, LayoutSub>();
-    for (const s of this.workshop()?.submarines ?? []) m.set(s.id, { id: s.id, name: s.name ?? defaultSubName(s.position), level: s.progress?.effective_level ?? null, from: circled(s.position) });
+    for (const s of this.workshop()?.submarines ?? []) m.set(s.id, { id: s.id, name: s.name ?? defaultSubName(s.position), level: s.progress?.effective_level ?? null, from: this.layoutOrigin().get(s.id) ?? '' });
     return m;
   });
   readonly layoutChanged = computed(() => {
