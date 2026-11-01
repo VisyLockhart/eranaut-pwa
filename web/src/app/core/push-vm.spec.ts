@@ -171,6 +171,27 @@ describe('PushVm(D-165)', () => {
     http.expectNone('/api/push/subscription');
   });
 
+  it('service worker 沒回應:逾時後提示修復、按鈕恢復(D-320)', async () => {
+    const vm = setup();
+    await load(vm);
+    vi.useFakeTimers();
+    try {
+      sw.requestSubscription.mockImplementation(() => new Promise<PushSubscription>(() => undefined));
+      const p = vm.enable();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(vm.busy()).toBe(true);
+      await vi.advanceTimersByTimeAsync(8000);
+      await p;
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(vm.busy()).toBe(false);
+    expect(vm.stuck()).toBe(true);
+    expect(vm.message()?.kind).toBe('error');
+    expect(vm.message()?.text).toContain('修復');
+    http.expectNone('/api/push/subscription');
+  });
+
   it('伺服器登記失敗:取消瀏覽器訂閱(不留孤兒)並提示', async () => {
     const vm = setup();
     await load(vm);

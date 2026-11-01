@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { SwUpdate } from '@angular/service-worker';
 import { filter, firstValueFrom } from 'rxjs';
+import { PUSH_INTENT_KEY, writeJson } from './storage';
 import { Toast } from './toast';
 
 /** App 開著時,每隔多久問一次有沒有新版(Angular 預設只在啟動與換頁時檢查,安裝成 App 長時間開著就不會發現新版) */
@@ -20,9 +21,9 @@ export const SW_CALL_TIMEOUT_MS = 8000;
 /** 直接問伺服器(index.html)的逾時上限(D-266);超過就中止這次請求,視為抓不到 */
 export const LIVE_FETCH_TIMEOUT_MS = 8000;
 
-const TIMED_OUT = Symbol('timed-out');
+export const TIMED_OUT = Symbol('timed-out');
 /** 等 promise 最多 ms 毫秒;逾時回傳 TIMED_OUT。計時器一定會清掉 */
-async function within<T>(p: Promise<T>, ms: number): Promise<T | typeof TIMED_OUT> {
+export async function within<T>(p: Promise<T>, ms: number): Promise<T | typeof TIMED_OUT> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([p, new Promise<typeof TIMED_OUT>((resolve) => (timer = setTimeout(() => resolve(TIMED_OUT), ms)))]);
@@ -219,10 +220,29 @@ export class AppUpdate {
     this.brokenDismissed.set(true);
   }
 
+  /**
+   * 解除註冊會連推播訂閱一起刪掉(D-278)。這台目前有訂閱就先記下「要收推播」的意願旗標,
+   * 重載後 `PushVm.sync()` 才會在權限仍是「已允許」時靜默重新訂閱並登記(D-320)。只讀訂閱、不改動 service worker;讀不到(逾時 / 失敗)就略過。
+   */
+  protected async rememberPushIntent(regs: readonly ServiceWorkerRegistration[]): Promise<void> {
+    try {
+      for (const r of regs) {
+        const sub = await within(r.pushManager.getSubscription(), 3000);
+        if (sub !== TIMED_OUT && sub) {
+          writeJson(PUSH_INTENT_KEY, true);
+          return;
+        }
+      }
+    } catch {
+      /* 盡力而為 */
+    }
+  }
+
   /** 解除 service worker 並清掉它的快取;失敗也不擋重載 */
   protected async resetServiceWorker(): Promise<void> {
     try {
       const regs = (await navigator.serviceWorker?.getRegistrations?.()) ?? [];
+      await this.rememberPushIntent(regs);
       await Promise.all(regs.map((r) => r.unregister()));
       const keys = await caches.keys();
       await Promise.all(keys.filter((k) => k.startsWith('ngsw:')).map((k) => caches.delete(k)));

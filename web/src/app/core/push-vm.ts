@@ -3,9 +3,12 @@ import { Injectable, inject, signal } from '@angular/core';
 import { SwPush } from '@angular/service-worker';
 import { firstValueFrom } from 'rxjs';
 import { Api } from './api';
+import { SW_CALL_TIMEOUT_MS, TIMED_OUT, within } from './app-update';
 import { PushEnv } from './push-env';
 import { SettingsVm } from './settings-vm';
-import { readJson, removeKey, writeJson } from './storage';
+import { PUSH_INTENT_KEY, readJson, removeKey, writeJson } from './storage';
+
+export { PUSH_INTENT_KEY };
 
 /**
  * 這台裝置的推播狀態(D-165):
@@ -34,7 +37,6 @@ const FOREGROUND_MIN_GAP_MS = 15 * 60 * 1000;
  * 瀏覽器的推播訂閱綁在 service worker 註冊上:更新流程在 service worker 卡住時會解除註冊並重設(AppUpdate.apply / repair),
  * 訂閱就跟著消失,設定頁看起來「裝置不見了」、也收不到通知。有這個意願旗標,開機時 `sync()` 就能在權限仍是「已允許」時自動重新訂閱並登記。
  */
-export const PUSH_INTENT_KEY = 'eranaut.push-on';
 
 @Injectable({ providedIn: 'root' })
 export class PushVm {
@@ -55,6 +57,8 @@ export class PushVm {
   private foregroundHandler: (() => void) | null = null;
   /** 這台裝置「本來有開推播」但現在沒有可用的訂閱(例如 service worker 被重設後補綁失敗):設定頁據此顯示提示與重新連線 */
   readonly lost = signal(false);
+  /** service worker 沒回應(訂閱要求逾時):設定頁據此顯示「修復」,不再無聲無息地卡住(D-320) */
+  readonly stuck = signal(false);
 
   async load(): Promise<void> {
     this.message.set(null);
@@ -96,7 +100,14 @@ export class PushVm {
         else this.message.set({ kind: 'error', text: '沒有取得通知權限，推播沒有開啟。' });
         return;
       }
-      const sub = await this.sw.requestSubscription({ serverPublicKey: this.publicKey });
+      // service worker 沒有回應時 requestSubscription 永遠不結束:逾時就提示修復,而不是讓按鈕一直停用(D-320)
+      const sub = await within(this.sw.requestSubscription({ serverPublicKey: this.publicKey }), SW_CALL_TIMEOUT_MS);
+      if (sub === TIMED_OUT) {
+        this.stuck.set(true);
+        this.message.set({ kind: 'error', text: '更新機制沒有回應，請按下方的「修復」後再試。' });
+        return;
+      }
+      this.stuck.set(false);
       const json = sub.toJSON();
       if (!json.endpoint || !json.keys?.['p256dh'] || !json.keys['auth']) throw new Error('subscription_incomplete');
       try {

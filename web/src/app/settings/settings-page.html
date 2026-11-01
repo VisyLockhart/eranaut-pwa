@@ -112,6 +112,9 @@
         } @else if (push.lost()) {
           <div class="uf-note push-lost" style="margin-top: 10px" role="status">這台裝置的推播連線中斷了（常見於更新後），目前收不到通知。按「重新連線」即可恢復，不會再詢問權限。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" [disabled]="push.busy()" (click)="push.enable()">重新連線</button></div>
         }
+        @if (push.stuck() || up.broken()) {
+          <div class="uf-note push-stuck" style="margin-top: 10px" role="status">更新機制沒有回應，推播與更新檢查都會失效。按「修復」會重設後重新載入，推播會自動重新連上。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" [disabled]="up.applying()" (click)="up.repair()">{{ up.applying() ? '修復中…' : '修復' }}</button></div>
+        }
       }
       @case ('blocked') {
         <div class="uf-note" style="margin-top: 12px" role="status">這個網站的通知被封鎖了，無法開啟推播。請到瀏覽器或系統的網站設定，把通知改成「允許」後，重新整理頁面。</div>

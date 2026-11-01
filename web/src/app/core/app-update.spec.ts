@@ -373,6 +373,23 @@ describe('service worker 沒回應(SAFE_MODE)時不會卡住(D-266)', () => {
     expect(update.broken()).toBe(false);
   });
 
+  it('重設前先記下推播意願(D-320):有訂閱就寫旗標,沒有或讀不到就不寫,也不呼叫任何寫入 / 解除', async () => {
+    const update = setup();
+    const inner = update as unknown as { rememberPushIntent: (r: unknown[]) => Promise<void> };
+    localStorage.removeItem('eranaut.push-on');
+    await inner.rememberPushIntent([{ pushManager: { getSubscription: () => Promise.resolve(null) } }]);
+    expect(localStorage.getItem('eranaut.push-on')).toBeNull();
+    await inner.rememberPushIntent([{ pushManager: { getSubscription: () => Promise.reject(new Error('x')) } }]);
+    expect(localStorage.getItem('eranaut.push-on')).toBeNull();
+    const hang = inner.rememberPushIntent([{ pushManager: { getSubscription: () => new Promise(() => undefined) } }]);
+    await vi.advanceTimersByTimeAsync(3000);
+    await hang;
+    expect(localStorage.getItem('eranaut.push-on')).toBeNull();
+    await inner.rememberPushIntent([{ pushManager: { getSubscription: () => Promise.resolve({}) } }]);
+    expect(localStorage.getItem('eranaut.push-on')).toBe('true');
+    localStorage.removeItem('eranaut.push-on');
+  });
+
   it('「修復」:解除 service worker、清快取、略過 service worker 重載,連按只做一次;「稍後」收起、再手動檢查會重新顯示', async () => {
     const update = setup();
     const p = update.checkNow();
