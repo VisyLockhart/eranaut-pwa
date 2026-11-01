@@ -55,6 +55,71 @@
     </div>
   </div>
 
+  <div class="modal-section-label">提醒方式</div>
+  @if (vm.prefs(); as p) {
+    <div class="modal-toggle-row" style="margin-top: 0">
+      <label class="switch"><input type="checkbox" [checked]="p.dm" [disabled]="vm.saving()" (change)="vm.toggle('dm')" aria-labelledby="set-dm-label" /><span class="slider"></span></label>
+      <div>
+        <div id="set-dm-label" style="font-size: 13px; font-weight: 600">Discord 私訊</div>
+        <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">由 Eranarch 私訊你，只有你看得到</div>
+      </div>
+    </div>
+    <div class="modal-toggle-row">
+      <label class="switch"><input type="checkbox" [checked]="p.channel" [disabled]="vm.saving()" (change)="vm.toggle('channel')" aria-labelledby="set-ch-label" /><span class="slider"></span></label>
+      <div>
+        <div id="set-ch-label" style="font-size: 13px; font-weight: 600">伺服器頻道 @ 提及</div>
+        <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">在伺服器的通知頻道提及你。<span style="color: var(--amber)">這是公開訊息</span>，看得到該頻道的人都看得到</div>
+      </div>
+    </div>
+    @switch (push.state()) {
+      @case ('ready') {
+        <div class="modal-toggle-row" style="flex-wrap: wrap; row-gap: 10px">
+          <label class="switch"><input type="checkbox" [checked]="push.enabled()" [disabled]="push.busy()" (change)="push.enabled() ? push.disable() : push.enable()" aria-labelledby="set-push-label" /><span class="slider"></span></label>
+          <div style="flex: 1 1 200px; min-width: 0">
+            <div id="set-push-label" style="font-size: 13px; font-weight: 600">這台裝置的推播通知</div>
+            <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">關掉視窗也收得到，點通知會開啟 Eranaut。每台裝置要分別開啟</div>
+            @if (push.message(); as m) {
+              <div [class]="m.kind === 'error' ? 'modal-error-text' : ''" style="font-size: 11.5px; margin-top: 6px" [style.color]="m.kind === 'error' ? null : 'var(--text-dim)'" [attr.role]="m.kind === 'error' ? 'alert' : 'status'">{{ m.text }}</div>
+            }
+          </div>
+          @if (push.enabled()) {
+            <button type="button" class="ghost-btn" style="width: auto; padding: 8px 14px; margin-left: auto" [disabled]="push.busy()" (click)="push.test()">傳送測試通知</button>
+          }
+        </div>
+        @if (!push.enabled() && push.lost()) {
+          <div class="uf-note push-lost" style="margin-top: 10px" role="status">這台裝置的推播連線中斷了（常見於更新後），目前收不到通知。按「重新連線」即可恢復，不會再詢問權限。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" [disabled]="push.busy()" (click)="push.enable()">重新連線</button></div>
+        }
+        @if (push.stuck() || up.broken()) {
+          <div class="uf-note push-stuck" style="margin-top: 10px" role="status">更新機制沒有回應，推播與更新檢查都會失效。按「修復」會重設後重新載入，推播會自動重新連上。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" [disabled]="up.applying()" (click)="up.repair()">{{ up.applying() ? '修復中…' : '修復' }}</button></div>
+        }
+      }
+      @case ('blocked') {
+        <div class="uf-note" style="margin-top: 12px" role="status">這個網站的通知被封鎖了，無法開啟推播。請到瀏覽器或系統的網站設定，把通知改成「允許」後，重新整理頁面。</div>
+      }
+      @case ('ios-install') {
+        <div class="uf-note" style="margin-top: 12px" role="status">想在 iPhone / iPad 收推播通知：先在 Safari 按分享鈕，選「加入主畫面」，再從主畫面的圖示開啟 Eranaut，回到這裡就能開啟。</div>
+      }
+      @case ('unsupported') {
+        <div class="uf-note" style="margin-top: 12px" role="status">這個瀏覽器不支援推播通知（iPhone / iPad 需要 iOS 16.4 以上）。</div>
+      }
+      @case ('error') {
+        <div class="uf-note" style="margin-top: 12px" role="status">推播狀態讀取失敗。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" (click)="push.load()">重試</button></div>
+      }
+    }
+    @if (push.state() !== 'ready' && push.message(); as m) {
+      <div [class]="m.kind === 'error' ? 'modal-error-text' : 'uf-note'" style="margin-top: 10px" [attr.role]="m.kind === 'error' ? 'alert' : 'status'">{{ m.text }}</div>
+    }
+    @if (!p.dm && !p.channel && !p.push) {
+      <div class="uf-note" style="margin-top: 12px" role="status">所有方式都關閉時，不會收到任何潛艇提醒。</div>
+    }
+    <div class="uf-note" style="margin-top: 12px">每間工坊另可設定「整批提醒」與「預先提醒」，到總覽切到該工坊，按「工坊設定」。</div>
+    @if (vm.saveError(); as message) { <div class="modal-error-text" role="alert">{{ message }}</div> }
+  } @else if (vm.loadError()) {
+    <div class="up-empty">讀取失敗。<br /><button type="button" class="ghost-btn" style="margin-top: 12px; max-width: 160px" (click)="vm.load()">重試</button></div>
+  } @else {
+    <div class="up-empty">讀取中…</div>
+  }
+
   <div class="modal-section-label">版本</div>
   <div class="modal-toggle-row" style="margin-top: 0">
     <div style="flex: 1; min-width: 0">
@@ -80,66 +145,5 @@
       </div>
       <button type="button" class="ghost-btn" style="width: auto; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px" [disabled]="up.checking()" (click)="up.checkAndNotify()"><app-icon name="refresh" [size]="15" />{{ up.checking() ? '檢查中…' : '檢查更新' }}</button>
     </div>
-  }
-
-  <div class="modal-section-label">提醒方式</div>
-  @if (vm.prefs(); as p) {
-    <div class="modal-toggle-row" style="margin-top: 0">
-      <label class="switch"><input type="checkbox" [checked]="p.dm" [disabled]="vm.saving()" (change)="vm.toggle('dm')" aria-labelledby="set-dm-label" /><span class="slider"></span></label>
-      <div>
-        <div id="set-dm-label" style="font-size: 13px; font-weight: 600">Discord 私訊</div>
-        <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">由 Eranarch 私訊你，只有你看得到</div>
-      </div>
-    </div>
-    <div class="modal-toggle-row">
-      <label class="switch"><input type="checkbox" [checked]="p.channel" [disabled]="vm.saving()" (change)="vm.toggle('channel')" aria-labelledby="set-ch-label" /><span class="slider"></span></label>
-      <div>
-        <div id="set-ch-label" style="font-size: 13px; font-weight: 600">伺服器頻道 @ 提及</div>
-        <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">在伺服器的通知頻道提及你。<span style="color: var(--amber)">這是公開訊息</span>，看得到該頻道的人都看得到</div>
-      </div>
-    </div>
-    @switch (push.state()) {
-      @case ('ready') {
-        <div class="modal-toggle-row">
-          <label class="switch"><input type="checkbox" [checked]="push.enabled()" [disabled]="push.busy()" (change)="push.enabled() ? push.disable() : push.enable()" aria-labelledby="set-push-label" /><span class="slider"></span></label>
-          <div style="flex: 1; min-width: 0">
-            <div id="set-push-label" style="font-size: 13px; font-weight: 600">這台裝置的推播通知</div>
-            <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">關掉視窗也收得到，點通知會開啟 Eranaut。每台裝置要分別開啟</div>
-          </div>
-        </div>
-        @if (push.enabled()) {
-          <button type="button" class="ghost-btn" style="margin-top: 10px; width: auto; padding: 8px 14px" [disabled]="push.busy()" (click)="push.test()">傳送測試通知</button>
-        } @else if (push.lost()) {
-          <div class="uf-note push-lost" style="margin-top: 10px" role="status">這台裝置的推播連線中斷了（常見於更新後），目前收不到通知。按「重新連線」即可恢復，不會再詢問權限。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" [disabled]="push.busy()" (click)="push.enable()">重新連線</button></div>
-        }
-        @if (push.stuck() || up.broken()) {
-          <div class="uf-note push-stuck" style="margin-top: 10px" role="status">更新機制沒有回應，推播與更新檢查都會失效。按「修復」會重設後重新載入，推播會自動重新連上。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" [disabled]="up.applying()" (click)="up.repair()">{{ up.applying() ? '修復中…' : '修復' }}</button></div>
-        }
-      }
-      @case ('blocked') {
-        <div class="uf-note" style="margin-top: 12px" role="status">這個網站的通知被封鎖了，無法開啟推播。請到瀏覽器或系統的網站設定，把通知改成「允許」後，重新整理頁面。</div>
-      }
-      @case ('ios-install') {
-        <div class="uf-note" style="margin-top: 12px" role="status">想在 iPhone / iPad 收推播通知：先在 Safari 按分享鈕，選「加入主畫面」，再從主畫面的圖示開啟 Eranaut，回到這裡就能開啟。</div>
-      }
-      @case ('unsupported') {
-        <div class="uf-note" style="margin-top: 12px" role="status">這個瀏覽器不支援推播通知（iPhone / iPad 需要 iOS 16.4 以上）。</div>
-      }
-      @case ('error') {
-        <div class="uf-note" style="margin-top: 12px" role="status">推播狀態讀取失敗。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" (click)="push.load()">重試</button></div>
-      }
-    }
-    @if (push.message(); as m) {
-      <div [class]="m.kind === 'error' ? 'modal-error-text' : 'uf-note'" style="margin-top: 10px" [attr.role]="m.kind === 'error' ? 'alert' : 'status'">{{ m.text }}</div>
-    }
-    @if (!p.dm && !p.channel && !p.push) {
-      <div class="uf-note" style="margin-top: 12px" role="status">所有方式都關閉時，不會收到任何潛艇提醒。</div>
-    }
-    <div class="uf-note" style="margin-top: 12px">每間工坊另可設定「整批提醒」與「預先提醒」，到總覽切到該工坊，按「工坊設定」。</div>
-    @if (vm.saveError(); as message) { <div class="modal-error-text" role="alert">{{ message }}</div> }
-  } @else if (vm.loadError()) {
-    <div class="up-empty">讀取失敗。<br /><button type="button" class="ghost-btn" style="margin-top: 12px; max-width: 160px" (click)="vm.load()">重試</button></div>
-  } @else {
-    <div class="up-empty">讀取中…</div>
   }
 </ng-template>
