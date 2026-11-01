@@ -1,5 +1,5 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { circled } from '../core/format';
 import { Layout } from '../core/layout';
 import { ManageVm } from '../core/manage-vm';
@@ -48,11 +48,19 @@ import { PositionEditor } from './position-editor';
                 <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
               </div>
               <div class="rt-dlg-body"><app-position-editor [mobile]="!layout.isDesktop()" /></div>
-              <div class="rt-dlg-foot mg-foot">
-                <button type="button" class="btn-secondary mg-reset" [disabled]="mg.layoutChanged() === 0" (click)="mg.layoutReset()">還原</button>
-                <button type="button" class="btn-secondary" (click)="close()">取消</button>
-                <button type="button" class="btn-primary-modal" [disabled]="mg.layoutChanged() === 0 || mg.busy()" (click)="mg.applyLayout()">{{ mg.busy() ? '套用中…' : '套用排列' }}</button>
-              </div>
+              @if (confirmDiscard()) {
+                <div class="mg-discard"><div class="mg-warn danger" role="alert"><app-icon name="warning" [size]="16" /><span>有 {{ mg.layoutChanged() }} 處排列變動<b>還沒套用</b>，現在關閉會全部捨棄。</span></div></div>
+                <div class="rt-dlg-foot mg-foot">
+                  <button type="button" class="btn-secondary" (click)="confirmDiscard.set(false)">繼續編輯</button>
+                  <button type="button" class="btn-danger" (click)="discard()">放棄變更</button>
+                </div>
+              } @else {
+                <div class="rt-dlg-foot mg-foot">
+                  <button type="button" class="btn-secondary mg-reset" [disabled]="mg.layoutChanged() === 0" (click)="mg.layoutReset()">還原</button>
+                  <button type="button" class="btn-secondary" (click)="close()">取消</button>
+                  <button type="button" class="btn-primary-modal" [disabled]="mg.layoutChanged() === 0 || mg.busy()" (click)="mg.applyLayout()">{{ mg.busy() ? '套用中…' : '套用排列' }}</button>
+                </div>
+              }
             </div>
           }
           @default {
@@ -108,8 +116,17 @@ export class ManageDialogs {
     if (this.downOnOverlay && event.target === event.currentTarget) this.close();
     this.downOnOverlay = false;
   }
+  /** 位置編輯有未套用的變動時,關閉前先確認(D-316);Esc 在確認中 = 繼續編輯 */
+  protected readonly confirmDiscard = signal(false);
   protected close(): void {
-    if (!this.mg.busy()) this.mg.closeDialog();
+    if (this.mg.busy()) return;
+    if (this.confirmDiscard()) return void this.confirmDiscard.set(false);
+    if (this.mg.dialog() === 'layout' && this.mg.layoutChanged() > 0) return void this.confirmDiscard.set(true);
+    this.mg.closeDialog();
+  }
+  protected discard(): void {
+    this.confirmDiscard.set(false);
+    this.mg.closeDialog();
   }
   protected overText(): string {
     return this.mg.overDests().map((d) => `「${d.name}」放入後共 ${d.after} 艘`).join('、') + '，超過建議的 4 艘。';

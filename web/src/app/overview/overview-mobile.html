@@ -209,6 +209,5 @@
   </div>
 }
 @if (store.loaded() && vm.currentWorkshop()) {
-  @if (mg.active()) { <button type="button" class="mg-addrow mobile" (click)="mg.addSubmarine()" [disabled]="mg.busy()"><app-icon name="plus" [size]="16" />新增潛艇</button> }
   <app-manage-bar [mobile]="true" />
 }
