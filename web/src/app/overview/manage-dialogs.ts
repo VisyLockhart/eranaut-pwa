@@ -4,6 +4,7 @@ import { circled } from '../core/format';
 import { Layout } from '../core/layout';
 import { ManageVm } from '../core/manage-vm';
 import { IconComponent } from '../ui/icon';
+import { SubNo } from '../ui/sub-no';
 import { PositionEditor } from './position-editor';
 
 /**
@@ -12,7 +13,7 @@ import { PositionEditor } from './position-editor';
  */
 @Component({
   selector: 'app-manage-dialogs',
-  imports: [CdkTrapFocus, IconComponent, PositionEditor],
+  imports: [SubNo, CdkTrapFocus, IconComponent, PositionEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'close()' },
   template: `
@@ -28,7 +29,7 @@ import { PositionEditor } from './position-editor';
               <div class="rt-dlg-body">
                 <ul class="mg-list">
                   @for (s of mg.selectedItems(); track s.id) {
-                    <li><span class="sub-no">{{ circled(s.position) }}</span><b>{{ s.name }}</b>@if (s.level) { <span class="mg-lv">Lv {{ s.level.level }}</span> }@if (s.registered) { <span class="mg-new"><i aria-hidden="true"></i>新登記</span> }</li>
+                    <li><span class="sub-no"><app-sub-no [position]="s.position" [size]="15" /></span><b>{{ s.name }}</b>@if (s.level) { <span class="mg-lv">Lv {{ s.level.level }}</span> }@if (s.registered) { <span class="mg-new"><i aria-hidden="true"></i>新登記</span> }</li>
                   }
                 </ul>
                 <div class="mg-warn danger" role="note"><app-icon name="warning" [size]="16" /><span>刪除後<b>無法復原</b>。這些潛水艇的等級與經驗、配件、維修提醒、航線輔助與返航提醒都會一併刪除。</span></div>
@@ -75,7 +76,7 @@ import { PositionEditor } from './position-editor';
                   @else { 原艇留在「{{ mg.workshop()?.name }}」，複本放進勾選的工坊（可多選）。複本只帶名稱、配件、等級與經驗，狀態為「新登記」。 }
                 </div>
                 <div class="mg-chips">
-                  @for (s of mg.selectedItems(); track s.id) { <span class="mg-chip"><span class="sub-no">{{ circled(s.position) }}</span>{{ s.name }}</span> }
+                  @for (s of mg.selectedItems(); track s.id) { <span class="mg-chip"><span class="sub-no"><app-sub-no [position]="s.position" [size]="15" /></span>{{ s.name }}</span> }
                 </div>
                 <div class="mg-dests" role="group" [attr.aria-label]="kind === 'move' ? '選擇目的工坊（單選）' : '選擇目的工坊（可多選）'">
                   @for (d of mg.destRows(); track d.id) {

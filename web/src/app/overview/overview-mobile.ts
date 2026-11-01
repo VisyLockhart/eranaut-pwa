@@ -10,6 +10,7 @@ import { WorkshopsVm } from '../core/workshops-vm';
 import { SelectField } from '../ui/select';
 import { OverviewSort } from './overview-sort';
 import { IconComponent } from '../ui/icon';
+import { SubNo } from '../ui/sub-no';
 import { PULL_THRESHOLD, PullRefresh } from '../ui/pull-refresh';
 import { LevelBadge, LevelTag, NextRouteTag } from './level-tag';
 import { ManageBar } from './manage-bar';
@@ -24,7 +25,7 @@ const MIN_REFRESH_MS = 600;
 
 @Component({
   selector: 'app-overview-mobile',
-  imports: [IconComponent, RouterLink, PullRefresh, UpkeepTag, LevelBadge, LevelTag, NextRouteTag, SelectField, OverviewSort, ManageBar, MgBox, SubFlags, LongPress],
+  imports: [SubNo, IconComponent, RouterLink, PullRefresh, UpkeepTag, LevelBadge, LevelTag, NextRouteTag, SelectField, OverviewSort, ManageBar, MgBox, SubFlags, LongPress],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './overview-mobile.html',
   host: { style: 'display: contents' },

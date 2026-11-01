@@ -131,7 +131,7 @@
             <span class="row-dot" [class.pulse-dot]="!item.ready" style="width: 8px; height: 8px" [style.background]="item.ready ? 'var(--amber)' : 'var(--progress)'"></span>
           </div>
           }
-          <div class="sub-no">{{ circled(item.position) }}</div>
+          <div class="sub-no"><app-sub-no [position]="item.position" /></div>
           <div class="t-sub">{{ item.name }}<app-level-badge [item]="item.level" /><app-next-route [item]="item.next" /></div>
           @if (showWsCol()) {
             <div class="t-ws ws-tooltip-wrap">
@@ -176,7 +176,7 @@
               </span>
               {{ item.display.label }}
             </div> }
-            <div class="sub-no">{{ circled(item.position) }}</div>
+            <div class="sub-no"><app-sub-no [position]="item.position" /></div>
           </div>
           <div class="d-card-sub">{{ item.name }}<app-level-badge [item]="item.level" /></div>
           <app-next-route [item]="item.next" />

@@ -1,9 +1,10 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { circled } from '../core/format';
+import { circled, defaultSubName } from '../core/format';
 import { UpkeepVm, upkeepRouteLabel } from '../core/upkeep-vm';
 import { upkeepPartsLabel } from '@eranaut/shared';
 import { IconComponent } from '../ui/icon';
+import { SubNo } from '../ui/sub-no';
 
 /**
  * 同工坊 4 艘的維修面板(D-288)：手機是底部面板，桌機是置中對話框(同一份結構，差別只在樣式)。
@@ -12,7 +13,7 @@ import { IconComponent } from '../ui/icon';
  */
 @Component({
   selector: 'app-upkeep-panel',
-  imports: [CdkTrapFocus, IconComponent],
+  imports: [SubNo, CdkTrapFocus, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'vm.close()' },
   template: `
@@ -45,7 +46,7 @@ import { IconComponent } from '../ui/icon';
                   <label class="uk-pick">
                     <input type="checkbox" [checked]="vm.picked().has(i.id)" (change)="vm.toggle(i.id)" [attr.aria-label]="'選取 ' + circled(i.position)" />
                     <span class="uk-main">
-                      <span class="uk-name"><span class="sub-no">{{ circled(i.position) }}</span><b>{{ nameOf(i.id) }}</b><span class="uk-cfg mono">{{ upkeepPartsLabel(i.upkeep.parts_sig) }}</span></span>
+                      <span class="uk-name"><span class="sub-no"><app-sub-no [position]="i.position" [size]="15" /></span><b>{{ nameOf(i.id) }}</b><span class="uk-cfg mono">{{ upkeepPartsLabel(i.upkeep.parts_sig) }}</span></span>
                       <small class="uk-state">{{ i.phase === 'ok' ? '還能跑 ' + i.remaining + ' 趟' : i.status + '・' + i.upkeep.voyages_done + '/' + i.upkeep.limit_voyages + ' 趟' }}</small>
                       <span class="uk-dots" aria-hidden="true">
                         @for (d of dots(i.upkeep.limit_voyages); track d) { <i [class.f]="d <= i.upkeep.voyages_done"></i> }
@@ -84,7 +85,7 @@ import { IconComponent } from '../ui/icon';
                 </div>
               }
               @for (s of v.untracked; track s.id) {
-                <div class="uk-off"><span class="sub-no">{{ circled(s.position) }}</span> {{ s.name || '潛水艇 ' + s.position }}・未開啟維修提醒</div>
+                <div class="uk-off"><span class="sub-no"><app-sub-no [position]="s.position" [size]="15" /></span> {{ s.name || defaultName(s.position) }}・未開啟維修提醒</div>
               }
               @if (v.items.length === 0) {
                 <div class="uk-empty">這間工坊還沒有開啟維修提醒的潛艇。到總覽點一艘潛艇，在「快速修改」裡開啟「配件維修提醒」。</div>
@@ -111,6 +112,7 @@ import { IconComponent } from '../ui/icon';
 export class UpkeepPanel {
   protected readonly vm = inject(UpkeepVm);
   protected readonly circled = circled;
+  protected readonly defaultName = (position: number): string => defaultSubName(position, true);
   protected readonly upkeepRouteLabel = upkeepRouteLabel;
   protected readonly upkeepPartsLabel = upkeepPartsLabel;
   private downOnOverlay = false;
@@ -124,7 +126,7 @@ export class UpkeepPanel {
 
   protected nameOf(id: string): string {
     const s = this.vm.workshop()?.submarines.find((x) => x.id === id);
-    return s?.name || `潛水艇 ${s?.position ?? ''}`;
+    return s?.name || (s ? defaultSubName(s.position, true) : '潛水艇');
   }
 
   /** 一排圓點：實心 = 已跑，空心 = 還剩 */

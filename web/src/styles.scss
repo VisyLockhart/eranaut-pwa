@@ -1383,6 +1383,8 @@ app-select { display: block; }
 .table-ghead { padding: 9px 16px; border-top: var(--bw) solid color-mix(in srgb, var(--tone) 10%, transparent); background: color-mix(in srgb, var(--tone) 5%, transparent); }
 /* 潛艇編號(圈號)統一放大(D-290 續) */
 .sub-no { font-size: 17px; line-height: 1; color: var(--text-dim); font-weight: 400; }
+/* 未排入的潛艇不給編號,改空心「禁止」圖示(D-323);圖示在四個主題各有一版,顏色跟著 --text-dim */
+.no-ban { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; color: var(--text-dim); opacity: 0.85; }
 .ov-table .table-head, .ov-table .table-row { grid-template-columns: 24px 36px minmax(150px, 1.3fr) minmax(170px, 1.5fr) 0.8fr 1fr 1fr; }
 .ov-table.with-ws .table-head, .ov-table.with-ws .table-row { grid-template-columns: 24px 36px minmax(140px, 1.2fr) minmax(110px, 0.9fr) minmax(160px, 1.4fr) 0.8fr 1fr 1fr; }
 .ov-table .t-sub { line-height: 1.5; }

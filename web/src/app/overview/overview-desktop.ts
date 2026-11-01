@@ -8,6 +8,7 @@ import { OverviewVm, addressLine, upkeepText, wsInfo, wsMeta, type OverviewItem 
 import { UpkeepVm } from '../core/upkeep-vm';
 import { WorkshopsVm } from '../core/workshops-vm';
 import { IconComponent } from '../ui/icon';
+import { SubNo } from '../ui/sub-no';
 import { SelectField } from '../ui/select';
 import { LevelBadge, LevelTag, NextRouteTag } from './level-tag';
 import { ManageBar } from './manage-bar';
@@ -17,7 +18,7 @@ import { UpkeepTag } from './upkeep-bits';
 
 @Component({
   selector: 'app-overview-desktop',
-  imports: [IconComponent, RouterLink, UpkeepTag, LevelBadge, LevelTag, NextRouteTag, SelectField, OverviewSort, ManageBar, MgBox, SubFlags],
+  imports: [SubNo, IconComponent, RouterLink, UpkeepTag, LevelBadge, LevelTag, NextRouteTag, SelectField, OverviewSort, ManageBar, MgBox, SubFlags],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './overview-desktop.html',
   host: { style: 'display: contents' },

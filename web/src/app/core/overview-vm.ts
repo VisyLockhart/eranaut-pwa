@@ -5,7 +5,7 @@ import { DispatchVm, type DispatchInfo } from './dispatch-vm';
 import { DataStore } from './data-store';
 import { chartSummary, type ChartSummary } from './charts';
 import type { SubRow } from './submarine-form';
-import { circled, displayFor, isPlaced, isReady, stateDisplay, type SubDisplay } from './format';
+import { defaultSubName, displayFor, isPlaced, isReady, stateDisplay, type SubDisplay } from './format';
 import { readJson, writeJson } from './storage';
 import { leadLabel } from './workshop-form';
 import type { SelectMeta, SelectOption } from '../ui/select';
@@ -253,7 +253,7 @@ export class OverviewVm {
           id: s.id,
           workshop: w,
           position: s.position,
-          name: s.name ?? `潛水艇 ${circled(s.position)}`,
+          name: s.name ?? defaultSubName(s.position),
           placed,
           registered,
           ready,

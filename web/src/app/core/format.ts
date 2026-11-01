@@ -48,6 +48,11 @@ export function circled(position: number): string {
   return CIRCLED[position] || `#${position}`;
 }
 
+/** 沒取名的潛艇的預設名稱:位置 1~4 帶編號,未排入不給編號(D-323);digits = 用阿拉伯數字(原本就用數字的地方) */
+export function defaultSubName(position: number, digits = false): string {
+  return isPlaced(position) ? `潛水艇 ${digits ? position : circled(position)}` : '潛水艇';
+}
+
 /** 位置 1~4 = 排入格子(參與提醒與統計);5 以後 = 未排入(D-314) */
 export function isPlaced(position: number): boolean {
   return position <= LIMITS.maxSubmarinesPerWorkshop;

@@ -268,3 +268,46 @@ test('提醒只看位置 1~4:未排入的探索中潛艇不產生提醒', async 
   await api('PUT', `/api/workshops/${wid}/submarines/6`, { status: 'exploring', remaining_minutes: 600 });
   assert.equal((t.db.prepare('SELECT COUNT(*) AS n FROM reminders WHERE workshop_id = ?').get(wid) as { n: number }).n, 0);
 });
+
+// D-323:新增 / 搬移 / 複製都先補 1~4 的空缺,滿了才放到 5 以後
+async function gapWorkshop(api: Api, name: string): Promise<string> {
+  const wid = await mkWorkshop(api, name);
+  for (const [pos, n] of [[1, '甲'], [2, '乙'], [4, '丁']] as const) {
+    assert.equal((await api('PUT', `/api/workshops/${wid}/submarines/${pos}`, { name: n, status: 'complete' })).statusCode, 200);
+  }
+  return wid;
+}
+
+test('空缺補位:1、2、4 的工坊新增 → 先 ③,再新增 → ⑤', async () => {
+  const t = makeApp();
+  const api = await asUser(t, ID_A);
+  const wid = await gapWorkshop(api, 'G');
+  assert.deepEqual(positions(await list(api, wid)), ['1:甲', '2:乙', '4:丁']);
+  const a = (await api('POST', `/api/workshops/${wid}/submarines`, {})).json() as SubmarinesChangeResult;
+  assert.equal(sub(a, wid).find((s) => s.id === a.created_ids[0])!.position, 3);
+  const b = (await api('POST', `/api/workshops/${wid}/submarines`, {})).json() as SubmarinesChangeResult;
+  assert.equal(sub(b, wid).find((s) => s.id === b.created_ids[0])!.position, 5);
+});
+
+test('空缺補位:搬移進 1、2、4 的工坊 → 先 ③,再搬 → ⑤', async () => {
+  const t = makeApp();
+  const api = await asUser(t, ID_A);
+  const src = await mkWorkshop(api, 'S');
+  const subs = await fill(api, src, ['甲', '乙']);
+  const wid = await gapWorkshop(api, 'G');
+  const mv = async (id: string) => (await api('POST', '/api/submarines/transfer', { source_workshop_id: src, submarine_ids: [id], mode: 'move', target_workshop_ids: [wid] })).json() as SubmarinesChangeResult;
+  const first = await mv(subs[0]!.id);
+  assert.equal(sub(first, wid).find((s) => s.id === subs[0]!.id)!.position, 3);
+  const second = await mv(subs[1]!.id);
+  assert.equal(sub(second, wid).find((s) => s.id === subs[1]!.id)!.position, 5);
+});
+
+test('空缺補位:複製到 1、2、4 的工坊(含同工坊複製)→ 先 ③,再 ⑤', async () => {
+  const t = makeApp();
+  const api = await asUser(t, ID_A);
+  const wid = await gapWorkshop(api, 'G');
+  const subs = await list(api, wid);
+  const res = (await api('POST', '/api/submarines/transfer', { source_workshop_id: wid, submarine_ids: [subs[0]!.id, subs[1]!.id], mode: 'copy', target_workshop_ids: [wid] })).json() as SubmarinesChangeResult;
+  const made = sub(res, wid).filter((s) => res.created_ids.includes(s.id)).map((s) => s.position).sort();
+  assert.deepEqual(made, [3, 5]);
+});

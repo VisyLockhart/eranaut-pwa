@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { LIMITS, type SubmarinesChangeResult, type SubmarineTransferMode } from '@eranaut/shared';
 import { DataStore } from './data-store';
-import { circled } from './format';
+import { circled, defaultSubName } from './format';
 import { OverviewVm, wsInfo, type OverviewItem } from './overview-vm';
 import { changedCount, dropOnPool, initLayout, tapPool, tapSlot, toInput, unpin, type LayoutState } from './position-layout';
 import { Toast } from './toast';
@@ -253,7 +253,7 @@ export class ManageVm {
     await this.run(async () => {
       const result = await this.store.createSubmarine(ws.id, {});
       const made = result.workshops.flatMap((w) => w.submarines).find((s) => s.id === result.created_ids[0]);
-      this.toast.show(`已新增「${made?.name ?? `潛水艇 ${circled(made?.position ?? 0)}`}」，狀態為新登記`);
+      this.toast.show(`已新增「${made?.name ?? defaultSubName(made?.position ?? 0)}」，狀態為新登記`);
       this.warnOver(result, [ws.id]);
     });
   }
@@ -262,7 +262,7 @@ export class ManageVm {
 
   readonly layoutSubs = computed(() => {
     const m = new Map<string, LayoutSub>();
-    for (const s of this.workshop()?.submarines ?? []) m.set(s.id, { id: s.id, name: s.name ?? `潛水艇 ${circled(s.position)}`, level: s.progress?.effective_level ?? null, from: circled(s.position) });
+    for (const s of this.workshop()?.submarines ?? []) m.set(s.id, { id: s.id, name: s.name ?? defaultSubName(s.position), level: s.progress?.effective_level ?? null, from: circled(s.position) });
     return m;
   });
   readonly layoutChanged = computed(() => {
