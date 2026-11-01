@@ -1410,6 +1410,7 @@ app-select { display: block; }
 .ov-toggle .chev { transform: rotate(90deg); }
 .ov-toggle.open .chev { transform: rotate(-90deg); }
 .ov-toggle .summary { gap: 5px; }
+.ov-sn { display: contents; } /* 手札主題才把三個摘要項目畫成便利貼;其他主題維持原本的 flex 排列 */
 .ov-s-of, .ov-s-ok { color: var(--text-dim); }
 .ov-s-uk { color: var(--amber-text); font-weight: 600; }
 .ov-s-uk[data-phase="repair_now"] { color: var(--danger); }

@@ -411,13 +411,15 @@ html[data-theme='notebook'] {
   /* 導覽:手機未選中圖示各用筆色;桌機封面側邊索引標籤(色 = 該頁的筆色) */
   .m-nav .nav-item:not(.active) { color: var(--text-nav); }
   .m-nav .nav-group:not(.nav-upload):not(.active) { color: var(--terra); }
-  .m-nav a.nav-item[href='/route']:not(.active) { color: var(--blue-d); }
+  .m-nav a.nav-item[href='/route']:not(.active) { color: #2c5f5a; }
+  .m-nav a.nav-item[href='/settings']:not(.active) { color: #7a3f62; }
   .m-nav a.nav-item[href='/']:not(.active) { color: var(--accent-dark); }
   .d-nav-item { --tabc: var(--bg-elevated-2); }
   .d-nav-item[href='/'] { --tabc: var(--sage-p); }
-  .d-nav-item[aria-label='配件'] { --tabc: var(--peach); }
+  .d-nav-item[aria-label='配件'] { --tabc: #f4dccb; }
   .d-nav-item[aria-label='更新'] { --tabc: var(--blue-p); }
   .d-nav-item[href='/route'] { --tabc: var(--mint); }
+  .d-nav-item[href='/settings'] { --tabc: #e8d3de; }
   .d-nav-item:not(.active):not(.intro-link)::after { content: ''; position: absolute; right: 0; top: 8px; bottom: 8px; width: 12px; background: var(--tabc); border: var(--bw) solid var(--line); border-left: 0; border-radius: 0 9px 9px 0; }
   a.d-nav-item:not(.active):not(.intro-link)::after { right: 14px; }
   .d-sidebar.collapsed a.d-nav-item:not(.active):not(.intro-link)::after { right: 8px; }
@@ -475,4 +477,38 @@ html[data-theme='notebook'][data-motion='reduced'] {
 }
 @media (prefers-reduced-motion: reduce) {
   html[data-theme='notebook'] .m-header::before, html[data-theme='notebook'] .m-header::after, html[data-theme='notebook'] .d-topbar::before, html[data-theme='notebook'] .d-topbar::after { animation: none; }
+}
+
+/* ===== D-319 每頁一個主題筆色 =====
+   外殼以 data-page 標記目前頁(shell.ts pageOfPath):工坊 / 其他 = 森綠(不變)、配件 = 赭橘、更新 = 霧藍、航線 = 青碧、設定 = 梅紫。
+   只改 --accent 系列 token,頁面標題、區段標題與波浪底線、主按鈕、進度、選取態自然跟著換色;側欄封面與手機標頭 / 導覽維持森綠。
+   各筆色對紙色(#faf7ef)對比 ≥ 6.5:1。 */
+html[data-theme='notebook'] app-shell {
+  &[data-page='gear'] { --accent: #8a4620; --accent-dark: #6e3a1b; --progress: #8a4620; --sage: #cf9a76; --sage-p: #f4dccb; --link-line: #b98a6c; }
+  &[data-page='update'] { --accent: #2d5a7b; --accent-dark: #234a66; --progress: #2d5a7b; --sage: #8fb0c6; --sage-p: #d4e2ea; --link-line: #7f9bb0; }
+  &[data-page='route'] { --accent: #2c5f5a; --accent-dark: #224c48; --progress: #2c5f5a; --sage: #86b0aa; --sage-p: #cfe3df; --link-line: #7aa19b; }
+  &[data-page='settings'] { --accent: #7a3f62; --accent-dark: #613250; --progress: #7a3f62; --sage: #b890a8; --sage-p: #e8d3de; --link-line: #a98598; }
+  :is(.d-sidebar, .m-header, .m-nav-wrap) { --accent: #4a5f42; --accent-dark: #3a4b34; --progress: #4a5f42; --sage: #a8b79b; --sage-p: #dde4d3; --link-line: #8a9484; }
+}
+
+/* ===== D-318 補:橫線紙、手機摘要便利貼、編號上色 ===== */
+html[data-theme='notebook'] {
+  body { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, color-mix(in srgb, var(--accent) 11%, transparent) 31px, color-mix(in srgb, var(--accent) 11%, transparent) 32px); }
+  /* 編號:金色筆(待收列為玫瑰) */
+  .sub-no { color: var(--mus-d); font-size: 19px; }
+  .ready .sub-no { color: var(--rose-d); }
+  /* 手機摘要列:三張貼膠帶的便利貼,取代單行小字 */
+  .m-stats-toggle.ov-toggle:not(.open) { border: 0; background: transparent; padding: 10px 6px 4px; }
+  .m-stats-toggle .summary { gap: 10px; align-items: stretch; }
+  .m-stats-toggle .summary .ov-s-dot, .m-stats-toggle .summary .ov-s-sort { display: none; }
+  .m-stats-toggle .summary .ov-sn, .m-stats-toggle .summary .ov-s-ok { display: flex; flex: 1 1 0; min-width: 0; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px; position: relative; padding: 9px 8px 7px; font-size: 13px; box-shadow: 2px 3px 0 0 var(--pencil); }
+  .m-stats-toggle .summary .ov-sn::before { @include tape(var(--mus-p), -3deg); width: 34px; margin-left: -17px; height: 11px; top: -6px; }
+  .m-stats-toggle .summary .ov-sn.rdy { background: var(--rose-p); color: var(--ready-ink); border-radius: 9px 3px 8px 4px; transform: rotate(-1deg); }
+  .m-stats-toggle .summary .ov-sn.rdy b.mono { background: transparent; padding: 0; margin: 0; font-size: 24px; line-height: 1; color: var(--ready-ink); }
+  .m-stats-toggle .summary .ov-s-uk.ov-sn { background: var(--peach); color: var(--terra); border-radius: 3px 9px 4px 8px; transform: rotate(0.8deg); font-size: 15px; }
+  .m-stats-toggle .summary .ov-s-uk.ov-sn::before { background: var(--sage-p); transform: rotate(4deg); }
+  .m-stats-toggle .summary .ov-s-next.ov-sn { background: var(--blue-p); color: var(--blue-time); border-radius: 8px 4px 9px 3px; transform: rotate(-0.6deg); font-size: 20px; flex-grow: 1.25; }
+  .m-stats-toggle .summary .ov-s-next.ov-sn::before { background: var(--lav-p); }
+  .m-stats-toggle .summary .ov-s-ok { background: var(--sage-p); color: var(--accent-dark); border-radius: 3px 9px 4px 8px; }
+  .m-stats-toggle .chev { align-self: center; }
 }

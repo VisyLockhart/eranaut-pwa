@@ -34,6 +34,15 @@ const GROUPS: readonly NavGroup[] = [
   { id: 'update', label: '更新', icon: 'camera', children: [{ label: '潛艇', url: '/update', icon: 'camera' }, { label: '海圖', url: '/charts', icon: 'seaChart' }] },
 ];
 
+/** 路徑 → 頁面色彩群組(D-319):配件 = gear、更新 = update、航線 = route、設定 = settings,其餘 = home */
+export function pageOfPath(path: string): 'home' | 'gear' | 'update' | 'route' | 'settings' {
+  if (path === '/gear' || path === '/craft') return 'gear';
+  if (path === '/update' || path === '/charts') return 'update';
+  if (path === '/route') return 'route';
+  if (path === '/settings') return 'settings';
+  return 'home';
+}
+
 /** 登入後的外殼:手機 = 標頭 + 內容 + 底部導覽;桌機 = 側邊欄 + 內容(D-93、D-102) */
 @Component({
   selector: 'app-shell',
@@ -44,6 +53,7 @@ const GROUPS: readonly NavGroup[] = [
     '(document:click)': 'closeMenu()',
     '(document:keydown.escape)': 'onEscape()',
     '(document:pointerdown)': 'onDocPointer($event)',
+    '[attr.data-page]': 'page()',
   },
   // 「海域介紹」入口(只有展示建置才會出現):琥珀色外框 + NEW 標籤,標籤閃三下後靜止
   styles: `
@@ -89,6 +99,8 @@ export class Shell {
     { initialValue: this.router.url },
   );
   private readonly path = computed(() => this.url().split(/[?#]/)[0]!);
+  /** 目前頁面的色彩群組(D-319):手札主題依此換每頁的主題筆色;其他主題不讀 */
+  protected readonly page = computed(() => pageOfPath(this.path()));
 
   // ---- 子選單(D-295):桌機是側欄內往下展開、手機是底部列上方的面板;都用「點擊」,沒有 hover ----
   protected readonly groups = GROUPS;

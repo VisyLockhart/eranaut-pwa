@@ -4,13 +4,13 @@
       <span class="summary ov-s-long">{{ vm.sortSummary().long }}</span>
     } @else {
       <span class="summary">
-        <b class="mono" [class.amber]="vm.stats().ready > 0">{{ vm.stats().ready }}</b>待收<span class="ov-s-of">/ {{ vm.stats().submarines }}</span>
+        <span class="ov-sn rdy"><b class="mono" [class.amber]="vm.stats().ready > 0">{{ vm.stats().ready }}</b>待收<span class="ov-s-of">/ {{ vm.stats().submarines }}</span></span>
         @if (vm.upkeepSummary(); as u) {
-          @if (u.state === 'alert') { <span>·</span><span class="ov-s-uk" [attr.data-phase]="u.repairNow > 0 ? 'repair_now' : 'repair_after_return'">維修 {{ u.total }}</span> }
-          @else if (u.state === 'ok') { <span>·</span><span class="ov-s-ok">配件良好</span> }
+          @if (u.state === 'alert') { <span class="ov-s-dot">·</span><span class="ov-s-uk ov-sn" [attr.data-phase]="u.repairNow > 0 ? 'repair_now' : 'repair_after_return'">維修 {{ u.total }}</span> }
+          @else if (u.state === 'ok') { <span class="ov-s-dot">·</span><span class="ov-s-ok">配件良好</span> }
         }
-        <span>·</span>
-        @if (vm.nextReturn(); as n) { <span class="ov-s-next mono">{{ n.display.time }}</span> } @else { <span>－</span> }
+        <span class="ov-s-dot">·</span>
+        @if (vm.nextReturn(); as n) { <span class="ov-s-next ov-sn mono">{{ n.display.time }}</span> } @else { <span>－</span> }
         <span class="ov-s-sort">· {{ vm.sortSummary().short }}</span>
       </span>
     }
