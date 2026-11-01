@@ -88,7 +88,8 @@ export interface OverviewSort {
 export type SortField = 'ws' | 'pos' | 'eta';
 export const SORT_FIELDS: readonly SortField[] = ['ws', 'pos', 'eta'];
 export const SORT_FIELD_LABEL: Record<SortField, string> = { ws: '工坊', pos: '編號', eta: '返航' };
-export const DEFAULT_SORT: OverviewSort = { ws: false, pos: false, eta: true, desc: false };
+/** 預設:全部檢視先依工坊分組、組內依返航(D-317);只看單一工坊時「工坊」沒有作用。已存過偏好的裝置照存的值,不受影響 */
+export const DEFAULT_SORT: OverviewSort = { ws: true, pos: false, eta: true, desc: false };
 
 function readSort(): OverviewSort {
   const raw = readJson<Partial<OverviewSort>>(SORT_KEY);

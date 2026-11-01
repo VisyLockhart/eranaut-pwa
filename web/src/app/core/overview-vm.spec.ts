@@ -28,7 +28,8 @@ describe('OverviewVm', () => {
 
   it('排序:可收艇在前(穩定),其餘依 ETA,同時間維持工坊與位置順序', () => {
     expect(vm.sortedAll().map((i) => i.id)).toEqual(['B-1', 'B-3', 'A-2', 'B-2', 'A-1']);
-    expect(vm.items().map((i) => i.id)).toEqual(['B-1', 'B-3', 'A-2', 'B-2', 'A-1']);
+    // 預設「工坊 → 返航」(D-317):全部檢視先依工坊分組,組內依返航
+    expect(vm.items().map((i) => i.id)).toEqual(['A-2', 'A-1', 'B-1', 'B-3', 'B-2']);
   });
 
   it('統計與下一艘返航:依目前範圍(切換工坊後只算那間,D-290)', () => {
@@ -85,6 +86,7 @@ describe('OverviewVm', () => {
 
   it('排序:工坊 → 編號 → 返航的權重、方向套用到全部、沒有返航時間的永遠在最後', () => {
     store.fetched.set([ws('A', [sub('A', 1, 120), sub('A', 2, 30), sub('A', 3, null)]), ws('B', [sub('B', 1, -5), sub('B', 2, 30)])]);
+    vm.toggleSortField('ws'); // 預設是「工坊 → 返航」,先關掉工坊,從只有返航開始
     expect(vm.items().map((i) => i.id)).toEqual(['B-1', 'A-2', 'B-2', 'A-1', 'A-3']);
     vm.toggleSortDir();
     expect(vm.items().map((i) => i.id)).toEqual(['A-1', 'A-2', 'B-2', 'B-1', 'A-3']);
@@ -102,6 +104,7 @@ describe('OverviewVm', () => {
   });
 
   it('排序:全部關掉退回預設、方向停用;單一工坊時「工坊」不套用;偏好存 localStorage', () => {
+    vm.toggleSortField('ws'); // 預設是「工坊 → 返航」,先關掉工坊
     vm.toggleSortField('eta');
     expect(vm.sortAllOff()).toBe(true);
     expect(vm.sortKeys()).toEqual(['eta']);
@@ -148,6 +151,18 @@ describe('OverviewVm', () => {
 });
 
 describe('OverviewVm 排序偏好讀取', () => {
+  it('新使用者預設開「工坊」+「返航」;已存過偏好的照存的值(D-317)', () => {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+    expect(DEFAULT_SORT).toEqual({ ws: true, pos: false, eta: true, desc: false });
+    expect(TestBed.inject(OverviewVm).sort()).toEqual(DEFAULT_SORT);
+    TestBed.resetTestingModule();
+    localStorage.setItem(SORT_KEY, JSON.stringify({ ws: false, pos: false, eta: true, desc: false }));
+    expect(TestBed.inject(OverviewVm).sort()).toEqual({ ws: false, pos: false, eta: true, desc: false });
+    localStorage.clear();
+  });
+
+
   it('不合法的值退回預設', () => {
     TestBed.resetTestingModule();
     localStorage.setItem(SORT_KEY, '"oops"');
