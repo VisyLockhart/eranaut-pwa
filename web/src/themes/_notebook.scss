@@ -93,7 +93,8 @@ html[data-theme='notebook'] {
   .ct-slot-card.set, .ct-tile.set { background: var(--sage-p); border-style: solid; border-color: var(--line); }
   .ct-slot-card:not(.set), .ct-tile:not(.set) { background: transparent; border: var(--bw) dashed var(--text-dim); outline: 0; }
   .modal-box::before, .install-prompt::before, .update-banner::before { @include tape(var(--mus-p), -3deg); }
-  .modal-box, .install-prompt, .update-banner { position: relative; }
+  /* 安裝提示與更新橫幅本來就是 position: fixed(定位在畫面邊緣),不能覆寫成 relative,否則會掉進頁面底部(膠帶 ::before 以 fixed 為定位基準即可) */
+  .modal-box { position: relative; }
 
   /* 浮層 */
   .modal-box { border: var(--bw) solid var(--line); border-radius: var(--w1); background: var(--bg-elevated); box-shadow: none; outline: 1px solid var(--pencil); outline-offset: 4px; }
