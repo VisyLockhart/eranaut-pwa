@@ -65,12 +65,10 @@ function playBody() {
       else throw new Error(`play-content.json 有不認得的區塊類型:${b.type}`);
     }
   }
-  out.push(`<h2>${escText(play.references.heading)}</h2>`);
-  for (const g of play.references.groups) {
-    out.push(`<h3>${escText(g.title)}</h3>`);
-    if (g.note) out.push(`<p>${escText(g.note)}</p>`);
-    out.push('<ul>', ...g.links.map((k) => `<li><a href="${escHref(k.href)}"${k.internal ? '' : ' rel="noopener noreferrer"'}>${escText(k.label)}</a></li>`), '</ul>');
-  }
+  out.push(`<h2>${escText(play.tools.heading)}</h2>`, `<p>${escText(play.tools.lead)}</p>`);
+  for (const t of play.tools.items) out.push(`<h3><a href="${escHref(t.href)}">${escText(t.title)}</a></h3>`, `<p>${escText(t.text)}</p>`);
+  out.push(`<h2>${escText(play.guides.heading)}</h2>`);
+  for (const g of play.guides.links) out.push(`<h3><a href="${escHref(g.href)}" rel="noopener noreferrer">${escText(g.label)}</a></h3>`, `<p>${escText(g.note)}</p>`);
   out.push('<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/craft">潛水艇配件製作</a> ・ <a href="/intro">靜謐海域交換所介紹</a></p>', '</main>');
   return out.join('\n');
 }
@@ -105,7 +103,7 @@ const PAGES = [
   {
     path: 'submarine',
     title: 'FF14 潛水艇玩法介紹・靜謐海域交換所 Aequor Eranos',
-    description: '靜謐海域交換所(Aequor Eranos)整理的 FF14(FFXIV)潛水艇(潛艇)玩法:撈首飾的目標、購買公會房的流程、等待期間的準備、日常物資與一個帳號持有多個公會的做法。',
+    description: '靜謐海域交換所(Aequor Eranos)整理的 FF14(FFXIV)潛水艇(潛艇)玩法:撈首飾的目標、購買公會房的流程、等待期間的準備、日常物資,以及可以搭配使用的航線與配件工具。',
     image: 'og/intro.png',
     imageAlt: '靜謐海域交換所 Aequor Eranos:FF14 潛水艇玩法介紹',
     body: playBody(),

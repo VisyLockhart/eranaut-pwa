@@ -209,24 +209,26 @@
               }
             }
           }
-          <h2>{{ play.references.heading }}</h2>
-          <div class="two refs">
-            @for (g of play.references.groups; track g.title) {
-              <div class="sea-card">
-                <h3>{{ g.title }}</h3>
-                @if (g.note) { <p class="ref-note">{{ g.note }}</p> }
-                <ul class="ref-links">
-                  @for (k of g.links; track k.href) {
-                    <li>
-                      @if (k.internal) {
-                        <a [routerLink]="k.href">{{ k.label }}</a>
-                      } @else {
-                        <a [href]="k.href" target="_blank" rel="noopener noreferrer">{{ k.label }}</a>
-                      }
-                    </li>
-                  }
-                </ul>
-              </div>
+          <section class="tools" aria-labelledby="play-tools-h">
+            <h2 id="play-tools-h">{{ play.tools.heading }}</h2>
+            <p>{{ play.tools.lead }}</p>
+            <div class="tool-grid">
+              @for (t of play.tools.items; track t.href) {
+                <div class="tool">
+                  <h3>{{ t.title }}</h3>
+                  <p>{{ t.text }}</p>
+                  <a class="btn" [routerLink]="t.href">{{ t.cta }}</a>
+                </div>
+              }
+            </div>
+          </section>
+          <h2>{{ play.guides.heading }}</h2>
+          <div class="two guides">
+            @for (g of play.guides.links; track g.href) {
+              <a class="sea-card guide" [href]="g.href" target="_blank" rel="noopener noreferrer">
+                <h3>{{ g.label }}</h3>
+                <p>{{ g.note }}</p>
+              </a>
             }
           </div>
           <div class="cta">

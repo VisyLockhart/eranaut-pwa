@@ -91,11 +91,16 @@ details ul { margin: 8px 0 0; padding-left: 18px; }
 .cta p { margin-inline: auto; max-width: none; text-wrap: balance; }
 
 .play-h3 { margin: 22px 0 10px; }
-.refs { margin-bottom: 4px; }
-.ref-note { font-size: 14px; color: var(--mist); }
-.ref-links { margin: 8px 0 0; padding-left: 18px; }
-.ref-links li { margin-bottom: 4px; }
-.ref-links a { color: var(--water); overflow-wrap: anywhere; }
+.tools { margin-top: 36px; padding: 22px 20px 20px; border: 1px solid rgba(230, 189, 106, 0.6); border-radius: 10px; background: linear-gradient(180deg, rgba(230, 189, 106, 0.12), transparent); }
+.tools h2 { margin-top: 0; }
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 14px; }
+.tool { background: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.tool p { flex: 1; }
+.tool .btn, .guide { text-decoration: none; }
+.tool .btn { align-self: flex-start; }
+.guide { display: block; color: inherit; }
+.guide h3 { color: var(--water); overflow-wrap: anywhere; }
+.tool p, .guide p { font-size: 14px; color: var(--mist); margin: 0; }
 
 @media (max-width: 760px) {
   .locked-grid, .free-grid { grid-template-columns: minmax(0, 1fr); }

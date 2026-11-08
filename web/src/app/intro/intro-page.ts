@@ -32,20 +32,24 @@ interface PlayBlock {
   readonly cards?: readonly PlayCard[];
   readonly lines?: readonly string[];
 }
-interface PlayLink {
-  readonly label: string;
+interface PlayTool {
+  readonly title: string;
+  readonly text: string;
   readonly href: string;
-  readonly internal?: boolean;
+  readonly cta: string;
+}
+interface PlayGuide {
+  readonly label: string;
+  readonly note: string;
+  readonly href: string;
 }
 interface PlayContent {
   readonly eyebrow: string;
   readonly title: string;
   readonly lead: string;
   readonly sections: readonly { readonly id: string; readonly heading: string; readonly blocks: readonly PlayBlock[] }[];
-  readonly references: {
-    readonly heading: string;
-    readonly groups: readonly { readonly title: string; readonly note?: string; readonly links: readonly PlayLink[] }[];
-  };
+  readonly tools: { readonly heading: string; readonly lead: string; readonly items: readonly PlayTool[] };
+  readonly guides: { readonly heading: string; readonly links: readonly PlayGuide[] };
 }
 const PLAY = playJson as unknown as PlayContent;
 
