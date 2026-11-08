@@ -42,8 +42,12 @@ interface Vendor extends Place {
 type Src =
   | { t: 'shop'; price: number; tribe: boolean; v: Vendor[] }
   | { t: 'script'; get: number; cost: number; nat: { cur: string; rank: string; npc: string; area: string; x: number; y: number }[] }
-  | { t: 'purple' | 'poetics'; get: number; cost: number; req?: string; at: Place[] }
-  | { t: 'brass' | 'steel' | 'lavender' | 'nightshade'; ratio: number };
+  | { t: 'purple'; get: number; cost: number; req?: string; at: Place[] }
+  | { t: 'poetics'; get: number; cost: number; req?: string; at: Place[] }
+  | { t: 'brass'; ratio: number }
+  | { t: 'steel'; ratio: number }
+  | { t: 'lavender'; ratio: number }
+  | { t: 'nightshade'; ratio: number };
 
 const ITEMS = (sourcesJson as unknown as { items: Record<string, Src[]> }).items;
 
