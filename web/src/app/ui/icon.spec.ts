@@ -7,6 +7,9 @@ import { IconComponent } from './icon';
 @Component({ imports: [IconComponent], template: `<app-icon name="home" /><app-icon name="discord" /><app-icon name="logo" [size]="34" />` })
 class Host {}
 
+@Component({ imports: [IconComponent], template: `<app-icon name="collapseAll" /><app-icon name="expandAll" /><app-icon name="stockBox" />` })
+class IconsHost {}
+
 describe('IconComponent 依主題換圖示', () => {
   const render = async (theme: 'classic' | 'light' | 'dark' | 'notebook') => {
     TestBed.inject(ThemeService).set(theme);
@@ -28,6 +31,28 @@ describe('IconComponent 依主題換圖示', () => {
       const [, , logo] = await render(t);
       expect(logo).toContain(`icons/logo-${t}.svg`);
     }
+  });
+
+  it('工具列與庫存組的新圖示(D-328)淺色有像素版、手札有手繪版,經典 / 深色沿用線條', async () => {
+    const names = ['collapseAll', 'expandAll', 'stockBox'] as const;
+    const draw = async (theme: 'classic' | 'light' | 'dark' | 'notebook') => {
+      TestBed.inject(ThemeService).set(theme);
+      const f = TestBed.createComponent(IconsHost);
+      await f.whenStable();
+      return [...f.nativeElement.querySelectorAll('app-icon')].map((e) => (e as HTMLElement).innerHTML);
+    };
+    const classic = await draw('classic');
+    expect(await draw('dark')).toEqual(classic);
+    const light = await draw('light');
+    const notebook = await draw('notebook');
+    names.forEach((_, i) => {
+      expect(light[i]).toContain('shape-rendering="crispEdges"');
+      expect(light[i]).not.toBe(classic[i]);
+      expect(notebook[i]).toContain('stroke-width="1.9"');
+      expect(notebook[i]).not.toBe(classic[i]);
+    });
+    expect(new Set(light).size).toBe(3);
+    expect(new Set(notebook).size).toBe(3);
   });
 
   it('沒有像素版的圖示(discord)在淺色仍沿用原圖示', async () => {

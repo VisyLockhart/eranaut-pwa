@@ -103,6 +103,9 @@ html[data-theme='dark'] {
   .modal-input.error, .modal-input.error:focus { border-color: var(--danger); border-bottom-color: var(--danger); box-shadow: none; }
   .sel-panel { background: var(--bg-elevated-2); border: 1px solid var(--gold-d); box-shadow: var(--float); }
   .sel-opt, .sel-group { font-family: var(--font-head); }
+  .sel-foot { border-top-color: var(--gold); font-family: var(--font-head); }
+  .sel-pips > i { width: 8px; height: 8px; border: 1px solid var(--gold-d); box-sizing: border-box; }
+  .sel-pips > i.on { box-shadow: 0 0 6px var(--glow); }
 
   /* 符文撥桿開關:方形滑軌 + 菱形滑塊 */
   .switch { width: 54px; height: 26px; }

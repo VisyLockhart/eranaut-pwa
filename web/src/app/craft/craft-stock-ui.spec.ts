@@ -139,6 +139,31 @@ describe('庫存組的畫面(D-329)', () => {
     expect(sv.activeId()).toBe('a');
   });
 
+  it('下拉面板底部固定列(D-331):沒有庫存組不顯示;有就顯示「已用 N / 10 組」,9 組轉琥珀、滿 10 組轉紅', async () => {
+    const open = () => {
+      bar().querySelector<HTMLButtonElement>('button[aria-haspopup]')!.click();
+      f.detectChanges();
+    };
+    const foot = () => bar().querySelector<HTMLElement>('.sel-foot');
+    await mount([]);
+    open();
+    expect(foot()).toBeNull();
+    const n = (k: number) => Array.from({ length: k }, (_, i) => row({ id: `s${i}`, name: `組${i}` }));
+    await mount(n(3));
+    open();
+    expect(foot()!.textContent).toContain('已用 3 / 10 組');
+    expect(foot()!.getAttribute('data-tone')).toBeNull();
+    expect(foot()!.querySelectorAll('.sel-pips > i.on')).toHaveLength(3);
+    await mount(n(9));
+    open();
+    expect(foot()!.textContent).toContain('剩 1 組');
+    expect(foot()!.getAttribute('data-tone')).toBe('amber');
+    await mount(n(10));
+    open();
+    expect(foot()!.textContent).toContain('已滿 10 / 10 組');
+    expect(foot()!.getAttribute('data-tone')).toBe('danger');
+  });
+
   it('管理:刪除要按兩下,按「再按一次刪除」才送出', async () => {
     await mount([row()]);
     btn('管理', bar()).click();

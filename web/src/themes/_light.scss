@@ -79,6 +79,8 @@ html[data-theme='light'] {
   .status-pill.ready { background: var(--bg-elevated); color: var(--ready-ink); box-shadow: 0 0 0 2px var(--line); }
 
   /* 浮層:硬陰影 */
+  .sel-foot { border-top: 2px solid var(--line); font-family: var(--font-mono); }
+  .sel-pips > i { width: 8px; height: 8px; border: 2px solid var(--line); box-sizing: border-box; }
   .modal-box, .sel-panel, .toast, .install-prompt, .update-banner, .tip-bubble, .ws-tooltip-bubble, .m-user-menu { border: 3px solid var(--line); box-shadow: var(--hard); }
   .modal-box { border-radius: 0; }
   .install-prompt, .update-banner { border-color: var(--line); background: var(--bg-elevated); }

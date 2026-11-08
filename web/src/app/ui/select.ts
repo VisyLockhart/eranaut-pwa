@@ -9,6 +9,13 @@ export interface SelectMeta {
   text: string;
   tone?: 'amber' | 'danger';
 }
+/** 面板底部固定的一列說明(例:庫存組的「已用 3 / 10 組」);有 max 時右側畫 max 格進度,used 格填滿。不可選取,不進鍵盤導覽 */
+export interface SelectFooter {
+  text: string;
+  used?: number;
+  max?: number;
+  tone?: 'amber' | 'danger';
+}
 export interface SelectOption {
   value: SelectValue;
   label: string;
@@ -23,6 +30,8 @@ export interface SelectOption {
 }
 
 let nextId = 1;
+/** 底部固定列的高度(px),與 styles.scss `.sel-foot` 的 min-height 一致 */
+const FOOTER_H = 32;
 
 /** 清單列:群組標題或選項(群組標題可收合時也算一個可操作的列) */
 type Row =
@@ -109,6 +118,14 @@ const GROUP_MEMORY = new Map<string, Map<string, boolean>>();
             </li>
           }
         }
+        @if (footer(); as f) {
+          <li class="sel-foot" role="presentation" [attr.data-tone]="f.tone ?? null" (pointerdown)="$event.preventDefault()">
+            <span class="sel-foot-text">{{ f.text }}</span>
+            @if (pips().length > 0) {
+              <span class="sel-pips" aria-hidden="true">@for (n of pips(); track n) { <i [class.on]="n < (f.used ?? 0)"></i> }</span>
+            }
+          </li>
+        }
       </ul>
     }
   `,
@@ -129,7 +146,14 @@ export class SelectField implements ControlValueAccessor {
   /** 記住收合狀態的鍵(同一次使用期間,不同畫面的同一個下拉共用);空字串就只在這次開啟內有效 */
   readonly groupMemory = input('');
 
+  /** 面板底部固定列(可省略);捲動清單時不會被捲走 */
+  readonly footer = input<SelectFooter | null>(null);
+
   protected readonly open = signal(false);
+  protected readonly pips = computed<number[]>(() => {
+    const max = this.footer()?.max ?? 0;
+    return max > 0 ? Array.from({ length: Math.min(max, 20) }, (_, i) => i) : [];
+  });
   protected readonly active = signal(0);
   protected readonly disabled = signal(false);
   protected readonly pos = signal<{ left: number; top: number | null; bottom: number | null; width: number; maxHeight: number }>({ left: 0, top: 0, bottom: null, width: 0, maxHeight: 260 });
@@ -222,7 +246,7 @@ export class SelectField implements ControlValueAccessor {
     if (this.collapsible()) this.prepareGroups();
     const max = this.listMax();
     const rowH = this.options().some((o) => o.hint) ? 54 : 38;
-    const wanted = Math.min(max, this.rows().length * rowH + 8);
+    const wanted = Math.min(max, this.rows().length * rowH + 8 + (this.footer() ? FOOTER_H : 0));
     const up = below < Math.min(wanted, 160) && above > below;
     const width = Math.max(rect.width, this.size() === 'pager' ? 280 : 120);
     this.pos.set({
@@ -290,7 +314,11 @@ export class SelectField implements ControlValueAccessor {
     // 可收合時群組標題固定在清單頂端(約 40px),反白項目不要被它蓋住
     const top = this.collapsible() ? 40 : 4;
     if (item.offsetTop - top < panel.scrollTop) panel.scrollTop = Math.max(0, item.offsetTop - top);
-    else if (item.offsetTop + item.offsetHeight > panel.scrollTop + panel.clientHeight) panel.scrollTop = item.offsetTop + item.offsetHeight - panel.clientHeight + 4;
+    else {
+      // 底部固定列會蓋住最後一段,反白項目要留在它上面
+      const visible = panel.clientHeight - (this.footer() ? FOOTER_H : 0);
+      if (item.offsetTop + item.offsetHeight > panel.scrollTop + visible) panel.scrollTop = item.offsetTop + item.offsetHeight - visible + 4;
+    }
   }
 
   private move(index: number, dir: 1 | -1 = 1): void {

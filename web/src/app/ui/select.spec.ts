@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SelectField, type SelectOption } from './select';
+import { SelectField, type SelectFooter, type SelectOption } from './select';
 
 const OPTIONS: SelectOption[] = [
   { value: '', label: '請選擇' },
@@ -16,7 +16,7 @@ const OPTIONS: SelectOption[] = [
   template: `
     <button id="outside" type="button">外面</button>
     <label for="s1">伺服器</label>
-    <app-select inputId="s1" [options]="groupOptions() ?? options" [formControl]="control" [invalid]="invalid()" [collapsible]="collapsible()" [groupMemory]="memory()" />
+    <app-select inputId="s1" [options]="groupOptions() ?? options" [footer]="footer()" [formControl]="control" [invalid]="invalid()" [collapsible]="collapsible()" [groupMemory]="memory()" />
     <div id="esc" (keydown.escape)="escaped = true"><app-select inputId="s2" [options]="options" [(value)]="plain" /></div>
     <label id="wrap"><span>包在 label 裡</span><app-select inputId="s3" [options]="options" [(value)]="wrapped" /></label>
   `,
@@ -25,6 +25,7 @@ class Host {
   options = OPTIONS;
   groupOptions = signal<SelectOption[] | null>(null);
   collapsible = signal(false);
+  footer = signal<SelectFooter | null>(null);
   memory = signal('');
   control = new FormControl<string | number>('');
   invalid = signal(false);
@@ -239,6 +240,47 @@ describe('SelectField', () => {
     expect(host.escaped).toBe(false);
     key(trigger('s2'), 'Escape');
     expect(host.escaped).toBe(true);
+  });
+
+  it('底部固定列(D-331):顯示文字與進度格、不是選項、點它不會選取或收起;沒給就不畫', () => {
+    trigger().click();
+    fixture.detectChanges();
+    expect(el.querySelector('.sel-foot')).toBeNull();
+    trigger().click(); // 收起
+    fixture.detectChanges();
+    host.footer.set({ text: '已用 3 / 10 組', used: 3, max: 10 });
+    fixture.detectChanges();
+    trigger().click();
+    fixture.detectChanges();
+    const foot = el.querySelector<HTMLElement>('.sel-foot')!;
+    expect(foot.textContent).toContain('已用 3 / 10 組');
+    expect(foot.getAttribute('role')).toBe('presentation');
+    expect(foot.getAttribute('data-tone')).toBeNull();
+    expect(foot.querySelectorAll('.sel-pips > i')).toHaveLength(10);
+    expect(foot.querySelectorAll('.sel-pips > i.on')).toHaveLength(3);
+    expect(labels()).toEqual(['請選擇', '伊弗利特', '利維坦', '迦樓羅']); // 頁尾不算選項
+    foot.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.sel-panel')).not.toBeNull();
+    expect(host.control.value).toBe('');
+  });
+
+  it('底部固定列:tone 帶到 data-tone;沒有 max 就沒有進度格;↑↓ 導覽不會停在頁尾', () => {
+    host.footer.set({ text: '已滿 10 / 10 組 · 只能覆蓋', used: 10, max: 10, tone: 'danger' });
+    fixture.detectChanges();
+    trigger().click();
+    fixture.detectChanges();
+    expect(el.querySelector('.sel-foot')!.getAttribute('data-tone')).toBe('danger');
+    expect(el.querySelectorAll('.sel-pips > i.on')).toHaveLength(10);
+    key(trigger(), 'End');
+    expect(el.querySelector('.sel-opt.active')!.textContent!.trim()).toBe('迦樓羅');
+    trigger().click();
+    fixture.detectChanges();
+    host.footer.set({ text: '說明' });
+    fixture.detectChanges();
+    trigger().click();
+    fixture.detectChanges();
+    expect(el.querySelector('.sel-pips')).toBeNull();
   });
 
   it('點外面收起;失焦時標記為 touched', () => {

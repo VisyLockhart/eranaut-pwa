@@ -99,6 +99,8 @@ html[data-theme='notebook'] {
   /* 浮層 */
   .modal-box { border: var(--bw) solid var(--line); border-radius: var(--w1); background: var(--bg-elevated); box-shadow: none; outline: 1px solid var(--pencil); outline-offset: 4px; }
   .modal-title { text-align: left; }
+  .sel-foot { border-top: var(--bw) dashed var(--line); font-family: var(--font-ui); }
+  .sel-pips > i { width: 9px; height: 9px; border: 1.2px solid var(--line); border-radius: 50% 45% 52% 48%; box-sizing: border-box; }
   .sel-panel, .m-user-menu, .ws-tooltip-bubble { background: var(--bg-elevated); border: var(--bw) solid var(--line); border-radius: var(--w2); box-shadow: 3px 4px 0 0 var(--pencil); }
   .install-prompt, .update-banner { background: var(--bg-elevated); border: var(--bw) solid var(--line); border-radius: var(--w1); box-shadow: none; outline: 1px solid var(--pencil); outline-offset: 3px; }
   .update-banner { font-family: var(--font-ui); }

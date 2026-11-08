@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, viewChild } from '@angular/core';
 import { IconComponent } from '../ui/icon';
-import { SelectField, type SelectOption, type SelectValue } from '../ui/select';
+import { SelectField, type SelectFooter, type SelectOption, type SelectValue } from '../ui/select';
 import { CraftStockVm } from './craft-stock-vm';
 import { stockMeta } from './craft-stock-state';
 
@@ -20,7 +20,7 @@ const NONE = '__none__';
       <div class="ct-setbar" role="group" aria-label="庫存組">
         <div class="ct-set-row">
           <span class="ct-set-ic" aria-hidden="true"><app-icon name="stockBox" [size]="18" /><b>庫存組</b></span>
-          <app-select #sel class="ct-set-select" size="compact" ariaLabel="庫存組" [collapsible]="true" groupMemory="craft-stocks" [options]="options()" [value]="value()" (valueChange)="onChange($event)" />
+          <app-select #sel class="ct-set-select" size="compact" ariaLabel="庫存組" [collapsible]="true" groupMemory="craft-stocks" [listMax]="300" [footer]="footer()" [options]="options()" [value]="value()" (valueChange)="onChange($event)" />
           <button type="button" class="rt-save-btn ct-set-save" [class.emph]="sv.modified()" [disabled]="!sv.canSave()" (click)="sv.dialog.set('save')">儲存</button>
           <button type="button" class="rt-link-btn" [disabled]="sv.saved().length === 0" (click)="sv.dialog.set('manage')">管理</button>
         </div>
@@ -56,6 +56,15 @@ export class CraftStockBar {
     });
     if (active === null) out.unshift({ value: NONE, label: saved.length === 0 ? '尚無庫存組' : '選擇庫存組…' });
     return out;
+  });
+  /** 面板底部固定列:已用 N / 上限 組(沒有任何一組時不顯示);9 組轉琥珀、滿了轉紅 */
+  protected readonly footer = computed<SelectFooter | null>(() => {
+    const used = this.sv.saved().length;
+    const max = this.sv.limit;
+    if (used === 0) return null;
+    if (used >= max) return { text: `已滿 ${used} / ${max} 組 · 只能覆蓋`, used, max, tone: 'danger' };
+    if (used === max - 1) return { text: `已用 ${used} / ${max} 組 · 剩 1 組`, used, max, tone: 'amber' };
+    return { text: `已用 ${used} / ${max} 組`, used, max };
   });
   protected readonly value = computed<SelectValue>(() => this.sv.activeId() ?? NONE);
 

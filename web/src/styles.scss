@@ -845,6 +845,15 @@ app-route-subs { display: block; container: rt-result / inline-size; }
 .sel-group.toggle.active { background: var(--surface-raise); }
 .sel-group.toggle app-icon { flex: 0 0 auto; }
 .sel-gname { flex: 1 1 auto; }
+/* 下拉面板的底部固定列(庫存組「已用 N / 10 組」,D-331):sticky 貼在清單底部,捲動時不會被捲走;不可點 */
+.sel-foot { position: sticky; bottom: -4px; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; margin: 4px -4px -4px; padding: 0 11px; border-top: var(--bw) solid var(--border); background: var(--bg-elevated-2); font-size: 12px; color: var(--text-dim); white-space: nowrap; cursor: default; }
+.sel-pips { display: flex; gap: 3px; flex: 0 0 auto; }
+.sel-pips > i { width: 8px; height: 6px; border-radius: calc(2px * var(--rs)); background: var(--surface-meter); }
+.sel-pips > i.on { background: var(--accent); }
+.sel-foot[data-tone='amber'] { color: var(--amber-text); }
+.sel-foot[data-tone='amber'] .sel-pips > i.on { background: var(--amber); }
+.sel-foot[data-tone='danger'] { color: var(--danger); }
+.sel-foot[data-tone='danger'] .sel-pips > i.on { background: var(--danger); }
 .sel-gcount { flex: 0 0 auto; min-width: 20px; padding: 1px 7px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--tone) 14%, transparent); color: var(--text-dim); font-size: 11px; font-weight: 700; text-align: center; }
 .rt-listtools { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; min-width: 0; }
 .rt-listtools .rt-lt-q { flex: 1 1 auto; min-width: 0; padding-top: 8px; padding-bottom: 8px; }
