@@ -94,7 +94,13 @@ const TITLES: Record<LegalKind, string> = { privacy: '隱私權政策', terms: '
           <p>各等級升級所需經驗與航點座標驗證資料,取自開源專案 <a href="https://github.com/xivapi/ffxiv-datamining" target="_blank" rel="noopener noreferrer">xivapi/ffxiv-datamining</a> 的資料表。升級攻略的內容為社群中流傳的整理,原作者不詳。</p>
 
           <h2>製作資料集</h2>
-          <p>製作計算相關資料的來源與授權,請見專案內 <code>craft/data/NOTICE.md</code> 的說明。</p>
+          <p>配方與素材分類的來源與授權,請見專案內 <code>craft/data/NOTICE.md</code> 的說明。</p>
+
+          <h2>素材取得管道(CC BY-NC-SA 3.0)</h2>
+          <p>配件製作頁標示的素材其他取得管道(商人與友好部族購買的價格與地點、軍票、巧手紫票、詩學兌換,以及空賊黃銅、空賊白鋼、薰衣草、風茄的兌換比值)取自<b>灰機 wiki</b>各物品頁面(標示 CC BY-NC-SA 3.0)與遊戲內畫面。只取價格、商人、座標、兌換物與數量等事實;NPC 與地名由簡體轉為繁體,可能與繁中服的用字不同。</p>
+          <p>本資料依
+            <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/deed.zh_TW" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 3.0</a>
+            釋出,<b>不適用本專案的 MIT 授權</b>。轉載或改作請保留來源說明、以相同授權分享,且<b>不得商業使用</b>。</p>
 
           <h2>使用限制與權利歸屬</h2>
           <p>上述資料僅供社群內部、非商業使用。Eranaut 為非官方工具,與 SQUARE ENIX CO., LTD. 無關;FINAL FANTASY XIV 相關內容之權利屬原權利人所有。</p>

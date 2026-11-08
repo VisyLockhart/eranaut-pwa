@@ -1229,6 +1229,35 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-trace { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; border: var(--bw) solid var(--accent); border-radius: calc(10px * var(--rs)); background: color-mix(in srgb, var(--accent) 8%, transparent); font-size: 13px; }
 .ct-trace span { color: var(--text-dim); }
 .ct-trace b { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+/* 素材來源(D-333):列表上的膠囊(袋子 + 來源數)、追蹤橫幅的來源標籤、詳情 */
+.ct-src-cue { display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 22px; min-width: 22px; padding: 0 6px; margin-left: 8px; vertical-align: middle; border: var(--bw) solid var(--border-strong); border-radius: var(--r-pill); color: var(--text-dim); }
+.ct-src-cue b { font: 700 12px/1 var(--font-mono); }
+.ct-row.pin .ct-src-cue { color: var(--accent); border-color: var(--accent); }
+.ct-m-body .ct-src-cue { height: 28px; min-width: 28px; padding: 0 8px; }
+.ct-m-body .ct-src-cue b { font-size: 14px; }
+.ct-trace.has-src b { flex: 0 1 auto; }
+.ct-trace.has-src .ct-x { margin-left: auto; }
+.ct-trace.m { flex-wrap: wrap; }
+.ct-src-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; }
+.ct-trace.m .ct-src-chips { order: 3; flex-basis: 100%; }
+.ct-src-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 26px; padding: 0 9px; border: var(--bw) solid var(--border-strong); border-radius: var(--r-pill); background: var(--bg-elevated); color: var(--text); font: inherit; font-size: 12px; white-space: nowrap; cursor: pointer; }
+.ct-src-chip > app-icon:first-child { color: var(--accent); }
+.ct-src-chip.lk { border-style: dashed; }
+.ct-src-chip.lk > app-icon:last-child { color: var(--amber); }
+.ct-src-chip:hover, .ct-src-chip.on { border-color: var(--accent); }
+.ct-src-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ct-src-chip.det { color: var(--accent); }
+.ct-m-body .ct-src-chip { min-height: 36px; font-size: 13px; }
+.ct-src-pop { margin-top: 6px; padding: 10px 12px; border: var(--bw) solid var(--border-strong); border-radius: calc(10px * var(--rs)); background: var(--bg-elevated-2); box-shadow: 0 8px 22px color-mix(in srgb, var(--shade) 30%, transparent); font-size: 13px; line-height: 1.55; }
+.ct-src-grp + .ct-src-grp { margin-top: 8px; padding-top: 8px; border-top: var(--bw) dashed var(--border-strong); }
+.ct-src-grp h4 { margin: 0 0 4px; display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.ct-src-grp h4 app-icon { color: var(--accent); }
+.ct-src-grp h4 small { color: var(--amber); font-size: 11.5px; font-weight: 600; }
+.ct-src-line { padding: 3px 0 3px 20px; }
+.ct-src-line small { display: block; color: var(--text-dim); font-size: 12px; }
+.ct-src-more { padding-left: 20px; color: var(--text-dim); font-size: 12px; }
+.ct-src-body { max-height: 56vh; overflow-y: auto; }
+.tip-bubble { white-space: pre-line; }
 
 .ct-tree-cue { margin-left: 2px; color: var(--accent); }
 .ct-tree-dlg .rt-dlg-body { gap: 10px; padding-bottom: 6px; }

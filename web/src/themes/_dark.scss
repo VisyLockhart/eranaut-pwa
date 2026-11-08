@@ -158,6 +158,8 @@ html[data-theme='dark'] {
   .toast-stack .toast.warn { border-color: var(--amber); color: var(--amber-text-2); }
   .install-prompt, .update-banner { background: var(--bg-elevated); border: 1px solid var(--gold); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px var(--gl), var(--float); }
   .update-banner { font-family: var(--font-head); color: var(--gold-b); }
+  .ct-src-cue, .ct-src-chip, .ct-src-pop { border-color: var(--gold-d); }
+  .ct-row.pin .ct-src-cue, .ct-src-chip:hover, .ct-src-chip.on { border-color: var(--accent); }
   .tip-bubble, .ws-tooltip-bubble, .m-user-menu { background: var(--bg-elevated-2); border: 1px solid var(--gold-d); box-shadow: var(--float); color: var(--text); }
 
   /* 總覽(D-290):工坊下拉標題金字、排序分段金框、分組標題金色襯線 + 細線、手機收合區塊雙線框 */

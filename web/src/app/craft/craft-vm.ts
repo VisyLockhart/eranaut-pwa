@@ -5,6 +5,7 @@ import { CRAFT_KEY_SEL as KEY_SEL, CRAFT_KEY_STOCK as KEY_STOCK, CRAFT_KEY_VIEW 
 import { calculate, type CalcResult, type CalcRow, type RowKind, type Selection } from './core/craft-calc';
 import { buildTree, hasTree, type TreeNode } from './core/craft-tree';
 import { finalsProgress } from './core/craft-stock';
+import { sourceTags, type SrcTag } from './core/craft-source';
 import { CRAFT_DATA, SLOT_KEYS } from './core/data';
 import type { SlotKey } from './core/types';
 import {
@@ -45,6 +46,17 @@ export class CraftVm {
   readonly tree = computed<TreeNode | null>(() => {
     const n = this.treeFor();
     return n ? buildTree(n) : null;
+  });
+  /** 追蹤橫幅的來源詳情是否展開(桌機在橫幅下方,手機是底部面板) */
+  readonly srcOpen = signal(false);
+  /** 追蹤中素材的其他取得管道(商人、部族、兌換…);需求數量用來換算比值類的通貨數 */
+  readonly pinSources = computed<SrcTag[]>(() => {
+    const p = this.pin();
+    const k = this.pinKind();
+    if (!p || !k) return [];
+    const r = this.result();
+    const row = (k === 'final' ? r.finals : k === 'direct' ? r.directs : r.bases).find((x) => x.name === p);
+    return row ? sourceTags(p, row.need) : [];
   });
   /** 收合的分組,key = `${tab}:${group}` */
   readonly collapsed = signal<ReadonlySet<string>>(new Set());
@@ -230,7 +242,12 @@ export class CraftVm {
     this.treeFor.set(null);
   }
 
+  toggleSrc(): void {
+    this.srcOpen.update((v) => !v);
+  }
+
   togglePin(name: string, kind: RowKind): void {
+    this.srcOpen.set(false);
     if (this.pin() === name && this.pinKind() === kind) {
       this.pin.set(null);
       this.pinKind.set(null);

@@ -217,6 +217,13 @@ html[data-theme='notebook'] {
   .ct-trace { background: var(--mus-p); border: 0; border-radius: 3px 9px 4px 8px; transform: rotate(-0.5deg); }
   .ct-trace span, .ct-trace-head { color: var(--text-muted); }
   .ct-tree-cue, .ct-tree-qty, .ct-cry b { color: var(--accent); }
+  .ct-src-cue, .ct-src-chip { border: var(--bw) solid var(--line); border-radius: var(--w2); background: transparent; }
+  .ct-src-chip { background: var(--bg-elevated); }
+  .ct-src-chip.lk { border-style: dashed; }
+  .ct-src-chip:hover, .ct-src-chip.on { background: var(--mus-p); }
+  .ct-row.pin .ct-src-cue { border-color: var(--line); background: var(--bg-elevated); }
+  .ct-src-pop { border: var(--bw) solid var(--line); border-radius: var(--w2); background: var(--bg-elevated); box-shadow: 3px 4px 0 0 var(--pencil); }
+  .ct-src-grp + .ct-src-grp { border-top-color: var(--line); }
   .ct-tree-item { background: transparent; padding: 2px 4px; min-height: 34px; }
   .ct-tree-sub { border-left: var(--bw) dashed var(--text-dim); }
   .ct-tree-cry { background: transparent; outline: 0; border-style: dashed; }

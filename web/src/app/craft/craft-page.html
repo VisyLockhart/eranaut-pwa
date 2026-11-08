@@ -108,6 +108,17 @@
       </div>
     </div>
   }
+  @if (vm.srcOpen() && vm.pin(); as p) {
+    <div class="ct-sheet-overlay" (click)="vm.srcOpen.set(false)">
+      <div class="ct-sheet ct-src-sheet" role="dialog" aria-modal="true" [attr.aria-label]="p + ' 其他來源'" (click)="stop($event)">
+        <div class="ct-sheet-head">
+          <b>{{ p }} · 其他來源</b>
+          <button type="button" class="ct-done" (click)="vm.srcOpen.set(false)">完成</button>
+        </div>
+        <div class="ct-src-body"><ng-container *ngTemplateOutlet="srcDetail; context: { tg: vm.pinSources() }" /></div>
+      </div>
+    </div>
+  }
 }
 
 <ng-template #slotsBar>
@@ -195,7 +206,40 @@
 
 <ng-template #traceBar>
   @if (vm.pin(); as p) {
-    <div class="ct-trace"><span>追蹤</span><b>{{ p }}</b><button type="button" class="ct-x" (click)="unpin($event)" aria-label="取消追蹤"><app-icon name="close" [size]="14" /></button></div>
+    @let tg = vm.pinSources();
+    <div class="ct-trace" [class.has-src]="tg.length > 0" [class.m]="!layout.isDesktop()">
+      <span>追蹤</span><b>{{ p }}</b>
+      @if (tg.length > 0) {
+        <div class="ct-src-chips" role="group" aria-label="其他取得管道">
+          @for (t of tg; track t.key) {
+            <button type="button" class="ct-src-chip" [class.lk]="t.locked" [class.on]="vm.srcOpen()" [attr.aria-expanded]="vm.srcOpen()" (click)="vm.toggleSrc()"><app-icon [name]="t.icon" [size]="13" />{{ t.text }}@if (t.locked) {<app-icon name="srcLock" [size]="12" />}</button>
+          }
+          @if (!layout.isDesktop()) {
+            <button type="button" class="ct-src-chip det" [attr.aria-expanded]="vm.srcOpen()" (click)="vm.toggleSrc()">詳情 ›</button>
+          }
+        </div>
+      }
+      <button type="button" class="ct-x" (click)="unpin($event)" aria-label="取消追蹤"><app-icon name="close" [size]="14" /></button>
+    </div>
+    @if (tg.length > 0 && vm.srcOpen() && layout.isDesktop()) {
+      <div class="ct-src-pop" role="region" [attr.aria-label]="p + ' 其他來源'">
+        <ng-container *ngTemplateOutlet="srcDetail; context: { tg: tg }" />
+      </div>
+    }
+  }
+</ng-template>
+
+<ng-template #srcDetail let-tg="tg">
+  @for (t of tg; track t.key) {
+    <div class="ct-src-grp">
+      <h4><app-icon [name]="t.icon" [size]="14" />{{ t.title }}@if (t.locked) {<app-icon name="srcLock" [size]="13" /><small>需解鎖</small>}</h4>
+      @for (l of t.lines; track $index) {
+        <div class="ct-src-line">{{ l.head }}@if (l.sub) {<small>{{ l.sub }}</small>}</div>
+      }
+      @if (t.more > 0) {
+        <div class="ct-src-more">另有 {{ t.more }} 筆</div>
+      }
+    </div>
   }
 </ng-template>
 
@@ -265,7 +309,7 @@
       @if (g.trace || !g.group || !vm.isCollapsed(tab, g.group)) {
         @for (r of g.rows; track r.name) {
           <div class="ct-row" [class]="'ct-row ' + rowState(r)" [tip]="vm.isPinned(r) && vm.hasTree(r.name) ? '再點一次查看配方' : null" role="button" tabindex="0" (click)="pinRow(r, $event)" (keydown.enter)="pinRow(r, $event)" (keydown.space)="$event.preventDefault(); pinRow(r, $event)">
-            <span class="ct-name">{{ r.name }}</span>
+            <span class="ct-name">{{ r.name }}@let tg = tagsOf(r);@if (tg.length > 0) {<span class="ct-src-cue" [tip]="srcTip(tg)" [attr.aria-label]="srcAria(tg)"><app-icon name="srcBag" [size]="layout.isDesktop() ? 15 : 17" />@if (tg.length > 1) {<b>{{ tg.length }}</b>}</span>}</span>
             @if (vm.isPinned(r) && vm.hasTree(r.name)) {
               <app-icon class="ct-tree-cue" name="tree" [size]="16" />
             }

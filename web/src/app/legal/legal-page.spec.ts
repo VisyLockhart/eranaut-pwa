@@ -29,7 +29,7 @@ describe('LegalPage(D-308)', () => {
   });
   it('資料授權:CC BY-NC-SA 3.0、來源、不適用 MIT、ffxiv-datamining', () => {
     const t = mount('licenses').textContent!;
-    for (const s of ['灰機 wiki', 'Eclair Falcie@Hades', 'CC BY-NC-SA 3.0', '不適用本專案的 MIT 授權', 'xivapi/ffxiv-datamining']) expect(t).toContain(s);
+    for (const s of ['灰機 wiki', 'Eclair Falcie@Hades', 'CC BY-NC-SA 3.0', '不適用本專案的 MIT 授權', 'xivapi/ffxiv-datamining', '素材取得管道']) expect(t).toContain(s);
   });
   it('三頁互相有連結', () => {
     const links = Array.from(mount('terms').querySelectorAll('nav a')).map((a) => a.getAttribute('href'));

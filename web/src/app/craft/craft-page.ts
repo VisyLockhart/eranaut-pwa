@@ -15,6 +15,7 @@ import { CraftStockDialogs } from './craft-stock-dialogs';
 import { CraftStockVm } from './craft-stock-vm';
 import { GRADE_INDEXES, MAX_QTY, TAB_LABEL, TABS, gradeInfo, gradeLabel, missing, rowId, type CraftTab, type CrystalTray, type GradeInfo, type RowGroup, type SlotSel } from './craft-state';
 import { CRAFT_DATA } from './core/data';
+import { sourceTags, sourceTip, type SrcTag } from './core/craft-source';
 import { Tip } from '../ui/tip';
 
 /** 配件製作:選潛艇配件等級,算出所需交納素材 / 直接素材 / 基礎素材(D-239、D-240、D-258) */
@@ -40,6 +41,10 @@ export class CraftPage implements OnDestroy {
   protected readonly maxQty = MAX_QTY;
   protected readonly gradeLabel = gradeLabel;
   protected readonly missing = missing;
+  /** 素材的其他取得管道(D-333):列表小膠囊與提示用 */
+  protected readonly tagsOf = (r: CalcRow) => sourceTags(r.name, r.need);
+  protected readonly srcTip = sourceTip;
+  protected readonly srcAria = (tg: SrcTag[]) => `其他來源:${tg.map((t) => t.text).join('、')}`;
   /** 手機:正在選等級的部位(底部面板) */
   protected readonly sheet = signal<SlotKey | null>(null);
 
@@ -108,7 +113,10 @@ export class CraftPage implements OnDestroy {
   /** Esc:先關配方樹,再關底部面板 */
   protected onEscape(ev: Event): void {
     if (ev.defaultPrevented) return;
-    if (this.vm.treeFor()) {
+    if (this.vm.srcOpen() && !this.layout.isDesktop()) {
+      this.vm.srcOpen.set(false);
+      ev.preventDefault();
+    } else if (this.vm.treeFor()) {
       this.vm.closeTree();
       ev.preventDefault();
     } else this.closeSheet();
