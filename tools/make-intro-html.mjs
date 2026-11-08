@@ -46,8 +46,8 @@ const ld = (obj) => obj;
 const PAGES = [
   {
     path: 'intro',
-    title: '靜謐海域交換所 Aequor Eranos・同好會介紹',
-    description: '純水與銀礦之詩,靜謐海域交換所(Aequor Eranos):FFXIV 繁體中文版的潛水艇(潛艇)同好會。單人玩潛艇的孤狼,來這裡收艇不誤點,結識其他潛艇玩家、擁有強力的資源後盾。',
+    title: '靜謐海域交換所 Aequor Eranos・FF14 潛水艇同好會',
+    description: '純水與銀礦之詩,靜謐海域交換所(Aequor Eranos):FF14(FFXIV)繁體中文版的潛水艇(潛艇)同好會。單人玩潛艇的孤狼,來這裡收艇不誤點,結識其他潛艇玩家、擁有強力的資源後盾。',
     image: 'og/intro.png',
     imageAlt: '靜謐海域交換所 Aequor Eranos:FFXIV 繁體中文版潛水艇同好會',
     body: INTRO_BODY,
@@ -72,8 +72,8 @@ const PAGES = [
   },
   {
     path: 'route',
-    title: 'FFXIV 潛水艇航線模擬器・靜謐海域交換所 Aequor Eranos',
-    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:FFXIV 潛艇航線模擬器，選航點、配配件，算出航行時間、燃料與經驗；選好配件，列出完整材料表、記錄庫存。',
+    title: 'FF14 潛水艇航線模擬器・靜謐海域交換所 Aequor Eranos',
+    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:FF14(FFXIV)潛艇航線模擬器，選航點、配配件，算出航行時間、燃料與經驗；選好配件，列出完整材料表、記錄庫存。',
     image: 'og/route-2.png',
     imageAlt: 'Eranaut 潛水艇航線模擬器與配件製作畫面',
     body: `<main style="max-width:720px;margin:0 auto;padding:32px 20px;line-height:1.8">
@@ -97,8 +97,8 @@ const PAGES = [
   },
   {
     path: 'gear',
-    title: 'FFXIV 潛水艇配件清單・靜謐海域交換所 Aequor Eranos',
-    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:FFXIV 潛水艇(潛艇)配件清單，設定四個部位的配置，查看探索、收集、距離、恩惠等能力與耐久；手機與桌機都能用，免費。',
+    title: 'FF14 潛水艇配件清單・靜謐海域交換所 Aequor Eranos',
+    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:FF14(FFXIV)潛水艇(潛艇)配件清單，設定四個部位的配置，查看探索、收集、距離、恩惠等能力與耐久；手機與桌機都能用，免費。',
     image: 'og/route-2.png',
     imageAlt: 'Eranaut 潛水艇配件清單與航線模擬畫面',
     body: `<main style="max-width:720px;margin:0 auto;padding:32px 20px;line-height:1.8">
@@ -122,8 +122,8 @@ const PAGES = [
   },
   {
     path: 'craft',
-    title: 'FFXIV 潛水艇配件製作・靜謐海域交換所 Aequor Eranos',
-    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:選好潛水艇(潛艇)配件，列出完整的材料表、記錄庫存。FFXIV 潛水艇配件製作工具，手機與桌機都能使用。',
+    title: 'FF14 潛水艇配件製作・靜謐海域交換所 Aequor Eranos',
+    description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:選好潛水艇(潛艇)配件，列出完整的材料表、記錄庫存。FF14(FFXIV)潛水艇配件製作工具，手機與桌機都能使用。',
     image: 'og/route-2.png',
     imageAlt: 'Eranaut 潛水艇配件製作畫面',
     body: `<main style="max-width:720px;margin:0 auto;padding:32px 20px;line-height:1.8">
