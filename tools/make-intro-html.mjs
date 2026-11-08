@@ -38,10 +38,42 @@ const INTRO_BODY = `<main style="max-width:720px;margin:0 auto;padding:32px 20px
 <li>截圖辨識:用潛水艇狀態截圖帶入資料。</li>
 </ul>
 <p>提供 APP 應用程式模式,可加入手機與桌機主畫面,並且能跨裝置推播通知,方便使用。</p>
-<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/craft">潛水艇配件製作</a></p>
+<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/craft">潛水艇配件製作</a> ・ <a href="/submarine">FF14 潛水艇玩法</a></p>
 </main>`;
 
 const ld = (obj) => obj;
+
+// 「潛艇玩法」靜態內文:與畫面(intro-page 的「潛艇玩法」分頁)讀同一份 web/src/app/intro/play-content.json,改文案只改那個檔。
+const escText = (v) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const escHref = (v) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+function playBody() {
+  const play = JSON.parse(readFileSync(new URL('../web/src/app/intro/play-content.json', import.meta.url), 'utf8'));
+  const out = [
+    '<main style="max-width:720px;margin:0 auto;padding:32px 20px;line-height:1.8">',
+    `<p>${escText(play.eyebrow)}</p>`,
+    `<h1>${escText(play.title)}</h1>`,
+    `<p>${escText(play.lead)}</p>`,
+  ];
+  for (const s of play.sections) {
+    out.push(`<h2>${escText(s.heading)}</h2>`);
+    for (const b of s.blocks) {
+      if (b.type === 'p') out.push(`<p>${escText(b.text)}</p>`);
+      else if (b.type === 'h3') out.push(`<h3>${escText(b.text)}</h3>`);
+      else if (b.type === 'cards') for (const c of b.cards) out.push(`<h3>${escText(c.title)}</h3>`, `<p>${escText(c.text)}</p>`);
+      else if (b.type === 'steps') out.push('<ol>', ...b.lines.map((l) => `<li>${escText(l)}</li>`), '</ol>');
+      else if (b.type === 'list') out.push('<ul>', ...b.lines.map((l) => `<li>${escText(l)}</li>`), '</ul>');
+      else throw new Error(`play-content.json 有不認得的區塊類型:${b.type}`);
+    }
+  }
+  out.push(`<h2>${escText(play.references.heading)}</h2>`);
+  for (const g of play.references.groups) {
+    out.push(`<h3>${escText(g.title)}</h3>`);
+    if (g.note) out.push(`<p>${escText(g.note)}</p>`);
+    out.push('<ul>', ...g.links.map((k) => `<li><a href="${escHref(k.href)}"${k.internal ? '' : ' rel="noopener noreferrer"'}>${escText(k.label)}</a></li>`), '</ul>');
+  }
+  out.push('<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/craft">潛水艇配件製作</a> ・ <a href="/intro">靜謐海域交換所介紹</a></p>', '</main>');
+  return out.join('\n');
+}
 
 const PAGES = [
   {
@@ -71,6 +103,25 @@ const PAGES = [
     ],
   },
   {
+    path: 'submarine',
+    title: 'FF14 潛水艇玩法介紹・靜謐海域交換所 Aequor Eranos',
+    description: '靜謐海域交換所(Aequor Eranos)整理的 FF14(FFXIV)潛水艇(潛艇)玩法:撈首飾的目標、購買公會房的流程、等待期間的準備、日常物資與一個帳號持有多個公會的做法。',
+    image: 'og/intro.png',
+    imageAlt: '靜謐海域交換所 Aequor Eranos:FF14 潛水艇玩法介紹',
+    body: playBody(),
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: 'FF14 潛水艇玩法介紹',
+        url: `${ORIGIN}/submarine`,
+        inLanguage: 'zh-Hant',
+        about: 'FF14(FFXIV)潛水艇的營運玩法:購買公會房、準備零件與日常物資',
+        isPartOf: { '@type': 'WebSite', name: '靜謐海域交換所 Aequor Eranos', url: `${ORIGIN}/` },
+      },
+    ],
+  },
+  {
     path: 'route',
     title: 'FF14 潛水艇航線模擬器・靜謐海域交換所 Aequor Eranos',
     description: '靜謐海域交換所(Aequor Eranos)同好會自製的 Eranaut:FF14(FFXIV)潛艇航線模擬器，選航點、配配件，算出航行時間、燃料與經驗；選好配件，列出完整材料表、記錄庫存。',
@@ -79,7 +130,7 @@ const PAGES = [
     body: `<main style="max-width:720px;margin:0 auto;padding:32px 20px;line-height:1.8">
 <h1>FFXIV 潛水艇航線模擬器</h1>
 <p>選擇航點、配置潛艇配件,先算出航行時間、燃料消耗與經驗值,出航前就能比較不同航線與配置。Eranaut 是靜謐海域交換所(Aequor Eranos)同好會自行開發的潛水艇返航追蹤工具。</p>
-<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/craft">潛水艇配件製作</a> ・ <a href="/intro">靜謐海域交換所介紹</a></p>
+<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/craft">潛水艇配件製作</a> ・ <a href="/intro">靜謐海域交換所介紹</a> ・ <a href="/submarine">FF14 潛水艇玩法</a></p>
 </main>`,
     jsonLd: [
       {
@@ -104,7 +155,7 @@ const PAGES = [
     body: `<main style="max-width:720px;margin:0 auto;padding:32px 20px;line-height:1.8">
 <h1>FFXIV 潛水艇配件清單</h1>
 <p>設定潛艇四個部位的配置,查看探索、收集、距離、恩惠等能力與耐久。Eranaut 是靜謐海域交換所(Aequor Eranos)同好會自行開發的潛水艇返航追蹤工具。</p>
-<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/craft">潛水艇配件製作</a> ・ <a href="/intro">靜謐海域交換所介紹</a></p>
+<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/craft">潛水艇配件製作</a> ・ <a href="/intro">靜謐海域交換所介紹</a> ・ <a href="/submarine">FF14 潛水艇玩法</a></p>
 </main>`,
     jsonLd: [
       {
@@ -129,7 +180,7 @@ const PAGES = [
     body: `<main style="max-width:720px;margin:0 auto;padding:32px 20px;line-height:1.8">
 <h1>FFXIV 潛水艇配件製作</h1>
 <p>選好想做的潛艇配件,列出完整的材料表,並記錄手上的庫存,一眼看出還缺什麼。Eranaut 是靜謐海域交換所(Aequor Eranos)同好會自行開發的潛水艇返航追蹤工具。</p>
-<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/intro">靜謐海域交換所介紹</a></p>
+<p><a href="/">Eranaut 潛艇總覽</a> ・ <a href="/route">潛水艇航線模擬器</a> ・ <a href="/intro">靜謐海域交換所介紹</a> ・ <a href="/submarine">FF14 潛水艇玩法</a></p>
 </main>`,
     jsonLd: [
       {

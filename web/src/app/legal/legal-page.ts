@@ -102,6 +102,13 @@ const TITLES: Record<LegalKind, string> = { privacy: '隱私權政策', terms: '
             <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/deed.zh_TW" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 3.0</a>
             釋出,<b>不適用本專案的 MIT 授權</b>。轉載或改作請保留來源說明、以相同授權分享,且<b>不得商業使用</b>。</p>
 
+          <h2>潛艇玩法頁</h2>
+          <p>「潛艇玩法」頁(<code>/submarine</code>)的內容整理自社群成員<b>路邊的餅乾@巴哈姆特</b>撰寫的潛水艇營運文章,經作者同意,由本專案重新編寫;文中的遊戲規則已由社群成員實際操作核對。這份文字內容經原作者同意使用於本站,<b>不適用本專案的 MIT 授權</b>。</p>
+          <p>原作者另有整理升級攻略的頁面:
+            <a href="https://dilao-8tl.pages.dev/guides/suannv-timed.html" target="_blank" rel="noopener noreferrer">掐點收</a>、
+            <a href="https://dilao-8tl.pages.dev/guides/bailan-halfday.html" target="_blank" rel="noopener noreferrer">半日收</a>、
+            <a href="https://dilao-8tl.pages.dev/guides/bailan-fullday.html" target="_blank" rel="noopener noreferrer">整日收</a>。</p>
+
           <h2>使用限制與權利歸屬</h2>
           <p>上述資料僅供社群內部、非商業使用。Eranaut 為非官方工具,與 SQUARE ENIX CO., LTD. 無關;FINAL FANTASY XIV 相關內容之權利屬原權利人所有。</p>
         }

@@ -1,8 +1,11 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DOCUMENT, inject, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Layout } from '../core/layout';
+import playJson from './play-content.json';
 
-type TabId = 'intro' | 'join' | 'tour';
+type TabId = 'intro' | 'join' | 'tour' | 'play';
+const TAB_IDS: readonly TabId[] = ['intro', 'join', 'tour', 'play'];
 type ShareKey = 'join' | 'route';
 
 /** 對外推廣用的短連結 */
@@ -17,18 +20,48 @@ interface Feature {
   readonly locked: boolean;
 }
 
+/** 「潛艇玩法」分頁的內容(`play-content.json`;靜態頁 `tools/make-intro-html.mjs` 也讀同一份,改文案只改那個檔) */
+interface PlayCard {
+  readonly title: string;
+  readonly text: string;
+}
+interface PlayBlock {
+  readonly type: 'p' | 'h3' | 'cards' | 'steps' | 'list';
+  readonly text?: string;
+  readonly layout?: 'two' | 'rules';
+  readonly cards?: readonly PlayCard[];
+  readonly lines?: readonly string[];
+}
+interface PlayLink {
+  readonly label: string;
+  readonly href: string;
+  readonly internal?: boolean;
+}
+interface PlayContent {
+  readonly eyebrow: string;
+  readonly title: string;
+  readonly lead: string;
+  readonly sections: readonly { readonly id: string; readonly heading: string; readonly blocks: readonly PlayBlock[] }[];
+  readonly references: {
+    readonly heading: string;
+    readonly groups: readonly { readonly title: string; readonly note?: string; readonly links: readonly PlayLink[] }[];
+  };
+}
+const PLAY = playJson as unknown as PlayContent;
+
 const FONT_LINK_ID = 'intro-fonts';
 const FONT_URL =
   'https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap';
 
 /**
  * 「海域介紹」宣傳頁:只存在於展示建置(`demo/demo-routes.demo.ts` 才會註冊路由,正式版與私有 repo 不含),
- * 不同步回私有 repo。純靜態內容,三個子頁:海域簡介、加入辦法、Eranaut 導覽。
+ * 不同步回私有 repo。純靜態內容,四個子頁:海域簡介、加入辦法、Eranaut 導覽、潛艇玩法。
+ * 「潛艇玩法」的文案在 `play-content.json`(靜態頁也讀同一份);`/submarine` 路由開啟時預設選到這一頁。
  * 風格刻意獨立於 Eranaut 本體(宣傳用),字型只在進入這頁時才載入。
  */
 @Component({
   selector: 'app-intro-page',
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './intro-page.html',
   styleUrl: './intro-page.scss',
@@ -38,16 +71,19 @@ export class IntroPage {
   protected readonly layout = inject(Layout);
   private readonly doc = inject(DOCUMENT);
 
-  protected readonly tab = signal<TabId>('intro');
+  private readonly route = inject(ActivatedRoute);
+  protected readonly tab = signal<TabId>(this.initialTab());
   protected readonly copied = signal<'' | 'ok' | 'manual'>('');
   protected readonly shareLinks = SHARE_LINKS;
   protected readonly linkState = signal<Partial<Record<ShareKey, 'ok' | 'manual'>>>({});
   protected readonly joinName = '純水與銀礦之詩, 靜謐海域交換所';
+  protected readonly play = PLAY;
 
   protected readonly tabs: readonly { id: TabId; label: string }[] = [
     { id: 'intro', label: '海域簡介' },
     { id: 'join', label: '加入辦法' },
     { id: 'tour', label: 'Eranaut 導覽' },
+    { id: 'play', label: '潛艇玩法' },
   ];
 
   protected readonly features: readonly Feature[] = [
@@ -67,6 +103,12 @@ export class IntroPage {
   constructor() {
     this.layout.pageTitle.set('加入海域');
     this.loadFonts();
+  }
+
+  /** 路由 data 的 `introTab`(例如 `/submarine`)決定開啟時的子頁;沒有或不認得就是海域簡介 */
+  private initialTab(): TabId {
+    const id = this.route.snapshot.data['introTab'] as TabId | undefined;
+    return id && TAB_IDS.includes(id) ? id : 'intro';
   }
 
   protected show(id: TabId): void {

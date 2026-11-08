@@ -177,6 +177,65 @@
           </div>
         </div>
       }
+
+      @case ('play') {
+        <div class="panel" id="sea-p-play" role="tabpanel" aria-labelledby="sea-t-play">
+          <div class="eyebrow">{{ play.eyebrow }}</div>
+          <h1 class="tour-title">{{ play.title }}</h1>
+          <p class="lead">{{ play.lead }}</p>
+          @for (s of play.sections; track s.id) {
+            <h2>{{ s.heading }}</h2>
+            @for (b of s.blocks; track $index) {
+              @switch (b.type) {
+                @case ('p') { <p>{{ b.text }}</p> }
+                @case ('h3') { <h3 class="play-h3">{{ b.text }}</h3> }
+                @case ('cards') {
+                  <div [class.two]="b.layout === 'two'" [class.rules]="b.layout !== 'two'">
+                    @for (c of b.cards ?? []; track c.title) {
+                      <div class="sea-card"><h3>{{ c.title }}</h3><p>{{ c.text }}</p></div>
+                    }
+                  </div>
+                }
+                @case ('steps') {
+                  <ol class="steps">
+                    @for (l of b.lines ?? []; track $index) { <li><div>{{ l }}</div></li> }
+                  </ol>
+                }
+                @case ('list') {
+                  <ul class="about-list">
+                    @for (l of b.lines ?? []; track $index) { <li>{{ l }}</li> }
+                  </ul>
+                }
+              }
+            }
+          }
+          <h2>{{ play.references.heading }}</h2>
+          <div class="two refs">
+            @for (g of play.references.groups; track g.title) {
+              <div class="sea-card">
+                <h3>{{ g.title }}</h3>
+                @if (g.note) { <p class="ref-note">{{ g.note }}</p> }
+                <ul class="ref-links">
+                  @for (k of g.links; track k.href) {
+                    <li>
+                      @if (k.internal) {
+                        <a [routerLink]="k.href">{{ k.label }}</a>
+                      } @else {
+                        <a [href]="k.href" target="_blank" rel="noopener noreferrer">{{ k.label }}</a>
+                      }
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+          <div class="cta">
+            <h2>想把它變成自己的工具?</h2>
+            <p>Eranaut 只開放給同好會成員。加入之後,返航提醒、截圖辨識與跨裝置同步全部解鎖。</p>
+            <button type="button" class="btn" (click)="show('join')">看加入辦法</button>
+          </div>
+        </div>
+      }
     }
   </div>
 </ng-template>
