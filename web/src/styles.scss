@@ -1143,6 +1143,8 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .rt-items-list li i { flex: 0 0 auto; font-style: normal; font-size: 11px; color: var(--text-dim); }
 .rt-items-list li.wanted { border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
 .rt-dlg-body .rt-text-input { flex: 0 0 auto; }
+/* 改名列(庫存組 / 條件組合管理):輸入框要讓出按鈕的寬度,不能撐出對話框 */
+.rt-dlg-body .rt-fm-row .rt-text-input { flex: 1 1 0; width: auto; min-width: 0; }
 /* 內容短的彈窗(說明、看全部):手機上貼底、依內容高度,不佔滿整個畫面 */
 .modal-overlay.rt-sheet.rt-compact { align-items: flex-end; }
 .rt-sheet.rt-compact .modal-box.rt-dlg { height: auto; max-height: calc(88vh / var(--vu-div)); border-radius: calc(16px * var(--rs)) calc(16px * var(--rs)) 0 0; border-top: var(--bw) solid var(--border-strong); }
