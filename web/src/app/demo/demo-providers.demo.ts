@@ -6,6 +6,7 @@ import { DemoPushVm } from './demo-push';
 import { PushVm } from '../core/push-vm';
 import { DemoStore } from './demo-store';
 import { ROUTE_FEATURES } from '../route/route-features';
+import { CRAFT_FEATURES } from '../craft/craft-features';
 
 // 展示模式(D-168):以假的 HTTP 後端取代 `/api/*`,資料只存在這個瀏覽器。畫面與其餘程式碼完全沿用正式版。
 export const DEMO_LOGIN_URL: string | null = '/?demo_login=1';
@@ -18,6 +19,8 @@ export const demoProviders: (Provider | EnvironmentProviders)[] = [
   // 航線模擬器:儲存配置、綁定工坊潛艇與條件組合也開放,由假後端存在這個瀏覽器(D-292);
   // 配件維修提醒與練級輔助需要綁定的配置,所以一定要開
   { provide: ROUTE_FEATURES, useValue: { saving: true } },
+  // 配件製作的「庫存組」需要伺服器端資料表(D-329),展示版不提供:選擇與庫存維持只存在這個瀏覽器的 localStorage
+  { provide: CRAFT_FEATURES, useValue: { stockSets: false } },
   // 必須在 Auth.init() 之前跑(app.config 的順序):先依網址參數決定登入狀態
   provideAppInitializer(() => {
     const store = inject(DemoStore);

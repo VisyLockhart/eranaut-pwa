@@ -1,4 +1,4 @@
-import type { District, NotifyLeadMinutes, RouteFilterSort, Server, SubmarineInputStatus, SubmarineStatus } from './constants.js';
+import type { District, NotifyLeadMinutes, RouteFilterSort, RoutePartKey, Server, SubmarineInputStatus, SubmarineStatus } from './constants.js';
 
 // 公開 API 的請求/回應型別(D-140)。JSON 欄位沿用資料表的 snake_case(SCHEMA §8)。
 
@@ -536,4 +536,38 @@ export type RouteFilterField = 'name' | 'spec' | 'sea' | 'max_hours' | 'sort' | 
 export interface RouteFilterValidationErrorBody {
   error: 'validation_failed';
   fields: Partial<Record<RouteFilterField, FieldErrorCode>>;
+}
+
+/**
+ * 配件製作的庫存組 `spec`(D-329):四個部位的選擇(只列有選的)與庫存(只列大於 0 的,key = 前端 `CalcRow.key`)。
+ * 不含檢視設定(分類、晶類、展開骨架…綁定裝置)。
+ */
+export interface CraftStockSpec {
+  v: 1;
+  /** 部位 → 等級 0~9(0~4 = 1~5 級,5~9 = 1改~5改)與數量 1~99 */
+  sel: Partial<Record<RoutePartKey, { grade: number; qty: number }>>;
+  stock: Record<string, number>;
+}
+
+export interface CraftStockDto {
+  id: string;
+  name: string;
+  spec: CraftStockSpec;
+  /** 常用(星號):由 PATCH 切換、PUT 不會改它 */
+  favorite: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** 新增 / 整筆取代庫存組的請求 */
+export interface CraftStockInput {
+  name: string;
+  spec: CraftStockSpec;
+}
+
+export type CraftStockField = 'name' | 'spec' | 'sel' | 'stock';
+
+export interface CraftStockValidationErrorBody {
+  error: 'validation_failed';
+  fields: Partial<Record<CraftStockField, FieldErrorCode>>;
 }

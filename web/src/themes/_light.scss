@@ -50,7 +50,7 @@ html[data-theme='light'] {
   .d-title, .modal-title, .set-title { font-weight: 700; }
 
   /* 實心面板:直角、3px 邊框、右下凹凸陰影 */
-  .m-stat, .card, .d-stat, .d-card, .ws-row, .ws-browse-item, .uf-row, .rt-card, .rt-block, .auth-card, .d-user, .rt-cfgbar, .rt-needbox, .up-empty, .dropzone, .rt-baseline, .row, .table, .d-pager,
+  .m-stat, .card, .d-stat, .d-card, .ws-row, .ws-browse-item, .uf-row, .rt-card, .rt-block, .auth-card, .d-user, .rt-cfgbar, .ct-setbar, .rt-needbox, .up-empty, .dropzone, .rt-baseline, .row, .table, .d-pager,
   .pill-toggle, .up-tabs, .ocr-busy, .copyright-panel, .modal-toggle-row { border-width: 3px; border-color: var(--line); box-shadow: var(--raise); }
   .row { border-width: 3px; }
   /* 內層小元件:只加粗邊框、換成墨色,不加陰影(避免畫面太擁擠) */

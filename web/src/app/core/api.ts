@@ -3,6 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import type {
   BuildInput,
   ChartOcrResultDto,
+  CraftStockDto,
+  CraftStockInput,
   WorkshopChartDto,
   WorkshopChartsInput,
   MaintenanceResponse,
@@ -194,6 +196,21 @@ export class Api {
   }
   setRouteFilterFavorite(id: string, favorite: boolean): Promise<RouteFilterDto> {
     return firstValueFrom(this.http.patch<RouteFilterDto>(`/api/route-filters/${encodeURIComponent(id)}`, { favorite }));
+  }
+  craftStocks(): Promise<CraftStockDto[]> {
+    return firstValueFrom(this.http.get<CraftStockDto[]>('/api/craft-stocks'));
+  }
+  createCraftStock(input: CraftStockInput): Promise<CraftStockDto> {
+    return firstValueFrom(this.http.post<CraftStockDto>('/api/craft-stocks', input));
+  }
+  updateCraftStock(id: string, input: CraftStockInput): Promise<CraftStockDto> {
+    return firstValueFrom(this.http.put<CraftStockDto>(`/api/craft-stocks/${encodeURIComponent(id)}`, input));
+  }
+  setCraftStockFavorite(id: string, favorite: boolean): Promise<CraftStockDto> {
+    return firstValueFrom(this.http.patch<CraftStockDto>(`/api/craft-stocks/${encodeURIComponent(id)}`, { favorite }));
+  }
+  deleteCraftStock(id: string): Promise<unknown> {
+    return firstValueFrom(this.http.delete(`/api/craft-stocks/${encodeURIComponent(id)}`));
   }
   deleteRouteFilter(id: string): Promise<unknown> {
     return firstValueFrom(this.http.delete(`/api/route-filters/${encodeURIComponent(id)}`));

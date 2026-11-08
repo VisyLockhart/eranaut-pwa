@@ -62,9 +62,9 @@ html[data-theme='dark'] {
   .modal-section-label, .sec-title { font-family: var(--font-head); font-weight: 900; letter-spacing: 0.16em; color: var(--gold); }
 
   /* 雙線框面板(金暗外框 + 內縮細線) */
-  .m-stat, .card, .d-stat, .d-card, .auth-card, .ws-row, .ws-browse-item, .uf-row, .rt-card, .rt-block, .d-user, .rt-cfgbar, .rt-needbox,
+  .m-stat, .card, .d-stat, .d-card, .auth-card, .ws-row, .ws-browse-item, .uf-row, .rt-card, .rt-block, .d-user, .rt-cfgbar, .ct-setbar, .rt-needbox,
   .copyright-panel, .modal-toggle-row, .up-empty, .table-wrap, .d-pager, .rt-baseline, .ct-col { border: 1px solid var(--gold-d); background: var(--bg-elevated); box-shadow: var(--frame); }
-  .rt-block, .rt-cfgbar, .rt-baseline { background: var(--bg-elevated-2); box-shadow: var(--frame-deep); }
+  .rt-block, .rt-cfgbar, .ct-setbar, .rt-baseline { background: var(--bg-elevated-2); box-shadow: var(--frame-deep); }
   .d-stat, .m-stat, .d-card, .card, .auth-card { @include gem; }
   .m-stat::after { top: -5px; }
   .modal-box { border: 1px solid var(--gold-d); background: var(--bg-elevated); box-shadow: var(--frame), var(--float); border-radius: 0; }

@@ -49,6 +49,9 @@ export const LIMITS = {
   /** 找路線的條件組合(D-229):名稱字數、每位使用者組數上限 */
   routeFilterName: 20,
   maxRouteFiltersPerUser: 30,
+  /** 配件製作的庫存組(D-329):名稱字數、每位使用者組數上限 */
+  craftStockName: 20,
+  maxCraftStocksPerUser: 10,
   /** 剩餘時間上限:99 天 23 小時 59 分(D-118 的天≤99、時≤23、分≤59),單位分鐘 */
   maxRemainingMinutes: 99 * 24 * 60 + 23 * 60 + 59,
 } as const;
@@ -80,3 +83,12 @@ export const ROUTE_FILTER_LIMITS = {
 export const MAINTENANCE_SHOW_BEFORE_MS = 24 * 60 * 60 * 1000;
 /** 超過預計結束時間後,官方仍沒改標題「已開機」時,橫幅最多再顯示多久 */
 export const MAINTENANCE_SHOW_AFTER_MS = 6 * 60 * 60 * 1000;
+
+/** 庫存組 `spec`(D-329)的範圍:與前端配件製作頁的選擇(等級 0~9、數量 1~99)與庫存(0~99999)一致;API 不認識品項資料,只擋形狀與明顯異常 */
+export const CRAFT_STOCK_LIMITS = {
+  gradeMax: 9,
+  qtyMax: 99,
+  stockValueMax: 99999,
+  stockEntriesMax: 400,
+  stockKeyMax: 40,
+} as const;

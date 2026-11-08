@@ -10,6 +10,9 @@ import type { SlotKey } from './core/types';
 import { parseCrystal, type CrystalElement, type CrystalTier } from './core/craft-tree';
 import { CrystalIcon } from './crystal-icon';
 import { CraftVm } from './craft-vm';
+import { CraftStockBar } from './craft-stock-bar';
+import { CraftStockDialogs } from './craft-stock-dialogs';
+import { CraftStockVm } from './craft-stock-vm';
 import { GRADE_INDEXES, MAX_QTY, TAB_LABEL, TABS, gradeInfo, gradeLabel, missing, rowId, type CraftTab, type CrystalTray, type GradeInfo, type RowGroup, type SlotSel } from './craft-state';
 import { CRAFT_DATA } from './core/data';
 import { Tip } from '../ui/tip';
@@ -17,7 +20,7 @@ import { Tip } from '../ui/tip';
 /** 配件製作:選潛艇配件等級,算出所需交納素材 / 直接素材 / 基礎素材(D-239、D-240、D-258) */
 @Component({
   selector: 'app-craft-page',
-  imports: [Tip, NgTemplateOutlet, CdkTrapFocus, IconComponent, CrystalIcon],
+  imports: [Tip, NgTemplateOutlet, CdkTrapFocus, IconComponent, CrystalIcon, CraftStockBar, CraftStockDialogs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './craft-page.html',
   host: { style: 'display: contents', '(document:keydown.escape)': 'onEscape($event)' },
@@ -42,6 +45,7 @@ export class CraftPage implements OnDestroy {
 
   constructor() {
     this.layout.pageTitle.set('配件製作');
+    inject(CraftStockVm).start();
     // 從航線帶入配置(D-262):套用後回到頁面最上面,讓發光的部位看得到
     const imp = inject(CraftLink).take();
     if (imp) {

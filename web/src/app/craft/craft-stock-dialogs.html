@@ -1,0 +1,108 @@
+@if (sv.dialog(); as d) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
+    @if (d === 'replace') {
+      <div class="modal-box rt-dlg ct-set-dlg" role="dialog" aria-modal="true" aria-labelledby="ct-sr-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+        <div class="rt-dlg-head">
+          <div class="modal-title" id="ct-sr-title">要換掉目前的配件與庫存嗎?</div>
+          <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+        </div>
+        <div class="rt-dlg-body">
+          @if (sv.loadTarget(); as t) {
+            <p>載入「{{ t.name }}」會換掉畫面上現在選的配件與記錄的庫存,並打開「記錄庫存」。</p>
+            <div class="rt-note">{{ meta(t) }}</div>
+            <p class="rt-note">目前的內容還沒有存成庫存組。分類、晶類、展開骨架等開關不受影響。</p>
+          }
+        </div>
+        <div class="rt-dlg-foot">
+          <div class="rt-save-actions">
+            <button type="button" class="rt-save-btn" (click)="close()">取消</button>
+            @if (canSaveFirst) {
+              <button type="button" class="rt-save-btn" (click)="saveFirst()">先儲存目前的</button>
+            }
+            <button type="button" class="rt-save-btn primary" (click)="confirmLoad()">換掉並載入</button>
+          </div>
+        </div>
+      </div>
+    } @else if (d === 'save') {
+      <div class="modal-box rt-dlg ct-set-dlg" role="dialog" aria-modal="true" aria-labelledby="ct-ss-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+        <div class="rt-dlg-head">
+          <div class="modal-title" id="ct-ss-title">儲存庫存組</div>
+          <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+        </div>
+        <div class="rt-dlg-body">
+          <div class="rt-note ct-set-sum">配件 {{ sv.selCount() }} 個部位 · 庫存 {{ sv.stockCount() }} 項 · 還缺 {{ sv.missingCount() }} 項</div>
+          @if (canUpdate()) {
+            <div class="rt-chips" role="group" aria-label="儲存方式">
+              <button type="button" class="rt-chip" [class.active]="saveMode() === 'update'" [attr.aria-pressed]="saveMode() === 'update'" (click)="setMode('update')">更新「{{ sv.active()!.name }}」</button>
+              <button type="button" class="rt-chip" [class.active]="saveMode() === 'new'" [attr.aria-pressed]="saveMode() === 'new'" (click)="setMode('new')">另存新組</button>
+            </div>
+          }
+          @if (saveMode() === 'new') {
+            @if (mustOverwrite()) {
+              <div class="rt-dirty" role="status">已滿 {{ limit }} 組。選一組覆蓋,或先到「管理」刪掉不用的。</div>
+              <app-route-list-tools [view]="overList" noun="庫存組" />
+              <ul class="rt-pick-list rt-scroll" aria-label="選一組覆蓋">
+                @for (s of overList.filtered(); track s.id) {
+                  <li class="rt-pick-row">
+                    <app-route-star [on]="s.favorite" [name]="s.name" (toggle)="sv.toggleFavorite(s.id)" />
+                    <button type="button" class="rt-pick" [class.active]="overTarget() === s.id" [attr.aria-pressed]="overTarget() === s.id" (click)="pickOver(s.id)">
+                      <b>{{ s.name }}</b><span>{{ meta(s) }}</span>
+                    </button>
+                  </li>
+                } @empty {
+                  <li class="rt-empty">沒有符合的庫存組 <button type="button" class="rt-link-btn" (click)="overList.clearFilters()">清除篩選</button></li>
+                }
+              </ul>
+            }
+            <label class="rt-exp-field">
+              <span>名稱(最多 {{ nameMax }} 字)</span>
+              <input class="rt-text-input" type="text" [attr.maxlength]="nameMax" [ngModel]="name()" (ngModelChange)="name.set($event)" (keydown.enter)="submit()" autocomplete="off" />
+              <span class="ct-set-count" aria-hidden="true">{{ [...name()].length }} / {{ nameMax }}</span>
+            </label>
+          }
+          <div class="ct-set-used"><i class="ct-set-meter"><i [style.width.%]="(sv.saved().length / limit) * 100"></i></i><span>{{ used() }}</span></div>
+          @if (error()) { <div class="rt-dirty bad" role="alert">{{ error() }}</div> }
+        </div>
+        <div class="rt-dlg-foot">
+          <div class="rt-save-actions">
+            <button type="button" class="rt-save-btn" (click)="close()">取消</button>
+            <button type="button" class="rt-save-btn primary" [disabled]="!canSubmit()" (click)="submit()">{{ saveMode() === 'update' ? '更新' : mustOverwrite() ? '覆蓋' : '儲存' }}</button>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="modal-box rt-dlg ct-set-dlg" role="dialog" aria-modal="true" aria-labelledby="ct-sm-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+        <div class="rt-dlg-head">
+          <div class="modal-title" id="ct-sm-title">管理庫存組({{ sv.saved().length }} / {{ limit }})</div>
+          <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+        </div>
+        <app-route-list-tools [view]="manageList" noun="庫存組" />
+        <div class="rt-dlg-body">
+          <ul class="rt-pick-list">
+            @for (s of manageList.filtered(); track s.id) {
+              <li class="rt-fm-row">
+                <app-route-star [on]="s.favorite" [name]="s.name" (toggle)="sv.toggleFavorite(s.id)" />
+                @if (renaming() === s.id) {
+                  <input class="rt-text-input" type="text" [attr.maxlength]="nameMax" aria-label="新名稱" [ngModel]="renameText()" (ngModelChange)="renameText.set($event)" (keydown.enter)="doRename(s.id)" autocomplete="off" />
+                  <div class="rt-save-actions">
+                    <button type="button" class="rt-save-btn" (click)="renaming.set(null)">取消</button>
+                    <button type="button" class="rt-save-btn primary" (click)="doRename(s.id)">確定</button>
+                  </div>
+                } @else {
+                  <div class="rt-fm-main"><b>{{ s.name }}</b><span class="rt-note">{{ meta(s) }}</span></div>
+                  <div class="rt-save-actions">
+                    <button type="button" class="rt-link-btn" [attr.aria-label]="'改名 ' + s.name" (click)="startRename(s.id, s.name)">改名</button>
+                    <button type="button" class="rt-link-btn" [class.danger]="confirmDelete() === s.id" [attr.aria-label]="'刪除 ' + s.name" (click)="doDelete(s.id)">{{ confirmDelete() === s.id ? '再按一次刪除' : '刪除' }}</button>
+                  </div>
+                }
+              </li>
+            } @empty {
+              <li class="rt-empty">@if (manageList.filtering()) { 沒有符合的庫存組 <button type="button" class="rt-link-btn" (click)="manageList.clearFilters()">清除篩選</button> } @else { 還沒有庫存組 }</li>
+            }
+          </ul>
+        </div>
+        <div class="rt-dlg-foot"><div class="rt-save-actions"><button type="button" class="rt-save-btn primary" (click)="close()">完成</button></div></div>
+      </div>
+    }
+  </div>
+}

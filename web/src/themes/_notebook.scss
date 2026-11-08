@@ -62,11 +62,11 @@ html[data-theme='notebook'] {
   .ct-need { color: var(--text-muted); }
 
   /* 紙卡:手繪外框 + 第二道淡淡的鉛筆線 */
-  .m-stat, .card, .d-stat, .d-card, .auth-card, .rt-card, .rt-block, .rt-cfgbar, .rt-needbox, .copyright-panel, .modal-toggle-row, .up-empty, .rt-baseline, .d-pager, .ocr-busy,
+  .m-stat, .card, .d-stat, .d-card, .auth-card, .rt-card, .rt-block, .rt-cfgbar, .ct-setbar, .rt-needbox, .copyright-panel, .modal-toggle-row, .up-empty, .rt-baseline, .d-pager, .ocr-busy,
   .ct-slot-card, .ct-tile, .ct-col, .ct-sum-row, .ct-empty, .ct-tree-cry, .table-wrap, .dropzone, .d-user, .ws-row, .ws-browse-item, .uf-row {
     border: var(--bw) solid var(--line); border-radius: var(--w1); background: var(--bg-elevated); box-shadow: none; outline: 1px solid var(--pencil); outline-offset: 3px; position: relative;
   }
-  .rt-block, .rt-cfgbar, .rt-baseline, .ct-tree-cry { background: var(--bg-elevated-2); }
+  .rt-block, .rt-cfgbar, .ct-setbar, .rt-baseline, .ct-tree-cry { background: var(--bg-elevated-2); }
   .ws-row, .ws-browse-item, .uf-row, .d-user, .ct-sum-row { outline: 0; }
   /* 待收艇的卡片(D-291 後續):淡玫瑰底 + 左側書籤色條,內文維持各自的顏色(滿底會讓小字難讀) */
   .card.ready, .d-card.ready, .uf-row.ready { background: color-mix(in srgb, var(--ready-bg) 40%, var(--bg-elevated)); border-color: var(--rose-d); color: var(--text); box-shadow: inset 4px 0 0 var(--rose); }
