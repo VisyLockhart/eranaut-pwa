@@ -7,9 +7,10 @@ import { Layout } from '../core/layout';
 import { IconComponent } from '../ui/icon';
 import type { CalcRow } from './core/craft-calc';
 import type { SlotKey } from './core/types';
+import { parseCrystal, type CrystalElement, type CrystalTier } from './core/craft-tree';
 import { CrystalIcon } from './crystal-icon';
 import { CraftVm } from './craft-vm';
-import { GRADE_INDEXES, MAX_QTY, TAB_LABEL, TABS, gradeInfo, gradeLabel, missing, rowId, type CraftTab, type GradeInfo, type RowGroup, type SlotSel } from './craft-state';
+import { GRADE_INDEXES, MAX_QTY, TAB_LABEL, TABS, gradeInfo, gradeLabel, missing, rowId, type CraftTab, type CrystalTray, type GradeInfo, type RowGroup, type SlotSel } from './craft-state';
 import { CRAFT_DATA } from './core/data';
 import { Tip } from '../ui/tip';
 
@@ -54,6 +55,37 @@ export class CraftPage implements OnDestroy {
   }
   protected groupsOf(tab: CraftTab): RowGroup[] {
     return this.vm.groups()[tab];
+  }
+  protected trayOf(tab: CraftTab): CrystalTray | null {
+    return this.vm.trays()[tab];
+  }
+  /** 晶類盤裡被點的那一格(記錄庫存時在盤下方展開成一列可輸入);不在這一欄 = null */
+  protected trayPicked(tab: CraftTab, ty: CrystalTray): CalcRow | null {
+    for (const r of ty.rows) for (const c of r.cells) if (c && this.vm.isPinned(c)) return c;
+    return null;
+  }
+  /** 收合時標頭的「N 相關」:盤裡被點的與相關的格數 */
+  protected trayHits(ty: CrystalTray): number {
+    let n = 0;
+    for (const r of ty.rows) for (const c of r.cells) if (c && (this.vm.isPinned(c) || this.vm.related().has(rowId(c)))) n++;
+    return n;
+  }
+  /** 格子的提示與無障礙名稱:名稱 · 需要;記錄庫存時改為實際還缺的數字 */
+  protected cellTip(r: CalcRow): string {
+    if (!this.vm.view().stockMode) return `${r.name} · 需要 ${r.need}`;
+    const have = this.vm.stock()[r.key] ?? 0;
+    const lack = missing(r, this.vm.stock());
+    return lack === 0 ? `${r.name} · 已備齊(${have} / ${r.need})` : `${r.name} · 還缺 ${lack}(已有 ${have} / 需要 ${r.need})`;
+  }
+  protected parseElement(name: string): CrystalElement {
+    return parseCrystal(name)!.element;
+  }
+  protected parseTier(name: string): CrystalTier {
+    return parseCrystal(name)!.tier;
+  }
+  /** 進度條 0~100 */
+  protected cellPct(r: CalcRow): number {
+    return r.need > 0 ? Math.min(100, ((this.vm.stock()[r.key] ?? 0) / r.need) * 100) : 100;
   }
   /** 該部位目前選到的配件資訊(名稱 + 英文代號);沒選回傳 null */
   protected infoOf(slot: SlotKey): GradeInfo | null {

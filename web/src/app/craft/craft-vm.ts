@@ -8,8 +8,8 @@ import { finalsProgress } from './core/craft-stock';
 import { CRAFT_DATA, SLOT_KEYS } from './core/data';
 import type { SlotKey } from './core/types';
 import {
-  DEFAULT_VIEW, MAX_QTY, TAB_LABEL, TABS, clampQty, copyLines, emptySel, listGroups, missing, relatedIds, rowId, sanitizeSel, sanitizeStock, sanitizeView,
-  type CraftTab, type CraftView, type SelMap,
+  DEFAULT_VIEW, MAX_QTY, buildTray, isCrystalRow, TAB_LABEL, TABS, clampQty, copyLines, emptySel, listGroups, missing, relatedIds, rowId, sanitizeSel, sanitizeStock, sanitizeView,
+  type CraftTab, type CraftView, type CrystalTray, type SelMap,
 } from './craft-state';
 
 
@@ -81,13 +81,23 @@ export class CraftVm {
     const f = (rows: CalcRow[]) => (v.stockMode && v.onlyMissing ? rows.filter((x) => missing(x, st) > 0) : rows);
     return { finals: f(r.finals), directs: f(r.directs), bases: f(r.bases) };
   });
-  /** 各欄的分組:排序方式 + 追蹤置頂(追蹤分類排第一) */
+  /** 各欄的分組:排序方式 + 追蹤置頂(追蹤分類排第一);晶類盤開啟時,晶類列改放晶類盤(D-327),不在列表裡 */
   readonly groups = computed(() => {
     const v = this.visible();
     const sort = this.view().sort;
     const pin = this.pinId();
     const rel = this.related();
-    return { finals: listGroups(v.finals, sort, pin, rel), directs: listGroups(v.directs, sort, pin, rel), bases: listGroups(v.bases, sort, pin, rel) };
+    const tray = this.view().crystalTray;
+    const f = (rows: CalcRow[]) => listGroups(tray ? rows.filter((r) => !isCrystalRow(r)) : rows, sort, pin, rel);
+    return { finals: f(v.finals), directs: f(v.directs), bases: f(v.bases) };
+  });
+  /** 各欄的晶類盤;「晶類」開關關閉或該欄沒有晶類 = null */
+  readonly trays = computed<Record<CraftTab, CrystalTray | null>>(() => {
+    const on = this.view().crystalTray;
+    const r = this.result();
+    const v = this.visible();
+    const t = (all: CalcRow[], shown: CalcRow[]) => (on ? buildTray(all, shown) : null);
+    return { finals: t(r.finals, v.finals), directs: t(r.directs, v.directs), bases: t(r.bases, v.bases) };
   });
   readonly counts = computed(() => ({ finals: this.result().finals.length, directs: this.result().directs.length, bases: this.result().bases.length }));
 
@@ -240,6 +250,13 @@ export class CraftVm {
       if (!n.delete(k)) n.add(k);
       return n;
     });
+  }
+  /** 晶類盤收合(預設展開);不併入「全部收合」 */
+  isTrayCollapsed(tab: CraftTab): boolean {
+    return this.collapsed().has(`${tab}:@tray`);
+  }
+  toggleTray(tab: CraftTab): void {
+    this.toggleGroup(tab, '@tray');
   }
   /** 可收合的分組 key(不含追蹤分類與按名稱時的單一組) */
   private groupKeys(tabs: readonly CraftTab[]): string[] {

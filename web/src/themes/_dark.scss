@@ -213,4 +213,14 @@ html[data-theme='dark'] {
   .qe-cfm { border-color: var(--gold-d); border-radius: 0; box-shadow: var(--frame); }
   .qe-cfm-t { font-family: var(--font-head); color: var(--gold-b); }
   .qe-cfm-l b { color: var(--gold); }
+
+  /* 晶類盤(D-327):金屬——選取時金色邊框 + 光暈 + 雙線框 */
+  .ct-cell, .ct-tray-insp { background: var(--bg-elevated-2); border: 1px solid var(--steel-d); box-shadow: none; }
+  .ct-cell.empty { background: transparent; border-color: var(--gl); }
+  .ct-cell.pin { border-color: var(--gold); box-shadow: 0 0 12px var(--glow), inset 0 0 0 2px var(--bg-elevated-2), inset 0 0 0 3px var(--gl); }
+  .ct-cell.rel { border-color: var(--gold-d); }
+  .ct-tray-insp { border-color: var(--gold); box-shadow: var(--frame-deep); }
+  .ct-cell-n { font-weight: 700; color: var(--gold-b); font-variant-numeric: lining-nums; }
+  .ct-cell-bar > i { background: var(--gold); }
+  .ct-tray-el { color: var(--gold); font-family: var(--font-head); letter-spacing: 0.08em; }
 }

@@ -1283,6 +1283,45 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-sum-val { flex: 0 0 auto; font-size: 14px; font-weight: 700; color: var(--amber); font-family: var(--font-mono); white-space: nowrap; }
 .ct-sum-val i { font-style: normal; font-size: 12px; color: var(--text-muted); }
 .ct-sum-row .ct-sel-part { display: none; }
+/* 收合時:「配件部位」與部件摘要同一列(D-325);手機放不下一列,摘要改為 2×2 */
+.ct-slots-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.ct-slots-line .ct-slots-bar { align-self: center; flex: 0 0 auto; }
+.ct-slots-line .ct-sum { flex: 1 1 0; min-width: 0; }
+.ct-m-body .ct-slots-line { display: block; }
+.ct-m-body .ct-slots-line .ct-sum { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.ct-m-body .ct-sum-row.tap { flex: none; flex-wrap: wrap; row-gap: 2px; }
+.ct-m-body .ct-sum-row .ct-sel { flex: 1 0 100%; }
+
+/* 工具列開關:分類、晶類、展開骨架、記錄庫存(D-326);手機四等分,標籤在上、開關在下 */
+.ct-m-body .ct-toolbar { gap: 6px; }
+.ct-m-body .ct-toolbar .ct-opt { flex: 1 1 22%; min-width: 0; flex-direction: column; justify-content: center; gap: 2px; min-height: 56px; font-size: 12.5px; white-space: nowrap; }
+.ct-m-body .ct-toolbar .ct-spacer { display: none; }
+.ct-m-body .ct-toolbar .ct-tool { flex: 1 1 auto; justify-content: center; }
+
+/* ---------- 晶類盤(D-327):碎晶 / 水晶 / 晶簇不佔列表高度 ---------- */
+.ct-tray { margin-bottom: 8px; padding-bottom: 6px; border-bottom: var(--bw) dashed var(--border-strong); }
+.ct-tray-head { color: var(--text-muted); }
+.ct-tray-hint { margin-left: auto; font-size: 11.5px; font-weight: 600; color: var(--amber); }
+.ct-tray-grid { display: grid; grid-template-columns: 2.7em repeat(6, minmax(0, 1fr)); gap: 4px; padding: 2px 0; }
+.ct-tray-el { text-align: center; font-size: 12px; font-weight: 600; color: var(--text-dim); }
+.ct-tray-tier { align-self: center; font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+.ct-cell { position: relative; min-width: 0; min-height: 46px; padding: 3px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border: var(--bw) solid color-mix(in srgb, var(--tone) 22%, transparent); border-radius: calc(8px * var(--rs)); background: color-mix(in srgb, var(--tone) 5%, transparent); color: var(--text); font: inherit; cursor: pointer; }
+.ct-cell:hover { border-color: color-mix(in srgb, var(--tone) 50%, transparent); }
+.ct-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ct-cell.empty { border-style: dashed; background: none; cursor: default; opacity: 0.45; }
+.ct-cell.pin { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.ct-cell.rel { border-color: color-mix(in srgb, var(--amber) 60%, transparent); background: color-mix(in srgb, var(--amber) 8%, transparent); }
+.ct-cell.dim { opacity: 0.38; }
+.ct-cell.done { border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.ct-cell-n { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; line-height: 1.2; color: var(--amber); }
+.ct-cell.done .ct-cell-n { color: var(--text-dim); }
+.ct-tray.stock .ct-cell { min-height: 52px; }
+.ct-cell-bar { display: block; width: 70%; height: 3px; border-radius: var(--r-pill); overflow: hidden; background: color-mix(in srgb, var(--tone) 22%, transparent); }
+.ct-cell-bar > i { display: block; height: 100%; background: var(--accent); }
+.ct-cell-ok { position: absolute; top: 2px; right: 2px; color: var(--accent); }
+.ct-tray-insp { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 4px 8px; border: var(--bw) solid var(--accent); border-radius: calc(9px * var(--rs)); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.ct-m-body .ct-cell { min-height: 48px; }
+.ct-m-body .ct-tray.stock .ct-cell { min-height: 54px; }
 
 /* ---------- 設定頁:主題選擇(D-277)——三個主題各有自己的選項外觀,見各主題檔 ---------- */
 .set-title { font-size: 13px; font-weight: 600; }

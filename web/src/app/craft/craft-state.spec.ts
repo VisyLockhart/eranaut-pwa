@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { calculate, type CalcRow } from './core/craft-calc';
-import { compareNames, copyLines, gradeInfo, gradeLabel, groupRows, listGroups, missing, sanitizeSel, sanitizeStock, sanitizeView } from './craft-state';
+import { buildTray, compareNames, copyLines, gradeInfo, gradeLabel, groupRows, listGroups, missing, sanitizeSel, sanitizeStock, sanitizeView } from './craft-state';
 import { CraftVm } from './craft-vm';
 
 describe('craft-state', () => {
@@ -16,7 +16,7 @@ describe('craft-state', () => {
     expect(s.bow.gradeIndex).toBeNull();
     expect(s.bridge.gradeIndex).toBeNull();
     expect(sanitizeSel(null).hull.gradeIndex).toBeNull();
-    expect(sanitizeView({ tab: 'nope', stockMode: 1, expandFrame: true })).toEqual({ expandFrame: true, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group' });
+    expect(sanitizeView({ tab: 'nope', stockMode: 1, expandFrame: true })).toEqual({ expandFrame: true, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group', crystalTray: true });
   });
 
   it('庫存只留已知的 key 與正整數;舊版沒有前綴的半成品搬到 d:(D-258)', () => {
@@ -272,5 +272,66 @@ describe('CraftVm', () => {
     vm.togglePin(vm.result().directs.find((r) => r.group !== '碎晶')!.name, 'direct');
     vm.toggleAllGroups(['directs']);
     expect([...vm.collapsed()].some((k) => k.includes('追蹤'))).toBe(false);
+  });
+});
+
+describe('晶類盤(D-327)', () => {
+  const row = (name: string, group: string, need = 10): CalcRow => ({ name, key: name, group, kind: 'direct', need, crafts: 0, made: 1, inputs: {}, usedBy: [], slots: [] }) as CalcRow;
+
+  it('sanitizeView:晶類開關預設開,舊資料沒有欄位當開,型別不對丟掉', () => {
+    expect(sanitizeView({}).crystalTray).toBe(true);
+    expect(sanitizeView({ crystalTray: false }).crystalTray).toBe(false);
+    expect(sanitizeView({ crystalTray: 'no' }).crystalTray).toBe(true);
+  });
+
+  it('buildTray:欄依元素順序、列依 碎晶 → 水晶 → 晶簇,只列有的種類,沒有的格是 null', () => {
+    const rows = [row('水之碎晶', '碎晶'), row('火之晶簇', '晶簇'), row('冰之碎晶', '碎晶')];
+    const t = buildTray(rows, rows)!;
+    expect(t.elements).toEqual(['火', '冰', '風', '土', '雷', '水']);
+    expect(t.rows.map((r) => r.tier)).toEqual(['碎晶', '晶簇']);
+    expect(t.rows[0]!.cells.map((c) => c?.name ?? null)).toEqual([null, '冰之碎晶', null, null, null, '水之碎晶']);
+    expect(t.rows[1]!.cells[0]!.name).toBe('火之晶簇');
+    expect(t.count).toBe(3);
+  });
+
+  it('buildTray:只看缺少濾掉的格變空格但版面不變;全部濾掉或沒有晶類 = null', () => {
+    const all = [row('火之碎晶', '碎晶'), row('火之水晶', '水晶')];
+    const t = buildTray(all, [all[1]!])!;
+    expect(t.rows.map((r) => r.tier)).toEqual(['碎晶', '水晶']);
+    expect(t.rows[0]!.cells[0]).toBeNull();
+    expect(t.count).toBe(1);
+    expect(buildTray(all, [])).toBeNull();
+    expect(buildTray([row('玄鋼錠', '素材')], [row('玄鋼錠', '素材')])).toBeNull();
+  });
+
+  it('CraftVm:晶類開 = 列表沒有晶類、盤有;關 = 列表有晶類、盤沒有;數量與複製清單不變', () => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    const vm = TestBed.inject(CraftVm);
+    vm.setGrade('hull', 5);
+    const crystalsIn = (tab: 'directs' | 'bases') => vm.result()[tab].filter((r) => /之(碎晶|水晶|晶簇)$/.test(r.name)).length;
+    const listed = (tab: 'directs' | 'bases') => vm.groups()[tab].flatMap((g) => g.rows).filter((r) => /之(碎晶|水晶|晶簇)$/.test(r.name)).length;
+    const total = vm.counts();
+    const text = vm.copyText(['directs', 'bases']);
+    expect(crystalsIn('bases')).toBeGreaterThan(0);
+    expect(vm.view().crystalTray).toBe(true);
+    expect(listed('bases')).toBe(0);
+    expect(vm.trays().bases!.count).toBe(crystalsIn('bases'));
+    vm.patchView({ crystalTray: false });
+    expect(listed('bases')).toBe(crystalsIn('bases'));
+    expect(vm.trays().bases).toBeNull();
+    expect(vm.counts()).toEqual(total);
+    expect(vm.copyText(['directs', 'bases'])).toBe(text);
+  });
+
+  it('CraftVm:追蹤基礎素材的晶類時,同名的直接素材晶類一起標為相關', () => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    const vm = TestBed.inject(CraftVm);
+    vm.setGrade('hull', 5);
+    const d = vm.result().directs.find((r) => /之(碎晶|水晶|晶簇)$/.test(r.name));
+    if (!d) return;
+    vm.togglePin(d.name, 'direct');
+    expect(vm.related().has(`base:${d.name}`)).toBe(true);
   });
 });

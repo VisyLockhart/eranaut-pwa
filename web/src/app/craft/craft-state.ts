@@ -1,6 +1,7 @@
 import partsJson from '../route/data/parts.json';
 import { compareNames } from '../core/name-sort';
 import { CRAFT_DATA, SLOT_KEYS } from './core/data';
+import { CRYSTAL_ELEMENTS, parseCrystal, type CrystalElement, type CrystalTier } from './core/craft-tree';
 import { DIRECT_PREFIX, frameName, groupRank, type CalcResult, type CalcRow, type RowKind } from './core/craft-calc';
 import type { CraftData, SlotKey } from './core/types';
 
@@ -20,6 +21,8 @@ export interface CraftView {
   slotsCollapsed: boolean;
   tab: CraftTab;
   sort: CraftSort;
+  /** 晶類盤(D-327):開 = 碎晶 / 水晶 / 晶簇從列表移到欄標題下的晶類盤;關 = 照舊留在列表裡 */
+  crystalTray: boolean;
 }
 
 export const MAX_QTY = 99;
@@ -40,7 +43,7 @@ export function emptySel(): SelMap {
   return { hull: { gradeIndex: null, qty: 1 }, stern: { gradeIndex: null, qty: 1 }, bow: { gradeIndex: null, qty: 1 }, bridge: { gradeIndex: null, qty: 1 } };
 }
 
-export const DEFAULT_VIEW: CraftView = { expandFrame: false, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group' };
+export const DEFAULT_VIEW: CraftView = { expandFrame: false, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group', crystalTray: true };
 
 /** 讀 localStorage 的內容一律當不可信:型別、範圍不對就丟掉 */
 export function sanitizeSel(raw: unknown): SelMap {
@@ -63,6 +66,7 @@ export function sanitizeView(raw: unknown): CraftView {
   if (typeof r['stockMode'] === 'boolean') v.stockMode = r['stockMode'];
   if (typeof r['onlyMissing'] === 'boolean') v.onlyMissing = r['onlyMissing'];
   if (typeof r['slotsCollapsed'] === 'boolean') v.slotsCollapsed = r['slotsCollapsed'];
+  if (typeof r['crystalTray'] === 'boolean') v.crystalTray = r['crystalTray'];
   if (r['sort'] === 'group' || r['sort'] === 'name') v.sort = r['sort'];
   if (r['tab'] === 'finals' || r['tab'] === 'directs' || r['tab'] === 'bases') v.tab = r['tab'];
   else if (r['tab'] === 'semis') v.tab = 'directs'; // 舊版的「半成品」欄 = 現在的直接素材
@@ -203,4 +207,40 @@ export function gradeInfo(slot: SlotKey, gradeIndex: number): GradeInfo | null {
   const base = p?.grades[gradeIndex % 5];
   if (!g || !base) return null;
   return { name: g.name, part: p.label, code: base.code + (gradeIndex >= 5 ? '+' : '') };
+}
+
+/** 晶類盤(D-327)的版面:欄 = 元素(遊戲順序)、列 = 種類(碎晶 → 水晶 → 晶簇),只列有的種類 */
+export interface TrayRow {
+  tier: CrystalTier;
+  /** 與 CRYSTAL_ELEMENTS 對齊;該格沒有(或被「只看缺少」濾掉)= null */
+  cells: (CalcRow | null)[];
+}
+export interface CrystalTray {
+  elements: readonly CrystalElement[];
+  rows: TrayRow[];
+  /** 盤裡有幾格 */
+  count: number;
+}
+
+const TIER_ORDER: readonly CrystalTier[] = ['碎晶', '水晶', '晶簇'];
+
+/** 是不是要放進晶類盤的列(碎晶 / 水晶 / 晶簇) */
+export function isCrystalRow(r: Pick<CalcRow, 'name'>): boolean {
+  return parseCrystal(r.name) !== null;
+}
+
+/**
+ * 把一欄的晶類列排成晶類盤。`all` 決定有哪些種類(版面穩定),`shown` 決定哪些格有內容
+ * (記錄庫存 + 只看缺少時,已備齊的格變空格)。沒有任何可顯示的晶類 = null(不畫盤)。
+ */
+export function buildTray(all: readonly CalcRow[], shown: readonly CalcRow[]): CrystalTray | null {
+  const have = new Set(all.filter(isCrystalRow).map((r) => parseCrystal(r.name)!.tier));
+  const cell = new Map<string, CalcRow>();
+  for (const r of shown) {
+    const c = parseCrystal(r.name);
+    if (c) cell.set(`${c.element}${c.tier}`, r);
+  }
+  if (cell.size === 0) return null;
+  const rows: TrayRow[] = TIER_ORDER.filter((t) => have.has(t)).map((tier) => ({ tier, cells: CRYSTAL_ELEMENTS.map((e) => cell.get(`${e}${tier}`) ?? null) }));
+  return { elements: CRYSTAL_ELEMENTS, rows, count: cell.size };
 }

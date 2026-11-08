@@ -512,4 +512,17 @@ html[data-theme='notebook'] {
   .m-stats-toggle .summary .ov-s-next.ov-sn::before { background: var(--lav-p); }
   .m-stats-toggle .summary .ov-s-ok { background: var(--sage-p); color: var(--accent-dark); border-radius: 3px 9px 4px 8px; }
   .m-stats-toggle .chev { align-self: center; }
+
+  /* 晶類盤(D-327):紙卡——選取是芥末色便利貼、相關是玫瑰淡底,圖示降低飽和度 */
+  .ct-cell { background: transparent; border: var(--bw) solid var(--text-dim); border-radius: var(--w2); }
+  .ct-cell:hover { border-color: var(--accent); }
+  .ct-cell.empty { border-style: dashed; border-color: var(--border-strong); }
+  .ct-cell.pin { background: var(--mus-p); border-color: var(--accent); }
+  .ct-cell.rel { background: color-mix(in srgb, var(--rose-p) 70%, transparent); border-color: var(--rose-d); }
+  .ct-cell app-crystal-icon, .ct-tray-insp app-crystal-icon { filter: saturate(0.7); }
+  .ct-cell-n { font-family: var(--font-mono); font-weight: 400; font-size: 14px; letter-spacing: -0.3px; color: var(--text); font-variant-numeric: normal; }
+  .ct-cell-bar { height: 5px; border-radius: var(--w2); border: 0; }
+  .ct-cell-bar > i { background: var(--sage); }
+  .ct-tray-insp { background: var(--mus-p); border: 0; border-radius: 3px 9px 4px 8px; }
+  .ct-tray-el, .ct-tray-tier { font-family: var(--font-hand); font-size: 16px; color: var(--text-muted); }
 }

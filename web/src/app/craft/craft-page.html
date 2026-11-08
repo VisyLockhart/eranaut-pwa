@@ -5,10 +5,13 @@
     </div>
   </div>
   <div class="ct-d-wrap">
-    <ng-container *ngTemplateOutlet="slotsBar" />
     @if (vm.view().slotsCollapsed) {
-      <div class="ct-sum"><ng-container *ngTemplateOutlet="slotsSum" /></div>
+      <div class="ct-slots-line">
+        <ng-container *ngTemplateOutlet="slotsBar" />
+        <div class="ct-sum"><ng-container *ngTemplateOutlet="slotsSum" /></div>
+      </div>
     } @else {
+    <ng-container *ngTemplateOutlet="slotsBar" />
     <div class="ct-slots">
       @for (slot of vm.slots; track slot) {
         <section class="ct-slot-card" [class.set]="vm.sel()[slot].gradeIndex !== null" [class.flash]="vm.flash() && vm.sel()[slot].gradeIndex !== null" [attr.aria-label]="slotLabel(slot)">
@@ -47,10 +50,13 @@
   </div>
 } @else {
   <div class="m-upload-body ct-m-body">
-    <ng-container *ngTemplateOutlet="slotsBar" />
     @if (vm.view().slotsCollapsed) {
-      <div class="ct-sum"><ng-container *ngTemplateOutlet="slotsSum" /></div>
+      <div class="ct-slots-line">
+        <ng-container *ngTemplateOutlet="slotsBar" />
+        <div class="ct-sum"><ng-container *ngTemplateOutlet="slotsSum" /></div>
+      </div>
     } @else {
+    <ng-container *ngTemplateOutlet="slotsBar" />
     <div class="ct-tiles">
       @for (slot of vm.slots; track slot) {
         <button type="button" class="ct-tile" [class.set]="vm.sel()[slot].gradeIndex !== null" [class.flash]="vm.flash() && vm.sel()[slot].gradeIndex !== null" (click)="openSheet(slot)" [attr.aria-label]="'選擇' + slotLabel(slot)">
@@ -146,18 +152,20 @@
 
 <ng-template #toolbar>
   <div class="ct-toolbar">
+    @if (vm.hasSelection()) {
+      <label class="ct-opt"><span>分類</span>
+        <span class="switch"><input type="checkbox" [checked]="vm.view().sort === 'group'" (change)="vm.patchView({ sort: vm.view().sort === 'group' ? 'name' : 'group' })" /><span class="slider"></span></span>
+      </label>
+      <label class="ct-opt"><span>晶類</span>
+        <span class="switch"><input type="checkbox" [checked]="vm.view().crystalTray" (change)="vm.patchView({ crystalTray: !vm.view().crystalTray })" /><span class="slider"></span></span>
+      </label>
+    }
     <label class="ct-opt"><span>展開骨架</span>
       <span class="switch"><input type="checkbox" [checked]="vm.view().expandFrame" (change)="vm.patchView({ expandFrame: !vm.view().expandFrame })" /><span class="slider"></span></span>
     </label>
     <label class="ct-opt"><span>記錄庫存</span>
       <span class="switch"><input type="checkbox" [checked]="vm.view().stockMode" (change)="vm.patchView({ stockMode: !vm.view().stockMode })" /><span class="slider"></span></span>
     </label>
-    @if (vm.hasSelection()) {
-      <div class="ct-seg" role="group" aria-label="排序方式">
-        <button type="button" [class.on]="vm.view().sort === 'group'" [attr.aria-pressed]="vm.view().sort === 'group'" (click)="vm.patchView({ sort: 'group' })">種類</button>
-        <button type="button" [class.on]="vm.view().sort === 'name'" [attr.aria-pressed]="vm.view().sort === 'name'" (click)="vm.patchView({ sort: 'name' })">名稱</button>
-      </div>
-    }
     <span class="ct-spacer"></span>
     @if (vm.hasSelection()) {
       @if (vm.view().sort === 'group') {
@@ -188,7 +196,59 @@
   }
 </ng-template>
 
+<ng-template #tray let-tab="tab">
+  @if (trayOf(tab); as ty) {
+    @let off = vm.isTrayCollapsed(tab);
+    <div class="ct-tray" [class.stock]="vm.view().stockMode" [class.tracing]="vm.pin()">
+      <button type="button" class="ct-group-head ct-tray-head" [attr.aria-expanded]="!off" (click)="vm.toggleTray(tab)">
+        <app-icon [name]="off ? 'chevronRight' : 'chevronDown'" [size]="14" />
+        <span>晶類</span><span class="ct-count">{{ ty.count }}</span>
+        @if (off && vm.pin() && trayHits(ty) > 0) {
+          <span class="ct-tray-hint">{{ trayHits(ty) }} 相關</span>
+        }
+      </button>
+      @if (!off) {
+        <div class="ct-tray-grid" role="group" aria-label="晶類">
+          <span class="ct-tray-corner" aria-hidden="true"></span>
+          @for (e of ty.elements; track e) {
+            <span class="ct-tray-el">{{ e }}</span>
+          }
+          @for (row of ty.rows; track row.tier) {
+            <span class="ct-tray-tier">{{ row.tier }}</span>
+            @for (c of row.cells; track $index) {
+              @if (c) {
+                <button type="button" class="ct-cell" [class]="'ct-cell ' + rowState(c)" [tip]="cellTip(c)" [attr.aria-label]="cellTip(c)" [attr.aria-pressed]="vm.isPinned(c)" (click)="pinRow(c, $event)">
+                  <app-crystal-icon [element]="parseElement(c.name)" [tier]="row.tier" [size]="20" />
+                  <b class="ct-cell-n">{{ c.need }}</b>
+                  @if (vm.view().stockMode) {
+                    <i class="ct-cell-bar"><i [style.width.%]="cellPct(c)"></i></i>
+                    @if (missing(c, vm.stock()) === 0) {
+                      <app-icon class="ct-cell-ok" name="check" [size]="12" />
+                    }
+                  }
+                </button>
+              } @else {
+                <span class="ct-cell empty" aria-hidden="true"></span>
+              }
+            }
+          }
+        </div>
+        @if (vm.view().stockMode && trayPicked(tab, ty); as r) {
+          <div class="ct-tray-insp">
+            <app-crystal-icon [element]="parseElement(r.name)" [tier]="parseTier(r.name)" [size]="22" />
+            <span class="ct-name">{{ r.name }}</span>
+            <span class="ct-need">{{ r.need }}</span>
+            <input class="ct-have" type="number" inputmode="numeric" min="0" placeholder="0" [value]="vm.stock()[r.key] ?? ''" (input)="stockInput(r, $event)" [attr.aria-label]="r.name + ' 已有'" />
+            <button type="button" class="ct-lack" [class.zero]="missing(r, vm.stock()) === 0" (click)="vm.toggleDone(r)" [attr.aria-label]="r.name + ' 還缺 ' + missing(r, vm.stock())">{{ missing(r, vm.stock()) === 0 ? '✓' : missing(r, vm.stock()) }}</button>
+          </div>
+        }
+      }
+    </div>
+  }
+</ng-template>
+
 <ng-template #list let-tab="tab">
+  <ng-container *ngTemplateOutlet="tray; context: { tab: tab }" />
   @for (g of groupsOf(tab); track g.group) {
     <div class="ct-group" [class.trace]="g.trace">
       @if (g.trace) {
@@ -218,7 +278,9 @@
       }
     </div>
   } @empty {
-    <div class="ct-none"><app-icon name="check" [size]="22" /></div>
+    @if (!trayOf(tab)) {
+      <div class="ct-none"><app-icon name="check" [size]="22" /></div>
+    }
   }
 </ng-template>
 

@@ -164,20 +164,25 @@ describe('CraftPage', () => {
   });
 
   for (const desktop of [false, true]) {
-    it(`排序切換:按名稱沒有分組標題,按種類有;切換鈕可見(${desktop ? '桌機' : '手機'})`, () => {
+    it(`「分類」開關:關 = 按名稱(沒有分組標題),開 = 按種類(${desktop ? '桌機' : '手機'})`, () => {
       const { f, vm, el } = mount(desktop);
       vm.setGrade('hull', 5);
       f.detectChanges();
-      expect(el.querySelector('.ct-seg')).toBeTruthy();
-      expect(el.querySelectorAll('.ct-group-head').length).toBeGreaterThan(0);
-      el.querySelectorAll<HTMLButtonElement>('.ct-seg button')[1]!.click();
+      const labels = [...el.querySelectorAll('.ct-toolbar .ct-opt > span:first-child')].map((x) => x.textContent);
+      expect(labels).toEqual(['分類', '晶類', '展開骨架', '記錄庫存']);
+      expect(el.querySelector('.ct-seg')).toBeNull();
+      const sw = el.querySelector<HTMLInputElement>('.ct-toolbar .ct-opt input')!;
+      expect(sw.checked).toBe(true);
+      expect(el.querySelectorAll('.ct-group-head:not(.ct-tray-head)').length).toBeGreaterThan(0);
+      sw.click();
       f.detectChanges();
       expect(vm.view().sort).toBe('name');
-      expect(el.querySelector('.ct-group-head')).toBeNull();
+      expect(el.querySelector('.ct-group-head:not(.ct-tray-head)')).toBeNull();
       expect(el.querySelector('.ct-row')).toBeTruthy();
-      el.querySelectorAll<HTMLButtonElement>('.ct-seg button')[0]!.click();
+      sw.click();
       f.detectChanges();
-      expect(el.querySelectorAll('.ct-group-head').length).toBeGreaterThan(0);
+      expect(vm.view().sort).toBe('group');
+      expect(el.querySelectorAll('.ct-group-head:not(.ct-tray-head)').length).toBeGreaterThan(0);
     });
 
     it(`點一列追蹤:追蹤分類置頂、被點的列第一;取消追蹤恢復(${desktop ? '桌機' : '手機'})`, () => {
@@ -346,4 +351,72 @@ describe('從航線帶入配置(D-262)', () => {
     expect(vm.hasSelection()).toBe(false);
     expect(toast.items()).toHaveLength(0);
   });
+
+  for (const desktop of [false, true]) {
+    it(`晶類盤:晶類在盤裡不在列表;點格 = 追蹤,相關的格亮;「晶類」關回列表(${desktop ? '桌機' : '手機'})`, () => {
+      const { f, vm, el } = mount(desktop);
+      vm.setGrade('hull', 5);
+      vm.patchView({ tab: 'bases' });
+      f.detectChanges();
+      const tray = [...el.querySelectorAll('.ct-tray')].at(-1)!; // 桌機三欄都在,基礎素材是最後一個盤
+      expect(tray).toBeTruthy();
+      const cells = tray.querySelectorAll<HTMLButtonElement>('button.ct-cell');
+      expect(cells.length).toBe(vm.trays().bases!.count);
+      expect([...el.querySelectorAll('.ct-row .ct-name')].some((n) => /之(碎晶|水晶|晶簇)$/.test(n.textContent ?? ''))).toBe(false);
+      cells[0]!.click();
+      f.detectChanges();
+      expect(vm.pin()).toBeTruthy();
+      expect(vm.pinKind()).toBe('base');
+      expect(tray.querySelector('.ct-cell.pin')).toBeTruthy();
+      expect(tray.querySelectorAll('.ct-cell.dim').length).toBeGreaterThan(0);
+      cells[0]!.click();
+      f.detectChanges();
+      expect(vm.pin()).toBeNull();
+      // 收合
+      tray.querySelector<HTMLButtonElement>('.ct-tray-head')!.click();
+      f.detectChanges();
+      expect(tray.querySelector('.ct-tray-grid')).toBeNull();
+      // 關閉晶類開關
+      el.querySelectorAll<HTMLInputElement>('.ct-toolbar .ct-opt input')[1]!.click();
+      f.detectChanges();
+      expect(vm.view().crystalTray).toBe(false);
+      expect(el.querySelector('.ct-tray')).toBeNull();
+      expect([...el.querySelectorAll('.ct-row .ct-name')].some((n) => /之(碎晶|水晶|晶簇)$/.test(n.textContent ?? ''))).toBe(true);
+    });
+  }
+
+  it('晶類盤 + 記錄庫存:格子浮出實際還缺的數字,選取後盤下方出現可輸入的一列', () => {
+    const { f, vm, el } = mount(true);
+    vm.setGrade('hull', 5);
+    vm.patchView({ tab: 'bases', stockMode: true });
+    f.detectChanges();
+    const first = el.querySelector<HTMLButtonElement>('.ct-tray button.ct-cell')!; // 桌機第一個盤 = 直接素材欄
+    const r = vm.trays().directs!.rows.flatMap((x) => x.cells).find((c) => c)!;
+    expect(first.getAttribute('data-tip')).toContain(`還缺 ${r.need}`);
+    expect(first.querySelector('.ct-cell-bar')).toBeTruthy();
+    expect(el.querySelector('.ct-tray-insp')).toBeNull();
+    first.click();
+    f.detectChanges();
+    const insp = el.querySelector('.ct-tray-insp')!;
+    expect(insp).toBeTruthy();
+    const input = insp.querySelector<HTMLInputElement>('input.ct-have')!;
+    input.value = String(r.need);
+    input.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    expect(vm.stock()[r.key]).toBe(r.need);
+    expect(el.querySelector('.ct-tray button.ct-cell.done')).toBeTruthy();
+    expect(first.getAttribute('data-tip')).toContain('已備齊');
+  });
+
+  for (const desktop of [false, true]) {
+    it(`部位收合:「配件部位」與部件摘要在同一個容器(${desktop ? '桌機' : '手機'})`, () => {
+      const { f, vm, el } = mount(desktop);
+      vm.setGrade('hull', 5);
+      vm.toggleSlots();
+      f.detectChanges();
+      const line = el.querySelector('.ct-slots-line')!;
+      expect(line.querySelector('.ct-slots-bar')).toBeTruthy();
+      expect(line.querySelector('.ct-sum .ct-sum-row')).toBeTruthy();
+    });
+  }
 });

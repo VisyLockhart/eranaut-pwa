@@ -182,4 +182,13 @@ html[data-theme='light'] {
   .qe-rail-v { border-width: 3px; border-color: var(--line); border-radius: 0; }
   .qe-dot { border-radius: 0; }
   .qe-cfm { border-width: 3px; border-color: var(--line); border-radius: 0; }
+
+  /* 晶類盤(D-327):墨色 2px 邊框,選取 = 凹陷,空格虛線 */
+  .ct-cell, .ct-tray-insp { border-width: 2px; border-color: var(--line); }
+  .ct-cell { background: var(--bg-elevated); }
+  .ct-cell.empty { background: transparent; border-color: var(--border-strong); }
+  .ct-cell.pin { background: var(--bg-elevated); box-shadow: var(--press); }
+  .ct-cell.rel { border-color: var(--amber); }
+  .ct-cell-n { font-family: var(--font-mono); font-weight: 400; font-variant-numeric: normal; }
+  .ct-cell-bar { height: 4px; border-radius: 0; }
 }
