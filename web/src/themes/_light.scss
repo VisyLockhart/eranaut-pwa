@@ -55,6 +55,8 @@ html[data-theme='light'] {
   .row { border-width: 3px; }
   /* 內層小元件:只加粗邊框、換成墨色,不加陰影(避免畫面太擁擠) */
   .ct-slot-card, .ct-tile, .ct-col, .ct-sum-row, .rt-meter, .rt-picked li, .rt-part, .rt-pick, .ct-chip, .ct-tool, .ct-seg, .ct-yield, .rt-chip5, .rt-stat, .rt-wschip, .rt-sb-row, .rt-src-lock, .rt-src-x, .rt-level-fixed, .ct-src-cue, .ct-src-chip, .ct-src-pop { border-width: 2px; border-color: var(--line); }
+  /* 清除全部圖示鈕(D-337):像素風的 2px 墨色邊框;展開成「確定清除?」時維持危險色 */
+  .ct-iconbtn.danger:not(.confirm) { border: 2px solid var(--line); }
   .ct-row.pin .ct-src-cue, .ct-src-chip:hover, .ct-src-chip.on { border-color: var(--accent); }
   .rt-src-lock { border-style: dashed; }
   .rt-wschip.unset, .rt-sb-row.unset { border-style: dashed; }

@@ -148,6 +148,8 @@ export class SelectField implements ControlValueAccessor {
 
   /** 面板底部固定列(可省略);捲動清單時不會被捲走 */
   readonly footer = input<SelectFooter | null>(null);
+  /** 面板最小寬度(px):觸發框很窄時讓面板比觸發框寬(D-337);預設 0 = 不指定,維持原本寬度 */
+  readonly panelMinWidth = input(0);
 
   protected readonly open = signal(false);
   protected readonly pips = computed<number[]>(() => {
@@ -248,7 +250,7 @@ export class SelectField implements ControlValueAccessor {
     const rowH = this.options().some((o) => o.hint) ? 54 : 38;
     const wanted = Math.min(max, this.rows().length * rowH + 8 + (this.footer() ? FOOTER_H : 0));
     const up = below < Math.min(wanted, 160) && above > below;
-    const width = Math.max(rect.width, this.size() === 'pager' ? 280 : 120);
+    const width = Math.min(viewport.width - 16, Math.max(rect.width, this.size() === 'pager' ? 280 : 120, this.panelMinWidth()));
     this.pos.set({
       left: Math.max(8, Math.min(rect.left, viewport.width - width - 8)),
       top: up ? null : rect.bottom + 4,

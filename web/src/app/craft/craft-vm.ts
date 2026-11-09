@@ -210,6 +210,10 @@ export class CraftVm {
   toggleSlots(): void {
     this.patchView({ slotsCollapsed: !this.view().slotsCollapsed });
   }
+  /** 「分類」開關(D-337):開 = 按種類分組 + 晶類盤,關 = 按名稱排序、晶類回到列表 */
+  setGrouped(on: boolean): void {
+    this.patchView({ sort: on ? 'group' : 'name', crystalTray: on });
+  }
   patchView(p: Partial<CraftView>): void {
     this.view.update((v) => ({ ...DEFAULT_VIEW, ...v, ...p }));
   }

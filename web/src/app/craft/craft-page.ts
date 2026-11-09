@@ -10,6 +10,8 @@ import type { SlotKey } from './core/types';
 import { parseCrystal, type CrystalElement, type CrystalTier } from './core/craft-tree';
 import { CrystalIcon } from './crystal-icon';
 import { CraftVm } from './craft-vm';
+import { CraftCopyButton } from './craft-copy-btn';
+import { CRAFT_FEATURES } from './craft-features';
 import { CraftStockBar } from './craft-stock-bar';
 import { CraftStockDialogs } from './craft-stock-dialogs';
 import { CraftStockVm } from './craft-stock-vm';
@@ -21,7 +23,7 @@ import { Tip } from '../ui/tip';
 /** 配件製作:選潛艇配件等級,算出所需交納素材 / 直接素材 / 基礎素材(D-239、D-240、D-258) */
 @Component({
   selector: 'app-craft-page',
-  imports: [Tip, NgTemplateOutlet, CdkTrapFocus, IconComponent, CrystalIcon, CraftStockBar, CraftStockDialogs],
+  imports: [Tip, NgTemplateOutlet, CdkTrapFocus, IconComponent, CrystalIcon, CraftStockBar, CraftCopyButton, CraftStockDialogs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './craft-page.html',
   host: { style: 'display: contents', '(document:keydown.escape)': 'onEscape($event)' },
@@ -29,6 +31,8 @@ import { Tip } from '../ui/tip';
 export class CraftPage implements OnDestroy {
   protected readonly layout = inject(Layout);
   protected readonly vm = inject(CraftVm);
+  /** 庫存組列開啟時,「複製」放在庫存組列內;展示版沒有庫存組列,放回工具列(D-337) */
+  protected readonly stockSets = inject(CRAFT_FEATURES).stockSets;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   private readonly router = inject(Router);

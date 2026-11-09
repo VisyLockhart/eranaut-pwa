@@ -66,8 +66,9 @@ export function sanitizeView(raw: unknown): CraftView {
   if (typeof r['stockMode'] === 'boolean') v.stockMode = r['stockMode'];
   if (typeof r['onlyMissing'] === 'boolean') v.onlyMissing = r['onlyMissing'];
   if (typeof r['slotsCollapsed'] === 'boolean') v.slotsCollapsed = r['slotsCollapsed'];
-  if (typeof r['crystalTray'] === 'boolean') v.crystalTray = r['crystalTray'];
   if (r['sort'] === 'group' || r['sort'] === 'name') v.sort = r['sort'];
+  // 「分類」開關同時管排序與晶類盤(D-337):晶類盤一律跟著 sort,舊資料的其他組合在這裡統一
+  v.crystalTray = v.sort === 'group';
   if (r['tab'] === 'finals' || r['tab'] === 'directs' || r['tab'] === 'bases') v.tab = r['tab'];
   else if (r['tab'] === 'semis') v.tab = 'directs'; // 舊版的「半成品」欄 = 現在的直接素材
   return v;

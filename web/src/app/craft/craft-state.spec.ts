@@ -278,9 +278,11 @@ describe('CraftVm', () => {
 describe('晶類盤(D-327)', () => {
   const row = (name: string, group: string, need = 10): CalcRow => ({ name, key: name, group, kind: 'direct', need, crafts: 0, made: 1, inputs: {}, usedBy: [], slots: [] }) as CalcRow;
 
-  it('sanitizeView:晶類開關預設開,舊資料沒有欄位當開,型別不對丟掉', () => {
+  it('sanitizeView(D-337):晶類盤跟著「分類」(sort)走,舊資料的其他組合統一', () => {
     expect(sanitizeView({}).crystalTray).toBe(true);
-    expect(sanitizeView({ crystalTray: false }).crystalTray).toBe(false);
+    expect(sanitizeView({ sort: 'name' }).crystalTray).toBe(false);
+    expect(sanitizeView({ crystalTray: false }).crystalTray).toBe(true);
+    expect(sanitizeView({ sort: 'name', crystalTray: true }).crystalTray).toBe(false);
     expect(sanitizeView({ crystalTray: 'no' }).crystalTray).toBe(true);
   });
 

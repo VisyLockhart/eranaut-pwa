@@ -16,7 +16,7 @@ const OPTIONS: SelectOption[] = [
   template: `
     <button id="outside" type="button">外面</button>
     <label for="s1">伺服器</label>
-    <app-select inputId="s1" [options]="groupOptions() ?? options" [footer]="footer()" [formControl]="control" [invalid]="invalid()" [collapsible]="collapsible()" [groupMemory]="memory()" />
+    <app-select inputId="s1" [options]="groupOptions() ?? options" [footer]="footer()" [panelMinWidth]="minW()" [formControl]="control" [invalid]="invalid()" [collapsible]="collapsible()" [groupMemory]="memory()" />
     <div id="esc" (keydown.escape)="escaped = true"><app-select inputId="s2" [options]="options" [(value)]="plain" /></div>
     <label id="wrap"><span>包在 label 裡</span><app-select inputId="s3" [options]="options" [(value)]="wrapped" /></label>
   `,
@@ -26,6 +26,7 @@ class Host {
   groupOptions = signal<SelectOption[] | null>(null);
   collapsible = signal(false);
   footer = signal<SelectFooter | null>(null);
+  minW = signal(0);
   memory = signal('');
   control = new FormControl<string | number>('');
   invalid = signal(false);
@@ -240,6 +241,19 @@ describe('SelectField', () => {
     expect(host.escaped).toBe(false);
     key(trigger('s2'), 'Escape');
     expect(host.escaped).toBe(true);
+  });
+
+  it('panelMinWidth(D-337):觸發框很窄時面板可以比觸發框寬;預設不指定', () => {
+    trigger().click();
+    fixture.detectChanges();
+    expect(el.querySelector<HTMLElement>('.sel-panel')!.style.minWidth).toBe('120px');
+    trigger().click(); // 收起
+    fixture.detectChanges();
+    host.minW.set(300);
+    fixture.detectChanges();
+    trigger().click();
+    fixture.detectChanges();
+    expect(el.querySelector<HTMLElement>('.sel-panel')!.style.minWidth).toBe('300px');
   });
 
   it('底部固定列(D-331):顯示文字與進度格、不是選項、點它不會選取或收起;沒給就不畫', () => {

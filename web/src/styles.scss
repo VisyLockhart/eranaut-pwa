@@ -1339,6 +1339,11 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-iconbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ct-m-body .ct-toolbar .ct-tool { min-height: 40px; }
 .ct-m-body .ct-toolbar .ct-iconbtn { flex: 0 0 40px; width: 40px; height: 40px; }
+.ct-iconbtn:disabled { opacity: 0.45; cursor: default; }
+/* 「清除全部」(D-337):只有圖示;第一次點擊就地展開成「確定清除?」,3 秒內再點才清除 */
+.ct-iconbtn.danger { background: var(--bg-elevated); border-color: var(--border-strong); color: var(--danger); }
+.ct-iconbtn.danger:not(.confirm):hover:not(:disabled) { background: var(--bg-elevated); border-color: var(--danger); }
+.ct-iconbtn.danger.confirm, .ct-m-body .ct-toolbar .ct-iconbtn.danger.confirm { width: auto; flex: 0 0 auto; padding: 0 12px; gap: 6px; background: var(--danger); border-color: var(--danger); color: var(--on-danger); font-size: 13px; font-weight: 700; white-space: nowrap; }
 
 /* 庫存組列(D-329):圖示 + 下拉 + 儲存 + 管理;外觀沿用條件組合列(rt-cfgbar)的卡片,每個主題各自套用 */
 .ct-setbar { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 8px 10px; border-radius: calc(12px * var(--rs)); background: var(--bg-elevated-2); border: var(--bw) solid var(--border); }
@@ -1356,12 +1361,19 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-set-meter > i { display: block; height: 100%; background: var(--accent); }
 .ct-set-count { align-self: flex-end; font-size: 11px; color: var(--text-faint); }
 .ct-set-dlg .rt-link-btn.danger { color: var(--danger); border-color: var(--danger); }
+/* D-337:庫存組列放在工具列右側(桌機)/ 獨立一整列(手機);複製鈕在列內,中間以細線隔開 */
+.ct-toolbar .ct-setbar { flex: 1 1 420px; max-width: 470px; }
+.ct-set-sep { width: 1px; align-self: stretch; margin: 4px 0; background: var(--border-strong); flex: 0 0 auto; }
+.ct-set-tip { display: inline-flex; flex: 0 0 auto; }
+.ct-set-row .ct-set-save, .ct-set-row .rt-link-btn, .ct-setbar .ct-copy { flex: 0 0 auto; white-space: nowrap; }
+.ct-setbar .ct-copy { min-height: 38px; flex: 0 0 auto; }
+.ct-m-body .ct-toolbar .ct-setbar { order: -1; flex: 1 1 100%; max-width: none; padding: 6px 8px; }
+.ct-m-body .ct-setbar .ct-copy { min-height: 40px; padding: 0 9px; }
 
-/* 工具列開關:分類、晶類、展開骨架、記錄庫存(D-326);手機四等分,標籤在上、開關在下 */
+/* 工具列開關:分類、展開骨架、記錄庫存(D-326、D-337);手機三等分,標籤在上、開關在下 */
 .ct-m-body .ct-toolbar { gap: 6px; }
-.ct-m-body .ct-toolbar .ct-opt { flex: 1 1 22%; min-width: 0; flex-direction: column; justify-content: center; gap: 2px; min-height: 56px; font-size: 12.5px; white-space: nowrap; }
+.ct-m-body .ct-toolbar .ct-opt { flex: 1 1 0; min-width: 52px; flex-direction: column; justify-content: center; gap: 2px; min-height: 56px; font-size: 12.5px; white-space: nowrap; }
 .ct-m-body .ct-toolbar .ct-spacer { display: none; }
-.ct-m-body .ct-toolbar .ct-tool { flex: 1 1 auto; justify-content: center; }
 
 /* ---------- 晶類盤(D-327):碎晶 / 水晶 / 晶簇不佔列表高度 ---------- */
 .ct-tray { margin-bottom: 8px; padding-bottom: 6px; border-bottom: var(--bw) dashed var(--border-strong); }

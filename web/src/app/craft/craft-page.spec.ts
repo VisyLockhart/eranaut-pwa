@@ -64,16 +64,20 @@ describe('CraftPage', () => {
     });
   }
 
-  it('清除全部:第一次點變紅底「確定清除？」,第二次才清除', () => {
+  it('清除全部(D-337):只有圖示;第一次點就地展開成紅底「確定清除?」,第二次才清除;沒選配件時停用', () => {
     const { f, vm, el } = mount(true);
+    const btn = () => el.querySelector<HTMLButtonElement>('.ct-iconbtn.danger')!;
+    expect(btn().disabled).toBe(true);
     vm.setGrade('hull', 5);
     f.detectChanges();
-    const btn = () => el.querySelector<HTMLButtonElement>('.ct-tool.danger')!;
-    expect(btn().textContent).toContain('清除全部');
+    expect(btn().disabled).toBe(false);
+    expect(btn().textContent?.trim()).toBe('');
+    expect(btn().getAttribute('aria-label')).toBe('清除全部');
     btn().click();
     f.detectChanges();
     expect(btn().classList.contains('confirm')).toBe(true);
     expect(btn().textContent).toContain('確定清除？');
+    expect(btn().getAttribute('aria-label')).toBe('再按一次確定清除全部');
     expect(vm.hasSelection()).toBe(true);
     btn().click();
     f.detectChanges();
@@ -169,7 +173,7 @@ describe('CraftPage', () => {
       vm.setGrade('hull', 5);
       f.detectChanges();
       const labels = [...el.querySelectorAll('.ct-toolbar .ct-opt > span:first-child')].map((x) => x.textContent);
-      expect(labels).toEqual(['分類', '晶類', '展開骨架', '記錄庫存']);
+      expect(labels).toEqual(['分類', '展開骨架', '記錄庫存']);
       expect(el.querySelector('.ct-seg')).toBeNull();
       const sw = el.querySelector<HTMLInputElement>('.ct-toolbar .ct-opt input')!;
       expect(sw.checked).toBe(true);
@@ -353,7 +357,7 @@ describe('從航線帶入配置(D-262)', () => {
   });
 
   for (const desktop of [false, true]) {
-    it(`晶類盤:晶類在盤裡不在列表;點格 = 追蹤,相關的格亮;「晶類」關回列表(${desktop ? '桌機' : '手機'})`, () => {
+    it(`晶類盤:晶類在盤裡不在列表;點格 = 追蹤,相關的格亮;「分類」關(含晶類盤)回列表(${desktop ? '桌機' : '手機'})`, () => {
       const { f, vm, el } = mount(desktop);
       vm.setGrade('hull', 5);
       vm.patchView({ tab: 'bases' });
@@ -376,9 +380,10 @@ describe('從航線帶入配置(D-262)', () => {
       tray.querySelector<HTMLButtonElement>('.ct-tray-head')!.click();
       f.detectChanges();
       expect(tray.querySelector('.ct-tray-grid')).toBeNull();
-      // 關閉晶類開關
-      el.querySelectorAll<HTMLInputElement>('.ct-toolbar .ct-opt input')[1]!.click();
+      // 關閉「分類」開關(D-337:同時關晶類盤、改按名稱排序)
+      el.querySelectorAll<HTMLInputElement>('.ct-toolbar .ct-opt input')[0]!.click();
       f.detectChanges();
+      expect(vm.view().sort).toBe('name');
       expect(vm.view().crystalTray).toBe(false);
       expect(el.querySelector('.ct-tray')).toBeNull();
       expect([...el.querySelectorAll('.ct-row .ct-name')].some((n) => /之(碎晶|水晶|晶簇)$/.test(n.textContent ?? ''))).toBe(true);

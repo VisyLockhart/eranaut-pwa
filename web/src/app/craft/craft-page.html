@@ -5,7 +5,6 @@
     </div>
   </div>
   <div class="ct-d-wrap">
-    <app-craft-stock-bar />
     @if (vm.view().slotsCollapsed) {
       <div class="ct-slots-line">
         <ng-container *ngTemplateOutlet="slotsBar" />
@@ -51,7 +50,6 @@
   </div>
 } @else {
   <div class="m-upload-body ct-m-body">
-    <app-craft-stock-bar />
     @if (vm.view().slotsCollapsed) {
       <div class="ct-slots-line">
         <ng-container *ngTemplateOutlet="slotsBar" />
@@ -165,14 +163,9 @@
 
 <ng-template #toolbar>
   <div class="ct-toolbar">
-    @if (vm.hasSelection()) {
-      <label class="ct-opt"><span>分類</span>
-        <span class="switch"><input type="checkbox" [checked]="vm.view().sort === 'group'" (change)="vm.patchView({ sort: vm.view().sort === 'group' ? 'name' : 'group' })" /><span class="slider"></span></span>
-      </label>
-      <label class="ct-opt"><span>晶類</span>
-        <span class="switch"><input type="checkbox" [checked]="vm.view().crystalTray" (change)="vm.patchView({ crystalTray: !vm.view().crystalTray })" /><span class="slider"></span></span>
-      </label>
-    }
+    <label class="ct-opt"><span>分類</span>
+      <span class="switch"><input type="checkbox" [checked]="vm.view().sort === 'group'" (change)="vm.setGrouped(vm.view().sort !== 'group')" /><span class="slider"></span></span>
+    </label>
     <label class="ct-opt"><span>展開骨架</span>
       <span class="switch"><input type="checkbox" [checked]="vm.view().expandFrame" (change)="vm.patchView({ expandFrame: !vm.view().expandFrame })" /><span class="slider"></span></span>
     </label>
@@ -180,14 +173,15 @@
       <span class="switch"><input type="checkbox" [checked]="vm.view().stockMode" (change)="vm.patchView({ stockMode: !vm.view().stockMode })" /><span class="slider"></span></span>
     </label>
     <span class="ct-spacer"></span>
-    @if (vm.hasSelection()) {
-      @if (vm.view().sort === 'group') {
-        @let allOff = vm.allCollapsed(layout.isDesktop() ? tabs : [vm.view().tab]);
-        <button type="button" class="ct-iconbtn" [tip]="allOff ? '全部展開' : '全部收合'" [attr.aria-label]="allOff ? '全部展開' : '全部收合'" (click)="vm.toggleAllGroups(layout.isDesktop() ? tabs : [vm.view().tab])"><app-icon [name]="allOff ? 'expandAll' : 'collapseAll'" [size]="18" /></button>
-      }
-      <button type="button" class="ct-tool" [class.ok]="vm.copied()" (click)="vm.copy(layout.isDesktop() ? tabs : [vm.view().tab])" aria-label="複製清單"><app-icon [name]="vm.copied() ? 'check' : 'list'" [size]="16" /><span>{{ vm.copied() ? '已複製' : '複製清單' }}</span></button>
-      <button type="button" class="ct-tool danger" [class.confirm]="vm.confirmClear()" (click)="vm.requestClearAll()" (blur)="vm.cancelClearAll()"><app-icon name="trash" [size]="16" /><span>{{ vm.confirmClear() ? '確定清除？' : '清除全部' }}</span></button>
+    <app-craft-stock-bar />
+    @if (!stockSets) {
+      <app-craft-copy [icon]="layout.isDesktop()" />
     }
+    @if (vm.view().sort === 'group') {
+      @let allOff = vm.allCollapsed(layout.isDesktop() ? tabs : [vm.view().tab]);
+      <button type="button" class="ct-iconbtn" [disabled]="!vm.hasSelection()" [tip]="allOff ? '全部展開' : '全部收合'" [attr.aria-label]="allOff ? '全部展開' : '全部收合'" (click)="vm.toggleAllGroups(layout.isDesktop() ? tabs : [vm.view().tab])"><app-icon [name]="allOff ? 'expandAll' : 'collapseAll'" [size]="18" /></button>
+    }
+    <button type="button" class="ct-iconbtn danger" [class.confirm]="vm.confirmClear()" [disabled]="!vm.hasSelection()" [tip]="vm.confirmClear() ? '' : '清除全部'" [attr.aria-label]="vm.confirmClear() ? '再按一次確定清除全部' : '清除全部'" (click)="vm.requestClearAll()" (blur)="vm.cancelClearAll()"><app-icon name="trash" [size]="18" />@if (vm.confirmClear()) {<span>{{ layout.isDesktop() ? '確定清除？' : '確定？' }}</span>}</button>
   </div>
 </ng-template>
 

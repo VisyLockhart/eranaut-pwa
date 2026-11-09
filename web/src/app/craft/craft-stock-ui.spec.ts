@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { CraftStockDto } from '@eranaut/shared';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Auth } from '../core/auth';
 import { Layout } from '../core/layout';
 import { CraftPage } from './craft-page';
@@ -137,6 +137,50 @@ describe('庫存組的畫面(D-329)', () => {
     expect(dlg()).toBeNull();
     expect(craft.sel().bow.gradeIndex).toBe(2);
     expect(sv.activeId()).toBe('a');
+  });
+
+  for (const desktop of [false, true]) {
+    it(`「複製」鈕(D-337):庫存組列開啟時在列內,展示版放回工具列;沒選配件停用(${desktop ? '桌機' : '手機'})`, async () => {
+      await mount([], desktop);
+      expect(el.querySelectorAll('.ct-copy')).toHaveLength(1);
+      expect(el.querySelector('.ct-setbar .ct-copy')).toBeTruthy();
+      expect(el.querySelector<HTMLButtonElement>('.ct-copy')!.disabled).toBe(true);
+      craft.setGrade('hull', 5);
+      f.detectChanges();
+      expect(el.querySelector<HTMLButtonElement>('.ct-copy')!.disabled).toBe(false);
+      expect(el.querySelector('.ct-copy')!.textContent!.trim()).toBe('複製');
+      await mount([], desktop, { stockSets: false });
+      expect(el.querySelectorAll('.ct-copy')).toHaveLength(1);
+      expect(el.querySelector('.ct-setbar')).toBeNull();
+      expect(el.querySelector('.ct-toolbar .ct-copy')).toBeTruthy();
+    });
+  }
+
+  it('「複製」複製畫面上目前的清單;載入庫存組又改過內容時,提示標「已修改」(D-337)', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+    await mount([row()]);
+    pickOption('主力');
+    const copy = () => bar().querySelector<HTMLButtonElement>('.ct-copy')!;
+    expect(copy().getAttribute('aria-label')).toBe('複製目前清單');
+    craft.setGrade('hull', 3);
+    f.detectChanges();
+    expect(copy().getAttribute('aria-label')).toBe('複製目前(已修改)');
+    copy().click();
+    await tick();
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(writeText.mock.calls[0]![0]).toBe(craft.copyText([craft.view().tab]));
+    f.detectChanges();
+    expect(copy().textContent!.trim()).toBe('複製');
+    vi.unstubAllGlobals();
+  });
+
+  it('庫存組列在工具列內;說明文字改成下拉預設文字與「儲存」鈕提示,不另佔一行(D-337)', async () => {
+    await mount([]);
+    expect(el.querySelector('.ct-toolbar .ct-setbar')).toBeTruthy();
+    expect(el.querySelector('.ct-setbar .rt-cap')).toBeNull();
+    expect(bar().querySelector('button[aria-haspopup]')!.textContent).toContain('尚無庫存組');
+    expect(bar().querySelector('.ct-set-tip')).toBeTruthy();
   });
 
   it('下拉面板底部固定列(D-331):沒有庫存組不顯示;有就顯示「已用 N / 10 組」,9 組轉琥珀、滿 10 組轉紅', async () => {
