@@ -1389,6 +1389,14 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-set-dlg .rt-link-btn.danger { color: var(--danger); border-color: var(--danger); }
 /* D-337:庫存組列放在工具列右側(桌機)/ 獨立一整列(手機);複製鈕在列內,中間以細線隔開 */
 .ct-toolbar .ct-setbar { flex: 1 1 420px; max-width: 470px; }
+/* D-341 桌機:庫存組橫幅水平置中(左右兩組各占一欄,橫幅在正中間);沒有庫存組列(展示版)時維持原本的 flex */
+.ct-tb-l, .ct-tb-r { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ct-tb-r { justify-content: flex-end; flex-wrap: nowrap; }
+.ct-toolbar.has-set { display: grid; grid-template-columns: minmax(max-content, 1fr) minmax(320px, 470px) minmax(max-content, 1fr); }
+.ct-toolbar.has-set .ct-spacer { display: none; }
+.ct-toolbar.has-set .ct-setbar { max-width: none; }
+.ct-m-body .ct-toolbar.has-set { display: flex; }
+.ct-m-body .ct-tb-l, .ct-m-body .ct-tb-r { display: contents; }
 .ct-set-sep { width: 1px; align-self: stretch; margin: 4px 0; background: var(--border-strong); flex: 0 0 auto; }
 .ct-set-tip { display: inline-flex; flex: 0 0 auto; }
 .ct-set-row .ct-set-save, .ct-set-row .rt-link-btn, .ct-setbar .ct-copy { flex: 0 0 auto; white-space: nowrap; }

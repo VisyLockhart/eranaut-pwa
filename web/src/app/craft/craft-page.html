@@ -162,15 +162,18 @@
 </ng-template>
 
 <ng-template #toolbar>
-  <div class="ct-toolbar">
+  <div class="ct-toolbar" [class.has-set]="stockSets">
+    <div class="ct-tb-l">
     <label class="ct-opt"><span>分類</span>
       <span class="switch"><input type="checkbox" [checked]="vm.view().sort === 'group'" (change)="vm.setGrouped(vm.view().sort !== 'group')" /><span class="slider"></span></span>
     </label>
     <label class="ct-opt"><span>記錄庫存</span>
       <span class="switch"><input type="checkbox" [checked]="vm.view().stockMode" (change)="vm.patchView({ stockMode: !vm.view().stockMode })" /><span class="slider"></span></span>
     </label>
+    </div>
     <span class="ct-spacer"></span>
     <app-craft-stock-bar />
+    <div class="ct-tb-r">
     @if (!stockSets) {
       <app-craft-copy [icon]="layout.isDesktop()" />
     }
@@ -179,6 +182,7 @@
       <button type="button" class="ct-iconbtn" [disabled]="!vm.hasSelection()" [tip]="allOff ? '全部展開' : '全部收合'" [attr.aria-label]="allOff ? '全部展開' : '全部收合'" (click)="vm.toggleAllGroups(layout.isDesktop() ? tabs : [vm.view().tab])"><app-icon [name]="allOff ? 'expandAll' : 'collapseAll'" [size]="18" /></button>
     }
     <button type="button" class="ct-iconbtn danger" [class.confirm]="vm.confirmClear()" [disabled]="!vm.hasSelection()" [tip]="vm.confirmClear() ? '' : '清除全部'" [attr.aria-label]="vm.confirmClear() ? '再按一次確定清除全部' : '清除全部'" (click)="vm.requestClearAll()" (blur)="vm.cancelClearAll()"><app-icon name="trash" [size]="18" />@if (vm.confirmClear()) {<span>{{ layout.isDesktop() ? '確定清除？' : '確定？' }}</span>}</button>
+    </div>
   </div>
 </ng-template>
 
