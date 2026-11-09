@@ -55,7 +55,7 @@ export class CraftStockVm {
     const sels = this.craft.selections();
     if (sels.length === 0) return 0;
     const st = this.craft.stock();
-    const r = calculate(sels, { expandFrame: this.craft.view().expandFrame }, CRAFT_DATA, st);
+    const r = calculate(sels, { expandFrames: this.craft.view().expandedFrames }, CRAFT_DATA, st);
     return [...r.finals, ...r.directs, ...r.bases].filter((x) => missing(x, st) > 0).length;
   });
   /** 載入過某一組之後,內容又被改過 */

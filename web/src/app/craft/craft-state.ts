@@ -15,7 +15,8 @@ export type CraftTab = 'finals' | 'directs' | 'bases';
 /** 排序方式:按種類(分組,組內按名稱)/ 按名稱(不分組) */
 export type CraftSort = 'group' | 'name';
 export interface CraftView {
-  expandFrame: boolean;
+  /** 各自展開的骨架名稱(D-338;取代舊的全域「展開骨架」開關) */
+  expandedFrames: string[];
   stockMode: boolean;
   onlyMissing: boolean;
   slotsCollapsed: boolean;
@@ -43,7 +44,7 @@ export function emptySel(): SelMap {
   return { hull: { gradeIndex: null, qty: 1 }, stern: { gradeIndex: null, qty: 1 }, bow: { gradeIndex: null, qty: 1 }, bridge: { gradeIndex: null, qty: 1 } };
 }
 
-export const DEFAULT_VIEW: CraftView = { expandFrame: false, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group', crystalTray: true };
+export const DEFAULT_VIEW: CraftView = { expandedFrames: [], stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group', crystalTray: true };
 
 /** 讀 localStorage 的內容一律當不可信:型別、範圍不對就丟掉 */
 export function sanitizeSel(raw: unknown): SelMap {
@@ -58,11 +59,21 @@ export function sanitizeSel(raw: unknown): SelMap {
   return out;
 }
 
+/** 所有可能的骨架名稱(各部位 × 1~5 級) */
+export function allFrameNames(data: CraftData = CRAFT_DATA): Set<string> {
+  const out = new Set<string>();
+  for (const slot of Object.keys(data.slots)) for (let grade = 1; grade <= 5; grade++) out.add(frameName(slot as SlotKey, grade));
+  return out;
+}
+
 export function sanitizeView(raw: unknown): CraftView {
   const v = { ...DEFAULT_VIEW };
   if (!raw || typeof raw !== 'object') return v;
   const r = raw as Record<string, unknown>;
-  if (typeof r['expandFrame'] === 'boolean') v.expandFrame = r['expandFrame'];
+  const names = allFrameNames();
+  if (Array.isArray(r['expandedFrames'])) {
+    v.expandedFrames = [...new Set((r['expandedFrames'] as unknown[]).filter((x): x is string => typeof x === 'string' && names.has(x)))];
+  } else if (r['expandFrame'] === true) v.expandedFrames = [...names]; // 舊版全域開關開著 = 全部展開
   if (typeof r['stockMode'] === 'boolean') v.stockMode = r['stockMode'];
   if (typeof r['onlyMissing'] === 'boolean') v.onlyMissing = r['onlyMissing'];
   if (typeof r['slotsCollapsed'] === 'boolean') v.slotsCollapsed = r['slotsCollapsed'];

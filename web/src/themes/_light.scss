@@ -196,4 +196,14 @@ html[data-theme='light'] {
   .ct-cell.rel { border-color: var(--amber); }
   .ct-cell-n { font-family: var(--font-mono); font-weight: 400; font-variant-numeric: normal; }
   .ct-cell-bar { height: 4px; border-radius: 0; }
+  /* D-338 儲存方式單選卡片:方塊單選 */
+  .ct-set-card { border: 3px solid var(--line); background: var(--bg-elevated); }
+  .ct-set-card.on { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+  .ct-set-rd { border: 3px solid var(--line); border-radius: 0; }
+  .ct-set-card.on .ct-set-rd { border-color: var(--accent); }
+  .ct-set-rd::after { border-radius: 0; }
+  .ct-frame-cap { border-width: 2px; }
+  .ct-frame-cap:hover { background: var(--accent); color: var(--on-accent); }
+  .ct-frame-go { border: 3px solid var(--line); box-shadow: var(--press); }
+  .ct-frame-go.on { background: var(--bg-elevated); border-color: var(--line); box-shadow: var(--raise); }
 }

@@ -77,11 +77,10 @@ export class CraftPage implements OnDestroy {
     for (const r of ty.rows) for (const c of r.cells) if (c && this.vm.isPinned(c)) return c;
     return null;
   }
-  /** 收合時標頭的「N 相關」:盤裡被點的與相關的格數 */
-  protected trayHits(ty: CrystalTray): number {
-    let n = 0;
-    for (const r of ty.rows) for (const c of r.cells) if (c && (this.vm.isPinned(c) || this.vm.related().has(rowId(c)))) n++;
-    return n;
+  /** 骨架列的「展開 / 收回」膠囊:只切換,不追蹤這一列 */
+  protected frameToggle(name: string, e: Event): void {
+    e.stopPropagation();
+    this.vm.toggleFrame(name);
   }
   /** 格子的提示與無障礙名稱:名稱 · 需要;記錄庫存時改為實際還缺的數字 */
   protected cellTip(r: CalcRow): string {

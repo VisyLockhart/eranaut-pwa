@@ -534,4 +534,16 @@ html[data-theme='notebook'] {
   .ct-cell-bar > i { background: var(--sage); }
   .ct-tray-insp { background: var(--mus-p); border: 0; border-radius: 3px 9px 4px 8px; }
   .ct-tray-el, .ct-tray-tier { font-family: var(--font-hand); font-size: 16px; color: var(--text-muted); }
+  /* D-338 儲存方式單選卡片:手繪虛線框,選取變實線 */
+  .ct-set-card { border: 1.6px dashed var(--line); border-radius: var(--w2); background: var(--bg-elevated); }
+  .ct-set-card.on { border-style: solid; border-color: var(--accent); background: var(--sage-p, var(--mus-p)); }
+  .ct-set-rd { border: 1.6px solid var(--line); border-radius: 50% 46% 52% 48%; }
+  .ct-set-rd::after { border-radius: 50% 40% 55% 45%; transform: scale(0) rotate(-12deg); }
+  .ct-set-card.on .ct-set-rd::after { transform: scale(1) rotate(-12deg); }
+  .ct-frame-cap { border: 1.6px solid var(--accent); border-radius: var(--w2); background: var(--sage-p); }
+  .ct-frame-cap:hover { background: var(--sage-p); transform: rotate(-3deg); }
+  .ct-frame-cap.on { border-style: dashed; border-color: var(--line); background: transparent; }
+  .ct-fadd-tag { border: 1.6px solid var(--accent); border-radius: var(--w2); }
+  .ct-frame-go { border: 1.6px solid var(--accent); border-radius: var(--w2); }
+  .ct-frame-go.on { border-style: dashed; border-color: var(--line); color: var(--text-muted); }
 }

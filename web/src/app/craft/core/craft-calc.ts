@@ -26,8 +26,10 @@ export interface Selection {
 }
 
 export interface CalcOptions {
-  /** 展開骨架(預設 false) */
+  /** 全部骨架都展開(預設 false;只給成本計算用) */
   expandFrame?: boolean;
+  /** 各自展開的骨架名稱(D-338);名稱用 frameName() 的結果 */
+  expandFrames?: readonly string[];
 }
 
 export type Stock = Readonly<Record<string, number>>;
@@ -44,8 +46,10 @@ export interface CalcRow {
   crafts: number;
   /** 還要製作的產出量 = 製作次數 × 產量(素材與骨架為 0) */
   made: number;
-  /** 未展開的骨架列 */
+  /** 骨架列(未展開;展開後的骨架放在 CalcResult.expandedFrames) */
   frame?: boolean;
+  /** 已展開的骨架列(只出現在 CalcResult.expandedFrames) */
+  expanded?: boolean;
   /** 製作它所消耗的直接成分總量(= 製作次數 × 配方;次數為 0 時值為 0,但成分仍列出供追蹤);素材與骨架為空 */
   inputs: Record<string, number>;
   /** 直接使用它的可製作品名稱(不含配件本身) */
@@ -58,6 +62,10 @@ export interface CalcResult {
   finals: CalcRow[];
   directs: CalcRow[];
   bases: CalcRow[];
+  /** 已展開的骨架:不算進 finals(它的配方已併入交納素材),只用來在畫面上留一列可收回 */
+  expandedFrames: CalcRow[];
+  /** 展開骨架後,各交納素材因此增加的量(素材名稱 → 數量) */
+  frameAdd: Record<string, number>;
 }
 
 export const DIRECT_PREFIX = 'd:';
@@ -82,7 +90,8 @@ export function groupRank(group: string): number {
 
 export function calculate(selections: readonly Selection[], opts: CalcOptions = {}, data: CraftData = CRAFT_DATA, stock: Stock = {}): CalcResult {
   const { base, crafts, slots } = data;
-  const expand = opts.expandFrame === true;
+  const expandAll = opts.expandFrame === true;
+  const expandSet = new Set(opts.expandFrames ?? []);
   const have = (key: string) => stock[key] ?? 0;
   const add = (m: Map<string, number>, k: string, v: number) => m.set(k, (m.get(k) ?? 0) + v);
 
@@ -90,6 +99,8 @@ export function calculate(selections: readonly Selection[], opts: CalcOptions = 
   const roots = new Map<string, number>();
   const rootSlots = new Map<string, Set<SlotKey>>();
   const frames = new Map<string, { qty: number; slot: SlotKey }>();
+  const expandedFrames = new Map<string, { qty: number; slot: SlotKey }>();
+  const frameAdd: Record<string, number> = {};
   const addRoot = (name: string, qty: number, slot: SlotKey) => {
     add(roots, name, qty);
     (rootSlots.get(name) ?? rootSlots.set(name, new Set()).get(name)!).add(slot);
@@ -101,11 +112,18 @@ export function calculate(selections: readonly Selection[], opts: CalcOptions = 
     for (const [n, q] of Object.entries(g.recipe)) addRoot(n, q * qty, s.slot);
     if (g.frame) {
       const fq = g.frame.qty * qty;
-      if (expand) {
+      const name = frameName(s.slot, g.frame.grade);
+      if (expandAll || expandSet.has(name)) {
         const orig = slots[s.slot].grades.find((x) => x.grade === g.frame!.grade && !x.modified);
-        if (orig) for (const [n, q] of Object.entries(orig.recipe)) addRoot(n, q * fq, s.slot);
+        if (orig) {
+          for (const [n, q] of Object.entries(orig.recipe)) {
+            addRoot(n, q * fq, s.slot);
+            frameAdd[n] = (frameAdd[n] ?? 0) + q * fq;
+          }
+          const prev = expandedFrames.get(name);
+          expandedFrames.set(name, { qty: (prev?.qty ?? 0) + fq, slot: s.slot });
+        }
       } else {
-        const name = frameName(s.slot, g.frame.grade);
         const prev = frames.get(name);
         frames.set(name, { qty: (prev?.qty ?? 0) + fq, slot: s.slot });
       }
@@ -182,5 +200,6 @@ export function calculate(selections: readonly Selection[], opts: CalcOptions = 
     bases.push({ name, key: name, group: rawGroup(name), kind: 'base', need, crafts: 0, made: 0, inputs: {}, usedBy: [], slots: [] });
   }
   for (const r of [...finals, ...directs, ...bases]) r.usedBy = [...(usedBy.get(r.name) ?? [])];
-  return { finals, directs, bases };
+  const frameRows: CalcRow[] = [...expandedFrames].map(([name, f]) => ({ name, key: name, group: '骨架', kind: 'final', need: f.qty, crafts: 0, made: 0, frame: true, expanded: true, inputs: {}, usedBy: [], slots: [f.slot] }));
+  return { finals, directs, bases, expandedFrames: frameRows, frameAdd };
 }

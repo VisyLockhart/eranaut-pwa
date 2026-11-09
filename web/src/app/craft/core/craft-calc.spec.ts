@@ -5,7 +5,7 @@ import { CRAFT_DATA } from './data';
 const totals = (rows: CalcRow[]) => Object.fromEntries(rows.map((r) => [r.name, r.need]));
 const hull5m: Selection = { slot: 'hull', gradeIndex: 9, qty: 1 };
 const set = (gradeIndex: number, qty = 1): Selection[] => (['hull', 'stern', 'bow', 'bridge'] as const).map((slot) => ({ slot, gradeIndex, qty }));
-const EMPTY = { finals: [], directs: [], bases: [] };
+const EMPTY = { finals: [], directs: [], bases: [], expandedFrames: [], frameAdd: {} };
 
 // 5p 工坊對「希爾德拉改級船體 ×1(骨架不展開)」顯示的基礎素材(2026-10-11,簡轉繁),38 項
 const P5_BASE: Record<string, number> = {
@@ -119,6 +119,26 @@ describe('配件製作計算(V1~V7)', () => {
     // 與「改5 + 原版5 各一件、骨架不展開」的素材總量相同
     const hull5: Selection = { slot: 'hull', gradeIndex: 4, qty: 1 };
     expect(totals(r.bases)).toEqual(totals(calculate([hull5m, hull5]).bases));
+  });
+
+  it('D-338:骨架各自展開,只展開名單裡的;展開的骨架留在 expandedFrames,素材增加量記在 frameAdd', () => {
+    const bow: Selection = { slot: 'bow', gradeIndex: 6, qty: 3 };
+    const hullName = frameName('hull', 5);
+    const none = calculate([hull5m, bow]);
+    const one = calculate([hull5m, bow], { expandFrames: [hullName] });
+    expect(none.finals.filter((x) => x.frame).map((x) => x.name).sort()).toEqual([hullName, '甲鱟級船首骨架'].sort());
+    expect(one.finals.filter((x) => x.frame).map((x) => x.name)).toEqual(['甲鱟級船首骨架']);
+    expect(one.expandedFrames).toHaveLength(1);
+    expect(one.expandedFrames[0]).toMatchObject({ name: hullName, need: 1, frame: true, expanded: true });
+    expect(none.expandedFrames).toEqual([]);
+    // 展開的結果 = 只在船體部位把骨架換成原版配方(與全部展開時船體那份相同)
+    const all = calculate([hull5m], { expandFrame: true });
+    const only = calculate([hull5m], { expandFrames: [hullName] });
+    expect(totals(only.bases)).toEqual(totals(all.bases));
+    expect(Object.keys(only.frameAdd).length).toBeGreaterThan(0);
+    expect(none.frameAdd).toEqual({});
+    // 名單裡有、但選擇裡沒有的骨架:沒有影響
+    expect(calculate([bow], { expandFrames: [hullName] })).toEqual(calculate([bow]));
   });
 
   it('展開骨架:原版配件沒有骨架,開關不影響結果', () => {

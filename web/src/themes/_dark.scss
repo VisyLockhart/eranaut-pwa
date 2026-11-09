@@ -228,4 +228,17 @@ html[data-theme='dark'] {
   .ct-cell-n { font-weight: 700; color: var(--gold-b); font-variant-numeric: lining-nums; }
   .ct-cell-bar > i { background: var(--gold); }
   .ct-tray-el { color: var(--gold); font-family: var(--font-head); letter-spacing: 0.08em; }
+  /* D-338 儲存方式單選卡片:金屬邊框 + 菱形單選 */
+  .ct-set-card { border: 1px solid var(--steel-d); background: var(--bg-elevated); }
+  .ct-set-card.on { border-color: var(--gold); background: var(--surface-raise); box-shadow: 0 0 10px var(--gl); }
+  .ct-set-card b { font-family: var(--font-head); letter-spacing: 0.06em; }
+  .ct-set-rd { width: 14px; height: 14px; margin: 3px; border: 1px solid var(--steel); border-radius: 0; transform: rotate(45deg); background: var(--bg-elevated-2); }
+  .ct-set-rd::after { width: 100%; height: 100%; border-radius: 0; background: var(--gold-b); }
+  .ct-set-card.on .ct-set-rd { border-color: var(--gold); box-shadow: 0 0 8px var(--gl); }
+  .ct-frame-cap { border-color: var(--gold); background: var(--bg-elevated-2); color: var(--gold); }
+  .ct-frame-cap:hover { color: var(--gold-b); box-shadow: 0 0 8px var(--gl); background: var(--bg-elevated-2); }
+  .ct-frame-cap.on { border-color: var(--steel); color: var(--text-muted); box-shadow: none; }
+  .ct-fadd-tag { border-color: var(--gold-d); color: var(--gold); }
+  .ct-frame-go { background: linear-gradient(var(--surface-raise), var(--bg-elevated)); border-color: var(--gold); color: var(--gold-b); font-family: var(--font-head); letter-spacing: 0.08em; }
+  .ct-frame-go.on { background: transparent; border-color: var(--steel); color: var(--text-muted); }
 }

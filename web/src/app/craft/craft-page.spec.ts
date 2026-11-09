@@ -173,7 +173,7 @@ describe('CraftPage', () => {
       vm.setGrade('hull', 5);
       f.detectChanges();
       const labels = [...el.querySelectorAll('.ct-toolbar .ct-opt > span:first-child')].map((x) => x.textContent);
-      expect(labels).toEqual(['分類', '展開骨架', '記錄庫存']);
+      expect(labels).toEqual(['分類', '記錄庫存']);
       expect(el.querySelector('.ct-seg')).toBeNull();
       const sw = el.querySelector<HTMLInputElement>('.ct-toolbar .ct-opt input')!;
       expect(sw.checked).toBe(true);

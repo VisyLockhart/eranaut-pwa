@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { calculate, type CalcRow } from './core/craft-calc';
-import { buildTray, compareNames, copyLines, gradeInfo, gradeLabel, groupRows, listGroups, missing, sanitizeSel, sanitizeStock, sanitizeView } from './craft-state';
+import { calculate, frameName, type CalcRow } from './core/craft-calc';
+import { buildTray, compareNames, copyLines, gradeInfo, gradeLabel, groupRows, listGroups, missing, sanitizeSel, sanitizeStock, sanitizeView, allFrameNames } from './craft-state';
 import { CraftVm } from './craft-vm';
 
 describe('craft-state', () => {
@@ -16,7 +16,13 @@ describe('craft-state', () => {
     expect(s.bow.gradeIndex).toBeNull();
     expect(s.bridge.gradeIndex).toBeNull();
     expect(sanitizeSel(null).hull.gradeIndex).toBeNull();
-    expect(sanitizeView({ tab: 'nope', stockMode: 1, expandFrame: true })).toEqual({ expandFrame: true, stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group', crystalTray: true });
+    expect(sanitizeView({ tab: 'nope', stockMode: 1 })).toEqual({ expandedFrames: [], stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group', crystalTray: true });
+    // D-338:舊的全域「展開骨架」開著 = 全部骨架都展開;新欄位只留合法名稱、去重
+    expect(sanitizeView({ expandFrame: true }).expandedFrames).toEqual([...allFrameNames()]);
+    expect(sanitizeView({ expandFrame: true, expandedFrames: [] }).expandedFrames).toEqual([]);
+    const fn = frameName('hull', 3);
+    expect(sanitizeView({ expandedFrames: [fn, fn, '不存在', 5] }).expandedFrames).toEqual([fn]);
+    expect(sanitizeView({ expandedFrames: 'x' }).expandedFrames).toEqual([]);
   });
 
   it('庫存只留已知的 key 與正整數;舊版沒有前綴的半成品搬到 d:(D-258)', () => {
@@ -128,12 +134,12 @@ describe('CraftVm', () => {
     const vm = make();
     vm.setGrade('bow', 6);
     vm.setQty('bow', 3);
-    vm.patchView({ expandFrame: true, tab: 'bases' });
+    vm.patchView({ expandedFrames: [frameName('hull', 3)], tab: 'bases' });
     vm.setStock('熊脂', 4);
     TestBed.tick();
     const vm2 = make();
     expect(vm2.sel().bow).toEqual({ gradeIndex: 6, qty: 3 });
-    expect(vm2.view().expandFrame).toBe(true);
+    expect(vm2.view().expandedFrames).toEqual([frameName('hull', 3)]);
     expect(vm2.view().tab).toBe('bases');
     expect(vm2.stock()['熊脂']).toBe(4);
   });
@@ -154,10 +160,15 @@ describe('CraftVm', () => {
     vm.stepQty('hull', 500);
     expect(vm.sel().hull.qty).toBe(99);
     vm.setQty('hull', 1);
-    const off = vm.result().finals.some((r) => r.frame);
-    vm.patchView({ expandFrame: true });
-    expect(off).toBe(true);
+    const off = vm.result().finals.find((r) => r.frame);
+    expect(off).toBeDefined();
+    vm.toggleFrame(off!.name);
     expect(vm.result().finals.some((r) => r.frame)).toBe(false);
+    // 展開後留一列可收回(不算進 finals)
+    expect(vm.result().expandedFrames.map((r) => r.name)).toEqual([off!.name]);
+    expect(vm.groups().finals.flatMap((g) => g.rows).some((r) => r.expanded)).toBe(true);
+    vm.toggleFrame(off!.name);
+    expect(vm.result().finals.some((r) => r.frame)).toBe(true);
     vm.clearSlot('hull');
     expect(vm.hasSelection()).toBe(false);
   });
@@ -237,6 +248,13 @@ describe('CraftVm', () => {
     expect(vm.allCollapsed(['finals', 'directs', 'bases'])).toBe(true);
     vm.toggleAllGroups(['finals', 'directs', 'bases']);
     expect(vm.allCollapsed(['finals', 'directs', 'bases'])).toBe(false);
+    // D-338:晶類盤也跟著收 / 展開
+    expect(vm.isTrayCollapsed('bases')).toBe(false);
+    vm.toggleAllGroups(['bases']);
+    expect(vm.isTrayCollapsed('bases')).toBe(true);
+    expect(vm.allCollapsed(['bases'])).toBe(true);
+    vm.toggleAllGroups(['bases']);
+    expect(vm.isTrayCollapsed('bases')).toBe(false);
     const t = vm.copyText(['finals', 'directs', 'bases']);
     expect(t).toContain('【交納素材】');
     expect(t).toContain('【直接素材】');

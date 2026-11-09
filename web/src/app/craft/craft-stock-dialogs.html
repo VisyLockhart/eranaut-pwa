@@ -32,9 +32,14 @@
         <div class="rt-dlg-body">
           <div class="rt-note ct-set-sum">配件 {{ sv.selCount() }} 個部位 · 庫存 {{ sv.stockCount() }} 項 · 還缺 {{ sv.missingCount() }} 項</div>
           @if (canUpdate()) {
-            <div class="rt-chips" role="group" aria-label="儲存方式">
-              <button type="button" class="rt-chip" [class.active]="saveMode() === 'update'" [attr.aria-pressed]="saveMode() === 'update'" (click)="setMode('update')">更新「{{ sv.active()!.name }}」</button>
-              <button type="button" class="rt-chip" [class.active]="saveMode() === 'new'" [attr.aria-pressed]="saveMode() === 'new'" (click)="setMode('new')">另存新組</button>
+            <div class="ct-set-cards" role="radiogroup" aria-label="儲存方式">
+              <button type="button" role="radio" class="ct-set-card" [class.on]="saveMode() === 'update'" [attr.aria-checked]="saveMode() === 'update'" (click)="setMode('update')">
+                <span class="ct-set-rd" aria-hidden="true"></span><b>更新「{{ sv.active()!.name }}」</b>
+              </button>
+              <button type="button" role="radio" class="ct-set-card" [class.on]="saveMode() === 'new'" [attr.aria-checked]="saveMode() === 'new'" (click)="setMode('new')">
+                <span class="ct-set-rd" aria-hidden="true"></span><b>另存新組</b>
+                <span class="ct-set-used"><i class="ct-set-meter"><i [style.width.%]="(sv.saved().length / limit) * 100"></i></i><span>{{ used() }}</span></span>
+              </button>
             </div>
           }
           @if (saveMode() === 'new') {
@@ -60,7 +65,9 @@
               <span class="ct-set-count" aria-hidden="true">{{ [...name()].length }} / {{ nameMax }}</span>
             </label>
           }
-          <div class="ct-set-used"><i class="ct-set-meter"><i [style.width.%]="(sv.saved().length / limit) * 100"></i></i><span>{{ used() }}</span></div>
+          @if (!canUpdate()) {
+            <div class="ct-set-used"><i class="ct-set-meter"><i [style.width.%]="(sv.saved().length / limit) * 100"></i></i><span>{{ used() }}</span></div>
+          }
           @if (error()) { <div class="rt-dirty bad" role="alert">{{ error() }}</div> }
         </div>
         <div class="rt-dlg-foot">

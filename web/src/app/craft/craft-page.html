@@ -166,9 +166,6 @@
     <label class="ct-opt"><span>分類</span>
       <span class="switch"><input type="checkbox" [checked]="vm.view().sort === 'group'" (change)="vm.setGrouped(vm.view().sort !== 'group')" /><span class="slider"></span></span>
     </label>
-    <label class="ct-opt"><span>展開骨架</span>
-      <span class="switch"><input type="checkbox" [checked]="vm.view().expandFrame" (change)="vm.patchView({ expandFrame: !vm.view().expandFrame })" /><span class="slider"></span></span>
-    </label>
     <label class="ct-opt"><span>記錄庫存</span>
       <span class="switch"><input type="checkbox" [checked]="vm.view().stockMode" (change)="vm.patchView({ stockMode: !vm.view().stockMode })" /><span class="slider"></span></span>
     </label>
@@ -213,6 +210,11 @@
           }
         </div>
       }
+      @if (vm.pinFrame(); as pf) {
+        <button type="button" class="ct-frame-go" [class.on]="pf.expanded" (click)="vm.toggleFrame(pf.name)" [attr.aria-label]="(pf.expanded ? '收回 ' : '展開 ') + pf.name">
+          <app-icon [name]="pf.expanded ? 'frameFold' : 'frameOpen'" [size]="16" />{{ pf.expanded ? '收回骨架' : '展開骨架' }}
+        </button>
+      }
       <button type="button" class="ct-x" (click)="unpin($event)" aria-label="取消追蹤"><app-icon name="close" [size]="14" /></button>
     </div>
     @if (tg.length > 0 && vm.srcOpen() && layout.isDesktop()) {
@@ -243,10 +245,7 @@
     <div class="ct-tray" [class.stock]="vm.view().stockMode" [class.tracing]="vm.pin()">
       <button type="button" class="ct-group-head ct-tray-head" [attr.aria-expanded]="!off" (click)="vm.toggleTray(tab)">
         <app-icon [name]="off ? 'chevronRight' : 'chevronDown'" [size]="14" />
-        <span>晶類</span><span class="ct-count">{{ ty.count }}</span>
-        @if (off && vm.pin() && trayHits(ty) > 0) {
-          <span class="ct-tray-hint">{{ trayHits(ty) }} 相關</span>
-        }
+        <span>晶類</span>
       </button>
       @if (!off) {
         <div class="ct-tray-grid" role="group" aria-label="晶類">
@@ -302,12 +301,12 @@
       }
       @if (g.trace || !g.group || !vm.isCollapsed(tab, g.group)) {
         @for (r of g.rows; track r.name) {
-          <div class="ct-row" [class]="'ct-row ' + rowState(r)" [tip]="vm.isPinned(r) && vm.hasTree(r.name) ? '再點一次查看配方' : null" role="button" tabindex="0" (click)="pinRow(r, $event)" (keydown.enter)="pinRow(r, $event)" (keydown.space)="$event.preventDefault(); pinRow(r, $event)">
-            <span class="ct-name">{{ r.name }}@let tg = tagsOf(r);@if (tg.length > 0) {<span class="ct-src-cue" [tip]="srcTip(tg)" [attr.aria-label]="srcAria(tg)"><app-icon name="srcBag" [size]="layout.isDesktop() ? 15 : 17" />@if (tg.length > 1) {<b>{{ tg.length }}</b>}</span>}</span>
+          <div class="ct-row" [class]="'ct-row ' + rowState(r) + (r.expanded ? ' ct-expanded' : '') + (tab === 'finals' && vm.result().frameAdd[r.name] ? ' ct-fadd' : '')" [tip]="vm.isPinned(r) && vm.hasTree(r.name) ? '再點一次查看配方' : null" role="button" tabindex="0" (click)="pinRow(r, $event)" (keydown.enter)="pinRow(r, $event)" (keydown.space)="$event.preventDefault(); pinRow(r, $event)">
+            <span class="ct-name">{{ r.name }}@if (r.frame) {<button type="button" class="ct-frame-cap" [class.on]="r.expanded" (click)="frameToggle(r.name, $event)" (keydown)="stop($event)" [tip]="r.expanded ? '收回骨架' : '展開骨架'" [attr.aria-label]="(r.expanded ? '收回 ' : '展開 ') + r.name"><app-icon [name]="r.expanded ? 'frameFold' : 'frameOpen'" [size]="14" />@if (layout.isDesktop()) {<span>{{ r.expanded ? '收回' : '展開' }}</span>}</button>}@if (tab === 'finals' && vm.result().frameAdd[r.name]; as fa) {<span class="ct-fadd-tag" [tip]="'展開骨架增加 ' + fa" [attr.aria-label]="'展開骨架增加 ' + fa"><app-icon name="frameOpen" [size]="11" />+{{ fa }}</span>}@let tg = tagsOf(r);@if (tg.length > 0) {<span class="ct-src-cue" [tip]="srcTip(tg)" [attr.aria-label]="srcAria(tg)"><app-icon name="srcBag" [size]="layout.isDesktop() ? 15 : 17" />@if (tg.length > 1) {<b>{{ tg.length }}</b>}</span>}</span>
             @if (vm.isPinned(r) && vm.hasTree(r.name)) {
               <app-icon class="ct-tree-cue" name="tree" [size]="16" />
             }
-            @if (vm.view().stockMode) {
+            @if (vm.view().stockMode && !r.expanded) {
               <span class="ct-need">{{ r.need }}</span>
               <input class="ct-have" type="number" inputmode="numeric" min="0" placeholder="0" [value]="vm.stock()[r.key] ?? ''" (click)="stop($event)" (keydown)="stop($event)" (input)="stockInput(r, $event)" [attr.aria-label]="r.name + ' 已有'" />
               <button type="button" class="ct-lack" [class.zero]="missing(r, vm.stock()) === 0" (click)="stop($event); vm.toggleDone(r)" [attr.aria-label]="r.name + ' 還缺 ' + missing(r, vm.stock())">{{ missing(r, vm.stock()) === 0 ? '✓' : missing(r, vm.stock()) }}</button>

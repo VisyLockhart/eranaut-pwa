@@ -8,6 +8,7 @@ import { CRAFT_STOCKS_CACHE_KEY } from './craft-keys';
 import { CRAFT_FEATURES } from './craft-features';
 import { CraftStockVm } from './craft-stock-vm';
 import { CraftVm } from './craft-vm';
+import { frameName } from './core/craft-calc';
 
 const U = '/api/craft-stocks';
 const tick = () => new Promise((r) => setTimeout(r));
@@ -144,7 +145,7 @@ describe('CraftStockVm(庫存組,D-329、D-330)', () => {
       return k;
     })();
     await load([dto({ spec: { v: 1, sel: { bow: { grade: 2, qty: 4 } }, stock: { [stockKey]: 7 } } })]);
-    craft.patchView({ crystalTray: false, sort: 'name', expandFrame: true });
+    craft.patchView({ crystalTray: false, sort: 'name', expandedFrames: [frameName('hull', 3)] });
     craft.setGrade('hull', 1);
     craft.togglePin('x', 'final' as never);
     sv.load(sv.saved()[0]!);
@@ -155,7 +156,7 @@ describe('CraftStockVm(庫存組,D-329、D-330)', () => {
     expect(craft.view().stockMode).toBe(true);
     expect(craft.view().crystalTray).toBe(false);
     expect(craft.view().sort).toBe('name');
-    expect(craft.view().expandFrame).toBe(true);
+    expect(craft.view().expandedFrames).toEqual([frameName('hull', 3)]);
     expect(sv.activeId()).toBe('a');
     expect(sv.modified()).toBe(false);
   });

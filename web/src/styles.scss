@@ -1249,6 +1249,21 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-src-chip:hover, .ct-src-chip.on { border-color: var(--accent); }
 .ct-src-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .ct-src-chip.det { color: var(--accent); }
+/* D-338 骨架各自展開:列上的小膠囊 + 追蹤橫幅的主按鈕;展開後該列留著(灰色、可收回) */
+.ct-frame-cap { display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 24px; min-width: 24px; padding: 0 8px; margin-left: 8px; vertical-align: middle; border: var(--bw) solid color-mix(in srgb, var(--accent) 55%, transparent); border-radius: var(--r-pill); background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background-color var(--mo-dur-f), color var(--mo-dur-f), border-color var(--mo-dur-f); }
+.ct-frame-cap:hover { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+.ct-frame-cap:focus-visible, .ct-frame-go:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ct-frame-cap.on { border-style: dashed; border-color: var(--border-strong); background: transparent; color: var(--text-muted); }
+.ct-m-body .ct-frame-cap { height: 32px; min-width: 32px; padding: 0 9px; }
+.ct-expanded .ct-name { color: var(--text-muted); }
+.ct-expanded .ct-name > :first-child { text-decoration: line-through; text-decoration-thickness: 1px; }
+.ct-expanded .ct-qty-num { color: var(--text-muted); }
+.ct-fadd { box-shadow: inset 3px 0 0 var(--accent); }
+.ct-fadd-tag { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; padding: 1px 6px; border: var(--bw) solid color-mix(in srgb, var(--accent) 50%, transparent); font-size: 11.5px; font-weight: 600; color: var(--accent); vertical-align: middle; white-space: nowrap; }
+.ct-frame-go { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 0 12px; border: var(--bw) solid var(--accent); border-radius: calc(8px * var(--rs)); background: var(--accent); color: var(--on-accent); font: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background-color var(--mo-dur-f), color var(--mo-dur-f); }
+.ct-frame-go.on { background: transparent; color: var(--accent); }
+.ct-trace.m .ct-frame-go { order: 2; flex: 1 1 100%; min-height: 44px; }
+.ct-trace.m .ct-x { order: 1; }
 .ct-m-body .ct-src-chip { min-height: 36px; font-size: 13px; }
 .ct-src-pop { margin-top: 6px; padding: 10px 12px; border: var(--bw) solid var(--border-strong); border-radius: calc(10px * var(--rs)); background: var(--bg-elevated-2); box-shadow: 0 8px 22px color-mix(in srgb, var(--shade) 30%, transparent); font-size: 13px; line-height: 1.55; }
 .ct-src-grp + .ct-src-grp { margin-top: 8px; padding-top: 8px; border-top: var(--bw) dashed var(--border-strong); }
@@ -1359,6 +1374,17 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-set-used { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
 .ct-set-meter { flex: 1 1 auto; height: 6px; border-radius: var(--r-pill); background: var(--surface-meter); overflow: hidden; display: block; }
 .ct-set-meter > i { display: block; height: 100%; background: var(--accent); }
+/* D-338 儲存方式:單選卡片(並排),只有底部「取消 / 更新」會執行 */
+.ct-set-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; }
+.ct-set-card { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; row-gap: 10px; align-content: start; min-height: 56px; padding: 12px; text-align: left; color: var(--text); background: var(--bg-elevated-2); border: var(--bw) solid var(--border-strong); border-radius: calc(10px * var(--rs)); cursor: pointer; transition: border-color var(--mo-dur-f), background-color var(--mo-dur-f); }
+.ct-set-card b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.ct-set-card .ct-set-used { grid-column: 1 / -1; }
+.ct-set-card.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated-2)); }
+.ct-set-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ct-set-rd { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 20px; height: 20px; border: 2px solid var(--text-dim); border-radius: 50%; background: var(--bg-elevated); transition: border-color var(--mo-dur-f); }
+.ct-set-rd::after { content: ''; width: 8px; height: 8px; border-radius: inherit; background: var(--accent); transform: scale(0); transition: transform var(--mo-dur-f) var(--mo-ease-out); }
+.ct-set-card.on .ct-set-rd { border-color: var(--accent); }
+.ct-set-card.on .ct-set-rd::after { transform: scale(1); }
 .ct-set-count { align-self: flex-end; font-size: 11px; color: var(--text-faint); }
 .ct-set-dlg .rt-link-btn.danger { color: var(--danger); border-color: var(--danger); }
 /* D-337:庫存組列放在工具列右側(桌機)/ 獨立一整列(手機);複製鈕在列內,中間以細線隔開 */
@@ -1378,7 +1404,6 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 /* ---------- 晶類盤(D-327):碎晶 / 水晶 / 晶簇不佔列表高度 ---------- */
 .ct-tray { margin-bottom: 8px; padding-bottom: 6px; border-bottom: var(--bw) dashed var(--border-strong); }
 .ct-tray-head { color: var(--text-muted); }
-.ct-tray-hint { margin-left: auto; font-size: 11.5px; font-weight: 600; color: var(--amber); }
 .ct-tray-grid { display: grid; grid-template-columns: 2.7em repeat(6, minmax(0, 1fr)); gap: 4px; padding: 2px 0; }
 .ct-tray-el { text-align: center; font-size: 12px; font-weight: 600; color: var(--text-dim); }
 .ct-tray-tier { align-self: center; font-size: 11px; color: var(--text-dim); white-space: nowrap; }

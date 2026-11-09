@@ -224,6 +224,34 @@ describe('庫存組的畫面(D-329)', () => {
     expect(dlg()).toBeNull();
   });
 
+  it('D-338:已修改時的儲存方式是並排的單選卡片,「已用幾組」在另存新組卡片,只有底部按鈕會執行', async () => {
+    await mount([row()]);
+    pickOption('主力');
+    fill();
+    btn('儲存', bar()).click();
+    f.detectChanges();
+    const cards = () => [...dlg()!.querySelectorAll<HTMLButtonElement>('.ct-set-cards [role=radio]')];
+    expect(cards()).toHaveLength(2);
+    expect(dlg()!.querySelector('.rt-chips')).toBeNull();
+    expect(cards().map((c) => c.getAttribute('aria-checked'))).toEqual(['true', 'false']);
+    expect(cards()[0]!.textContent).toContain('更新「主力」');
+    expect(cards()[0]!.textContent).not.toContain('已用');
+    expect(cards()[1]!.textContent).toContain('另存新組');
+    expect(cards()[1]!.textContent).toContain('已用 1 / 10 組');
+    expect(dlg()!.querySelectorAll('.ct-set-used')).toHaveLength(1);
+    expect(dlgBtn('更新')).toBeTruthy();
+    // 點卡片只切換,不送出
+    cards()[1]!.click();
+    f.detectChanges();
+    http.expectNone(U);
+    expect(cards().map((c) => c.getAttribute('aria-checked'))).toEqual(['false', 'true']);
+    expect(dlg()!.querySelector('input.rt-text-input')).toBeTruthy();
+    expect(dlgBtn('儲存')).toBeTruthy();
+    cards()[0]!.click();
+    f.detectChanges();
+    expect(dlg()!.querySelector('input.rt-text-input')).toBeNull();
+  });
+
   it('滿 10 組:另存新組要選一組覆蓋', async () => {
     const list = Array.from({ length: 10 }, (_, i) => row({ id: `i${i}`, name: `組${i}` }));
     await mount(list);
@@ -245,6 +273,59 @@ describe('庫存組的畫面(D-329)', () => {
       ib().click();
       f.detectChanges();
       expect(ib().getAttribute('aria-label')).toBe('全部展開');
+    });
+  }
+
+  for (const desktop of [false, true]) {
+    it(`D-338:全部收合連晶類盤一起收,再按一次全部展開;收合的晶類盤只剩標題(${desktop ? '桌機' : '手機'})`, async () => {
+      await mount([], desktop);
+      craft.setGrade('hull', 5);
+      craft.patchView({ tab: 'bases' });
+      f.detectChanges();
+      const trays = () => el.querySelectorAll('.ct-tray');
+      expect(trays().length).toBeGreaterThan(0);
+      expect(el.querySelector('.ct-tray-grid')).toBeTruthy();
+      el.querySelector<HTMLButtonElement>('.ct-iconbtn')!.click();
+      f.detectChanges();
+      expect(craft.isTrayCollapsed('bases')).toBe(true);
+      expect(el.querySelector('.ct-tray-grid')).toBeNull();
+      expect(el.querySelector('.ct-tray-head .ct-count')).toBeNull();
+      expect(el.querySelector('.ct-tray-hint')).toBeNull();
+      el.querySelector<HTMLButtonElement>('.ct-iconbtn')!.click();
+      f.detectChanges();
+      expect(craft.isTrayCollapsed('bases')).toBe(false);
+      expect(el.querySelector('.ct-tray-grid')).toBeTruthy();
+    });
+
+    it(`D-338:骨架各自展開;列上膠囊與追蹤橫幅的按鈕都能展開 / 收回,工具列沒有「展開骨架」開關(${desktop ? '桌機' : '手機'})`, async () => {
+      await mount([], desktop);
+      craft.setGrade('hull', 9);
+      craft.setGrade('bow', 6);
+      f.detectChanges();
+      expect([...el.querySelectorAll('.ct-toolbar .ct-opt')].map((x) => x.textContent!.trim())).not.toContain('展開骨架');
+      const caps = () => [...el.querySelectorAll<HTMLButtonElement>('.ct-frame-cap')];
+      expect(caps()).toHaveLength(2);
+      expect(caps().every((c) => !c.classList.contains('on'))).toBe(true);
+      const first = craft.result().finals.find((r) => r.frame)!.name;
+      const capOf = (n: string) => caps().find((c) => c.getAttribute('aria-label') === `展開 ${n}` || c.getAttribute('aria-label') === `收回 ${n}`)!;
+      capOf(first).click();
+      f.detectChanges();
+      expect(craft.view().expandedFrames).toEqual([first]);
+      expect(craft.pin()).toBeNull(); // 膠囊只展開,不追蹤
+      expect(caps()).toHaveLength(2); // 展開的那列留著
+      expect(capOf(first).classList.contains('on')).toBe(true);
+      expect(el.querySelectorAll('.ct-row.ct-expanded')).toHaveLength(1);
+      expect(el.querySelector('.ct-fadd-tag')).toBeTruthy();
+      // 追蹤骨架 → 橫幅出現主按鈕
+      [...el.querySelectorAll<HTMLElement>('.ct-row.ct-expanded')][0]!.click();
+      f.detectChanges();
+      const go = el.querySelector<HTMLButtonElement>('.ct-frame-go')!;
+      expect(go.textContent).toContain('收回骨架');
+      go.click();
+      f.detectChanges();
+      expect(craft.view().expandedFrames).toEqual([]);
+      expect(el.querySelector('.ct-row.ct-expanded')).toBeNull();
+      expect(el.querySelector<HTMLButtonElement>('.ct-frame-go')!.textContent).toContain('展開骨架');
     });
   }
 });

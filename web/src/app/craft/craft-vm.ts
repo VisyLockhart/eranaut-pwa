@@ -9,7 +9,7 @@ import { sourceTags, type SrcTag } from './core/craft-source';
 import { CRAFT_DATA, SLOT_KEYS } from './core/data';
 import type { SlotKey } from './core/types';
 import {
-  DEFAULT_VIEW, MAX_QTY, buildTray, isCrystalRow, TAB_LABEL, TABS, clampQty, copyLines, emptySel, listGroups, missing, relatedIds, rowId, sanitizeSel, sanitizeStock, sanitizeView,
+  DEFAULT_VIEW, allFrameNames, MAX_QTY, buildTray, isCrystalRow, TAB_LABEL, TABS, clampQty, copyLines, emptySel, listGroups, missing, relatedIds, rowId, sanitizeSel, sanitizeStock, sanitizeView,
   type CraftTab, type CraftView, type CrystalTray, type SelMap,
 } from './craft-state';
 
@@ -29,6 +29,9 @@ function write(key: string, v: unknown): void {
     /* 無痕模式或容量滿:只是不記住 */
   }
 }
+
+/** 所有骨架名稱(判斷追蹤中的列是不是骨架) */
+const ALL_FRAMES = allFrameNames();
 
 /** 配件製作頁的狀態:選擇、檢視設定、庫存都只存在這台裝置的 localStorage(D-239) */
 @Injectable({ providedIn: 'root' })
@@ -83,7 +86,7 @@ export class CraftVm {
   });
   readonly hasSelection = computed(() => this.selections().length > 0);
   /** 三層清單:記錄庫存開啟時,下層的需求會依上層庫存扣除(D-258);關閉時不看庫存 */
-  readonly result = computed<CalcResult>(() => calculate(this.selections(), { expandFrame: this.view().expandFrame }, CRAFT_DATA, this.view().stockMode ? this.stock() : {}));
+  readonly result = computed<CalcResult>(() => calculate(this.selections(), { expandFrames: this.view().expandedFrames }, CRAFT_DATA, this.view().stockMode ? this.stock() : {}));
 
   /** 要顯示的列(記錄庫存 + 只看缺少時,濾掉已足夠的) */
   readonly visible = computed<Record<CraftTab, CalcRow[]>>(() => {
@@ -101,7 +104,8 @@ export class CraftVm {
     const rel = this.related();
     const tray = this.view().crystalTray;
     const f = (rows: CalcRow[]) => listGroups(tray ? rows.filter((r) => !isCrystalRow(r)) : rows, sort, pin, rel);
-    return { finals: f(v.finals), directs: f(v.directs), bases: f(v.bases) };
+    // 已展開的骨架留一列(灰色、可收回),只在交納素材欄(D-338)
+    return { finals: f([...v.finals, ...this.result().expandedFrames]), directs: f(v.directs), bases: f(v.bases) };
   });
   /** 各欄的晶類盤;「晶類」開關關閉或該欄沒有晶類 = null */
   readonly trays = computed<Record<CraftTab, CrystalTray | null>>(() => {
@@ -133,6 +137,21 @@ export class CraftVm {
     const k = this.pinKind();
     return p && k ? rowId({ name: p, kind: k }) : null;
   });
+  /** 追蹤中的是骨架時:它現在是否已展開(追蹤橫幅的「展開 / 收回」鈕用,D-338);不是骨架 = null */
+  readonly pinFrame = computed<{ name: string; expanded: boolean } | null>(() => {
+    const p = this.pin();
+    if (!p || this.pinKind() !== 'final' || !ALL_FRAMES.has(p)) return null;
+    return { name: p, expanded: this.view().expandedFrames.includes(p) };
+  });
+  isFrameExpanded(name: string): boolean {
+    return this.view().expandedFrames.includes(name);
+  }
+  /** 展開 / 收回單一骨架;記在 view,重新整理後還在 */
+  toggleFrame(name: string): void {
+    if (!ALL_FRAMES.has(name)) return;
+    const cur = this.view().expandedFrames;
+    this.patchView({ expandedFrames: cur.includes(name) ? cur.filter((x) => x !== name) : [...cur, name] });
+  }
   isPinned(r: { kind: RowKind; name: string }): boolean {
     return this.pinId() === rowId(r);
   }
@@ -272,16 +291,19 @@ export class CraftVm {
       return n;
     });
   }
-  /** 晶類盤收合(預設展開);不併入「全部收合」 */
+  /** 晶類盤收合(預設展開);D-338 起併入「全部收合」 */
   isTrayCollapsed(tab: CraftTab): boolean {
     return this.collapsed().has(`${tab}:@tray`);
   }
   toggleTray(tab: CraftTab): void {
     this.toggleGroup(tab, '@tray');
   }
-  /** 可收合的分組 key(不含追蹤分類與按名稱時的單一組) */
+  /** 可收合的 key:分組(不含追蹤分類與按名稱時的單一組)+ 有晶類盤的欄的晶類盤(D-338) */
   private groupKeys(tabs: readonly CraftTab[]): string[] {
-    return tabs.flatMap((t) => this.groups()[t].filter((g) => !g.trace && g.group !== '').map((g) => `${t}:${g.group}`));
+    return tabs.flatMap((t) => [
+      ...(this.trays()[t] ? [`${t}:@tray`] : []),
+      ...this.groups()[t].filter((g) => !g.trace && g.group !== '').map((g) => `${t}:${g.group}`),
+    ]);
   }
   /** 全部收合;全部都已收合時改為全部展開 */
   toggleAllGroups(tabs: readonly CraftTab[]): void {
