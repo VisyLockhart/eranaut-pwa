@@ -139,6 +139,40 @@ describe('庫存組的畫面(D-329)', () => {
     expect(sv.activeId()).toBe('a');
   });
 
+  it('已載入、沒改過的庫存組:切到別組直接載入,不跳確認(不會有東西遺失)', async () => {
+    const b = row({ id: 'b', name: '另一組', spec: { v: 1, sel: { stern: { grade: 1, qty: 1 } }, stock: {} } });
+    await mount([row(), b]);
+    pickOption('主力');
+    expect(sv.activeId()).toBe('a');
+    pickOption('另一組');
+    expect(dlg()).toBeNull();
+    expect(sv.activeId()).toBe('b');
+    expect(craft.sel().stern.gradeIndex).toBe(1);
+  });
+
+  it('已載入、改過的庫存組:切換前確認寫「改過」,按「先更新「XXX」」直接更新那一組再載入,不另存新組', async () => {
+    const b = row({ id: 'b', name: '另一組', spec: { v: 1, sel: { stern: { grade: 1, qty: 1 } }, stock: {} } });
+    await mount([row(), b]);
+    pickOption('主力');
+    fill();
+    expect(sv.modified()).toBe(true);
+    pickOption('另一組');
+    expect(dlg()!.textContent).toContain('改過「主力」');
+    expect(btn('先儲存目前的', dlg()!)).toBeUndefined();
+    dlgBtn('先更新「主力」').click();
+    const req = http.expectOne(`${U}/a`);
+    expect(req.request.body.name).toBe('主力');
+    req.flush(row({ spec: req.request.body.spec }));
+    http.expectNone(U);
+    await tick();
+    await tick();
+    f.detectChanges();
+    expect(dlg()).toBeNull();
+    expect(sv.activeId()).toBe('b');
+    expect(craft.sel().stern.gradeIndex).toBe(1);
+    expect(sv.saved().find((x) => x.id === 'a')!.spec.stock).not.toEqual({});
+  });
+
   for (const desktop of [false, true]) {
     it(`「複製」鈕(D-337):庫存組列開啟時在列內,展示版放回工具列;沒選配件停用(${desktop ? '桌機' : '手機'})`, async () => {
       await mount([], desktop);

@@ -10,14 +10,22 @@
           @if (sv.loadTarget(); as t) {
             <p>載入「{{ t.name }}」會換掉畫面上現在選的配件與記錄的庫存,並打開「記錄庫存」。</p>
             <div class="rt-note">{{ meta(t) }}</div>
-            <p class="rt-note">目前的內容還沒有存成庫存組。分類、晶類、展開骨架等開關不受影響。</p>
+            @if (canUpdate()) {
+              <p class="rt-note">目前的內容改過「{{ sv.active()!.name }}」,還沒儲存。分類、晶類等開關不受影響。</p>
+            } @else {
+              <p class="rt-note">目前的內容還沒有存成庫存組。分類、晶類等開關不受影響。</p>
+            }
           }
         </div>
         <div class="rt-dlg-foot">
           <div class="rt-save-actions">
             <button type="button" class="rt-save-btn" (click)="close()">取消</button>
             @if (canSaveFirst) {
-              <button type="button" class="rt-save-btn" (click)="saveFirst()">先儲存目前的</button>
+              @if (canUpdate()) {
+                <button type="button" class="rt-save-btn" [disabled]="sv.pending() > 0" (click)="updateFirst()">先更新「{{ sv.active()!.name }}」</button>
+              } @else {
+                <button type="button" class="rt-save-btn" (click)="saveFirst()">先儲存目前的</button>
+              }
             }
             <button type="button" class="rt-save-btn primary" (click)="confirmLoad()">換掉並載入</button>
           </div>

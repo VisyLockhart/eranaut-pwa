@@ -111,9 +111,11 @@ export class CraftStockVm {
     }
   }
 
-  /** 載入某一組會換掉目前的選擇與庫存;目前有內容、又和這一組不同時,先讓使用者確認 */
+  /** 載入某一組會換掉目前的選擇與庫存;目前有內容、又和這一組不同、而且不是「已載入沒改過」的那一組時,先讓使用者確認 */
   needsConfirm(target: CraftStockDto): boolean {
     const cur = this.current();
+    // 目前就是已載入、沒改過的那一組:換走不會丟東西,不用確認
+    if (this.active() !== null && !this.modified()) return false;
     return !isBlank(cur) && !sameSpec(cur, target.spec);
   }
 

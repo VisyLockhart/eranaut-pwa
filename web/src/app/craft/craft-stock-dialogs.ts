@@ -159,6 +159,21 @@ export class CraftStockDialogs {
     this.sv.dialog.set('save');
     this.afterSave = t;
   }
+  /** 目前載入的那一組改過:直接更新那一組,更新完接著載入(不再另外開儲存對話框) */
+  protected async updateFirst(): Promise<void> {
+    const a = this.sv.active();
+    const next = this.sv.loadTarget();
+    if (!a || !next) return;
+    try {
+      await this.sv.overwrite(a.id);
+      this.toast.show(`已更新「${a.name}」`);
+      this.close();
+      this.sv.load(this.sv.saved().find((s) => s.id === next.id) ?? next);
+    } catch {
+      await this.sv.refresh();
+      this.toast.show('更新失敗,請檢查網路後再試', { tone: 'warn' });
+    }
+  }
   protected get canSaveFirst(): boolean {
     return this.sv.canSave();
   }

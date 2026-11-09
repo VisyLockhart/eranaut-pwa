@@ -179,6 +179,18 @@ describe('CraftStockVm(庫存組,D-329、D-330)', () => {
     expect(sv.needsConfirm(t)).toBe(false);
   });
 
+  it('needsConfirm:已載入且沒改過的那一組,換到別組不用確認;改過才要', async () => {
+    await load([dto(), dto({ id: 'b', name: '另一組', spec: { v: 1, sel: { stern: { grade: 1, qty: 1 } }, stock: {} } })]);
+    const [a, b] = sv.saved();
+    sv.load(a!);
+    TestBed.tick();
+    expect(sv.needsConfirm(b!)).toBe(false);
+    craft.setGrade('hull', 1);
+    TestBed.tick();
+    expect(sv.modified()).toBe(true);
+    expect(sv.needsConfirm(b!)).toBe(true);
+  });
+
   it('toggleFavorite:樂觀更新;失敗改回', async () => {
     await load([dto()]);
     sv.toggleFavorite('a');

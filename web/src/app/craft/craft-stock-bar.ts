@@ -80,6 +80,8 @@ export class CraftStockBar {
 
   protected onChange(v: SelectValue): void {
     if (v === NONE) return;
+    // 確認視窗開著時,下拉被程式退回原值也會觸發這裡;不能讓它把載入目標蓋成目前這一組
+    if (this.sv.dialog() === 'replace') return;
     const target = this.sv.saved().find((s) => s.id === v);
     if (!target) return;
     if (this.sv.needsConfirm(target)) {
