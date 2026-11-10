@@ -97,6 +97,23 @@ export class CraftVm {
   /** 三層清單:記錄庫存開啟時,下層的需求會依上層庫存扣除(D-258);關閉時不看庫存 */
   readonly result = computed<CalcResult>(() => calculate(this.selections(), { expandFrames: this.view().expandedFrames }, CRAFT_DATA, this.view().stockMode ? this.stock() : {}));
 
+  /** 不看庫存的完整需求(rowId → 需求):用來認出「上層已備齊,需求被扣成 0」的下游列(D-346);沒開記錄庫存時不算 */
+  private readonly fullNeed = computed(() => {
+    const m = new Map<string, number>();
+    if (!this.view().stockMode) return m;
+    const full = calculate(this.selections(), { expandFrames: this.view().expandedFrames }, CRAFT_DATA, {});
+    for (const r of [...full.directs, ...full.bases]) m.set(rowId(r), r.need);
+    return m;
+  });
+  /** 這一列的需求是不是被上層庫存扣成 0(上層交納 / 直接素材備齊,不必再準備) */
+  covered(r: CalcRow): boolean {
+    return r.kind !== 'final' && r.need === 0 && this.view().stockMode && (this.fullNeed().get(rowId(r)) ?? 0) > 0;
+  }
+  /** 被扣成 0 之前的原需求 */
+  fullNeedOf(r: CalcRow): number {
+    return this.fullNeed().get(rowId(r)) ?? r.need;
+  }
+
   /** 要顯示的列(記錄庫存 + 只看缺少時,濾掉已足夠的) */
   readonly visible = computed<Record<CraftTab, CalcRow[]>>(() => {
     const r = this.result();

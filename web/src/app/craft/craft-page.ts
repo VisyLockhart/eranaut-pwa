@@ -88,6 +88,7 @@ export class CraftPage implements OnDestroy {
   /** 格子的提示與無障礙名稱:名稱 · 需要;記錄庫存時改為實際還缺的數字 */
   protected cellTip(r: CalcRow): string {
     if (!this.vm.view().stockMode) return `${r.name} · 需要 ${r.need}`;
+    if (this.vm.covered(r)) return `${r.name} · 上層已備齊,不必準備(原需要 ${this.vm.fullNeedOf(r)})`;
     const have = this.vm.stock()[r.key] ?? 0;
     const lack = missing(r, this.vm.stock());
     return lack === 0 ? `${r.name} · 已備齊(${have} / ${r.need})` : `${r.name} · 還缺 ${lack}(已有 ${have} / 需要 ${r.need})`;
@@ -222,6 +223,7 @@ export class CraftPage implements OnDestroy {
   }
   protected rowState(r: CalcRow): string {
     const parts: string[] = [];
+    if (this.vm.covered(r)) parts.push('covered');
     if (this.vm.isPinned(r)) parts.push('pin');
     else if (this.vm.focusOn()) {
       // 只看:不標關聯、不變暗(另外兩欄看不到,整欄變灰沒有意義)

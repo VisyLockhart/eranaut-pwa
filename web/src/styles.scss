@@ -1254,6 +1254,12 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-name { flex: 1 1 auto; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
 .ct-qty-num, .ct-need { font-family: var(--font-mono); font-weight: 600; font-size: 14px; color: var(--amber); min-width: 28px; text-align: right; }
 .ct-need { color: var(--text-muted); }
+/* D-346 上層(交納 / 直接素材)備齊 → 下游需求被扣成 0:整列淡化、原需求畫刪除線並標「上層已備齊」,不改任何庫存數字 */
+.ct-row.covered .ct-name, .ct-row.covered .ct-have { opacity: 0.6; }
+.ct-need-was { text-decoration: line-through; color: var(--text-dim); opacity: 0.8; }
+.ct-covered-tag { display: inline-block; margin-left: 6px; padding: 0 7px; font-size: 11px; font-weight: 500; line-height: 18px; white-space: nowrap; color: var(--text-dim); border: var(--bw) dashed var(--border-strong); border-radius: var(--r-pill); vertical-align: 1px; }
+.ct-cell.covered .ct-cell-n { text-decoration: line-through; color: var(--text-dim); }
+.ct-cell.covered .ct-cell-bar { opacity: 0.5; }
 .ct-have { flex: 0 0 64px; height: 36px; }
 .ct-lack { flex: 0 0 48px; height: 36px; border: var(--bw) solid color-mix(in srgb, var(--danger) 50%, transparent); background: color-mix(in srgb, var(--danger) 8%, transparent); color: var(--danger); border-radius: calc(8px * var(--rs)); font-family: var(--font-mono); font-weight: 600; font-size: 13px; cursor: pointer; }
 .ct-lack.zero { border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent); }

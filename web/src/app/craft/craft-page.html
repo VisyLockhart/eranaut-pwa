@@ -282,7 +282,7 @@
               @if (c) {
                 <button type="button" class="ct-cell" [class]="'ct-cell ' + rowState(c)" [tip]="cellTip(c)" [attr.aria-label]="cellTip(c)" [attr.aria-pressed]="vm.isPinned(c)" (click)="pinRow(c, $event)">
                   <app-crystal-icon [element]="parseElement(c.name)" [tier]="row.tier" [size]="20" />
-                  <b class="ct-cell-n">{{ c.need }}</b>
+                  <b class="ct-cell-n">{{ vm.covered(c) ? vm.fullNeedOf(c) : c.need }}</b>
                   @if (vm.view().stockMode) {
                     <i class="ct-cell-bar"><i [style.width.%]="cellPct(c)"></i></i>
                     @if (missing(c, vm.stock()) === 0) {
@@ -299,8 +299,8 @@
         @if (vm.view().stockMode && trayPicked(tab, ty); as r) {
           <div class="ct-tray-insp">
             <app-crystal-icon [element]="parseElement(r.name)" [tier]="parseTier(r.name)" [size]="22" />
-            <span class="ct-name">{{ r.name }}</span>
-            <span class="ct-need">{{ r.need }}</span>
+            <span class="ct-name">{{ r.name }}@if (vm.covered(r)) {<span class="ct-covered-tag">上層已備齊</span>}</span>
+            <span class="ct-need">{{ vm.covered(r) ? '' : r.need }}@if (vm.covered(r)) {<s class="ct-need-was">{{ vm.fullNeedOf(r) }}</s>}</span>
             <input class="ct-have" type="number" inputmode="numeric" min="0" placeholder="0" [value]="vm.stock()[r.key] ?? ''" (input)="stockInput(r, $event)" [attr.aria-label]="r.name + ' 已有'" />
             <button type="button" class="ct-lack" [class.zero]="missing(r, vm.stock()) === 0" (click)="vm.toggleDone(r)" [attr.aria-label]="r.name + ' 還缺 ' + missing(r, vm.stock())">{{ missing(r, vm.stock()) === 0 ? '✓' : missing(r, vm.stock()) }}</button>
           </div>
@@ -325,12 +325,16 @@
       @if (g.trace || !g.group || !vm.isCollapsed(tab, g.group)) {
         @for (r of g.rows; track r.name) {
           <div class="ct-row" [class]="'ct-row ' + rowState(r) + (r.expanded ? ' ct-expanded' : '') + (tab === 'finals' && vm.result().frameAdd[r.name] ? ' ct-fadd' : '')" [tip]="vm.isPinned(r) && vm.hasTree(r.name) ? '再點一次查看配方' : null" role="button" tabindex="0" (click)="pinRow(r, $event)" (keydown.enter)="pinRow(r, $event)" (keydown.space)="$event.preventDefault(); pinRow(r, $event)">
-            <span class="ct-name">{{ r.name }}@if (r.frame) {<button type="button" class="ct-frame-cap" [class.on]="r.expanded" (click)="frameToggle(r.name, $event)" (keydown)="stop($event)" [tip]="r.expanded ? '收回骨架' : '展開骨架'" [attr.aria-label]="(r.expanded ? '收回 ' : '展開 ') + r.name"><app-icon [name]="r.expanded ? 'frameFold' : 'frameOpen'" [size]="14" />@if (layout.isDesktop()) {<span>{{ r.expanded ? '收回' : '展開' }}</span>}</button>}@if (tab === 'finals' && vm.result().frameAdd[r.name]; as fa) {<span class="ct-fadd-tag" [tip]="'展開骨架增加 ' + fa" [attr.aria-label]="'展開骨架增加 ' + fa"><app-icon name="frameOpen" [size]="11" />+{{ fa }}</span>}@let tg = tagsOf(r);@if (tg.length > 0) {<span class="ct-src-cue" [tip]="srcTip(tg)" [attr.aria-label]="srcAria(tg)"><app-icon name="srcBag" [size]="layout.isDesktop() ? 15 : 17" />@if (tg.length > 1) {<b>{{ tg.length }}</b>}</span>}</span>
+            <span class="ct-name">{{ r.name }}@if (vm.covered(r)) {<span class="ct-covered-tag">上層已備齊</span>}@if (r.frame) {<button type="button" class="ct-frame-cap" [class.on]="r.expanded" (click)="frameToggle(r.name, $event)" (keydown)="stop($event)" [tip]="r.expanded ? '收回骨架' : '展開骨架'" [attr.aria-label]="(r.expanded ? '收回 ' : '展開 ') + r.name"><app-icon [name]="r.expanded ? 'frameFold' : 'frameOpen'" [size]="14" />@if (layout.isDesktop()) {<span>{{ r.expanded ? '收回' : '展開' }}</span>}</button>}@if (tab === 'finals' && vm.result().frameAdd[r.name]; as fa) {<span class="ct-fadd-tag" [tip]="'展開骨架增加 ' + fa" [attr.aria-label]="'展開骨架增加 ' + fa"><app-icon name="frameOpen" [size]="11" />+{{ fa }}</span>}@let tg = tagsOf(r);@if (tg.length > 0) {<span class="ct-src-cue" [tip]="srcTip(tg)" [attr.aria-label]="srcAria(tg)"><app-icon name="srcBag" [size]="layout.isDesktop() ? 15 : 17" />@if (tg.length > 1) {<b>{{ tg.length }}</b>}</span>}</span>
             @if (vm.isPinned(r) && vm.hasTree(r.name)) {
               <app-icon class="ct-tree-cue" name="tree" [size]="16" />
             }
             @if (vm.view().stockMode && !r.expanded) {
-              <span class="ct-need">{{ r.need }}</span>
+              @if (vm.covered(r)) {
+                <span class="ct-need"><s class="ct-need-was">{{ vm.fullNeedOf(r) }}</s></span>
+              } @else {
+                <span class="ct-need">{{ r.need }}</span>
+              }
               <input class="ct-have" type="number" inputmode="numeric" min="0" placeholder="0" [value]="vm.stock()[r.key] ?? ''" (click)="stop($event)" (keydown)="stop($event)" (input)="stockInput(r, $event)" [attr.aria-label]="r.name + ' 已有'" />
               <button type="button" class="ct-lack" [class.zero]="missing(r, vm.stock()) === 0" (click)="stop($event); vm.toggleDone(r)" [attr.aria-label]="r.name + ' 還缺 ' + missing(r, vm.stock())">{{ missing(r, vm.stock()) === 0 ? '✓' : missing(r, vm.stock()) }}</button>
             } @else {
