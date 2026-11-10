@@ -65,7 +65,7 @@ describe('素材查價(D-343)', () => {
       const dlg = el.querySelector('.ct-price-dlg')!;
       expect(dlg).toBeTruthy();
       expect(dlg.querySelector('.modal-title')!.textContent).toBe('鈷鐵礦');
-      expect(dlg.textContent).toContain('查價 · 陸行鳥');
+      expect(dlg.textContent).not.toContain('陸行鳥');
       expect(dlg.querySelectorAll('.ct-price-sk-row').length).toBe(10);
       expect(dlg.querySelector('table')).toBeNull();
       expect(stub.get).toHaveBeenCalledTimes(1);
