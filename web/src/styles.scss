@@ -1299,6 +1299,13 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-trace.m .ct-price-go { order: 1; min-height: 40px; }
 .modal-box.rt-dlg.ct-price-dlg { max-width: 640px; }
 .ct-price-body { padding-bottom: 12px; gap: 0; }
+.ct-price-ttl { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ct-price-ttl .modal-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-price-copy { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: var(--bw) solid transparent; border-radius: calc(8px * var(--rs)); background: transparent; color: var(--text-muted); cursor: pointer; transition: color var(--mo-dur-f), border-color var(--mo-dur-f), background-color var(--mo-dur-f); }
+.ct-price-copy:hover { color: var(--text); border-color: var(--border-strong); background: var(--bg-elevated-2); }
+.ct-price-copy.ok { color: var(--accent); }
+.ct-price-copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rt-sheet .ct-price-copy { width: 40px; height: 40px; }
 .ct-price-tbl { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; }
 .ct-price-tbl th:nth-child(1) { width: 96px; }
 .ct-price-tbl th:nth-child(2) { width: 44px; }

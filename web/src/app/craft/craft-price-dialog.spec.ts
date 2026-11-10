@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Layout } from '../core/layout';
+import { Toast } from '../core/toast';
 import { PriceError, type PriceListing, type PriceQuote } from './core/price-types';
 import { ITEM_IDS } from './core/data';
 import { CraftPage } from './craft-page';
@@ -214,5 +215,40 @@ describe('素材查價(D-343)', () => {
     expect(vm.priceFor()).toBeNull();
     vm.openPrice('氣泡水');
     expect(vm.priceFor()).toBe('氣泡水');
+  });
+
+  it('名稱旁的複製鈕:把道具名稱複製到剪貼簿,跳出提示,圖示短暫換成勾', async () => {
+    const { f, vm, el } = mount(true);
+    const writeText = vi.fn(async () => undefined);
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+    try {
+      vm.openPrice('鈷鐵礦');
+      f.detectChanges();
+      const btn = el.querySelector<HTMLButtonElement>('.ct-price-copy')!;
+      expect(btn.getAttribute('aria-label')).toBe('複製道具名稱 鈷鐵礦');
+      expect(btn.closest('.ct-price-ttl')!.querySelector('.modal-title')!.textContent).toBe('鈷鐵礦');
+      btn.click();
+      await settle(f);
+      expect(writeText).toHaveBeenCalledWith('鈷鐵礦');
+      expect(TestBed.inject(Toast).items().at(-1)).toMatchObject({ text: '已複製道具名稱「鈷鐵礦」', tone: 'info' });
+      expect(btn.classList.contains('ok')).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('複製失敗(瀏覽器不允許):用警告提示,不顯示已複製', async () => {
+    const { f, vm, el } = mount(true);
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText: async () => { throw new Error('denied'); } } });
+    try {
+      vm.openPrice('鈷鐵礦');
+      f.detectChanges();
+      el.querySelector<HTMLButtonElement>('.ct-price-copy')!.click();
+      await settle(f);
+      expect(TestBed.inject(Toast).items().at(-1)).toMatchObject({ tone: 'warn' });
+      expect(el.querySelector('.ct-price-copy')!.classList.contains('ok')).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

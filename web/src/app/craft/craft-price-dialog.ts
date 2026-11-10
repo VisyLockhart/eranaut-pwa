@@ -1,7 +1,9 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { Layout } from '../core/layout';
+import { Toast } from '../core/toast';
 import { IconComponent } from '../ui/icon';
+import { Tip } from '../ui/tip';
 import { CraftPrice } from './craft-price';
 import { CraftVm } from './craft-vm';
 import { ITEM_IDS } from './core/data';
@@ -27,7 +29,7 @@ const ERROR_TEXT: Record<PriceErrorKind, [string, string]> = {
  */
 @Component({
   selector: 'app-craft-price',
-  imports: [CdkTrapFocus, IconComponent],
+  imports: [CdkTrapFocus, IconComponent, Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './craft-price-dialog.html',
 })
@@ -35,6 +37,10 @@ export class CraftPriceDialog {
   protected readonly vm = inject(CraftVm);
   protected readonly layout = inject(Layout);
   private readonly price = inject(CraftPrice);
+  private readonly toast = inject(Toast);
+  /** 複製名稱成功後,圖示短暫換成勾 */
+  protected readonly copied = signal(false);
+  private copiedTimer: ReturnType<typeof setTimeout> | undefined;
   protected readonly st = signal<PriceState>({ kind: 'loading' });
   /** 「更新於 N 分鐘前」用的現在時間(開著時每 30 秒更新) */
   private readonly now = signal(Date.now());
@@ -55,7 +61,10 @@ export class CraftPriceDialog {
       const t = setInterval(() => this.now.set(Date.now()), 30_000);
       onCleanup(() => clearInterval(t));
     });
-    inject(DestroyRef).onDestroy(() => this.stop());
+    inject(DestroyRef).onDestroy(() => {
+      this.stop();
+      clearTimeout(this.copiedTimer);
+    });
   }
 
   private stop(): void {
@@ -82,6 +91,25 @@ export class CraftPriceDialog {
         this.st.set({ kind: 'error', error: e instanceof PriceError ? e.kind : 'network' });
       },
     );
+  }
+
+  /** 複製道具名稱到剪貼簿,並用提示告知;複製不了(瀏覽器不允許)就提醒手動選取 */
+  protected async copyName(name: string): Promise<void> {
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(name);
+      ok = true;
+    } catch {
+      ok = false;
+    }
+    if (!ok) {
+      this.toast.show('無法複製,請手動選取名稱', { tone: 'warn' });
+      return;
+    }
+    this.toast.show(`已複製道具名稱「${name}」`);
+    this.copied.set(true);
+    clearTimeout(this.copiedTimer);
+    this.copiedTimer = setTimeout(() => this.copied.set(false), 1500);
   }
 
   protected retry(): void {

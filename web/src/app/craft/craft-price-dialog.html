@@ -3,7 +3,12 @@
   <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
     <div class="modal-box rt-dlg ct-price-dlg" role="dialog" aria-modal="true" aria-labelledby="ct-price-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
       <div class="rt-dlg-head">
-        <div class="modal-title" id="ct-price-title">{{ name }}</div>
+        <div class="ct-price-ttl">
+          <div class="modal-title" id="ct-price-title">{{ name }}</div>
+          <button type="button" class="ct-price-copy" [class.ok]="copied()" [tip]="copied() ? '已複製' : '複製道具名稱'" [attr.aria-label]="'複製道具名稱 ' + name" (click)="copyName(name)">
+            <app-icon [name]="copied() ? 'check' : 'copy'" [size]="16" />
+          </button>
+        </div>
         <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
       </div>
       <div class="rt-dlg-body ct-price-body">
