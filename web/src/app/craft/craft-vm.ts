@@ -1,5 +1,6 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { CraftLink, type CraftImport } from '../core/craft-link';
+import { Layout } from '../core/layout';
 import { Toast } from '../core/toast';
 import { CRAFT_KEY_SEL as KEY_SEL, CRAFT_KEY_STOCK as KEY_STOCK, CRAFT_KEY_VIEW as KEY_VIEW } from './craft-keys';
 import { calculate, type CalcResult, type CalcRow, type RowKind, type Selection } from './core/craft-calc';
@@ -39,6 +40,12 @@ export class CraftVm {
   readonly slots = SLOT_KEYS;
   readonly sel = signal<SelMap>(sanitizeSel(read(KEY_SEL)));
   readonly view = signal<CraftView>(sanitizeView(read(KEY_VIEW)));
+  private readonly layout = inject(Layout);
+  /**
+   * 只看(D-345)是否生效:只有桌機有;手機本來就是分頁單欄,記住的 focus 在手機上不起作用。
+   * 只看時不顯示「關聯」(用到它 / 被它用到)的高亮與追蹤分類,因為另外兩欄看不到;追蹤橫幅(查價、來源、骨架)與配方樹照舊。
+   */
+  readonly focusOn = computed(() => this.view().focus && this.layout.isDesktop());
   readonly stock = signal<Record<string, number>>(sanitizeStock(read(KEY_STOCK)));
   /** 追蹤中的列(點一列:看它用到什麼、被誰用) */
   readonly pin = signal<string | null>(null);
@@ -102,8 +109,9 @@ export class CraftVm {
   readonly groups = computed(() => {
     const v = this.visible();
     const sort = this.view().sort;
-    const pin = this.pinId();
-    const rel = this.related();
+    const focus = this.focusOn();
+    const pin = focus ? null : this.pinId();
+    const rel = focus ? new Set<string>() : this.related();
     const tray = this.view().crystalTray;
     const f = (rows: CalcRow[]) => listGroups(tray ? rows.filter((r) => !isCrystalRow(r)) : rows, sort, pin, rel);
     // 已展開的骨架留一列(灰色、可收回),只在交納素材欄(D-338)
@@ -234,6 +242,13 @@ export class CraftVm {
   /** 「分類」開關(D-337):開 = 按種類分組 + 晶類盤,關 = 按名稱排序、晶類回到列表 */
   setGrouped(on: boolean): void {
     this.patchView({ sort: on ? 'group' : 'name', crystalTray: on });
+  }
+  /** 進入只看:只顯示這一欄(D-345) */
+  enterFocus(tab: CraftTab): void {
+    this.patchView({ focus: true, tab });
+  }
+  exitFocus(): void {
+    this.patchView({ focus: false });
   }
   patchView(p: Partial<CraftView>): void {
     this.view.update((v) => ({ ...DEFAULT_VIEW, ...v, ...p }));

@@ -16,7 +16,7 @@ describe('craft-state', () => {
     expect(s.bow.gradeIndex).toBeNull();
     expect(s.bridge.gradeIndex).toBeNull();
     expect(sanitizeSel(null).hull.gradeIndex).toBeNull();
-    expect(sanitizeView({ tab: 'nope', stockMode: 1 })).toEqual({ expandedFrames: [], stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group', crystalTray: true });
+    expect(sanitizeView({ tab: 'nope', stockMode: 1 })).toEqual({ expandedFrames: [], stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', focus: false, sort: 'group', crystalTray: true });
     // D-338:舊的全域「展開骨架」開著 = 全部骨架都展開;新欄位只留合法名稱、去重
     expect(sanitizeView({ expandFrame: true }).expandedFrames).toEqual([...allFrameNames()]);
     expect(sanitizeView({ expandFrame: true, expandedFrames: [] }).expandedFrames).toEqual([]);

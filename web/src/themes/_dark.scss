@@ -159,6 +159,15 @@ html[data-theme='dark'] {
   .install-prompt, .update-banner { background: var(--bg-elevated); border: 1px solid var(--gold); box-shadow: inset 0 0 0 3px var(--bg-elevated), inset 0 0 0 4px var(--gl), var(--float); }
   .update-banner { font-family: var(--font-head); color: var(--gold-b); }
   .ct-src-cue, .ct-src-chip, .ct-src-pop { border-color: var(--gold-d); }
+  /* D-345 只看 */
+  .ct-col-btn, .ct-focus-title b { font-family: var(--font-head); }
+  .ct-col-btn:hover { border-color: var(--accent); color: var(--gold-b); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 28%, transparent); }
+  .ct-col-btn:active { box-shadow: inset 0 0 8px color-mix(in srgb, var(--gold) 40%, transparent); }
+  .ct-focus-bar { border-bottom-color: var(--gold-d); }
+  .ct-focus-title b { color: var(--gold-b); }
+  .ct-focus-back { border-color: var(--gold-d); color: var(--gold-b); }
+  .ct-focus-back:hover { border-color: var(--accent); color: var(--gold-b); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 28%, transparent); }
+  .ct-focus-body { column-rule-color: var(--gl); }
   .ct-row.pin .ct-src-cue, .ct-src-chip:hover, .ct-src-chip.on { border-color: var(--accent); }
   .tip-bubble, .ws-tooltip-bubble, .m-user-menu { background: var(--bg-elevated-2); border: 1px solid var(--gold-d); box-shadow: var(--float); color: var(--text); }
 

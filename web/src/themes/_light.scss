@@ -57,6 +57,19 @@ html[data-theme='light'] {
   .ct-slot-card, .ct-tile, .ct-col, .ct-sum-row, .rt-meter, .rt-picked li, .rt-part, .rt-pick, .ct-chip, .ct-tool, .ct-seg, .ct-yield, .rt-chip5, .rt-stat, .rt-wschip, .rt-sb-row, .rt-src-lock, .rt-src-x, .rt-level-fixed, .ct-src-cue, .ct-src-chip, .ct-src-pop { border-width: 2px; border-color: var(--line); }
   /* 清除全部圖示鈕(D-337):像素風的 2px 墨色邊框;展開成「確定清除?」時維持危險色 */
   .ct-iconbtn.danger:not(.confirm) { border: 2px solid var(--line); }
+  /* D-345 只看:像素風 = 淡藍底 + 硬陰影,按下陰影消失並下沉 2px,不用緩動 */
+  .ct-col-btn, .ct-col-btn:hover, .ct-col-ic, .ct-focus-back { transition: none; }
+  .ct-col-btn:hover { background: var(--surface-avatar); border: 2px solid var(--line); box-shadow: 2px 2px 0 var(--drop); color: var(--line); }
+  .ct-col-btn:hover .ct-col-ic { color: var(--line); translate: 0 0; }
+  .ct-col-btn:active { translate: 2px 2px; scale: 1; box-shadow: none; }
+  .ct-focus-bar { border-bottom-width: 2px; border-bottom-color: var(--line); }
+  .ct-focus-back { background: var(--white); border: 2px solid var(--line); box-shadow: inset -3px -3px 0 var(--bevel), 2px 2px 0 var(--drop); color: var(--line); }
+  .ct-focus-back:hover { background: var(--surface-avatar); color: var(--line); border-color: var(--line); }
+  .ct-focus-back:active { translate: 2px 2px; scale: 1; box-shadow: none; }
+  .ct-focus-back:hover app-icon { translate: 0 0; }
+  .ct-focus-tag { font-family: var(--font-cap); font-size: 11px; border-color: var(--line); color: var(--line); background: var(--surface-avatar); }
+  .ct-focus-chip.on { background: var(--surface-avatar); color: var(--line); border-color: var(--line); }
+  .ct-focus-chip, .ct-focus-back { border-width: 2px; }
   .ct-row.pin .ct-src-cue, .ct-src-chip:hover, .ct-src-chip.on { border-color: var(--accent); }
   .rt-src-lock { border-style: dashed; }
   .rt-wschip.unset, .rt-sb-row.unset { border-style: dashed; }

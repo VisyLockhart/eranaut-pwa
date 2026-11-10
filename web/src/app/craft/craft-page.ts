@@ -43,6 +43,8 @@ export class CraftPage implements OnDestroy {
   protected readonly gradeIndexes = GRADE_INDEXES;
   protected readonly tabs = TABS;
   protected readonly tabLabel = TAB_LABEL;
+  /** 只看時標題列的快速切換用的短名稱 */
+  protected readonly tabShort: Record<CraftTab, string> = { finals: '交納', directs: '直接', bases: '基礎' };
   protected readonly maxQty = MAX_QTY;
   protected readonly gradeLabel = gradeLabel;
   protected readonly missing = missing;
@@ -126,6 +128,10 @@ export class CraftPage implements OnDestroy {
     } else if (this.vm.treeFor()) {
       this.vm.closeTree();
       ev.preventDefault();
+    } else if (this.vm.focusOn() && !(ev.target as HTMLElement | null)?.closest?.('input, textarea, select')) {
+      // 只看(D-345):Esc 返回三欄;在庫存輸入框裡按 Esc 不算
+      this.exitFocus();
+      ev.preventDefault();
     } else this.closeSheet();
   }
   ngOnDestroy(): void {
@@ -157,6 +163,17 @@ export class CraftPage implements OnDestroy {
   }
   protected stop(ev: Event): void {
     ev.stopPropagation();
+  }
+  /** 進入只看(D-345):焦點移到「返回」,鍵盤與讀屏使用者才知道畫面換了 */
+  protected enterFocus(tab: CraftTab): void {
+    this.vm.enterFocus(tab);
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('.ct-focus-back')?.focus(), { injector: this.injector });
+  }
+  /** 返回三欄:焦點回到剛才看的那一欄的標頭按鈕 */
+  protected exitFocus(): void {
+    const tab = this.vm.view().tab;
+    this.vm.exitFocus();
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(`.ct-col-btn[data-tab="${tab}"]`)?.focus(), { injector: this.injector });
   }
   protected setTab(t: CraftTab): void {
     this.vm.patchView({ tab: t });
@@ -206,7 +223,9 @@ export class CraftPage implements OnDestroy {
   protected rowState(r: CalcRow): string {
     const parts: string[] = [];
     if (this.vm.isPinned(r)) parts.push('pin');
-    else if (this.vm.related().has(rowId(r))) parts.push('rel');
+    else if (this.vm.focusOn()) {
+      // 只看:不標關聯、不變暗(另外兩欄看不到,整欄變灰沒有意義)
+    } else if (this.vm.related().has(rowId(r))) parts.push('rel');
     else if (this.vm.pin()) parts.push('dim');
     if (this.vm.view().stockMode && missing(r, this.vm.stock()) === 0) parts.push('done');
     return parts.join(' ');

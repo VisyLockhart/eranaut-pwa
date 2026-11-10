@@ -21,6 +21,8 @@ export interface CraftView {
   onlyMissing: boolean;
   slotsCollapsed: boolean;
   tab: CraftTab;
+  /** 只看(D-345,桌機):true = 只顯示 `tab` 這一欄,排成三直欄;手機本來就是分頁,不受影響 */
+  focus: boolean;
   sort: CraftSort;
   /** 晶類盤(D-327):開 = 碎晶 / 水晶 / 晶簇從列表移到欄標題下的晶類盤;關 = 照舊留在列表裡 */
   crystalTray: boolean;
@@ -44,7 +46,7 @@ export function emptySel(): SelMap {
   return { hull: { gradeIndex: null, qty: 1 }, stern: { gradeIndex: null, qty: 1 }, bow: { gradeIndex: null, qty: 1 }, bridge: { gradeIndex: null, qty: 1 } };
 }
 
-export const DEFAULT_VIEW: CraftView = { expandedFrames: [], stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', sort: 'group', crystalTray: true };
+export const DEFAULT_VIEW: CraftView = { expandedFrames: [], stockMode: false, onlyMissing: false, slotsCollapsed: false, tab: 'finals', focus: false, sort: 'group', crystalTray: true };
 
 /** 讀 localStorage 的內容一律當不可信:型別、範圍不對就丟掉 */
 export function sanitizeSel(raw: unknown): SelMap {
@@ -77,6 +79,7 @@ export function sanitizeView(raw: unknown): CraftView {
   if (typeof r['stockMode'] === 'boolean') v.stockMode = r['stockMode'];
   if (typeof r['onlyMissing'] === 'boolean') v.onlyMissing = r['onlyMissing'];
   if (typeof r['slotsCollapsed'] === 'boolean') v.slotsCollapsed = r['slotsCollapsed'];
+  if (typeof r['focus'] === 'boolean') v.focus = r['focus'];
   if (r['sort'] === 'group' || r['sort'] === 'name') v.sort = r['sort'];
   // 「分類」開關同時管排序與晶類盤(D-337):晶類盤一律跟著 sort,舊資料的其他組合在這裡統一
   v.crystalTray = v.sort === 'group';

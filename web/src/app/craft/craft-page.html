@@ -35,15 +35,31 @@
       <div class="ct-empty" aria-label="尚未選擇配件"><app-icon name="anvil" [size]="34" /><b>選擇配件等級</b></div>
     } @else {
       <ng-container *ngTemplateOutlet="stockBar" />
-      <div class="ct-cols">
-        @for (t of tabs; track t; let i = $index) {
-          @if (i > 0) {
-            <div class="ct-arrow" aria-hidden="true"><app-icon name="chevronLeft" [size]="18" /></div>
-          }
-          <section class="ct-col" [attr.aria-label]="tabLabel[t]">
-            <div class="ct-col-head"><b>{{ tabLabel[t] }}</b><span class="ct-count">{{ vm.counts()[t] }}</span></div>
-            <ng-container *ngTemplateOutlet="list; context: { tab: t }" />
+      <div class="ct-cols" [class.focus]="vm.focusOn()">
+        @if (vm.focusOn()) {
+          @let ft = vm.view().tab;
+          <section class="ct-col ct-focus" [attr.aria-label]="tabLabel[ft]">
+            <div class="ct-focus-bar" [attr.data-tab]="ft">
+              <button type="button" class="ct-focus-back" (click)="exitFocus()" aria-label="返回三欄"><app-icon name="backArrow" [size]="18" />返回</button>
+              <div class="ct-focus-title"><span class="ct-focus-tag">只看</span><b>{{ tabLabel[ft] }}</b><span class="ct-count">{{ vm.counts()[ft] }}</span></div>
+              <div class="ct-focus-sw" role="group" aria-label="切換清單">
+                @for (t of tabs; track t) {
+                  <button type="button" class="ct-focus-chip" [class.on]="t === ft" [attr.aria-pressed]="t === ft" [attr.aria-label]="'只看' + tabLabel[t]" (click)="vm.patchView({ tab: t })">{{ tabShort[t] }} {{ vm.counts()[t] }}</button>
+                }
+              </div>
+            </div>
+            <div class="ct-focus-body"><ng-container *ngTemplateOutlet="list; context: { tab: ft }" /></div>
           </section>
+        } @else {
+          @for (t of tabs; track t; let i = $index) {
+            @if (i > 0) {
+              <div class="ct-arrow" aria-hidden="true"><app-icon name="chevronLeft" [size]="18" /></div>
+            }
+            <section class="ct-col" [attr.aria-label]="tabLabel[t]" [attr.data-tab]="t">
+              <div class="ct-col-head"><button type="button" class="ct-col-btn" [attr.data-tab]="t" tip="只看" [attr.aria-label]="'只看' + tabLabel[t]" (click)="enterFocus(t)"><b>{{ tabLabel[t] }}</b><span class="ct-count">{{ vm.counts()[t] }}</span><app-icon class="ct-col-ic" name="focus" [size]="16" /></button></div>
+              <ng-container *ngTemplateOutlet="list; context: { tab: t }" />
+            </section>
+          }
         }
       </div>
     }
