@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import partsJson from '../../route/data/parts.json';
-import { CRAFT_DATA, SLOT_KEYS } from './data';
+import { CRAFT_DATA, ITEM_IDS, SLOT_KEYS } from './data';
 
 const { base, crafts, slots } = CRAFT_DATA;
 const known = (n: string) => n in base || n in crafts;
@@ -80,5 +80,20 @@ describe('配件製作資料集(V6 完整性)', () => {
   it('資料量:素材 107、可製作品 84', () => {
     expect(Object.keys(base)).toHaveLength(107);
     expect(Object.keys(crafts)).toHaveLength(84);
+  });
+});
+
+describe('物品 ID 對照表(D-343)', () => {
+  it('資料集每個素材與可製作品都有物品 ID,ID 為正整數且不重複;表裡沒有多餘名稱', () => {
+    const names = [...Object.keys(base), ...Object.keys(crafts)];
+    for (const n of names) expect(Number.isInteger(ITEM_IDS[n]) && ITEM_IDS[n]! > 0, `${n} 缺少物品 ID`).toBe(true);
+    expect(Object.keys(ITEM_IDS).sort()).toEqual([...names].sort());
+    expect(new Set(Object.values(ITEM_IDS)).size).toBe(names.length);
+  });
+
+  it('幾個已查證的 ID(鈷鐵礦 5116、氣泡水 5491;「發泡水」已改名,見 D-344)', () => {
+    expect(ITEM_IDS['鈷鐵礦']).toBe(5116);
+    expect(ITEM_IDS['氣泡水']).toBe(5491);
+    expect('發泡水' in base).toBe(false);
   });
 });

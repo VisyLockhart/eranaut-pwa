@@ -53,7 +53,8 @@ export const ICONS = {
   "seaChart": "<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6.5 L9 4.5 L15 6.5 L21 4.5 V17.5 L15 19.5 L9 17.5 L3 19.5 Z\"></path><path d=\"M9 4.5 V17.5\"></path><path d=\"M15 6.5 V19.5\"></path></svg>",
   "lock": "<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"5\" y=\"11\" width=\"14\" height=\"9\" rx=\"2\"></rect><path d=\"M8 11V8a4 4 0 0 1 8 0v3\"></path></svg>",
   "unlock": "<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"5\" y=\"11\" width=\"14\" height=\"9\" rx=\"2\"></rect><path d=\"M8 11V7.5a4 4 0 0 1 7.6-1.7\"></path></svg>",
-  "ban": "<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"></circle><path d=\"M5.6 5.6l12.8 12.8\"></path></svg>"
+  "ban": "<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"></circle><path d=\"M5.6 5.6l12.8 12.8\"></path></svg>",
+  "market": "<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"12\" width=\"4\" height=\"8\" rx=\"0.5\"></rect><rect x=\"10\" y=\"4\" width=\"4\" height=\"16\" rx=\"0.5\"></rect><rect x=\"16\" y=\"8\" width=\"4\" height=\"12\" rx=\"0.5\"></rect></svg>",
 } as const;
 
 export type IconName = keyof typeof ICONS;

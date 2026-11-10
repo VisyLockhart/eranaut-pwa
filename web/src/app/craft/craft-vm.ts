@@ -6,7 +6,7 @@ import { calculate, type CalcResult, type CalcRow, type RowKind, type Selection 
 import { buildTree, hasTree, type TreeNode } from './core/craft-tree';
 import { finalsProgress } from './core/craft-stock';
 import { sourceTags, type SrcTag } from './core/craft-source';
-import { CRAFT_DATA, SLOT_KEYS } from './core/data';
+import { CRAFT_DATA, ITEM_IDS, SLOT_KEYS } from './core/data';
 import type { SlotKey } from './core/types';
 import {
   DEFAULT_VIEW, allFrameNames, MAX_QTY, buildTray, isCrystalRow, TAB_LABEL, TABS, clampQty, copyLines, emptySel, listGroups, missing, relatedIds, rowId, sanitizeSel, sanitizeStock, sanitizeView,
@@ -50,6 +50,8 @@ export class CraftVm {
     const n = this.treeFor();
     return n ? buildTree(n) : null;
   });
+  /** 開著查價視窗的素材名稱(D-343);null = 關。放這裡,換版面重建頁面時不丟 */
+  readonly priceFor = signal<string | null>(null);
   /** 追蹤橫幅的來源詳情是否展開(桌機在橫幅下方,手機是底部面板) */
   readonly srcOpen = signal(false);
   /** 追蹤中素材的其他取得管道(商人、部族、兌換…);需求數量用來換算比值類的通貨數 */
@@ -263,6 +265,17 @@ export class CraftVm {
   }
   closeTree(): void {
     this.treeFor.set(null);
+  }
+
+  /** 這個品項有沒有物品 ID 可查價(骨架不是物品,沒有) */
+  hasPrice(name: string): boolean {
+    return Object.hasOwn(ITEM_IDS, name);
+  }
+  openPrice(name: string): void {
+    if (this.hasPrice(name)) this.priceFor.set(name);
+  }
+  closePrice(): void {
+    this.priceFor.set(null);
   }
 
   toggleSrc(): void {

@@ -202,8 +202,11 @@
 <ng-template #traceBar>
   @if (vm.pin(); as p) {
     @let tg = vm.pinSources();
-    <div class="ct-trace" [class.has-src]="tg.length > 0" [class.m]="!layout.isDesktop()">
+    <div class="ct-trace" [class.has-src]="tg.length > 0" [class.has-price]="vm.hasPrice(p)" [class.m]="!layout.isDesktop()">
       <span>追蹤</span><b>{{ p }}</b>
+      @if (vm.hasPrice(p)) {
+        <button type="button" class="ct-price-go" (click)="vm.openPrice(p)" [attr.aria-label]="'查價 ' + p"><app-icon name="market" [size]="16" />查價</button>
+      }
       @if (tg.length > 0) {
         <div class="ct-src-chips" role="group" aria-label="其他取得管道">
           @for (t of tg; track t.key) {
@@ -367,3 +370,4 @@
 </ng-template>
 
 <app-craft-stock-dialogs />
+<app-craft-price />

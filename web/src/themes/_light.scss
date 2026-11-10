@@ -206,4 +206,16 @@ html[data-theme='light'] {
   .ct-frame-cap:hover { background: var(--accent); color: var(--on-accent); }
   .ct-frame-go { border: 3px solid var(--line); box-shadow: var(--press); }
   .ct-frame-go.on { background: var(--bg-elevated); border-color: var(--line); box-shadow: var(--raise); }
+  /* D-343 素材查價:像素按鈕與方塊表格;載入骨架階梯式閃爍(不是平滑漸變) */
+  .ct-price-go { border: 3px solid var(--line); box-shadow: var(--press); }
+  .ct-price-go:hover { background: var(--accent); border-color: var(--line); }
+  .ct-price-tbl th { font-family: var(--font-cap); font-weight: 400; letter-spacing: 0.04em; border-bottom: 3px solid var(--line); }
+  .ct-price-tbl td { border-bottom: 2px solid var(--border); }
+  .ct-price-tbl td.n { font-weight: 400; }
+  .ct-price-tbl .unit { font-weight: 400; }
+  .ct-price-tbl tr.low td { background: var(--bg-elevated-2); }
+  .ct-price-tbl tr.low td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+  .ct-hq { border-width: 2px; border-radius: 0; font-family: var(--font-cap); font-weight: 400; }
+  .ct-price-sk-row i { border-radius: 0; animation: ct-price-step 1.2s steps(2, jump-none) infinite; }
+  @keyframes ct-price-step { 0% { opacity: 0.4; } 100% { opacity: 1; } }
 }

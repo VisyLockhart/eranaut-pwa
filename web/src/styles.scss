@@ -1287,6 +1287,60 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-tree-qty { flex: 0 0 34px; text-align: right; color: var(--accent); font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ct-tree-name { min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
 .ct-tree-sub { margin: 6px 0 2px 22px; padding-left: 12px; border-left: 2px solid var(--border-strong); display: flex; flex-direction: column; gap: 6px; }
+/* D-343 素材查價:追蹤橫幅的「查價」鈕 + 查價視窗(沿用 rt-dlg:桌機置中、手機底部面板)。主題只覆寫外形,顏色一律讀 token */
+.ct-price-go { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 0 12px; border: var(--bw) solid var(--accent); border-radius: calc(8px * var(--rs)); background: var(--accent); color: var(--on-accent); font: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background-color var(--mo-dur-f), color var(--mo-dur-f), translate var(--mo-dur-f) var(--mo-ease-out); }
+.ct-price-go:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.ct-price-go:active { translate: 0 var(--mo-press-y); }
+.ct-price-go:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ct-trace.has-price b { flex: 0 1 auto; }
+.ct-trace.has-price .ct-x { margin-left: auto; }
+.ct-trace.m.has-price b { flex: 1 1 auto; }
+.ct-trace.m.has-price .ct-x { margin-left: 0; }
+.ct-trace.m .ct-price-go { order: 1; min-height: 40px; }
+.modal-box.rt-dlg.ct-price-dlg { max-width: 640px; }
+.ct-price-body { padding-bottom: 12px; gap: 0; }
+.ct-price-tbl { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; }
+.ct-price-tbl th:nth-child(1) { width: 112px; }
+.ct-price-tbl th:nth-child(2) { width: 72px; }
+.ct-price-tbl th:nth-child(3) { width: 116px; }
+.ct-price-tbl th:nth-child(5) { width: 96px; }
+.ct-price-tbl th { padding: 0 6px 6px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: var(--bw) solid var(--border-strong); white-space: nowrap; }
+.ct-price-tbl td { height: 40px; padding: 0 6px; border-bottom: var(--bw) solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ct-price-tbl .n { text-align: right; font-variant-numeric: tabular-nums; }
+.ct-price-tbl td.n { font-family: var(--font-mono); }
+.ct-price-tbl .unit { color: var(--accent); font-weight: 700; }
+.ct-price-tbl .tot { color: var(--amber-text); }
+.ct-price-tbl .wld { color: var(--text-muted); }
+.ct-price-tbl tr.low td { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.ct-hq { display: inline-block; margin-left: 5px; padding: 0 4px; border: 1px solid currentColor; border-radius: calc(3px * var(--rs)); color: var(--amber-text); font: 700 10px/16px var(--font-ui); font-style: normal; letter-spacing: 0.04em; vertical-align: middle; }
+.ct-price-sk { display: flex; flex-direction: column; }
+.ct-price-sk-row { display: grid; grid-template-columns: 112px 72px 116px minmax(0, 1fr) 96px; gap: 0 12px; align-items: center; height: 40px; padding: 0 6px; border-bottom: var(--bw) solid var(--border); }
+.ct-price-sk-row i { display: block; width: auto; height: 12px; border-radius: calc(4px * var(--rs)); background: color-mix(in srgb, var(--tone) 16%, transparent); animation: ct-price-pulse 1.3s ease-in-out infinite; }
+.ct-price-sk-row i:nth-child(2) { animation-delay: 0.08s; }
+.ct-price-sk-row i:nth-child(3) { animation-delay: 0.16s; }
+.ct-price-sk-row i:nth-child(4) { animation-delay: 0.24s; }
+.ct-price-sk-row i:nth-child(5) { animation-delay: 0.32s; }
+@keyframes ct-price-pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ct-price-sk-row i { animation: none; } }
+html[data-motion='reduced'] .ct-price-sk-row i { animation: none; }
+.ct-price-msg { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 40px 12px; text-align: center; color: var(--text-muted); }
+.ct-price-msg b { color: var(--text); font-size: 15px; }
+.ct-price-msg small { font-size: 12.5px; }
+.ct-price-msg.err app-icon { color: var(--amber-text); }
+.ct-price-foot { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
+.ct-price-info { min-width: 0; font-size: 12.5px; color: var(--text-muted); }
+.ct-price-ago.stale { color: var(--amber-text); font-weight: 700; }
+.rt-sheet .ct-price-foot { flex-direction: column; align-items: stretch; }
+.rt-sheet .ct-price-foot .rt-save-btn { min-height: 44px; }
+.rt-sheet .ct-price-body { padding: 0 12px 12px; }
+.rt-sheet .ct-price-tbl { font-size: 13px; }
+.rt-sheet .ct-price-tbl th { padding: 0 4px 6px; }
+.rt-sheet .ct-price-tbl td { height: 38px; padding: 0 4px; }
+.rt-sheet .ct-price-tbl th:nth-child(1) { width: 78px; }
+.rt-sheet .ct-price-tbl th:nth-child(2) { width: 40px; }
+.rt-sheet .ct-price-tbl th:nth-child(3) { width: 74px; }
+.rt-sheet .ct-price-tbl th:nth-child(5) { width: 68px; }
+.rt-sheet .ct-price-sk-row { grid-template-columns: 78px 40px 74px minmax(0, 1fr) 68px; gap: 0 8px; height: 38px; padding: 0 4px; }
 .ct-sheet-overlay { position: fixed; inset: 0; z-index: 60; background: color-mix(in srgb, var(--scrim) 72%, transparent); display: flex; align-items: flex-end; justify-content: center; }
 .ct-sheet { width: 100%; max-width: 480px; background: var(--bg-elevated); border: var(--bw) solid var(--border-strong); border-bottom: none; border-radius: calc(16px * var(--rs)) calc(16px * var(--rs)) 0 0; padding: 16px 18px calc(20px + env(safe-area-inset-bottom) / var(--vu-div)); box-shadow: 0 -12px 32px color-mix(in srgb, var(--shade) 40%, transparent); display: flex; flex-direction: column; gap: 14px; }
 .ct-sheet-head { display: flex; align-items: center; justify-content: space-between; font-size: 16px; }

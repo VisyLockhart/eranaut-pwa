@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { calculate, frameName, type CalcRow } from './core/craft-calc';
-import { buildTray, compareNames, copyLines, gradeInfo, gradeLabel, groupRows, listGroups, missing, sanitizeSel, sanitizeStock, sanitizeView, allFrameNames } from './craft-state';
+import { buildTray, compareNames, copyLines, gradeInfo, gradeLabel, groupRows, listGroups, migrateStockKeys, missing, sanitizeSel, sanitizeStock, sanitizeView, allFrameNames } from './craft-state';
 import { CraftVm } from './craft-vm';
 
 describe('craft-state', () => {
@@ -353,5 +353,15 @@ describe('晶類盤(D-327)', () => {
     if (!d) return;
     vm.togglePin(d.name, 'direct');
     expect(vm.related().has(`base:${d.name}`)).toBe(true);
+  });
+
+  it('庫存舊名稱轉現名(D-344:發泡水 → 氣泡水,含 d: 前綴);新舊並存保留新 key 的值', () => {
+    expect(sanitizeStock({ 發泡水: 7, 熊脂: 2 })).toEqual({ 氣泡水: 7, 熊脂: 2 });
+    expect(sanitizeStock({ 氣泡水: 3, 發泡水: 9 })).toEqual({ 氣泡水: 3 });
+    expect(sanitizeStock({ 發泡水: 9, 氣泡水: 3 })).toEqual({ 氣泡水: 3 });
+    expect(migrateStockKeys({ 'd:發泡水': 4, 'd:熊脂': 1 })).toEqual({ 'd:氣泡水': 4, 'd:熊脂': 1 });
+    expect(migrateStockKeys({ 熊脂: 1 })).toEqual({ 熊脂: 1 });
+    // 轉換後的 key 照常驗證:氣泡水是素材,保留;壞值仍被丟掉
+    expect(sanitizeStock({ 發泡水: -1 })).toEqual({});
   });
 });

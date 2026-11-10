@@ -1,6 +1,6 @@
 import { CRAFT_STOCK_LIMITS, LIMITS, type CraftStockDto, type CraftStockSpec } from '@eranaut/shared';
 import { SLOT_KEYS } from './core/data';
-import { sanitizeSel, sanitizeStock, type SelMap } from './craft-state';
+import { migrateStockKeys, sanitizeSel, sanitizeStock, type SelMap } from './craft-state';
 
 /** 庫存組(D-329)的純函式:規格 ↔ 畫面狀態、比較、摘要、讀快取 */
 
@@ -87,7 +87,7 @@ function sanitizeSpec(raw: unknown): CraftStockSpec {
   }
   const stock = r['stock'];
   if (stock && typeof stock === 'object') {
-    for (const [k, v] of Object.entries(stock as Record<string, unknown>)) {
+    for (const [k, v] of Object.entries(migrateStockKeys(stock as Record<string, unknown>))) {
       if (typeof v === 'number' && Number.isInteger(v) && v > 0 && v <= CRAFT_STOCK_LIMITS.stockValueMax) out.stock[k] = v;
     }
   }

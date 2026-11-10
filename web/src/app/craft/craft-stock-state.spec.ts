@@ -1,6 +1,6 @@
 import type { CraftStockDto } from '@eranaut/shared';
 import { describe, expect, it } from 'vitest';
-import { emptySel } from './craft-state';
+import { emptySel, sanitizeStock } from './craft-state';
 import { autoName, canSaveSpec, isBlank, sameSpec, sanitizeStocks, selFromSpec, shortDate, specFrom, stockMeta } from './craft-stock-state';
 
 describe('庫存組的純函式(D-329)', () => {
@@ -45,5 +45,15 @@ describe('庫存組的純函式(D-329)', () => {
     expect(list).toHaveLength(10);
     expect(list[0]!.spec).toEqual({ v: 1, sel: { hull: { grade: 1, qty: 1 } }, stock: { a: 1 } });
     expect(sanitizeStocks([{ id: 'x', name: 'y', spec: 5 }])[0]!.spec).toEqual({ v: 1, sel: {}, stock: {} });
+  });
+
+  it('庫存組讀入時舊名稱轉現名,與目前畫面(已轉換)比較不會誤判為改過(D-344、D-342)', () => {
+    const dto = (stock: Record<string, number>) => ({ id: 'a', name: 'n', spec: { v: 1, sel: { hull: { grade: 1, qty: 1 } }, stock }, favorite: false, created_at: '', updated_at: '' });
+    const [saved] = sanitizeStocks([dto({ 發泡水: 5, 熊脂: 2 })]);
+    expect(saved!.spec.stock).toEqual({ 氣泡水: 5, 熊脂: 2 });
+    const sel = emptySel();
+    sel.hull = { gradeIndex: 1, qty: 1 };
+    // 載入後畫面上的庫存(sanitizeStock 轉換後)組成的規格,與已存的那組相同
+    expect(sameSpec(specFrom(sel, sanitizeStock({ 發泡水: 5, 熊脂: 2 })), saved!.spec)).toBe(true);
   });
 });

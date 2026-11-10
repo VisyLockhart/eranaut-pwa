@@ -13,6 +13,7 @@ import { CraftVm } from './craft-vm';
 import { CraftCopyButton } from './craft-copy-btn';
 import { CRAFT_FEATURES } from './craft-features';
 import { CraftStockBar } from './craft-stock-bar';
+import { CraftPriceDialog } from './craft-price-dialog';
 import { CraftStockDialogs } from './craft-stock-dialogs';
 import { CraftStockVm } from './craft-stock-vm';
 import { GRADE_INDEXES, MAX_QTY, TAB_LABEL, TABS, gradeInfo, gradeLabel, missing, rowId, type CraftTab, type CrystalTray, type GradeInfo, type RowGroup, type SlotSel } from './craft-state';
@@ -23,7 +24,7 @@ import { Tip } from '../ui/tip';
 /** 配件製作:選潛艇配件等級,算出所需交納素材 / 直接素材 / 基礎素材(D-239、D-240、D-258) */
 @Component({
   selector: 'app-craft-page',
-  imports: [Tip, NgTemplateOutlet, CdkTrapFocus, IconComponent, CrystalIcon, CraftStockBar, CraftCopyButton, CraftStockDialogs],
+  imports: [Tip, NgTemplateOutlet, CdkTrapFocus, IconComponent, CrystalIcon, CraftStockBar, CraftCopyButton, CraftStockDialogs, CraftPriceDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './craft-page.html',
   host: { style: 'display: contents', '(document:keydown.escape)': 'onEscape($event)' },
@@ -113,10 +114,13 @@ export class CraftPage implements OnDestroy {
   protected closeSheet(): void {
     if (this.sheet()) this.sheet.set(null);
   }
-  /** Esc:先關配方樹,再關底部面板 */
+  /** Esc:先關查價視窗,再關配方樹,再關底部面板 */
   protected onEscape(ev: Event): void {
     if (ev.defaultPrevented) return;
-    if (this.vm.srcOpen() && !this.layout.isDesktop()) {
+    if (this.vm.priceFor()) {
+      this.vm.closePrice();
+      ev.preventDefault();
+    } else if (this.vm.srcOpen() && !this.layout.isDesktop()) {
       this.vm.srcOpen.set(false);
       ev.preventDefault();
     } else if (this.vm.treeFor()) {

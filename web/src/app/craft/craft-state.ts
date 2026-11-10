@@ -85,6 +85,26 @@ export function sanitizeView(raw: unknown): CraftView {
   return v;
 }
 
+/** 資料集改名前的舊名稱 → 現名(D-344:發泡水 → 氣泡水)。庫存以名稱為鍵,載入時轉換,舊庫存不丟 */
+const RENAMED_ITEMS: Readonly<Record<string, string>> = { 發泡水: '氣泡水' };
+
+/**
+ * 庫存 key 的舊名稱換成現名(含 `d:` 前綴);新舊 key 並存時保留新 key 的值。
+ * 本機庫存、庫存組(伺服器與快取)都經過這裡,所以兩邊的 key 一致,「有沒有改過」的比較不會誤判(D-342)。
+ */
+export function migrateStockKeys(raw: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const moved: [string, unknown][] = [];
+  for (const [k, v] of Object.entries(raw)) {
+    const prefix = k.startsWith(DIRECT_PREFIX) ? DIRECT_PREFIX : '';
+    const to = RENAMED_ITEMS[k.slice(prefix.length)];
+    if (to !== undefined) moved.push([prefix + to, v]);
+    else out[k] = v;
+  }
+  for (const [k, v] of moved) if (!(k in out)) out[k] = v;
+  return out;
+}
+
 /**
  * 庫存:只留已知的 key、正整數(上限 99999)。key 的規則見 craft-calc.ts 檔頭:
  * 品項名稱(交納素材、素材、骨架)或 `d:品項名稱`(直接素材裡的可製作品)。
@@ -100,7 +120,7 @@ export function sanitizeStock(raw: unknown, data: CraftData = CRAFT_DATA): Recor
     for (let grade = 1; grade <= 5; grade++) frames.add(frameName(slot as SlotKey, grade));
   }
   const legacy: [string, number][] = [];
-  for (const [k, val] of Object.entries(raw as Record<string, unknown>)) {
+  for (const [k, val] of Object.entries(migrateStockKeys(raw as Record<string, unknown>))) {
     const n = Math.floor(Number(val));
     if (!Number.isFinite(n) || n <= 0) continue;
     const v = Math.min(99999, n);

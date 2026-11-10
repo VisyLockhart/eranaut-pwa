@@ -241,4 +241,16 @@ html[data-theme='dark'] {
   .ct-fadd-tag { border-color: var(--gold-d); color: var(--gold); }
   .ct-frame-go { background: linear-gradient(var(--surface-raise), var(--bg-elevated)); border-color: var(--gold); color: var(--gold-b); font-family: var(--font-head); letter-spacing: 0.08em; }
   .ct-frame-go.on { background: transparent; border-color: var(--steel); color: var(--text-muted); }
+  /* D-343 素材查價:金屬金按鈕、細金線表格、總計用亮白(單價已經是金色);骨架金色掃光 */
+  .ct-price-go { background: linear-gradient(var(--surface-raise), var(--bg-elevated)); border-color: var(--gold); color: var(--gold-b); font-family: var(--font-head); letter-spacing: 0.08em; }
+  .ct-price-go:hover { color: var(--gold-b); box-shadow: 0 0 10px var(--gl); background: linear-gradient(var(--surface-raise), var(--bg-elevated)); }
+  .ct-price-tbl th { font-family: var(--font-head); letter-spacing: 0.08em; color: var(--gold); border-bottom: 1px solid var(--gold-d); }
+  .ct-price-tbl td { border-bottom: 1px solid var(--gl); }
+  .ct-price-tbl .tot { color: var(--text); }
+  .ct-price-tbl .unit { color: var(--gold-b); }
+  .ct-price-tbl tr.low td { background: color-mix(in srgb, var(--gold) 10%, transparent); }
+  .ct-price-tbl tr.low td:first-child { box-shadow: inset 3px 0 0 var(--gold); }
+  .ct-hq { color: var(--gold-b); border-color: var(--gold-d); }
+  .ct-price-sk-row i { background: linear-gradient(90deg, var(--surface-raise) 30%, var(--gl) 50%, var(--surface-raise) 70%) 0 0 / 220% 100%; animation: ct-price-sweep 1.6s linear infinite; opacity: 1; }
+  @keyframes ct-price-sweep { from { background-position: 120% 0; } to { background-position: -120% 0; } }
 }

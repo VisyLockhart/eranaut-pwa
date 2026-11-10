@@ -1,0 +1,60 @@
+@if (vm.priceFor(); as name) {
+  @let s = st();
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
+    <div class="modal-box rt-dlg ct-price-dlg" role="dialog" aria-modal="true" aria-labelledby="ct-price-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <div class="rt-dlg-head">
+        <div class="rt-dlg-titles">
+          <div class="modal-title" id="ct-price-title">{{ name }}</div>
+          <div class="rt-dlg-sub">查價 · 陸行鳥</div>
+        </div>
+        <button type="button" class="modal-close" (click)="close()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+      </div>
+      <div class="rt-dlg-body ct-price-body">
+        @if (s.kind === 'loading') {
+          <div class="ct-price-sk" role="status" aria-label="查價中" aria-busy="true">
+            @for (i of skeleton; track i) {
+              <div class="ct-price-sk-row"><i></i><i></i><i></i><i></i><i></i></div>
+            }
+          </div>
+        } @else if (s.kind === 'ok') {
+          @if (s.quote.listings.length > 0) {
+            <table class="ct-price-tbl">
+              <thead>
+                <tr><th scope="col" class="n">單價</th><th scope="col" class="n">數量</th><th scope="col" class="n">總計</th><th scope="col">雇員</th><th scope="col">服務器</th></tr>
+              </thead>
+              <tbody>
+                @for (l of s.quote.listings; track $index) {
+                  <tr [class.low]="$first">
+                    <td class="n unit">{{ fmtGil(l.pricePerUnit) }}@if (l.hq) {<i class="ct-hq" aria-label="高品質">HQ</i>}</td>
+                    <td class="n">{{ fmtGil(l.quantity) }}</td>
+                    <td class="n tot">{{ fmtGil(l.total) }}</td>
+                    <td class="ret">{{ l.retainerName }}</td>
+                    <td class="wld">{{ l.world }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <div class="ct-price-msg" role="status"><app-icon name="market" [size]="30" /><b>目前沒有人在賣</b><small>陸行鳥市場板上沒有這個物品的掛單。</small></div>
+          }
+        } @else {
+          <div class="ct-price-msg err" role="alert"><app-icon name="warning" [size]="30" /><b>{{ errorText(s.error)[0] }}</b><small>{{ errorText(s.error)[1] }}</small></div>
+        }
+      </div>
+      <div class="rt-dlg-foot ct-price-foot">
+        <div class="ct-price-info">
+          @if (s.kind === 'ok') {
+            <span>查詢於 {{ clock(s.quote) }}</span>
+            @if (s.quote.lastUploadAt !== null) {
+              <span class="ct-price-ago" [class.stale]="stale(s.quote)"> · 更新於 {{ ago(s.quote) }}</span>
+            }
+          }
+        </div>
+        <div class="rt-save-actions">
+          <button type="button" class="rt-save-btn" [class.primary]="s.kind === 'error'" [disabled]="s.kind === 'loading'" (click)="retry()">重新查詢</button>
+          <button type="button" class="rt-save-btn" [class.primary]="s.kind !== 'error'" (click)="close()">關閉</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

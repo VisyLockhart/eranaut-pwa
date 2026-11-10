@@ -546,4 +546,15 @@ html[data-theme='notebook'] {
   .ct-fadd-tag { border: 1.6px solid var(--accent); border-radius: var(--w2); }
   .ct-frame-go { border: 1.6px solid var(--accent); border-radius: var(--w2); }
   .ct-frame-go.on { border-style: dashed; border-color: var(--line); color: var(--text-muted); }
+  /* D-343 素材查價:手繪外框按鈕、橫線紙表格、最低價手繪圈起;骨架虛線框呼吸 */
+  .ct-price-go { border: 1.6px solid var(--accent); border-radius: var(--w2); }
+  .ct-price-go:hover { background: var(--accent); border-color: var(--accent); transform: rotate(-1.5deg); }
+  .ct-price-tbl th { font-family: var(--font-hand); font-size: 17px; font-weight: 400; color: var(--text-muted); border-bottom: 1.6px dashed var(--line); }
+  .ct-price-tbl td { border-bottom: 1px dashed var(--pencil); }
+  .ct-price-tbl td.n { font-size: 16px; }
+  .ct-price-tbl tr.low td { background: transparent; }
+  .ct-price-tbl tr.low td:first-child { box-shadow: none; }
+  .ct-price-tbl tr.low .unit { outline: 1.6px solid var(--rose-d); outline-offset: -3px; border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%; }
+  .ct-hq { border: 1.6px solid var(--rose-d); border-radius: var(--w2); color: var(--rose-d); }
+  .ct-price-sk-row i { background: transparent; border: 1.4px dashed var(--pencil); border-radius: var(--w2); height: 14px; }
 }
