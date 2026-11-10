@@ -2374,3 +2374,22 @@ html[data-motion='reduced'] .mg-new, html[data-motion='reduced'] .mg-new i { ani
 
 /* 位置編輯:有未套用變動就關閉時的確認(D-316) */
 .mg-discard { flex: 0 0 auto; padding: 0 20px 10px; }
+
+/* D-347 用途面板 + 只看的相關數量徽章。顏色一律讀 token;主題只覆寫外形 */
+.ct-rbadge { min-width: 20px; height: 20px; margin-left: 6px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; vertical-align: 1px; border-radius: var(--r-pill); background: var(--amber); color: var(--on-amber); font-size: 12px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.ct-focus-chip.on .ct-rbadge { box-shadow: 0 0 0 2px color-mix(in srgb, var(--on-accent) 55%, transparent); }
+.ct-relstrip { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 14px; border-bottom: var(--bw) solid var(--border); background: color-mix(in srgb, var(--amber) 7%, transparent); font-size: 13px; color: var(--text-muted); }
+.ct-relstrip b { color: var(--text); }
+.ct-relstrip-back { margin-left: auto; height: 32px; padding: 0 12px; border: var(--bw) solid var(--border-strong); border-radius: calc(8px * var(--rs)); background: transparent; color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+.ct-relstrip-back:hover { border-color: var(--accent); color: var(--accent); }
+.ct-relstrip-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ct-usage-sum { display: flex; gap: 6px; flex-wrap: wrap; align-items: baseline; color: var(--text-muted); font-size: 13px; }
+.ct-usage-sum b { color: var(--accent); font-size: 16px; font-variant-numeric: tabular-nums; }
+.ct-usage-item .ct-tree-name { flex: 1 1 auto; }
+.ct-usage-lay { height: 20px; padding: 0 8px; display: inline-flex; align-items: center; font-size: 11.5px; color: var(--text-dim); border: var(--bw) solid var(--border-strong); border-radius: var(--r-pill); white-space: nowrap; }
+.ct-usage-item .ct-covered-tag { margin-left: 0; }
+.ct-usage-item.cov .ct-tree-qty { text-decoration: line-through; color: var(--text-dim); }
+.ct-usage-item.cov .ct-tree-name { opacity: .6; }
+.ct-usage-via { min-height: 30px; gap: 8px; color: var(--text-muted); background: transparent; padding: 0 4px; }
+.ct-usage-via app-icon { color: var(--text-dim); flex: none; }
+.ct-usage-via .ct-tree-name { font-size: 13px; }

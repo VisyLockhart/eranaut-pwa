@@ -375,6 +375,14 @@ describe('從航線帶入配置(D-262)', () => {
       expect(tray.querySelectorAll('.ct-cell.dim').length).toBeGreaterThan(0);
       cells[0]!.click();
       f.detectChanges();
+      // 原料再點一次:有用途就開用途面板(D-347),取消追蹤改用橫幅 ✕
+      if (vm.pinUsage()) {
+        expect(vm.usageOpen()).toBe(true);
+        vm.closeUsage();
+        f.detectChanges();
+        el.querySelector<HTMLButtonElement>('.ct-trace .ct-x')!.click();
+        f.detectChanges();
+      }
       expect(vm.pin()).toBeNull();
       // 收合
       tray.querySelector<HTMLButtonElement>('.ct-tray-head')!.click();

@@ -1,6 +1,6 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnDestroy, afterNextRender, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, OnDestroy, afterNextRender, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CraftLink, pageScroller } from '../core/craft-link';
 import { Layout } from '../core/layout';
@@ -129,6 +129,9 @@ export class CraftPage implements OnDestroy {
     } else if (this.vm.treeFor()) {
       this.vm.closeTree();
       ev.preventDefault();
+    } else if (this.vm.usageOpen()) {
+      this.vm.closeUsage();
+      ev.preventDefault();
     } else if (this.vm.focusOn() && !(ev.target as HTMLElement | null)?.closest?.('input, textarea, select')) {
       // 只看(D-345):Esc 返回三欄;在庫存輸入框裡按 Esc 不算
       this.exitFocus();
@@ -143,7 +146,10 @@ export class CraftPage implements OnDestroy {
     this.downOnOverlay = ev.target === ev.currentTarget;
   }
   protected overlayClick(ev: Event): void {
-    if (this.downOnOverlay && ev.target === ev.currentTarget) this.vm.closeTree();
+    if (this.downOnOverlay && ev.target === ev.currentTarget) {
+      this.vm.closeTree();
+      this.vm.closeUsage();
+    }
     this.downOnOverlay = false;
   }
   /** 配方樹視窗的「取消追蹤」:關視窗並取消追蹤,捲動位置還原 */
@@ -152,6 +158,7 @@ export class CraftPage implements OnDestroy {
     const p = this.vm.pin();
     const k = this.vm.pinKind();
     this.vm.closeTree();
+    this.vm.closeUsage();
     if (p === null || k === null) return;
     this.vm.togglePin(p, k);
     this.afterPinChange(sp);
@@ -176,6 +183,15 @@ export class CraftPage implements OnDestroy {
     this.vm.exitFocus();
     afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(`.ct-col-btn[data-tab="${tab}"]`)?.focus(), { injector: this.injector });
   }
+  /** 只看中、追蹤項不在目前這欄:上方細條「回到 xx」(D-347) */
+  protected readonly relBack = computed(() => {
+    const k = this.vm.pinKind();
+    const p = this.vm.pin();
+    if (!this.vm.focusOn() || !p || !k) return null;
+    const home: CraftTab = k === 'final' ? 'finals' : k === 'direct' ? 'directs' : 'bases';
+    const cur = this.vm.view().tab;
+    return cur === home ? null : { name: p, home, n: this.vm.relCounts()[cur] };
+  });
   protected setTab(t: CraftTab): void {
     this.vm.patchView({ tab: t });
   }
@@ -187,6 +203,11 @@ export class CraftPage implements OnDestroy {
   protected pinRow(r: CalcRow, ev: Event): void {
     if (this.vm.isPinned(r) && this.vm.hasTree(r.name)) {
       this.vm.openTree(r.name);
+      return;
+    }
+    // 原料(沒有配方樹)再點一次:開用途面板(D-347);沒有任何用途才維持取消追蹤
+    if (this.vm.hasUsage(r)) {
+      this.vm.openUsage();
       return;
     }
     const was = this.vm.pin() !== null;
@@ -226,7 +247,8 @@ export class CraftPage implements OnDestroy {
     if (this.vm.covered(r)) parts.push('covered');
     if (this.vm.isPinned(r)) parts.push('pin');
     else if (this.vm.focusOn()) {
-      // 只看:不標關聯、不變暗(另外兩欄看不到,整欄變灰沒有意義)
+      // 只看:相關列只標色、不變暗(另外兩欄看不到,整欄變灰沒有意義;D-347)
+      if (this.vm.related().has(rowId(r))) parts.push('rel');
     } else if (this.vm.related().has(rowId(r))) parts.push('rel');
     else if (this.vm.pin()) parts.push('dim');
     if (this.vm.view().stockMode && missing(r, this.vm.stock()) === 0) parts.push('done');

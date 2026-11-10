@@ -5,6 +5,7 @@ import { Toast } from '../core/toast';
 import { CRAFT_KEY_SEL as KEY_SEL, CRAFT_KEY_STOCK as KEY_STOCK, CRAFT_KEY_VIEW as KEY_VIEW } from './craft-keys';
 import { calculate, type CalcResult, type CalcRow, type RowKind, type Selection } from './core/craft-calc';
 import { buildTree, hasTree, type TreeNode } from './core/craft-tree';
+import { usageOf, type UsageView } from './core/craft-usage';
 import { finalsProgress } from './core/craft-stock';
 import { sourceTags, type SrcTag } from './core/craft-source';
 import { CRAFT_DATA, ITEM_IDS, SLOT_KEYS } from './core/data';
@@ -59,6 +60,8 @@ export class CraftVm {
   });
   /** 開著查價視窗的素材名稱(D-343);null = 關。放這裡,換版面重建頁面時不丟 */
   readonly priceFor = signal<string | null>(null);
+  /** 用途面板(D-347)是否開著;放這裡,換版面重建頁面時不丟 */
+  readonly usageOpen = signal(false);
   /** 追蹤橫幅的來源詳情是否展開(桌機在橫幅下方,手機是底部面板) */
   readonly srcOpen = signal(false);
   /** 追蹤中素材的其他取得管道(商人、部族、兌換…);需求數量用來換算比值類的通貨數 */
@@ -69,6 +72,23 @@ export class CraftVm {
     const r = this.result();
     const row = (k === 'final' ? r.finals : k === 'direct' ? r.directs : r.bases).find((x) => x.name === p);
     return row ? sourceTags(p, row.need) : [];
+  });
+  /**
+   * 追蹤中素材的用途(由下往上:哪些交納 / 直接素材用到它,D-347)。
+   * 只給沒有配方樹的素材(原料);有配方樹的品項再點一次開的是配方樹。沒有任何用途 = null。
+   */
+  readonly pinUsage = computed<UsageView | null>(() => {
+    const p = this.pin();
+    if (!p || hasTree(p)) return null;
+    const u = usageOf(p, this.fullResult(), this.result());
+    return u.items.length > 0 ? u : null;
+  });
+  /** 各欄與追蹤項相關的列數(只看的快速切換徽章用,D-347);沒追蹤 = 全 0 */
+  readonly relCounts = computed<Record<CraftTab, number>>(() => {
+    const rel = this.related();
+    const r = this.result();
+    const n = (rows: CalcRow[]) => rows.filter((x) => rel.has(rowId(x))).length;
+    return { finals: n(r.finals), directs: n(r.directs), bases: n(r.bases) };
   });
   /** 收合的分組,key = `${tab}:${group}` */
   readonly collapsed = signal<ReadonlySet<string>>(new Set());
@@ -97,11 +117,13 @@ export class CraftVm {
   /** 三層清單:記錄庫存開啟時,下層的需求會依上層庫存扣除(D-258);關閉時不看庫存 */
   readonly result = computed<CalcResult>(() => calculate(this.selections(), { expandFrames: this.view().expandedFrames }, CRAFT_DATA, this.view().stockMode ? this.stock() : {}));
 
+  /** 不看庫存的完整結果:D-346 認出被扣成 0 的下游列、D-347 的用途面板都用它;需要時才算 */
+  private readonly fullResult = computed<CalcResult>(() => calculate(this.selections(), { expandFrames: this.view().expandedFrames }, CRAFT_DATA, {}));
   /** 不看庫存的完整需求(rowId → 需求):用來認出「上層已備齊,需求被扣成 0」的下游列(D-346);沒開記錄庫存時不算 */
   private readonly fullNeed = computed(() => {
     const m = new Map<string, number>();
     if (!this.view().stockMode) return m;
-    const full = calculate(this.selections(), { expandFrames: this.view().expandedFrames }, CRAFT_DATA, {});
+    const full = this.fullResult();
     for (const r of [...full.directs, ...full.bases]) m.set(rowId(r), r.need);
     return m;
   });
@@ -299,6 +321,17 @@ export class CraftVm {
     this.treeFor.set(null);
   }
 
+  /** 這一列(必須是追蹤中的)能不能開用途面板:原料且有用途 */
+  hasUsage(r: { kind: RowKind; name: string }): boolean {
+    return this.isPinned(r) && this.pinUsage() !== null;
+  }
+  openUsage(): void {
+    if (this.pinUsage()) this.usageOpen.set(true);
+  }
+  closeUsage(): void {
+    this.usageOpen.set(false);
+  }
+
   /** 這個品項有沒有物品 ID 可查價(骨架不是物品,沒有) */
   hasPrice(name: string): boolean {
     return Object.hasOwn(ITEM_IDS, name);
@@ -316,6 +349,7 @@ export class CraftVm {
 
   togglePin(name: string, kind: RowKind): void {
     this.srcOpen.set(false);
+    this.usageOpen.set(false);
     if (this.pin() === name && this.pinKind() === kind) {
       this.pin.set(null);
       this.pinKind.set(null);

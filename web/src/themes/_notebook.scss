@@ -225,6 +225,10 @@ html[data-theme='notebook'] {
   .ct-focus-tag { border-color: var(--line); color: var(--text); background: var(--bg-elevated); border-radius: var(--w2); }
   .ct-focus-chip { border-radius: var(--w2); border-color: var(--line); background: var(--bg-elevated); }
   .ct-focus-chip.on { background: var(--sage-p); border-color: var(--accent); color: var(--accent); }
+  .ct-rbadge { background: var(--rose-p); color: var(--amber); border: 1.4px solid var(--line); border-radius: 12px 4px 11px 5px / 5px 11px 4px 12px; }
+  .ct-relstrip { border-bottom: 1.6px dashed var(--sage); background: color-mix(in srgb, var(--rose-p) 55%, transparent); }
+  .ct-relstrip-back { border-radius: var(--w2); border-color: var(--line); }
+  .ct-usage-lay { border-radius: var(--w2); border-color: var(--line); }
   .ct-focus-body { column-rule: 1.6px dashed var(--sage); }
   .ct-arrow { color: var(--text-dim); }
   .ct-group-head { color: var(--accent); font-weight: 700; font-size: 14px; border-radius: 0; border-bottom: 1.5px dashed var(--sage); }

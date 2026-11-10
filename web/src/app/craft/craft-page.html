@@ -44,10 +44,13 @@
               <div class="ct-focus-title"><span class="ct-focus-tag">只看</span><b>{{ tabLabel[ft] }}</b><span class="ct-count">{{ vm.counts()[ft] }}</span></div>
               <div class="ct-focus-sw" role="group" aria-label="切換清單">
                 @for (t of tabs; track t) {
-                  <button type="button" class="ct-focus-chip" [class.on]="t === ft" [attr.aria-pressed]="t === ft" [attr.aria-label]="'只看' + tabLabel[t]" (click)="vm.patchView({ tab: t })">{{ tabShort[t] }} {{ vm.counts()[t] }}</button>
+                  <button type="button" class="ct-focus-chip" [class.on]="t === ft" [attr.aria-pressed]="t === ft" [attr.aria-label]="'只看' + tabLabel[t] + (vm.relCounts()[t] > 0 ? ',' + vm.relCounts()[t] + ' 項與 ' + vm.pin() + ' 相關' : '')" (click)="vm.patchView({ tab: t })">{{ tabShort[t] }} {{ vm.counts()[t] }}@if (vm.relCounts()[t] > 0) {<span class="ct-rbadge">{{ vm.relCounts()[t] }}</span>}</button>
                 }
               </div>
             </div>
+            @if (relBack(); as rb) {
+              <div class="ct-relstrip"><span>與</span><b>{{ rb.name }}</b><span>相關的 {{ rb.n }} 項已標色(追蹤中)</span><button type="button" class="ct-relstrip-back" (click)="setTab(rb.home)">回到 {{ tabLabel[rb.home] }}</button></div>
+            }
             <div class="ct-focus-body"><ng-container *ngTemplateOutlet="list; context: { tab: ft }" /></div>
           </section>
         } @else {
@@ -233,6 +236,9 @@
           }
         </div>
       }
+      @if (vm.pinUsage()) {
+        <button type="button" class="ct-price-go ct-usage-go" (click)="vm.openUsage()" [attr.aria-label]="p + ' 用途'"><app-icon name="usage" [size]="16" />用途</button>
+      }
       @if (vm.pinFrame(); as pf) {
         <button type="button" class="ct-frame-go" [class.on]="pf.expanded" (click)="vm.toggleFrame(pf.name)" [attr.aria-label]="(pf.expanded ? '收回 ' : '展開 ') + pf.name">
           <app-icon [name]="pf.expanded ? 'frameFold' : 'frameOpen'" [size]="16" />{{ pf.expanded ? '收回骨架' : '展開骨架' }}
@@ -324,10 +330,12 @@
       }
       @if (g.trace || !g.group || !vm.isCollapsed(tab, g.group)) {
         @for (r of g.rows; track r.name) {
-          <div class="ct-row" [class]="'ct-row ' + rowState(r) + (r.expanded ? ' ct-expanded' : '') + (tab === 'finals' && vm.result().frameAdd[r.name] ? ' ct-fadd' : '')" [tip]="vm.isPinned(r) && vm.hasTree(r.name) ? '再點一次查看配方' : null" role="button" tabindex="0" (click)="pinRow(r, $event)" (keydown.enter)="pinRow(r, $event)" (keydown.space)="$event.preventDefault(); pinRow(r, $event)">
+          <div class="ct-row" [class]="'ct-row ' + rowState(r) + (r.expanded ? ' ct-expanded' : '') + (tab === 'finals' && vm.result().frameAdd[r.name] ? ' ct-fadd' : '')" [tip]="vm.isPinned(r) && vm.hasTree(r.name) ? '再點一次查看配方' : vm.hasUsage(r) ? '再點一次查看用途' : null" role="button" tabindex="0" (click)="pinRow(r, $event)" (keydown.enter)="pinRow(r, $event)" (keydown.space)="$event.preventDefault(); pinRow(r, $event)">
             <span class="ct-name">{{ r.name }}@if (vm.covered(r)) {<span class="ct-covered-tag">上層已備齊</span>}@if (r.frame) {<button type="button" class="ct-frame-cap" [class.on]="r.expanded" (click)="frameToggle(r.name, $event)" (keydown)="stop($event)" [tip]="r.expanded ? '收回骨架' : '展開骨架'" [attr.aria-label]="(r.expanded ? '收回 ' : '展開 ') + r.name"><app-icon [name]="r.expanded ? 'frameFold' : 'frameOpen'" [size]="14" />@if (layout.isDesktop()) {<span>{{ r.expanded ? '收回' : '展開' }}</span>}</button>}@if (tab === 'finals' && vm.result().frameAdd[r.name]; as fa) {<span class="ct-fadd-tag" [tip]="'展開骨架增加 ' + fa" [attr.aria-label]="'展開骨架增加 ' + fa"><app-icon name="frameOpen" [size]="11" />+{{ fa }}</span>}@let tg = tagsOf(r);@if (tg.length > 0) {<span class="ct-src-cue" [tip]="srcTip(tg)" [attr.aria-label]="srcAria(tg)"><app-icon name="srcBag" [size]="layout.isDesktop() ? 15 : 17" />@if (tg.length > 1) {<b>{{ tg.length }}</b>}</span>}</span>
             @if (vm.isPinned(r) && vm.hasTree(r.name)) {
               <app-icon class="ct-tree-cue" name="tree" [size]="16" />
+            } @else if (vm.hasUsage(r)) {
+              <app-icon class="ct-tree-cue" name="usage" [size]="16" />
             }
             @if (vm.view().stockMode && !r.expanded) {
               @if (vm.covered(r)) {
@@ -364,6 +372,34 @@
       <div class="rt-dlg-foot"><div class="rt-save-actions">
         <button type="button" class="rt-save-btn" (click)="unpinFromTree()">取消追蹤</button>
         <button type="button" class="rt-save-btn primary" (click)="vm.closeTree()">關閉</button>
+      </div></div>
+    </div>
+  </div>
+}
+
+@if (vm.usageOpen() && vm.pinUsage(); as u) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
+    <div class="modal-box rt-dlg ct-tree-dlg ct-usage-dlg" role="dialog" aria-modal="true" aria-labelledby="ct-usage-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <div class="rt-dlg-head">
+        <div class="modal-title" id="ct-usage-title">{{ u.name }}<span class="ct-focus-tag">用途</span></div>
+        <button type="button" class="modal-close" (click)="vm.closeUsage()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+      </div>
+      <div class="rt-dlg-body ct-tree-body">
+        <div class="ct-usage-sum">目前配置共需 <b>{{ u.total }}</b> 個,用在 {{ u.items.length }} 處</div>
+        <ul class="ct-tree-list">
+          @for (it of u.items; track it.layer + it.name) {
+            <li>
+              <div class="ct-tree-item ct-usage-item" [class.cov]="it.covered"><b class="ct-tree-qty">{{ it.qty }}</b><span class="ct-tree-name">{{ it.name }}</span><span class="ct-usage-lay">{{ it.layerLabel }}</span>@if (it.covered) {<span class="ct-covered-tag">已備齊</span>}</div>
+              @if (it.via.length > 0) {
+                <div class="ct-tree-sub"><div class="ct-tree-item ct-usage-via"><app-icon name="usage" [size]="13" /><span class="ct-tree-name">用於 {{ it.via.join('、') }}</span></div></div>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+      <div class="rt-dlg-foot"><div class="rt-save-actions">
+        <button type="button" class="rt-save-btn" (click)="unpinFromTree()">取消追蹤</button>
+        <button type="button" class="rt-save-btn primary" (click)="vm.closeUsage()">關閉</button>
       </div></div>
     </div>
   </div>

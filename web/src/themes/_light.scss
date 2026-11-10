@@ -70,6 +70,9 @@ html[data-theme='light'] {
   .ct-focus-tag { font-family: var(--font-cap); font-size: 11px; border-color: var(--line); color: var(--line); background: var(--surface-avatar); }
   .ct-focus-chip.on { background: var(--surface-avatar); color: var(--line); border-color: var(--line); }
   .ct-focus-chip, .ct-focus-back { border-width: 2px; }
+  .ct-rbadge { border: 2px solid var(--line); background: var(--bg-elevated); color: var(--amber); }
+  .ct-relstrip-back, .ct-usage-lay { border-width: 2px; }
+  .ct-usage-lay { font-family: var(--font-cap); font-size: 10.5px; }
   .ct-row.pin .ct-src-cue, .ct-src-chip:hover, .ct-src-chip.on { border-color: var(--accent); }
   .rt-src-lock { border-style: dashed; }
   .rt-wschip.unset, .rt-sb-row.unset { border-style: dashed; }

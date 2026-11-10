@@ -253,6 +253,8 @@ html[data-theme='dark'] {
   /* D-343 素材查價:金屬金按鈕、細金線表格、總計用亮白(單價已經是金色);骨架金色掃光 */
   .ct-price-go { background: linear-gradient(var(--surface-raise), var(--bg-elevated)); border-color: var(--gold); color: var(--gold-b); font-family: var(--font-head); letter-spacing: 0.08em; }
   .ct-price-go:hover { color: var(--gold-b); box-shadow: 0 0 10px var(--gl); background: linear-gradient(var(--surface-raise), var(--bg-elevated)); }
+  .ct-relstrip { border-bottom-color: var(--gold-d); }
+  .ct-usage-sum b { color: var(--gold-b); }
   .ct-price-tbl th { font-family: var(--font-head); letter-spacing: 0.08em; color: var(--gold); border-bottom: 1px solid var(--gold-d); }
   .ct-price-tbl td { border-bottom: 1px solid var(--gl); }
   .ct-price-tbl .tot { color: var(--text); }
