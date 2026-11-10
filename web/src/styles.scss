@@ -1226,9 +1226,12 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-focus-chip { height: 36px; padding: 0 12px; border: var(--bw) solid var(--border-strong); border-radius: calc(8px * var(--rs)); background: transparent; color: var(--text-muted); font: inherit; font-size: 13px; cursor: pointer; }
 .ct-focus-chip:hover { border-color: var(--accent); color: var(--accent); }
 .ct-focus-chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
-.ct-focus-body { column-count: 3; column-gap: 0; column-rule: var(--bw) solid var(--border); padding: 8px 0 10px; }
+.ct-focus-body { columns: 3 280px; column-gap: 0; column-rule: var(--bw) solid var(--border); padding: 8px 0 10px; }
 .ct-focus-body > .ct-group, .ct-focus-body > .ct-tray { break-inside: avoid; padding-left: 12px; padding-right: 12px; }
 .ct-focus-body > .ct-group + .ct-group { margin-top: 0; }
+/* 不分類(只有一個沒有名稱的組)時整組必須能被切開,否則全部擠在第一欄;改成每一列不被切開 */
+.ct-focus-body > .ct-group.flat { break-inside: auto; }
+.ct-focus-body .ct-row { break-inside: avoid; }
 .ct-focus-body > .ct-none { column-span: all; }
 .ct-group + .ct-group { margin-top: 6px; }
 .ct-seg { display: inline-flex; border: var(--bw) solid var(--border-strong); border-radius: calc(10px * var(--rs)); overflow: hidden; background: var(--bg-elevated); }

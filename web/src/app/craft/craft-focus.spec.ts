@@ -44,6 +44,19 @@ describe('只看模式(D-345)', () => {
     expect(el.querySelectorAll('.ct-col').length).toBe(3);
   });
 
+  it('關閉「分類」時整份清單是一個沒有名稱的組,標為 flat 才能被切成多欄', () => {
+    const { f, el, vm } = mount(true);
+    vm.setGrouped(false);
+    vm.enterFocus('bases');
+    f.detectChanges();
+    const groups = el.querySelectorAll('.ct-focus-body > .ct-group');
+    expect(groups.length).toBe(1);
+    expect(groups[0]!.classList.contains('flat')).toBe(true);
+    vm.setGrouped(true);
+    f.detectChanges();
+    expect(el.querySelectorAll('.ct-focus-body > .ct-group.flat').length).toBe(0);
+  });
+
   it('標題列的快速切換:換成另一欄,不必先返回', () => {
     const { f, el, vm } = mount(true);
     vm.enterFocus('bases');

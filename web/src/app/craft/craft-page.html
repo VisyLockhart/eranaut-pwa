@@ -313,7 +313,7 @@
 <ng-template #list let-tab="tab">
   <ng-container *ngTemplateOutlet="tray; context: { tab: tab }" />
   @for (g of groupsOf(tab); track g.group) {
-    <div class="ct-group" [class.trace]="g.trace">
+    <div class="ct-group" [class.trace]="g.trace" [class.flat]="!g.group">
       @if (g.trace) {
         <div class="ct-group-head ct-trace-head"><span>{{ g.group }}</span><span class="ct-count">{{ g.rows.length }}</span></div>
       } @else if (g.group) {
