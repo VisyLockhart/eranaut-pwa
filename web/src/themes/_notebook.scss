@@ -554,7 +554,8 @@ html[data-theme='notebook'] {
   .ct-price-tbl td.n { font-size: 16px; }
   .ct-price-tbl tr.low td { background: transparent; }
   .ct-price-tbl tr.low td:first-child { box-shadow: none; }
-  .ct-price-tbl tr.low .unit { outline: 1.6px solid var(--rose-d); outline-offset: -3px; border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%; }
+  /* 最低價:螢光筆在數字下半部劃過一筆(芥末黃,稍微歪斜) */
+  .ct-price-tbl tr.low .ct-price-num { display: inline-block; padding: 0 5px; margin: 0 -5px 0 0; border-radius: 3px 9px 4px 8px; background: linear-gradient(176deg, transparent 30%, color-mix(in srgb, var(--mus) 78%, transparent) 30%, color-mix(in srgb, var(--mus) 62%, transparent) 94%, transparent 94%); }
   .ct-hq { border: 1.6px solid var(--rose-d); border-radius: var(--w2); color: var(--rose-d); }
   .ct-price-sk-row i { background: transparent; border: 1.4px dashed var(--pencil); border-radius: var(--w2); height: 14px; }
 }

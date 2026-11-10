@@ -76,16 +76,19 @@ describe('素材查價(D-343)', () => {
       await settle(f);
       expect(dlg.querySelector('.ct-price-sk')).toBeNull();
       const heads = [...dlg.querySelectorAll('th')].map((h) => h.textContent);
-      expect(heads).toEqual(['單價', '數量', '總計', '雇員', '服務器']);
+      expect(heads).toEqual(['單價', '品質', '數量', '總計', '雇員', '服務器']); // 第 2 欄標題只給讀屏,畫面上是空白
+      expect(dlg.querySelector('th.hq .sr-only')).toBeTruthy();
       const rows = dlg.querySelectorAll('tbody tr');
       expect(rows.length).toBe(2);
       expect(rows[0]!.classList.contains('low')).toBe(true);
       expect(rows[1]!.classList.contains('low')).toBe(false);
       const cells = [...rows[0]!.querySelectorAll('td')].map((c) => c.textContent!.trim());
-      expect(cells).toEqual(['118HQ', '90', '10,620', '芳吉', '巴哈姆特']);
+      expect(cells).toEqual(['118', 'HQ', '90', '10,620', '芳吉', '巴哈姆特']);
+      expect(rows[0]!.querySelector('td.unit .ct-hq')).toBeNull(); // HQ 不接在單價後面
       expect(rows[0]!.querySelector('.ct-hq')).toBeTruthy();
       expect(rows[1]!.querySelector('.ct-hq')).toBeNull();
-      expect(rows[1]!.querySelectorAll('td')[2]!.textContent).toBe('12,345,678');
+      expect(rows[1]!.querySelectorAll('td')[3]!.textContent).toBe('12,345,678');
+      expect(rows[1]!.querySelector('td.hq')!.textContent!.trim()).toBe('');
       const info = dlg.querySelector('.ct-price-info')!.textContent!;
       expect(info).toMatch(/查詢於 \d\d:\d\d/);
       expect(info).toContain('更新於 5 分鐘前');

@@ -1300,10 +1300,11 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .modal-box.rt-dlg.ct-price-dlg { max-width: 640px; }
 .ct-price-body { padding-bottom: 12px; gap: 0; }
 .ct-price-tbl { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; }
-.ct-price-tbl th:nth-child(1) { width: 112px; }
-.ct-price-tbl th:nth-child(2) { width: 72px; }
-.ct-price-tbl th:nth-child(3) { width: 116px; }
-.ct-price-tbl th:nth-child(5) { width: 96px; }
+.ct-price-tbl th:nth-child(1) { width: 96px; }
+.ct-price-tbl th:nth-child(2) { width: 44px; }
+.ct-price-tbl th:nth-child(3) { width: 64px; }
+.ct-price-tbl th:nth-child(4) { width: 116px; }
+.ct-price-tbl th:nth-child(6) { width: 96px; }
 .ct-price-tbl th { padding: 0 6px 6px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: var(--bw) solid var(--border-strong); white-space: nowrap; }
 .ct-price-tbl td { height: 40px; padding: 0 6px; border-bottom: var(--bw) solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ct-price-tbl .n { text-align: right; font-variant-numeric: tabular-nums; }
@@ -1312,14 +1313,16 @@ app-route-target > .rt-block, app-route-target > .rt-dirty { margin-top: 12px; }
 .ct-price-tbl .tot { color: var(--amber-text); }
 .ct-price-tbl .wld { color: var(--text-muted); }
 .ct-price-tbl tr.low td { background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.ct-hq { display: inline-block; margin-left: 5px; padding: 0 4px; border: 1px solid currentColor; border-radius: calc(3px * var(--rs)); color: var(--amber-text); font: 700 10px/16px var(--font-ui); font-style: normal; letter-spacing: 0.04em; vertical-align: middle; }
+.ct-hq { display: inline-block; padding: 0 4px; border: 1px solid currentColor; border-radius: calc(3px * var(--rs)); color: var(--amber-text); font: 700 10px/16px var(--font-ui); font-style: normal; letter-spacing: 0.04em; vertical-align: middle; }
 .ct-price-sk { display: flex; flex-direction: column; }
-.ct-price-sk-row { display: grid; grid-template-columns: 112px 72px 116px minmax(0, 1fr) 96px; gap: 0 12px; align-items: center; height: 40px; padding: 0 6px; border-bottom: var(--bw) solid var(--border); }
+.ct-price-sk-row { display: grid; grid-template-columns: 96px 44px 64px 116px minmax(0, 1fr) 96px; gap: 0 12px; align-items: center; height: 40px; padding: 0 6px; border-bottom: var(--bw) solid var(--border); }
 .ct-price-sk-row i { display: block; width: auto; height: 12px; border-radius: calc(4px * var(--rs)); background: color-mix(in srgb, var(--tone) 16%, transparent); animation: ct-price-pulse 1.3s ease-in-out infinite; }
-.ct-price-sk-row i:nth-child(2) { animation-delay: 0.08s; }
-.ct-price-sk-row i:nth-child(3) { animation-delay: 0.16s; }
-.ct-price-sk-row i:nth-child(4) { animation-delay: 0.24s; }
-.ct-price-sk-row i:nth-child(5) { animation-delay: 0.32s; }
+.ct-price-sk-row i:nth-child(2) { visibility: hidden; }
+.ct-price-tbl td.hq, .ct-price-tbl th.hq { text-align: left; padding-left: 2px; }
+.ct-price-sk-row i:nth-child(3) { animation-delay: 0.08s; }
+.ct-price-sk-row i:nth-child(4) { animation-delay: 0.16s; }
+.ct-price-sk-row i:nth-child(5) { animation-delay: 0.24s; }
+.ct-price-sk-row i:nth-child(6) { animation-delay: 0.32s; }
 @keyframes ct-price-pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ct-price-sk-row i { animation: none; } }
 html[data-motion='reduced'] .ct-price-sk-row i { animation: none; }
@@ -1336,11 +1339,12 @@ html[data-motion='reduced'] .ct-price-sk-row i { animation: none; }
 .rt-sheet .ct-price-tbl { font-size: 13px; }
 .rt-sheet .ct-price-tbl th { padding: 0 4px 6px; }
 .rt-sheet .ct-price-tbl td { height: 38px; padding: 0 4px; }
-.rt-sheet .ct-price-tbl th:nth-child(1) { width: 78px; }
+.rt-sheet .ct-price-tbl th:nth-child(1) { width: 62px; }
 .rt-sheet .ct-price-tbl th:nth-child(2) { width: 40px; }
-.rt-sheet .ct-price-tbl th:nth-child(3) { width: 74px; }
-.rt-sheet .ct-price-tbl th:nth-child(5) { width: 68px; }
-.rt-sheet .ct-price-sk-row { grid-template-columns: 78px 40px 74px minmax(0, 1fr) 68px; gap: 0 8px; height: 38px; padding: 0 4px; }
+.rt-sheet .ct-price-tbl th:nth-child(3) { width: 34px; }
+.rt-sheet .ct-price-tbl th:nth-child(4) { width: 70px; }
+.rt-sheet .ct-price-tbl th:nth-child(6) { width: 66px; }
+.rt-sheet .ct-price-sk-row { grid-template-columns: 62px 40px 34px 70px minmax(0, 1fr) 66px; gap: 0 8px; height: 38px; padding: 0 4px; }
 .ct-sheet-overlay { position: fixed; inset: 0; z-index: 60; background: color-mix(in srgb, var(--scrim) 72%, transparent); display: flex; align-items: flex-end; justify-content: center; }
 .ct-sheet { width: 100%; max-width: 480px; background: var(--bg-elevated); border: var(--bw) solid var(--border-strong); border-bottom: none; border-radius: calc(16px * var(--rs)) calc(16px * var(--rs)) 0 0; padding: 16px 18px calc(20px + env(safe-area-inset-bottom) / var(--vu-div)); box-shadow: 0 -12px 32px color-mix(in srgb, var(--shade) 40%, transparent); display: flex; flex-direction: column; gap: 14px; }
 .ct-sheet-head { display: flex; align-items: center; justify-content: space-between; font-size: 16px; }

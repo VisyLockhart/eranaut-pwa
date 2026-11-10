@@ -10,19 +10,20 @@
         @if (s.kind === 'loading') {
           <div class="ct-price-sk" role="status" aria-label="查價中" aria-busy="true">
             @for (i of skeleton; track i) {
-              <div class="ct-price-sk-row"><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="ct-price-sk-row"><i></i><i></i><i></i><i></i><i></i><i></i></div>
             }
           </div>
         } @else if (s.kind === 'ok') {
           @if (s.quote.listings.length > 0) {
             <table class="ct-price-tbl">
               <thead>
-                <tr><th scope="col" class="n">單價</th><th scope="col" class="n">數量</th><th scope="col" class="n">總計</th><th scope="col">雇員</th><th scope="col">服務器</th></tr>
+                <tr><th scope="col" class="n">單價</th><th scope="col" class="hq"><span class="sr-only">品質</span></th><th scope="col" class="n">數量</th><th scope="col" class="n">總計</th><th scope="col">雇員</th><th scope="col">服務器</th></tr>
               </thead>
               <tbody>
                 @for (l of s.quote.listings; track $index) {
                   <tr [class.low]="$first">
-                    <td class="n unit">{{ fmtGil(l.pricePerUnit) }}@if (l.hq) {<i class="ct-hq" aria-label="高品質">HQ</i>}</td>
+                    <td class="n unit"><span class="ct-price-num">{{ fmtGil(l.pricePerUnit) }}</span></td>
+                    <td class="hq">@if (l.hq) {<i class="ct-hq" aria-label="高品質">HQ</i>}</td>
                     <td class="n">{{ fmtGil(l.quantity) }}</td>
                     <td class="n tot">{{ fmtGil(l.total) }}</td>
                     <td class="ret">{{ l.retainerName }}</td>
