@@ -73,10 +73,11 @@
     <button type="button" class="ov-ibtn" (click)="wsVm.edit(ws.id)" aria-label="工坊設定"><app-icon name="settings" [size]="20" /></button>
   </div>
   @if (vm.reminder(); as r) {
-    @if (r.batched || r.lead) {
+    @if (r.batched || r.lead || r.quiet) {
       <div class="ov-m-rem">
         @if (r.batched) { <span class="ov-rem-chip">整批提醒</span> }
         @if (r.lead) { <span class="ov-rem-chip">提前 {{ r.lead }}</span> }
+        @if (r.quiet) { <span class="ov-rem-chip ov-rem-quiet">{{ r.quiet }}</span> }
       </div>
     }
   }

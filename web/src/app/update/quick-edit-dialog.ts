@@ -7,7 +7,7 @@ import { Layout } from '../core/layout';
 import { OverviewVm } from '../core/overview-vm';
 import { etaText, rowError, rowMinutes, rowWithRemaining, serverRowMessage, toSubmarineInput, type SubRow, type TimeField } from '../core/submarine-form';
 import { Toast } from '../core/toast';
-import { announceSkippedReminders } from '../core/update-vm';
+import { announceDeferredReminders, announceSkippedReminders } from '../core/update-vm';
 import { IconComponent } from '../ui/icon';
 import { LevelingField } from './leveling-field';
 import { BuildField } from './build-field';
@@ -335,6 +335,7 @@ export class QuickEditDialog {
       });
       this.toast.show(`已更新「${ws.name}」${r.name.trim() || `潛水艇 ${r.position}`}`);
       announceSkippedReminders(this.toast, ws.notify_batched, result.reminder_skipped_positions);
+      announceDeferredReminders(this.toast, result.reminder_deferred);
       this.finish();
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 404) {

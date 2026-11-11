@@ -2,14 +2,21 @@ import { newId } from './demo-id';
 import { HttpBackend, HttpErrorResponse, HttpResponse, type HttpEvent, type HttpRequest } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
+  ALL_DAYS,
+  DEFAULT_WINDOW_NAME,
   DISTRICTS,
   LIMITS,
   NOTIFY_LEAD_MINUTES,
   ROUTE_FILTER_SORTS,
   SERVERS,
   SUBMARINE_INPUT_STATUSES,
+  countSlots,
+  defaultWindowSlots,
+  isValidSlots,
   type FieldErrorCode,
   type NotifyLeadMinutes,
+  type NotifyWindowDto,
+  type NotifyWindowsDto,
   type ChartOcrResultDto,
   type OcrResultDto,
   type MaintenanceDto,
@@ -371,6 +378,11 @@ export class DemoBackend extends HttpBackend {
       }
     }
 
+    // 通知允許時段(D-348):和正式版同樣的端點與驗證,資料只存在瀏覽器
+    const win = /^\/api\/notify-windows(?:\/([^/]+))?$/.exec(path);
+    if (path === '/api/notify-window-prefs' && method === 'PUT') return this.windowPrefs(b);
+    if (win) return this.windows(method, win[1], b);
+
     // 展示版不提供推播:publicKey = null 會讓設定頁隱藏這一項
     if (path === '/api/push/config') return ok({ publicKey: null });
     if (path === '/api/push/subscriptions') return ok({ endpoints: [] });
@@ -379,6 +391,81 @@ export class DemoBackend extends HttpBackend {
   }
 
   /** 總覽與更新回應用:附上維修提醒(含目前配件簽名)與等級(返航後即時結算) */
+  // ---- 通知允許時段(D-348) ----
+
+  private windowsDto(): NotifyWindowsDto {
+    const w = this.store.windows;
+    return { on: w.on, scope: w.scope, limit: LIMITS.maxNotifyWindowsPerUser, groups: w.groups.map((g) => ({ ...g })), demo: true };
+  }
+
+  private windowPrefs(b: Record<string, unknown>): Reply {
+    const s = b['scope'] as Record<string, unknown> | undefined;
+    const fields: Record<string, string> = {};
+    if (b['on'] === undefined) fields['on'] = 'required';
+    else if (typeof b['on'] !== 'boolean') fields['on'] = 'invalid_type';
+    if (s === undefined || s === null) fields['scope'] = 'required';
+    else if (typeof s !== 'object' || (['dm', 'channel', 'push'] as const).some((k) => typeof s[k] !== 'boolean')) fields['scope'] = 'invalid_type';
+    if (Object.keys(fields).length > 0) return fail(400, { error: 'validation_failed', fields });
+    const w = this.store.windows;
+    w.on = b['on'] as boolean;
+    w.scope = { dm: s!['dm'] as boolean, channel: s!['channel'] as boolean, push: s!['push'] as boolean };
+    // 第一次開啟且沒有任何組:自動建立「白天」
+    if (w.on && w.groups.length === 0) w.groups.push({ id: newId(), name: DEFAULT_WINDOW_NAME, days: ALL_DAYS, slots: defaultWindowSlots(), enabled: true, position: 0 });
+    this.store.commit();
+    return ok(this.windowsDto());
+  }
+
+  private windows(method: string, id: string | undefined, b: Record<string, unknown>): Reply {
+    const w = this.store.windows;
+    if (id === undefined) {
+      if (method === 'GET') return ok(this.windowsDto());
+      if (method !== 'POST') return fail(404, { error: 'not_found' });
+    }
+    const group = id === undefined ? undefined : w.groups.find((g) => g.id === id);
+    if (id !== undefined && !group) return fail(404, { error: 'not_found' });
+
+    if (method === 'DELETE') {
+      w.groups.splice(w.groups.indexOf(group!), 1);
+      this.store.commit();
+      return ok();
+    }
+    if (method === 'PATCH') {
+      if (typeof b['enabled'] !== 'boolean') return fail(400, { error: 'validation_failed', fields: { enabled: b['enabled'] === undefined ? 'required' : 'invalid_type' } });
+      group!.enabled = b['enabled'];
+      this.store.commit();
+      return ok({ ...group });
+    }
+    // POST / PUT:驗證
+    const fields: Record<string, string> = {};
+    const name = typeof b['name'] === 'string' ? b['name'].trim() : '';
+    if (b['name'] === undefined) fields['name'] = 'required';
+    else if (typeof b['name'] !== 'string') fields['name'] = 'invalid_type';
+    else if (name === '') fields['name'] = 'required';
+    else if ([...name].length > LIMITS.notifyWindowName) fields['name'] = 'too_long';
+    const days = b['days'];
+    if (days === undefined) fields['days'] = 'required';
+    else if (typeof days !== 'number' || !Number.isInteger(days)) fields['days'] = 'invalid_type';
+    else if (days < 1 || days > 127) fields['days'] = 'invalid_value';
+    const slots = b['slots'];
+    if (slots === undefined) fields['slots'] = 'required';
+    else if (typeof slots !== 'string') fields['slots'] = 'invalid_type';
+    else if (!isValidSlots(slots)) fields['slots'] = 'invalid_value';
+    else if (countSlots(slots) === 0) fields['slots'] = 'empty_slots';
+    if (b['enabled'] !== undefined && typeof b['enabled'] !== 'boolean') fields['enabled'] = 'invalid_type';
+    if (Object.keys(fields).length > 0) return fail(400, { error: 'validation_failed', fields });
+    const value = { name, days: days as number, slots: slots as string, enabled: typeof b['enabled'] === 'boolean' ? b['enabled'] : true };
+    if (method === 'PUT') {
+      Object.assign(group!, value);
+      this.store.commit();
+      return ok({ ...group });
+    }
+    if (w.groups.length >= LIMITS.maxNotifyWindowsPerUser) return fail(409, { error: 'limit_reached' });
+    const created: NotifyWindowDto = { id: newId(), ...value, position: w.groups.reduce((m, g) => Math.max(m, g.position + 1), 0) };
+    w.groups.push(created);
+    this.store.commit();
+    return new Reply(201, { ...created });
+  }
+
   private decorate(s: SubmarineDto, now = Date.now()): SubmarineDto {
     const { upkeep: _u, progress: _p, build: _b, ...base } = s;
     void _u;
@@ -486,7 +573,7 @@ export class DemoBackend extends HttpBackend {
       }
     }
     this.store.commit();
-    return { submarines: updated.map((d) => this.decorate(d, now)), reminder_skipped_positions: skipped };
+    return { submarines: updated.map((d) => this.decorate(d, now)), reminder_skipped_positions: skipped, reminder_deferred: [] };
   }
 
   private findSub(id: string): { workshop: WorkshopWithSubmarines; sub: SubmarineDto } | null {
@@ -577,7 +664,7 @@ export class DemoBackend extends HttpBackend {
       const created: RouteSubDto = { ...(v as Omit<RouteSubDto, 'id' | 'favorite' | 'created_at' | 'updated_at'>), id: newId(), favorite: false, created_at: now, updated_at: now };
       this.store.routeSubs = [...list, created];
       this.store.commit();
-      return new Reply(201, created);
+      return new Reply(201, { ...created });
     }
     const target = list.find((r) => r.id === id);
     if (!target) return fail(404, { error: 'not_found' });
@@ -625,7 +712,7 @@ export class DemoBackend extends HttpBackend {
       const created = { id: newId(), name, spec: normalizeSpec(spec as Record<string, unknown>), favorite: false, created_at: now, updated_at: now } as RouteFilterDto;
       this.store.routeFilters = [...list, created];
       this.store.commit();
-      return new Reply(201, created);
+      return new Reply(201, { ...created });
     }
     const target = list.find((r) => r.id === id);
     if (!target) return fail(404, { error: 'not_found' });

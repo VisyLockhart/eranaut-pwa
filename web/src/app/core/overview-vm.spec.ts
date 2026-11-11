@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import type { SubmarineDto, WorkshopWithSubmarines } from '@eranaut/shared';
+import { slotsFromRanges, type SubmarineDto, type WorkshopWithSubmarines } from '@eranaut/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DataStore } from './data-store';
+import { NotifyWindowVm } from './notify-window-vm';
 import { DEFAULT_SORT, OverviewVm, SORT_KEY, STATS_OPEN_KEY, addressLine, upkeepText, wsInfo, wsMeta } from './overview-vm';
 
 const NOW = Date.parse('2026-09-28T02:00:00Z');
@@ -66,9 +67,31 @@ describe('OverviewVm', () => {
     expect(vm.reminder()).toBeNull();
     store.fetched.set([{ ...ws('A', []), notify_batched: true, notify_lead_minutes: 10 as never }, ws('B', [])]);
     vm.select('A');
-    expect(vm.reminder()).toEqual({ batched: true, lead: '10 分' });
+    expect(vm.reminder()).toEqual({ batched: true, lead: '10 分', quiet: null });
     vm.select('B');
-    expect(vm.reminder()).toEqual({ batched: false, lead: null });
+    expect(vm.reminder()).toEqual({ batched: false, lead: null, quiet: null });
+  });
+
+  it('通知時段(D-348):最近一則提醒落在勿擾時段 → 顯示延後到何時;在允許時段內、沒開、沒有探索中的艇都不顯示', () => {
+    const windows = TestBed.inject(NotifyWindowVm);
+    const evening = { id: 'g', name: '晚上', days: 127, slots: slotsFromRanges([[19 * 60, 23 * 60 + 30]]), enabled: true, position: 0 };
+    const scope = { dm: true, channel: true, push: true };
+    vm.select('A'); // 台北 10:00;A-2 在 10:30 返航、A-1 在 12:00 返航
+    expect(vm.reminder()?.quiet).toBeNull(); // 還沒載入設定
+    windows.data.set({ on: true, scope, limit: 10, groups: [evening] });
+    expect(vm.reminder()?.quiet).toBe('🌙 勿擾時段,最近的提醒 今天 19:00 通知');
+    windows.data.set({ on: false, scope, limit: 10, groups: [evening] });
+    expect(vm.reminder()?.quiet).toBeNull();
+    windows.data.set({ on: true, scope, limit: 10, groups: [{ ...evening, slots: slotsFromRanges([[0, 1440]]) }] });
+    expect(vm.reminder()?.quiet).toBeNull();
+    windows.data.set({ on: true, scope, limit: 10, groups: [{ ...evening, enabled: false }] });
+    expect(vm.reminder()?.quiet).toBeNull();
+    // 預先提醒:返航 12:00 的預先 30 分 = 11:30,仍在勿擾 → 延後;但 10:30 返航的提前 60 分已過,不算
+    store.fetched.set([{ ...ws('A', [sub('A', 1, 120), sub('A', 2, 30)]), notify_lead_minutes: 60 as never }]);
+    windows.data.set({ on: true, scope, limit: 10, groups: [evening] });
+    expect(vm.reminder()?.quiet).toBe('🌙 勿擾時段,最近的提醒 今天 19:00 通知');
+    store.fetched.set([ws('A', [sub('A', 1, 0, 'complete')])]);
+    expect(vm.reminder()?.quiet).toBeNull();
   });
 
   it('select:依工坊 id 套用過濾,找不到退回「全部」', () => {

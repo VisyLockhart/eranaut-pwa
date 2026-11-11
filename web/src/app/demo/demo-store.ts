@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import type { BuildDto, NotifyPrefs, RouteFilterDto, RouteSubDto, WorkshopWithSubmarines } from '@eranaut/shared';
+import type { BuildDto, NotifyPrefs, NotifyWindowDto, NotifyWindowScope, RouteFilterDto, RouteSubDto, WorkshopWithSubmarines } from '@eranaut/shared';
 import { CRAFT_STORAGE_KEYS } from '../craft/craft-keys';
 import { removeKey } from '../core/storage';
 import { ORDER_KEY } from '../core/workshop-order';
@@ -29,6 +29,14 @@ interface DemoState {
   routeFilters: RouteFilterDto[];
   /** 展示標籤的「示範維護橫幅」開關(D-283) */
   maintenance: boolean;
+  /** 通知允許時段(D-348):只存在這個瀏覽器,不會真的發通知。舊存檔沒有這欄,讀取時補預設 */
+  windows?: DemoWindows;
+}
+
+export interface DemoWindows {
+  on: boolean;
+  scope: NotifyWindowScope;
+  groups: NotifyWindowDto[];
 }
 
 function fresh(): DemoState {
@@ -80,6 +88,10 @@ export class DemoStore {
 
   get prefs(): NotifyPrefs {
     return this.state.prefs;
+  }
+
+  get windows(): DemoWindows {
+    return (this.state.windows ??= { on: false, scope: { dm: true, channel: true, push: true }, groups: [] });
   }
 
   get upkeep(): Record<string, UpkeepRow> {

@@ -52,6 +52,9 @@ export const LIMITS = {
   /** 配件製作的庫存組(D-329):名稱字數、每位使用者組數上限 */
   craftStockName: 20,
   maxCraftStocksPerUser: 10,
+  /** 通知允許時段組(D-348):名稱字數、每位使用者組數上限 */
+  notifyWindowName: 20,
+  maxNotifyWindowsPerUser: 10,
   /** 剩餘時間上限:99 天 23 小時 59 分(D-118 的天≤99、時≤23、分≤59),單位分鐘 */
   maxRemainingMinutes: 99 * 24 * 60 + 23 * 60 + 59,
 } as const;

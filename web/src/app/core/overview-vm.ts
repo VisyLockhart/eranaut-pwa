@@ -1,8 +1,9 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import type { WorkshopDto, WorkshopWithSubmarines } from '@eranaut/shared';
+import { formatWhen, nextAllowed, type WorkshopDto, type WorkshopWithSubmarines } from '@eranaut/shared';
 import { Auth } from './auth';
 import { DispatchVm, type DispatchInfo } from './dispatch-vm';
 import { DataStore } from './data-store';
+import { NotifyWindowVm } from './notify-window-vm';
 import { chartSummary, type ChartSummary } from './charts';
 import type { SubRow } from './submarine-form';
 import { defaultSubName, displayFor, isPlaced, isReady, stateDisplay, type SubDisplay } from './format';
@@ -164,6 +165,7 @@ export class OverviewVm {
   private readonly store = inject(DataStore);
   private readonly dispatch = inject(DispatchVm);
   private readonly auth = inject(Auth);
+  private readonly windows = inject(NotifyWindowVm);
 
   private readonly requestedIndex = signal(0);
 
@@ -187,11 +189,33 @@ export class OverviewVm {
   });
 
   /** 目前檢視的工坊的提醒設定(整批、預先提醒),總覽的「提醒」區塊用(D-294);「全部」為 null */
-  readonly reminder = computed<{ batched: boolean; lead: string | null } | null>(() => {
+  readonly reminder = computed<{ batched: boolean; lead: string | null; quiet: string | null } | null>(() => {
     const ws = this.currentWorkshop();
     if (!ws) return null;
-    return { batched: ws.notify_batched, lead: ws.notify_lead_minutes > 0 ? leadLabel(ws.notify_lead_minutes) : null };
+    return { batched: ws.notify_batched, lead: ws.notify_lead_minutes > 0 ? leadLabel(ws.notify_lead_minutes) : null, quiet: this.quietHint(ws) };
   });
+
+  /**
+   * 通知時段(D-348):這間工坊最近一則還沒送的提醒若落在勿擾時段,顯示「🌙 … 通知」。
+   * 前端依設定與返航時間自己算(和伺服器同一組純函式),不另外打 API;沒開時段、沒有被延後的提醒為 null。
+   */
+  private quietHint(ws: WorkshopWithSubmarines): string | null {
+    const d = this.windows.data();
+    if (!d || !d.on || !(d.scope.dm || d.scope.channel || d.scope.push)) return null;
+    const groups = d.groups.filter((g) => g.enabled);
+    if (groups.length === 0) return null;
+    const now = this.store.now();
+    const lead = ws.notify_lead_minutes * 60_000;
+    const etas = ws.submarines.filter((s) => s.status === 'exploring' && isPlaced(s.position) && s.expected_return_at !== null).map((s) => Date.parse(s.expected_return_at!));
+    const times = ws.notify_batched ? (etas.length > 0 ? [Math.max(...etas) - lead] : []) : etas.map((t) => t - lead);
+    let earliest: number | null = null;
+    for (const t of times) {
+      if (t <= now) continue;
+      const due = nextAllowed(groups, t);
+      if (due !== null && due > t && (earliest === null || due < earliest)) earliest = due;
+    }
+    return earliest === null ? null : `🌙 勿擾時段,最近的提醒 ${formatWhen(earliest, now)} 通知`;
+  }
 
   // ---- 排序(D-290) ----
 
@@ -398,6 +422,10 @@ export class OverviewVm {
   readonly quickProgress = signal<QuickProgressDraft | null>(null);
 
   constructor() {
+    // 通知時段的設定(總覽的「🌙」提示要用);設定頁自己會再載入一次,這裡只在沒有資料時抓
+    effect(() => {
+      if (this.auth.status() === 'authenticated' && untracked(() => this.windows.data()) === null) void untracked(() => this.windows.load());
+    });
     // 登出或 session 失效:關掉對話框、丟棄填到一半的內容
     effect(() => {
       if (this.auth.status() !== 'authenticated') untracked(() => this.closeQuickEdit());

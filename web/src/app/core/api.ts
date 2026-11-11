@@ -11,6 +11,10 @@ import type {
   MeDto,
   NotifyPrefs,
   NotifyPrefsUpdate,
+  NotifyWindowDto,
+  NotifyWindowInput,
+  NotifyWindowPrefsInput,
+  NotifyWindowsDto,
   OcrResultDto,
   OverviewDto,
   ProgressInput,
@@ -147,6 +151,27 @@ export class Api {
   /** DM 與頻道兩個欄位都必填且為布林;全部取消 = 不收任何提醒(D-133)。推播由下面的訂閱端點管理(D-165) */
   setNotifyPrefs(prefs: NotifyPrefsUpdate): Promise<NotifyPrefs> {
     return firstValueFrom(this.http.put<NotifyPrefs>('/api/notify-prefs', prefs));
+  }
+
+  // ---- 通知允許時段(D-348,SCHEMA §8.12) ----
+  notifyWindows(): Promise<NotifyWindowsDto> {
+    return firstValueFrom(this.http.get<NotifyWindowsDto>('/api/notify-windows'));
+  }
+  /** 總開關與套用範圍;第一次開啟且沒有任何組時,伺服器自動建立「白天」 */
+  setNotifyWindowPrefs(body: NotifyWindowPrefsInput): Promise<NotifyWindowsDto> {
+    return firstValueFrom(this.http.put<NotifyWindowsDto>('/api/notify-window-prefs', body));
+  }
+  createNotifyWindow(body: NotifyWindowInput): Promise<NotifyWindowDto> {
+    return firstValueFrom(this.http.post<NotifyWindowDto>('/api/notify-windows', body));
+  }
+  replaceNotifyWindow(id: string, body: NotifyWindowInput): Promise<NotifyWindowDto> {
+    return firstValueFrom(this.http.put<NotifyWindowDto>(`/api/notify-windows/${id}`, body));
+  }
+  setNotifyWindowEnabled(id: string, enabled: boolean): Promise<NotifyWindowDto> {
+    return firstValueFrom(this.http.patch<NotifyWindowDto>(`/api/notify-windows/${id}`, { enabled }));
+  }
+  deleteNotifyWindow(id: string): Promise<unknown> {
+    return firstValueFrom(this.http.delete(`/api/notify-windows/${id}`));
   }
 
   // ---- 瀏覽器推播(D-165) ----

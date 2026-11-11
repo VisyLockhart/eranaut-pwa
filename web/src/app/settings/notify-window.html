@@ -1,0 +1,156 @@
+<div class="modal-section-label nw-label"><app-icon name="moon" [size]="14" /> 通知時段</div>
+@if (vm.data(); as d) {
+  <div class="modal-toggle-row" style="margin-top: 0">
+    <label class="switch"><input type="checkbox" [checked]="d.on" [disabled]="vm.busy()" (change)="vm.setOn(!d.on)" aria-labelledby="nw-on-label" /><span class="slider"></span></label>
+    <div>
+      <div id="nw-on-label" style="font-size: 13px; font-weight: 600">只在允許的時段通知</div>
+      <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">其他時間不打擾,到點的提醒會順延到下一個允許時段。返航時間不受影響</div>
+    </div>
+  </div>
+
+  @if (d.demo) {
+    <div class="uf-note nw-demo" role="note">試玩:這些設定只存在這個瀏覽器,不會真的發送任何通知。</div>
+  }
+  @if (d.on) {
+    @if (vm.summary(); as s) {
+      <div class="nw-summary" [class.quiet]="s.state === '現在勿擾中'" role="status">
+        <span class="nw-state"><app-icon name="moon" [size]="13" />{{ s.state }}</span>
+        <span>{{ s.today }}</span>
+        @if (s.next) { <span class="nw-next">下一次:{{ s.next }}</span> }
+      </div>
+    }
+    @if (vm.noneEnabled()) {
+      <div class="uf-note nw-warn" role="alert">目前沒有啟用中的時段,提醒不會送出。請開啟一個時段組,或新增一組。</div>
+    }
+
+    <div class="nw-list">
+      @for (r of rows(); track r.g.id) {
+        <div class="nw-card" [class.off]="!r.g.enabled">
+          <label class="switch"><input type="checkbox" [checked]="r.g.enabled" [disabled]="vm.busy()" (change)="vm.toggleGroup(r.g)" [attr.aria-label]="'啟用「' + r.g.name + '」'" /><span class="slider"></span></label>
+          <button type="button" class="nw-card-main" (click)="vm.openEdit(r.g)" [attr.aria-label]="'編輯「' + r.g.name + '」'">
+            <span class="nw-card-name">{{ r.g.name }}<span class="nw-days">{{ r.days }}</span></span>
+            <span class="nw-card-ranges">{{ r.ranges }}</span>
+            <span class="nw-bar" aria-hidden="true">@for (c of r.cells; track $index) { <i [class.on]="c"></i> }</span>
+          </button>
+          <app-icon name="chevronRight" [size]="16" />
+        </div>
+      }
+    </div>
+    <button type="button" class="ghost-btn nw-add" [disabled]="vm.full() || vm.busy()" (click)="vm.openNew()"><app-icon name="plus" [size]="14" />新增時段組 {{ d.groups.length }}/{{ vm.limit() }}</button>
+
+    <details class="nw-scope">
+      <summary>套用範圍</summary>
+      <div class="uf-note" style="margin-bottom: 8px">勾選的通道才受時段限制;沒勾的照常準時通知。</div>
+      <div class="nw-scope-row">
+        <label class="nw-check"><input type="checkbox" [checked]="d.scope.dm" [disabled]="vm.busy()" (change)="vm.toggleScope('dm')" />Discord 私訊</label>
+        <label class="nw-check"><input type="checkbox" [checked]="d.scope.channel" [disabled]="vm.busy()" (change)="vm.toggleScope('channel')" />頻道提及</label>
+        <label class="nw-check"><input type="checkbox" [checked]="d.scope.push" [disabled]="vm.busy()" (change)="vm.toggleScope('push')" />推播</label>
+      </div>
+    </details>
+    <div class="uf-note" style="margin-top: 10px">勿擾期間累積的提醒,會在允許時段開始時合併成一則通知。時間以台北時間為準。</div>
+  }
+  @if (vm.error(); as m) { <div class="modal-error-text" role="alert">{{ m }}</div> }
+} @else if (vm.loadError()) {
+  <div class="up-empty">讀取失敗。<br /><button type="button" class="ghost-btn" style="margin-top: 12px; max-width: 160px" (click)="vm.load()">重試</button></div>
+}
+
+@if (vm.draft(); as dr) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
+    <div class="modal-box rt-dlg nw-dlg" [class.wide]="layout.isDesktop()" role="dialog" aria-modal="true" aria-labelledby="nw-dlg-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <div class="rt-dlg-head">
+        <div class="modal-title" id="nw-dlg-title">{{ dr.id === null ? '新增時段組' : '編輯時段組' }}</div>
+        <button type="button" class="modal-close" (click)="closeEditor()" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+      </div>
+      <div class="rt-dlg-body nw-body">
+        <label class="nw-field">
+          <span class="field-label">名稱</span>
+          <input class="modal-input nw-name" type="text" maxlength="20" [value]="dr.name" (input)="onName($event)" placeholder="例:晚上、假日" />
+        </label>
+
+        <div class="nw-field">
+          <span class="field-label">適用星期</span>
+          <div class="nw-days-row" role="group" aria-label="適用星期">
+            @for (i of dayIndexes; track i) {
+              <button type="button" class="nw-day" [class.on]="dayOn(i)" [attr.aria-pressed]="dayOn(i)" (click)="vm.toggleDay(i)">{{ dayLabels[i] }}</button>
+            }
+          </div>
+          <div class="nw-quick">
+            @for (p of dayPresets; track p.label) {
+              <button type="button" class="nw-chip" [class.on]="daysMatch(p.mask)" (click)="vm.patchDraft({ days: p.mask })">{{ p.label }}</button>
+            }
+          </div>
+        </div>
+
+        <div class="nw-field">
+          <div class="nw-field-head">
+            <span class="field-label">允許通知的時段</span>
+            <div class="nw-seg" role="tablist" aria-label="編輯方式">
+              <button type="button" role="tab" class="nw-seg-btn" [class.on]="vm.view() === 'grid'" [attr.aria-selected]="vm.view() === 'grid'" (click)="vm.view.set('grid')"><app-icon name="grid" [size]="13" />格子</button>
+              <button type="button" role="tab" class="nw-seg-btn" [class.on]="vm.view() === 'list'" [attr.aria-selected]="vm.view() === 'list'" (click)="vm.view.set('list')"><app-icon name="list" [size]="13" />清單</button>
+            </div>
+          </div>
+          <div class="nw-quick">
+            @for (p of presets; track p.label) {
+              <button type="button" class="nw-chip" (click)="applyPreset(p.ranges)">{{ p.label }}</button>
+            }
+            <button type="button" class="nw-chip" (click)="vm.invert()">反轉</button>
+            <button type="button" class="nw-chip" (click)="applyPreset([])">清空</button>
+          </div>
+
+          @if (vm.view() === 'grid') {
+            <div class="nw-hint">{{ layout.isDesktop() ? '按住滑鼠拖曳可連續塗選;再按一次已選的格子可取消' : anchor() === null ? '點一格選起點,再點另一格就會填滿中間' : '再點另一格,填滿到那裡(點同一格取消)' }}</div>
+            <div class="nw-grid-wrap" role="group" aria-label="每 15 分鐘一格" (pointerdown)="gridDown($event)" (pointermove)="gridMove($event)" (pointerup)="gridUp($event)" (pointercancel)="gridUp($event)">
+              @for (half of halves; track half) {
+                <div class="nw-half">
+                  <div class="nw-grid-head" aria-hidden="true"><span></span><span>:00</span><span>:15</span><span>:30</span><span>:45</span></div>
+                  <div class="nw-grid">
+                    @for (h of hoursOf(half); track h) {
+                      <span class="nw-hour" aria-hidden="true">{{ formatMinute(h * 60).slice(0, 2) }}</span>
+                      @for (q of quarters; track q) {
+                        <button type="button" class="nw-cell" [class.on]="isOn(h * 4 + q)" [class.anchor]="anchor() === h * 4 + q" [attr.data-i]="h * 4 + q" [attr.aria-pressed]="isOn(h * 4 + q)" [attr.aria-label]="cellLabel(h * 4 + q)" (click)="cellClick($event, h * 4 + q)"></button>
+                      }
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="nw-ranges">
+              @for (r of vm.draftRanges(); track $index) {
+                <div class="nw-range">
+                  <select class="field-select" [value]="r[0]" (change)="setStart($index, $any($event.target).value)" aria-label="開始時間">
+                    @for (m of times.slice(0, 96); track m) { <option [value]="m" [selected]="m === r[0]">{{ formatMinute(m) }}</option> }
+                  </select>
+                  <span>到</span>
+                  <select class="field-select" [value]="r[1]" (change)="setEnd($index, $any($event.target).value)" aria-label="結束時間">
+                    @for (m of times.slice(1); track m) { <option [value]="m" [selected]="m === r[1]">{{ formatMinute(m) }}</option> }
+                  </select>
+                  <button type="button" class="modal-close" (click)="removeRange($index)" aria-label="刪除這一段"><app-icon name="trash" [size]="14" /></button>
+                </div>
+              } @empty {
+                <div class="uf-note">還沒有時段。按「新增一段」,或套用上面的範本。</div>
+              }
+              <button type="button" class="ghost-btn nw-add" (click)="addRange()"><app-icon name="plus" [size]="14" />新增一段</button>
+            </div>
+          }
+        </div>
+        <div class="nw-sum" role="status">{{ vm.draftSummary() }}</div>
+        @if (vm.draftError(); as m) { <div class="modal-error-text" role="alert">{{ m }}</div> }
+      </div>
+      <div class="rt-dlg-foot">
+        <div class="rt-save-actions">
+          @if (dr.id !== null) {
+            @if (vm.confirmDelete()) {
+              <button type="button" class="rt-save-btn danger rt-dlg-aux" [disabled]="vm.busy()" (click)="vm.remove()">確定刪除</button>
+              <button type="button" class="rt-save-btn" (click)="vm.confirmDelete.set(false)">不刪</button>
+            } @else {
+              <button type="button" class="rt-save-btn danger rt-dlg-aux" [disabled]="vm.busy()" (click)="vm.confirmDelete.set(true)">刪除</button>
+            }
+          }
+          <button type="button" class="rt-save-btn" (click)="closeEditor()">取消</button>
+          <button type="button" class="rt-save-btn primary" [disabled]="!vm.canSave()" (click)="vm.save()">{{ vm.busy() ? '儲存中…' : '儲存' }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -12,11 +12,12 @@ import { THEMES, ThemeService } from '../core/theme';
 import { UI_SIZES, UiScale } from '../core/ui-scale';
 import { AvatarComponent } from '../ui/avatar';
 import { IconComponent } from '../ui/icon';
+import { NotifyWindow } from './notify-window';
 
 /** 設定頁:帳號(登出入口,D-108)、顯示(主題 D-277、介面大小 D-164)與提醒方式(D-72;含這台裝置的瀏覽器推播,D-165)。手機的「我的」分頁、桌機側欄的「設定」 */
 @Component({
   selector: 'app-settings-page',
-  imports: [NgTemplateOutlet, RouterLink, IconComponent, AvatarComponent],
+  imports: [NgTemplateOutlet, RouterLink, IconComponent, AvatarComponent, NotifyWindow],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings-page.html',
   host: { style: 'display: contents' },

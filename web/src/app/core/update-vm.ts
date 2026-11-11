@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import type { OcrErrorCode, OcrResultDto, OcrWarning, SubmarinesBatchValidationErrorBody, SubmarinesUpdateResult } from '@eranaut/shared';
+import { formatWhen, type OcrErrorCode, type OcrResultDto, type OcrWarning, type ReminderDeferred, type SubmarinesBatchValidationErrorBody, type SubmarinesUpdateResult } from '@eranaut/shared';
 import { Api } from './api';
 import { Auth } from './auth';
 import { MINUTE_MS, compensated, displayMinutes, submitMinutes, toParts } from './compensation';
@@ -474,6 +474,7 @@ export class UpdateVm {
   private announce(workshopName: string, batched: boolean, count: number, result: SubmarinesUpdateResult): void {
     this.toast.show(`已更新「${workshopName}」${count} 艘潛水艇`);
     announceSkippedReminders(this.toast, batched, result.reminder_skipped_positions);
+    announceDeferredReminders(this.toast, result.reminder_deferred);
   }
 }
 
@@ -484,6 +485,23 @@ function expectedLevel(sub: SubmarinesUpdateResult['submarines'][number] | undef
 }
 
 /** D-135 ②b:預先提醒時間已過的潛艇不會收到提醒,更新後提示使用者。整批模式整間工坊只有一則提醒 */
+/**
+ * 通知時段(D-348):提醒落在勿擾時段而被順延時,更新完成後提示「改到幾點通知」。
+ * 同一個送出時間的潛艇合併成一句;整批提醒(position = null)說「這間工坊」。
+ */
+export function announceDeferredReminders(toast: Toast, deferred: readonly ReminderDeferred[] | undefined, now: number = Date.now()): void {
+  if (!deferred || deferred.length === 0) return;
+  const byAt = new Map<string, (number | null)[]>();
+  for (const d of deferred) byAt.set(d.at, [...(byAt.get(d.at) ?? []), d.position]);
+  const parts = [...byAt.entries()].map(([at, positions]) => {
+    const when = formatWhen(Date.parse(at), now);
+    const subs = positions.filter((p): p is number => p !== null);
+    const who = positions.includes(null) ? '這間工坊' : `${subs.map(circled).join('')}`;
+    return `${who}的提醒延後到 ${when} 通知`;
+  });
+  toast.show(`🌙 ${parts.join(';')}(勿擾時段)。`, { ms: 6000 });
+}
+
 export function announceSkippedReminders(toast: Toast, batched: boolean, positions: readonly number[]): void {
   if (positions.length === 0) return;
   const text = batched

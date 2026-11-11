@@ -255,6 +255,17 @@ export interface OverviewDto {
 export interface SubmarinesUpdateResult {
   submarines: SubmarineDto[];
   reminder_skipped_positions: number[];
+  /**
+   * 通知允許時段(D-348):本次請求中,提醒因落在勿擾時段而被延後的潛艇位置與實際送出時間(ISO)。
+   * 整批提醒的工坊 `position` 為 null。沒有開啟時段、或沒有被延後時為空陣列。
+   */
+  reminder_deferred: ReminderDeferred[];
+}
+
+/** 被延後的提醒:`position` 為潛艇位置(整批提醒為 null),`at` 為實際送出時間(ISO,UTC) */
+export interface ReminderDeferred {
+  position: number | null;
+  at: string;
 }
 
 // ---- 工坊管理模式(D-313、D-314、D-315) ----
