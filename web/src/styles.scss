@@ -2414,6 +2414,13 @@ html[data-motion='reduced'] .mg-new, html[data-motion='reduced'] .mg-new i { ani
 .nw-bar { display: flex; height: 6px; gap: 0; border-radius: calc(3px * var(--rs)); overflow: hidden; background: var(--bg); border: var(--bw) solid var(--border); }
 .nw-bar i { flex: 1 1 0; }
 .nw-bar i.on { background: var(--accent); }
+.nw-manage { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 12px; padding: 12px; border-radius: calc(12px * var(--rs)); background: var(--bg-elevated-2); border: var(--bw) solid var(--border-strong); color: var(--text-dim); text-align: left; cursor: pointer; font: inherit; transition: border-color .15s; }
+.nw-manage:hover { border-color: var(--accent); }
+.nw-manage:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.nw-manage-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.nw-manage .nw-card-ranges { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; }
+.nw-list-modal { margin-top: 0; }
+.nw-name-err { margin: 0; }
 .nw-add { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 10px; padding: 10px 14px; }
 .nw-add:disabled { opacity: 0.5; cursor: default; }
 .nw-scope { margin-top: 12px; font-size: 12.5px; color: var(--text-muted); }

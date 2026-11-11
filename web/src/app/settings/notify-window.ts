@@ -1,4 +1,5 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import {
   ALL_DAYS,
@@ -34,7 +35,7 @@ const HOURS = Array.from({ length: 24 }, (_, h) => h);
  */
 @Component({
   selector: 'app-notify-window',
-  imports: [CdkTrapFocus, IconComponent],
+  imports: [CdkTrapFocus, NgTemplateOutlet, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './notify-window.html',
   host: { '(document:keydown.escape)': 'onEscape($event)' },
@@ -68,6 +69,11 @@ export class NotifyWindow {
     { label: '平日', mask: WEEKDAYS },
     { label: '假日', mask: WEEKEND },
   ];
+
+  /** 兩組以上時,清單改放在「管理時段組」對話框 */
+  protected readonly managing = signal(false);
+  private downOnManage = false;
+  protected readonly groupNames = computed(() => (this.vm.data()?.groups ?? []).map((g) => g.name).join('、'));
 
   protected readonly rows = computed(() => (this.vm.data()?.groups ?? []).map((g) => this.describe(g)));
 
@@ -176,6 +182,28 @@ export class NotifyWindow {
     this.vm.applyRanges(ranges);
   }
 
+  /** 名稱留白時標示名稱欄:對焦並重播一次抖動 */
+  protected async save(): Promise<void> {
+    const ok = await this.vm.save();
+    if (ok || !this.vm.nameError()) return;
+    queueMicrotask(() => {
+      const input = (this.host.nativeElement as HTMLElement).querySelector<HTMLInputElement>('.nw-name');
+      if (!input) return;
+      input.classList.remove('error');
+      void input.offsetWidth;
+      input.classList.add('error');
+      input.focus();
+    });
+  }
+
+  protected manageDown(e: Event): void {
+    this.downOnManage = e.target === e.currentTarget;
+  }
+  protected manageClick(e: Event): void {
+    if (this.downOnManage && e.target === e.currentTarget && !this.vm.draft()) this.managing.set(false);
+    this.downOnManage = false;
+  }
+
   protected onName(e: Event): void {
     this.vm.patchDraft({ name: (e.target as HTMLInputElement).value });
   }
@@ -188,9 +216,13 @@ export class NotifyWindow {
     this.downOnOverlay = false;
   }
   protected onEscape(e: Event): void {
-    if (this.vm.draft() && !e.defaultPrevented) {
+    if (e.defaultPrevented) return;
+    if (this.vm.draft()) {
       e.preventDefault();
       this.closeEditor();
+    } else if (this.managing()) {
+      e.preventDefault();
+      this.managing.set(false);
     }
   }
 }

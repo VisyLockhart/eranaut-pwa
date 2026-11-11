@@ -163,4 +163,62 @@ describe('NotifyWindow 元件(D-348)', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     expect(vm.draft()).toBeNull();
   });
+
+  it('名稱留白也能按儲存:標示名稱欄(紅框 + 提示)並對焦,不送出;輸入名稱後提示消失', async () => {
+    const f = await render();
+    const vm = TestBed.inject(NotifyWindowVm);
+    vm.openNew();
+    vm.patchDraft({ name: '' });
+    vm.fill(36, 47, true);
+    f.detectChanges();
+    const save = [...el(f).querySelectorAll<HTMLButtonElement>('.rt-save-btn.primary')].find((b) => b.textContent?.includes('儲存'))!;
+    expect(save.disabled).toBe(false);
+    save.click();
+    await settle();
+    f.detectChanges();
+    http.expectNone('/api/notify-windows');
+    const input = el(f).querySelector<HTMLInputElement>('.nw-name')!;
+    expect(input.classList.contains('error')).toBe(true);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(el(f).querySelector('.nw-name-err')?.textContent).toContain('請輸入名稱');
+    expect(document.activeElement).toBe(input);
+
+    input.value = '假日';
+    input.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    expect(input.classList.contains('error')).toBe(false);
+    expect(el(f).querySelector('.nw-name-err')).toBeNull();
+  });
+
+  it('只有一組:清單照舊顯示在設定頁;兩組以上:改成一列「管理時段組」,清單在對話框裡', async () => {
+    const f = await render();
+    expect(el(f).querySelector('.nw-manage')).toBeNull();
+    expect(el(f).querySelectorAll('.nw-list .nw-card')).toHaveLength(1);
+    expect(el(f).textContent).toContain('新增時段組 1/10');
+
+    const two: NotifyWindowsDto = { ...DATA, groups: [DATA.groups[0]!, { id: 'g2', name: '假日', days: 96, slots: SLOTS, enabled: false, position: 1 }] };
+    TestBed.inject(NotifyWindowVm).data.set(two);
+    f.detectChanges();
+    expect(el(f).querySelectorAll('.nw-list .nw-card')).toHaveLength(0);
+    const manage = el(f).querySelector<HTMLButtonElement>('.nw-manage')!;
+    expect(manage.textContent).toContain('2/10 組,啟用 1 組');
+    expect(manage.textContent).toContain('晚上、假日');
+    expect(el(f).querySelector('.nw-dlg')).toBeNull();
+
+    manage.click();
+    f.detectChanges();
+    expect(el(f).querySelectorAll('.nw-dlg .nw-card')).toHaveLength(2);
+
+    // 從對話框點進編輯,Esc 先關編輯器、再關管理對話框
+    el(f).querySelector<HTMLButtonElement>('.nw-dlg .nw-card-main')!.click();
+    f.detectChanges();
+    expect(TestBed.inject(NotifyWindowVm).draft()?.id).toBe('g1');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    f.detectChanges();
+    expect(TestBed.inject(NotifyWindowVm).draft()).toBeNull();
+    expect(el(f).querySelector('.nw-dlg')).not.toBeNull();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    f.detectChanges();
+    expect(el(f).querySelector('.nw-dlg')).toBeNull();
+  });
 });

@@ -102,8 +102,19 @@ describe('NotifyWindowVm(D-348)', () => {
     await loaded();
     vm.openNew();
     expect(vm.draft()?.days).toBe(127);
-    expect(vm.canSave()).toBe(false);
+    // 儲存鈕不停用;名稱留白時按下去只標示名稱欄,不送出
+    expect(vm.canSave()).toBe(true);
+    expect(await vm.save()).toBe(false);
+    expect(vm.nameError()).toBe(true);
+    http.expectNone('/api/notify-windows');
+    vm.patchDraft({ name: '   ' });
+    expect(vm.nameError()).toBe(true);
     vm.patchDraft({ name: ' 假日 ', days: 96 });
+    expect(vm.nameError()).toBe(false);
+    // 有名稱但沒選時段:提示時段,不送出
+    expect(await vm.save()).toBe(false);
+    expect(vm.draftError()).toContain('時段');
+    http.expectNone('/api/notify-windows');
     vm.fill(36, 47, true);
     expect(vm.draftSummary()).toBe('09:00–12:00(共 3 小時)');
     expect(vm.canSave()).toBe(true);

@@ -95,10 +95,10 @@ export class NotifyWindowVm {
     const hours = n / 4;
     return `${formatRanges(rangesFromSlots(dr.slots))}(共 ${Number.isInteger(hours) ? hours : hours.toFixed(2).replace(/0$/, '')} 小時)`;
   });
-  readonly canSave = computed(() => {
-    const dr = this.draft();
-    return !!dr && dr.name.trim() !== '' && countSlots(dr.slots) > 0 && !this.busy();
-  });
+  /** 名稱留白時按「儲存」才標示(按鈕本身不停用);輸入名稱後清除 */
+  readonly nameError = signal(false);
+  /** 儲存鈕只在送出中停用;名稱、時段的檢查在按下時提示 */
+  readonly canSave = computed(() => !!this.draft() && !this.busy());
 
   async load(): Promise<void> {
     this.loadError.set(false);
@@ -175,6 +175,7 @@ export class NotifyWindowVm {
   private open(): void {
     this.rows.set(rangesFromSlots(this.draft()?.slots ?? emptySlots()));
     this.draftError.set(null);
+    this.nameError.set(false);
     this.confirmDelete.set(false);
     this.view.set('grid');
   }
@@ -186,6 +187,7 @@ export class NotifyWindowVm {
 
   patchDraft(p: Partial<WindowDraft>): void {
     this.draft.update((d) => (d ? { ...d, ...p } : d));
+    if (p.name !== undefined && p.name.trim() !== '') this.nameError.set(false);
   }
   setSlots(slots: string): void {
     this.patchDraft({ slots });
@@ -233,11 +235,21 @@ export class NotifyWindowVm {
     if (next !== 0) this.patchDraft({ days: next }); // 至少要有一天
   }
 
-  async save(): Promise<void> {
+  /** 回傳 true = 已儲存;名稱或時段有問題時回 false 並標示 */
+  async save(): Promise<boolean> {
     const d = this.draft();
-    if (!d || !this.canSave()) return;
-    this.busy.set(true);
+    if (!d || !this.canSave()) return false;
     this.draftError.set(null);
+    this.nameError.set(false);
+    if (d.name.trim() === '') {
+      this.nameError.set(true);
+      return false;
+    }
+    if (countSlots(d.slots) === 0) {
+      this.draftError.set('還沒有選任何時段,請至少選一段。');
+      return false;
+    }
+    this.busy.set(true);
     const body = { name: d.name.trim(), days: d.days, slots: d.slots, enabled: d.enabled };
     try {
       if (d.id === null) {
@@ -248,9 +260,11 @@ export class NotifyWindowVm {
         this.data.update((x) => (x ? { ...x, groups: x.groups.map((g) => (g.id === saved.id ? saved : g)) } : x));
       }
       this.closeEditor();
+      return true;
     } catch (e) {
       const status = e instanceof HttpErrorResponse ? e.status : 0;
       this.draftError.set(status === 409 ? `最多 ${this.limit()} 組，請先刪除不用的。` : status === 400 ? '內容有誤，請檢查名稱與時段。' : '儲存失敗，請稍後再試。');
+      return false;
     } finally {
       this.busy.set(false);
     }

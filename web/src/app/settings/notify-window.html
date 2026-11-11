@@ -23,7 +23,7 @@
       <div class="uf-note nw-warn" role="alert">目前沒有啟用中的時段,提醒不會送出。請開啟一個時段組,或新增一組。</div>
     }
 
-    <div class="nw-list">
+    <ng-template #cards>
       @for (r of rows(); track r.g.id) {
         <div class="nw-card" [class.off]="!r.g.enabled">
           <label class="switch"><input type="checkbox" [checked]="r.g.enabled" [disabled]="vm.busy()" (change)="vm.toggleGroup(r.g)" [attr.aria-label]="'啟用「' + r.g.name + '」'" /><span class="slider"></span></label>
@@ -35,8 +35,24 @@
           <app-icon name="chevronRight" [size]="16" />
         </div>
       }
-    </div>
-    <button type="button" class="ghost-btn nw-add" [disabled]="vm.full() || vm.busy()" (click)="vm.openNew()"><app-icon name="plus" [size]="14" />新增時段組 {{ d.groups.length }}/{{ vm.limit() }}</button>
+    </ng-template>
+    <ng-template #addBtn>
+      <button type="button" class="ghost-btn nw-add" [disabled]="vm.full() || vm.busy()" (click)="vm.openNew()"><app-icon name="plus" [size]="14" />新增時段組 {{ d.groups.length }}/{{ vm.limit() }}</button>
+    </ng-template>
+
+    @if (d.groups.length > 1) {
+      <!-- 兩組以上:設定頁只放一列摘要,清單在對話框裡管理,避免頁面被拉得很長 -->
+      <button type="button" class="nw-manage" (click)="managing.set(true)" [attr.aria-label]="'管理時段組,共 ' + d.groups.length + ' 組'">
+        <span class="nw-manage-main">
+          <span class="nw-card-name">管理時段組<span class="nw-days">{{ d.groups.length }}/{{ vm.limit() }} 組,啟用 {{ vm.enabledGroups().length }} 組</span></span>
+          <span class="nw-card-ranges">{{ groupNames() }}</span>
+        </span>
+        <app-icon name="chevronRight" [size]="16" />
+      </button>
+    } @else {
+      <div class="nw-list"><ng-container *ngTemplateOutlet="cards" /></div>
+      <ng-container *ngTemplateOutlet="addBtn" />
+    }
 
     <details class="nw-scope">
       <summary>套用範圍</summary>
@@ -54,6 +70,44 @@
   <div class="up-empty">讀取失敗。<br /><button type="button" class="ghost-btn" style="margin-top: 12px; max-width: 160px" (click)="vm.load()">重試</button></div>
 }
 
+@if (managing() && vm.data(); as md) {
+  <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="manageDown($event)" (click)="manageClick($event)">
+    <div class="modal-box rt-dlg nw-dlg" role="dialog" aria-modal="true" aria-labelledby="nw-manage-title" [cdkTrapFocus]="!vm.draft()" [cdkTrapFocusAutoCapture]="true">
+      <div class="rt-dlg-head">
+        <div class="modal-title" id="nw-manage-title">管理時段組</div>
+        <button type="button" class="modal-close" (click)="managing.set(false)" aria-label="關閉"><app-icon name="close" [size]="16" /></button>
+      </div>
+      <div class="rt-dlg-body nw-body">
+        <div class="nw-list nw-list-modal">
+          @for (r of rows(); track r.g.id) {
+            <div class="nw-card" [class.off]="!r.g.enabled">
+              <label class="switch"><input type="checkbox" [checked]="r.g.enabled" [disabled]="vm.busy()" (change)="vm.toggleGroup(r.g)" [attr.aria-label]="'啟用「' + r.g.name + '」'" /><span class="slider"></span></label>
+              <button type="button" class="nw-card-main" (click)="vm.openEdit(r.g)" [attr.aria-label]="'編輯「' + r.g.name + '」'">
+                <span class="nw-card-name">{{ r.g.name }}<span class="nw-days">{{ r.days }}</span></span>
+                <span class="nw-card-ranges">{{ r.ranges }}</span>
+                <span class="nw-bar" aria-hidden="true">@for (c of r.cells; track $index) { <i [class.on]="c"></i> }</span>
+              </button>
+              <app-icon name="chevronRight" [size]="16" />
+            </div>
+          } @empty {
+            <div class="uf-note">還沒有時段組。</div>
+          }
+        </div>
+        @if (vm.noneEnabled()) {
+          <div class="uf-note nw-warn" role="alert">目前沒有啟用中的時段,提醒不會送出。</div>
+        }
+        @if (vm.error(); as m) { <div class="modal-error-text" role="alert">{{ m }}</div> }
+      </div>
+      <div class="rt-dlg-foot">
+        <div class="rt-save-actions">
+          <button type="button" class="rt-save-btn" [disabled]="vm.full() || vm.busy()" (click)="vm.openNew()"><app-icon name="plus" [size]="14" />新增 {{ md.groups.length }}/{{ vm.limit() }}</button>
+          <button type="button" class="rt-save-btn primary" (click)="managing.set(false)">完成</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
 @if (vm.draft(); as dr) {
   <div class="modal-overlay" [class.rt-sheet]="!layout.isDesktop()" [class.rt-compact]="!layout.isDesktop()" (pointerdown)="overlayDown($event)" (click)="overlayClick($event)">
     <div class="modal-box rt-dlg nw-dlg" [class.wide]="layout.isDesktop()" role="dialog" aria-modal="true" aria-labelledby="nw-dlg-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
@@ -64,7 +118,8 @@
       <div class="rt-dlg-body nw-body">
         <label class="nw-field">
           <span class="field-label">名稱</span>
-          <input class="modal-input nw-name" type="text" maxlength="20" [value]="dr.name" (input)="onName($event)" placeholder="例:晚上、假日" />
+          <input class="modal-input nw-name" [class.error]="vm.nameError()" [attr.aria-invalid]="vm.nameError() ? true : null" aria-describedby="nw-name-err" type="text" maxlength="20" [value]="dr.name" (input)="onName($event)" placeholder="例:晚上、假日" />
+          @if (vm.nameError()) { <span class="modal-error-text nw-name-err" id="nw-name-err" role="alert">請輸入名稱</span> }
         </label>
 
         <div class="nw-field">
@@ -148,7 +203,7 @@
             }
           }
           <button type="button" class="rt-save-btn" (click)="closeEditor()">取消</button>
-          <button type="button" class="rt-save-btn primary" [disabled]="!vm.canSave()" (click)="vm.save()">{{ vm.busy() ? '儲存中…' : '儲存' }}</button>
+          <button type="button" class="rt-save-btn primary" [disabled]="!vm.canSave()" (click)="save()">{{ vm.busy() ? '儲存中…' : '儲存' }}</button>
         </div>
       </div>
     </div>
