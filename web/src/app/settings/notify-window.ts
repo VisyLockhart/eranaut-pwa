@@ -13,6 +13,7 @@ import {
   type NotifyWindowDto,
 } from '@eranaut/shared';
 import { Layout } from '../core/layout';
+import { endOptions, startOptions } from '../core/window-rows';
 import { NotifyWindowVm } from '../core/notify-window-vm';
 import { IconComponent } from '../ui/icon';
 
@@ -25,8 +26,6 @@ export const WINDOW_PRESETS: readonly { label: string; ranges: readonly (readonl
 ];
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
-/** 清單模式的時間下拉:00:00 到 24:00,每 15 分鐘 */
-const TIME_OPTIONS = Array.from({ length: SLOTS_PER_DAY + 1 }, (_, i) => i * 15);
 
 /**
  * 設定頁的「通知時段」區塊與編輯器(D-348)。
@@ -52,7 +51,6 @@ export class NotifyWindow {
   protected hoursOf(half: number): number[] {
     return HOURS.slice(half * 12, half * 12 + 12);
   }
-  protected readonly times = TIME_OPTIONS;
   protected readonly presets = WINDOW_PRESETS;
   protected readonly dayLabels = DAY_LABELS;
   protected readonly dayIndexes = [0, 1, 2, 3, 4, 5, 6];
@@ -165,37 +163,13 @@ export class NotifyWindow {
     this.vm.closeEditor();
   }
 
-  // ---- 清單模式 ----
+  // ---- 清單模式:每一列只能選到沒被其他列佔用的時間 ----
 
-  protected setStart(index: number, value: string): void {
-    const ranges = this.vm.draftRanges().map((r) => [...r] as [number, number]);
-    const r = ranges[index];
-    if (!r) return;
-    r[0] = Number(value);
-    if (r[1] <= r[0]) r[1] = Math.min(1440, r[0] + 15);
-    if (r[1] <= r[0]) r[0] = r[1] - 15;
-    this.vm.applyRanges(ranges);
+  protected startChoices(i: number): number[] {
+    return startOptions(this.vm.rows(), i);
   }
-  protected setEnd(index: number, value: string): void {
-    const ranges = this.vm.draftRanges().map((r) => [...r] as [number, number]);
-    const r = ranges[index];
-    if (!r) return;
-    r[1] = Number(value);
-    if (r[1] <= r[0]) r[0] = Math.max(0, r[1] - 15);
-    this.vm.applyRanges(ranges);
-  }
-  protected removeRange(index: number): void {
-    this.vm.applyRanges(this.vm.draftRanges().filter((_, i) => i !== index));
-  }
-  /** 在最後一段之後再加一小時(沒有空位就找第一個空隙) */
-  protected addRange(): void {
-    const ranges = this.vm.draftRanges();
-    const slots = this.vm.draft()?.slots ?? '';
-    const first = slots.indexOf('0');
-    if (first < 0) return;
-    const last = ranges.at(-1);
-    const from = last && last[1] < 1440 ? last[1] / 15 : first;
-    this.vm.fill(from, Math.min(SLOTS_PER_DAY - 1, from + 3), true);
+  protected endChoices(i: number): number[] {
+    return endOptions(this.vm.rows(), i);
   }
 
   protected applyPreset(ranges: readonly (readonly [number, number])[]): void {

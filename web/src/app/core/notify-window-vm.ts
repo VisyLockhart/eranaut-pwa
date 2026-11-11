@@ -23,6 +23,7 @@ import {
 } from '@eranaut/shared';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Api } from './api';
+import { newRow, withEnd, withStart, type WindowRow } from './window-rows';
 
 /** 編輯中的時段組;`id = null` 為新增 */
 export interface WindowDraft {
@@ -78,10 +79,14 @@ export class NotifyWindowVm {
     return { today, state: '現在勿擾中', next: t === null ? null : `${formatWhen(t, now)} 起可通知(${formatWait(t, now)})` };
   });
 
-  readonly draftRanges = computed(() => {
-    const dr = this.draft();
-    return dr ? rangesFromSlots(dr.slots) : [];
-  });
+  /**
+   * 清單模式的列(自己保存,不從遮罩反推):新增的一列即使緊貼前一段也不會被合併掉。
+   * 遮罩是這些列的聯集;從格子、範本、反轉等其他方式改遮罩時,列重新由遮罩推出(相連的合併)。
+   */
+  readonly rows = signal<WindowRow[]>([]);
+  readonly draftRanges = computed(() => this.rows());
+  /** 全部時段都被選滿時不能再新增一列 */
+  readonly canAddRow = computed(() => newRow(this.rows()) !== null);
   readonly draftSummary = computed(() => {
     const dr = this.draft();
     if (!dr) return '';
@@ -168,6 +173,7 @@ export class NotifyWindowVm {
   }
 
   private open(): void {
+    this.rows.set(rangesFromSlots(this.draft()?.slots ?? emptySlots()));
     this.draftError.set(null);
     this.confirmDelete.set(false);
     this.view.set('grid');
@@ -183,6 +189,27 @@ export class NotifyWindowVm {
   }
   setSlots(slots: string): void {
     this.patchDraft({ slots });
+    this.rows.set(rangesFromSlots(slots));
+  }
+
+  // ---- 清單模式的列 ----
+
+  private setRows(rows: readonly WindowRow[]): void {
+    this.rows.set([...rows]);
+    this.patchDraft({ slots: slotsFromRanges(rows) });
+  }
+  addRow(): void {
+    const r = newRow(this.rows());
+    if (r) this.setRows([...this.rows(), r]);
+  }
+  removeRow(i: number): void {
+    this.setRows(this.rows().filter((_, k) => k !== i));
+  }
+  setRowStart(i: number, start: number): void {
+    this.setRows(withStart(this.rows(), i, start));
+  }
+  setRowEnd(i: number, end: number): void {
+    this.setRows(withEnd(this.rows(), i, end));
   }
   toggleCell(i: number): void {
     const d = this.draft();

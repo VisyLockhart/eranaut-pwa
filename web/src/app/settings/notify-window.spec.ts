@@ -118,26 +118,41 @@ describe('NotifyWindow 元件(D-348)', () => {
     expect(vm.draft()?.slots[3]).toBe('1');
   });
 
-  it('範本、清單模式的時間下拉與新增/刪除一段', async () => {
+  it('範本與清單模式:新增一段立刻多一列(緊貼前一段也不合併)、下拉選單排除已被選走的時間', async () => {
     const f = await render();
     const vm = TestBed.inject(NotifyWindowVm);
     vm.openNew();
     f.detectChanges();
     const chip = (t: string) => Array.from(el(f).querySelectorAll<HTMLButtonElement>('.nw-chip')).find((b) => b.textContent?.trim() === t)!;
     chip('白天 08–22').click();
-    expect(vm.draftRanges()).toEqual([[480, 1320]]);
+    expect(vm.rows()).toEqual([[480, 1320]]);
     vm.view.set('list');
     f.detectChanges();
-    const selects = el(f).querySelectorAll<HTMLSelectElement>('.nw-range select');
-    expect(selects).toHaveLength(2);
-    selects[1]!.value = '1260';
-    selects[1]!.dispatchEvent(new Event('change'));
-    expect(vm.draftRanges()).toEqual([[480, 1260]]);
+    expect(el(f).querySelectorAll('.nw-range')).toHaveLength(1);
+
     (el(f).querySelector('.nw-ranges .nw-add') as HTMLButtonElement).click();
-    // 最後一段到 21:00,「新增一段」從 21:00 起補一小時,與前一段相連合併
-    expect(vm.draftRanges()).toEqual([[480, 1320]]);
+    f.detectChanges();
+    // 第一個空格是 00:00,一小時;和 08:00–22:00 不相連,但即使相連也會是獨立一列
+    expect(el(f).querySelectorAll('.nw-range')).toHaveLength(2);
+    expect(vm.rows()).toEqual([[480, 1320], [0, 60]]);
+    const second = el(f).querySelectorAll('.nw-range')[1]!;
+    const opts = (sel: Element) => Array.from(sel.querySelectorAll('option')).map((o) => o.textContent);
+    const [start, end] = Array.from(second.querySelectorAll('select'));
+    expect(opts(start!)).not.toContain('08:00');
+    expect(opts(start!)).not.toContain('21:45');
+    expect(opts(start!)).toContain('22:00');
+    expect(opts(end!).at(-1)).toBe('08:00');
+
+    // 改第二列的結束時間;遮罩是兩列的聯集
+    end!.value = String(120);
+    end!.dispatchEvent(new Event('change'));
+    expect(vm.rows()).toEqual([[480, 1320], [0, 120]]);
+    expect(vm.draftSummary()).toContain('00:00–02:00、08:00–22:00');
+
     chip('清空').click();
-    expect(vm.draftRanges()).toEqual([]);
+    f.detectChanges();
+    expect(vm.rows()).toEqual([]);
+    expect(el(f).querySelectorAll('.nw-range')).toHaveLength(0);
   });
 
   it('Esc 關閉編輯器', async () => {

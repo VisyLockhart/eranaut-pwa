@@ -167,6 +167,25 @@ describe('NotifyWindowVm(D-348)', () => {
     expect(vm.draft()?.days).toBe(5);
   });
 
+  it('清單列:新增一列獨立保存、不被相連的段合併;改遮罩的其他操作會讓列重新由遮罩推出', async () => {
+    await loaded();
+    vm.openNew();
+    vm.applyRanges([[480, 1320]]);
+    vm.addRow();
+    expect(vm.rows()).toEqual([[480, 1320], [0, 60]]);
+    vm.setRowStart(1, 1320);
+    expect(vm.rows()).toEqual([[480, 1320], [1320, 1380]]);
+    expect(vm.draft()?.slots).toBe(slotsFromRanges([[480, 1380]]));
+    vm.setRowEnd(1, 1440);
+    expect(vm.draftSummary()).toBe('08:00–24:00(共 16 小時)');
+    vm.removeRow(0);
+    expect(vm.rows()).toEqual([[1320, 1440]]);
+    vm.toggleCell(0); // 格子操作 → 重新由遮罩推出
+    expect(vm.rows()).toEqual([[0, 15], [1320, 1440]]);
+    vm.applyRanges([[0, 1440]]);
+    expect(vm.canAddRow()).toBe(false);
+  });
+
   it('滿 10 組時不能再開新增', async () => {
     await loaded(data({ groups: Array.from({ length: 10 }, (_, i) => group({ id: `g${i}` })) }));
     expect(vm.full()).toBe(true);
