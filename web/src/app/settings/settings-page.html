@@ -2,142 +2,177 @@
   <div class="d-topbar">
     <div>
       <div class="d-title">設定</div>
-      <div class="d-subtitle">帳號、顯示與提醒方式</div>
+      <div class="d-subtitle">提醒、顯示與關於</div>
     </div>
   </div>
-  <div class="d-upload-wrap" style="width: 100%"><ng-container *ngTemplateOutlet="body" /></div>
+  <div class="d-upload-wrap dp-wide"><ng-container *ngTemplateOutlet="body" /></div>
 } @else {
   <div class="m-upload-body"><ng-container *ngTemplateOutlet="body" /></div>
 }
 
 <ng-template #body>
-  <div class="modal-section-label" style="margin-top: 0">帳號</div>
-  <div class="modal-toggle-row" style="margin-top: 0">
-    <app-avatar [name]="auth.user()?.displayName ?? ''" [url]="auth.user()?.avatarUrl ?? null" [size]="38" />
-    <div style="flex: 1; min-width: 0">
-      <div style="font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ auth.user()?.displayName }}</div>
-      <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">已連結 Discord</div>
-    </div>
-    <button type="button" class="ghost-btn" style="width: auto; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px" (click)="auth.logout()"><app-icon name="logout" [size]="15" />登出</button>
-  </div>
-
-  <div class="modal-section-label">顯示</div>
-  <div class="modal-toggle-row" style="display: block; margin-top: 0">
-    <div id="set-theme-label" class="set-title">主題</div>
-    <div class="set-desc">切換整體配色與外觀，立即套用；只影響這台裝置</div>
-    <div class="theme-opts" role="radiogroup" aria-labelledby="set-theme-label">
-      @for (th of themes; track th.id) {
-        <button type="button" class="theme-opt" role="radio" [class.active]="theme.theme() === th.id" [attr.aria-checked]="theme.theme() === th.id" (click)="theme.set(th.id)">
-          <span class="theme-sw" aria-hidden="true">
-            <i [style.background]="th.swatch[0]"></i><i [style.background]="th.swatch[1]"></i><i [style.background]="th.swatch[2]"></i>
-          </span>
-          <span class="theme-nm">{{ th.label }}</span>
-        </button>
-      }
-    </div>
-    <div class="set-hr"></div>
-    <div id="set-size-label" style="font-size: 13px; font-weight: 600">介面大小</div>
-    <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">放大文字與按鈕，立即套用；只影響這台裝置</div>
-    <div class="up-tabs" role="radiogroup" aria-labelledby="set-size-label" style="margin: 10px 0 0">
-      @for (s of sizes; track s.value; let i = $index) {
-        <button type="button" class="up-tab size-opt" role="radio" [class.active]="scale.size() === s.value" [attr.aria-checked]="scale.size() === s.value" (click)="scale.set(s.value)">
-          <span class="size-aa" [style.font-size.px]="13 + i * 2">Aa</span>{{ s.label }}
-        </button>
-      }
-    </div>
-    <div class="set-hr"></div>
-    <div id="set-motion-label" style="font-size: 13px; font-weight: 600">動態效果</div>
-    <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">「精簡」會關掉按壓、展開、滑動等動畫，只換顏色；第一次依系統的「減少動態效果」決定，只影響這台裝置</div>
-    <div class="up-tabs" role="radiogroup" aria-labelledby="set-motion-label" style="margin: 10px 0 0">
-      @for (m of motionModes; track m.value) {
-        <button type="button" class="up-tab" role="radio" [class.active]="motion.mode() === m.value" [attr.aria-checked]="motion.mode() === m.value" (click)="motion.set(m.value)">{{ m.label }}</button>
-      }
-    </div>
-  </div>
-
-  <div class="modal-section-label">提醒方式</div>
-  @if (vm.prefs(); as p) {
-    <div class="modal-toggle-row" style="margin-top: 0">
-      <label class="switch"><input type="checkbox" [checked]="p.dm" [disabled]="vm.saving()" (change)="vm.toggle('dm')" aria-labelledby="set-dm-label" /><span class="slider"></span></label>
-      <div>
-        <div id="set-dm-label" style="font-size: 13px; font-weight: 600">Discord 私訊</div>
-        <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">由 Eranarch 私訊你，只有你看得到</div>
-      </div>
-    </div>
-    <div class="modal-toggle-row">
-      <label class="switch"><input type="checkbox" [checked]="p.channel" [disabled]="vm.saving()" (change)="vm.toggle('channel')" aria-labelledby="set-ch-label" /><span class="slider"></span></label>
-      <div>
-        <div id="set-ch-label" style="font-size: 13px; font-weight: 600">伺服器頻道 @ 提及</div>
-        <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">在伺服器的通知頻道提及你。<span style="color: var(--amber)">這是公開訊息</span>，看得到該頻道的人都看得到</div>
-      </div>
-    </div>
-    @switch (push.state()) {
-      @case ('ready') {
-        <div class="modal-toggle-row" style="flex-wrap: wrap; row-gap: 10px">
-          <label class="switch"><input type="checkbox" [checked]="push.enabled()" [disabled]="push.busy()" (change)="push.enabled() ? push.disable() : push.enable()" aria-labelledby="set-push-label" /><span class="slider"></span></label>
-          <div style="flex: 1 1 200px; min-width: 0">
-            <div id="set-push-label" style="font-size: 13px; font-weight: 600">這台裝置的推播通知</div>
-            <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">關掉視窗也收得到，點通知會開啟 Eranaut。每台裝置要分別開啟</div>
-            @if (push.message(); as m) {
-              <div [class]="m.kind === 'error' ? 'modal-error-text' : ''" style="font-size: 11.5px; margin-top: 6px" [style.color]="m.kind === 'error' ? null : 'var(--text-dim)'" [attr.role]="m.kind === 'error' ? 'alert' : 'status'">{{ m.text }}</div>
-            }
-          </div>
-          @if (push.enabled()) {
-            <button type="button" class="ghost-btn" style="width: auto; padding: 8px 14px; margin-left: auto" [disabled]="push.busy()" (click)="push.test()">傳送測試通知</button>
-          }
+  <div class="set-wrap">
+    <div class="set-grid">
+      <div class="set-col">
+      <section class="set-sec" [class.open]="isOpen('remind')" [class.static]="layout.isDesktop()">
+        <h2 class="set-sec-h">
+          <button type="button" class="set-sec-head" [attr.aria-expanded]="isOpen('remind')" aria-controls="set-p-remind" [attr.aria-disabled]="layout.isDesktop() ? 'true' : null" [attr.tabindex]="layout.isDesktop() ? -1 : null" (click)="toggle('remind')">
+            <span class="set-sec-ic"><app-icon name="bell" [size]="19" /></span>
+            <span class="set-sec-tt">提醒</span>
+            <span class="set-sec-sm">@if (vm.prefs(); as p) { 私訊 {{ p.dm ? '開' : '關' }} · 頻道 {{ p.channel ? '開' : '關' }}@if (push.state() !== 'unavailable') {<br />推播 {{ p.push ? '開' : '關' }}} } @else { 　 }</span>
+            <app-icon class="set-sec-chev" name="chevronDown" [size]="18" />
+          </button>
+        </h2>
+        <div class="set-sec-panel" id="set-p-remind" [attr.inert]="isOpen('remind') ? null : ''">
+          <div class="set-sec-inner"><div class="set-sec-body">
+              @if (vm.prefs(); as p) {
+                <div class="modal-toggle-row" style="margin-top: 0">
+                  <label class="switch"><input type="checkbox" [checked]="p.dm" [disabled]="vm.saving()" (change)="vm.toggle('dm')" aria-labelledby="set-dm-label" /><span class="slider"></span></label>
+                  <div>
+                    <div id="set-dm-label" style="font-size: 13px; font-weight: 600">Discord 私訊</div>
+                    <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">由 Eranarch 私訊你，只有你看得到</div>
+                  </div>
+                </div>
+                <div class="modal-toggle-row">
+                  <label class="switch"><input type="checkbox" [checked]="p.channel" [disabled]="vm.saving()" (change)="vm.toggle('channel')" aria-labelledby="set-ch-label" /><span class="slider"></span></label>
+                  <div>
+                    <div id="set-ch-label" style="font-size: 13px; font-weight: 600">伺服器頻道 @ 提及</div>
+                    <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">在伺服器的通知頻道提及你。<span style="color: var(--amber)">這是公開訊息</span>，看得到該頻道的人都看得到</div>
+                  </div>
+                </div>
+                @switch (push.state()) {
+                  @case ('ready') {
+                    <div class="modal-toggle-row" style="flex-wrap: wrap; row-gap: 10px">
+                      <label class="switch"><input type="checkbox" [checked]="push.enabled()" [disabled]="push.busy()" (change)="push.enabled() ? push.disable() : push.enable()" aria-labelledby="set-push-label" /><span class="slider"></span></label>
+                      <div style="flex: 1 1 200px; min-width: 0">
+                        <div id="set-push-label" style="font-size: 13px; font-weight: 600">這台裝置的推播通知</div>
+                        <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">關掉視窗也收得到，點通知會開啟 Eranaut。每台裝置要分別開啟</div>
+                        @if (push.message(); as m) {
+                          <div [class]="m.kind === 'error' ? 'modal-error-text' : ''" style="font-size: 11.5px; margin-top: 6px" [style.color]="m.kind === 'error' ? null : 'var(--text-dim)'" [attr.role]="m.kind === 'error' ? 'alert' : 'status'">{{ m.text }}</div>
+                        }
+                      </div>
+                      @if (push.enabled()) {
+                        <button type="button" class="ghost-btn" style="width: auto; padding: 8px 14px; margin-left: auto" [disabled]="push.busy()" (click)="push.test()">傳送測試通知</button>
+                      }
+                    </div>
+                    @if (!push.enabled() && push.lost()) {
+                      <div class="uf-note push-lost" style="margin-top: 10px" role="status">這台裝置的推播連線中斷了（常見於更新後），目前收不到通知。按「重新連線」即可恢復，不會再詢問權限。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" [disabled]="push.busy()" (click)="push.enable()">重新連線</button></div>
+                    }
+                    @if (push.stuck() || up.broken()) {
+                      <div class="uf-note push-stuck" style="margin-top: 10px" role="status">更新機制沒有回應，推播與更新檢查都會失效。按「修復」會重設後重新載入，推播會自動重新連上。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" [disabled]="up.applying()" (click)="up.repair()">{{ up.applying() ? '修復中…' : '修復' }}</button></div>
+                    }
+                  }
+                  @case ('blocked') {
+                    <div class="uf-note" style="margin-top: 12px" role="status">這個網站的通知被封鎖了，無法開啟推播。請到瀏覽器或系統的網站設定，把通知改成「允許」後，重新整理頁面。</div>
+                  }
+                  @case ('ios-install') {
+                    <div class="uf-note" style="margin-top: 12px" role="status">想在 iPhone / iPad 收推播通知：先在 Safari 按分享鈕，選「加入主畫面」，再從主畫面的圖示開啟 Eranaut，回到這裡就能開啟。</div>
+                  }
+                  @case ('unsupported') {
+                    <div class="uf-note" style="margin-top: 12px" role="status">這個瀏覽器不支援推播通知（iPhone / iPad 需要 iOS 16.4 以上）。</div>
+                  }
+                  @case ('error') {
+                    <div class="uf-note" style="margin-top: 12px" role="status">推播狀態讀取失敗。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" (click)="push.load()">重試</button></div>
+                  }
+                }
+                @if (push.state() !== 'ready' && push.message(); as m) {
+                  <div [class]="m.kind === 'error' ? 'modal-error-text' : 'uf-note'" style="margin-top: 10px" [attr.role]="m.kind === 'error' ? 'alert' : 'status'">{{ m.text }}</div>
+                }
+                @if (!p.dm && !p.channel && !p.push) {
+                  <div class="uf-note" style="margin-top: 12px" role="status">所有方式都關閉時，不會收到任何潛艇提醒。</div>
+                }
+                <app-notify-window />
+                <div class="uf-note" style="margin-top: 12px">每間工坊另可設定「整批提醒」與「預先提醒」，到總覽切到該工坊，按「工坊設定」。</div>
+                @if (vm.saveError(); as message) { <div class="modal-error-text" role="alert">{{ message }}</div> }
+              } @else if (vm.loadError()) {
+                <div class="up-empty">讀取失敗。<br /><button type="button" class="ghost-btn" style="margin-top: 12px; max-width: 160px" (click)="vm.load()">重試</button></div>
+              } @else {
+                <div class="up-empty">讀取中…</div>
+              }
+          </div></div>
         </div>
-        @if (!push.enabled() && push.lost()) {
-          <div class="uf-note push-lost" style="margin-top: 10px" role="status">這台裝置的推播連線中斷了（常見於更新後），目前收不到通知。按「重新連線」即可恢復，不會再詢問權限。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" [disabled]="push.busy()" (click)="push.enable()">重新連線</button></div>
-        }
-        @if (push.stuck() || up.broken()) {
-          <div class="uf-note push-stuck" style="margin-top: 10px" role="status">更新機制沒有回應，推播與更新檢查都會失效。按「修復」會重設後重新載入，推播會自動重新連上。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" [disabled]="up.applying()" (click)="up.repair()">{{ up.applying() ? '修復中…' : '修復' }}</button></div>
-        }
-      }
-      @case ('blocked') {
-        <div class="uf-note" style="margin-top: 12px" role="status">這個網站的通知被封鎖了，無法開啟推播。請到瀏覽器或系統的網站設定，把通知改成「允許」後，重新整理頁面。</div>
-      }
-      @case ('ios-install') {
-        <div class="uf-note" style="margin-top: 12px" role="status">想在 iPhone / iPad 收推播通知：先在 Safari 按分享鈕，選「加入主畫面」，再從主畫面的圖示開啟 Eranaut，回到這裡就能開啟。</div>
-      }
-      @case ('unsupported') {
-        <div class="uf-note" style="margin-top: 12px" role="status">這個瀏覽器不支援推播通知（iPhone / iPad 需要 iOS 16.4 以上）。</div>
-      }
-      @case ('error') {
-        <div class="uf-note" style="margin-top: 12px" role="status">推播狀態讀取失敗。<button type="button" class="ghost-btn" style="margin-left: 8px; width: auto; padding: 4px 10px" (click)="push.load()">重試</button></div>
-      }
-    }
-    @if (push.state() !== 'ready' && push.message(); as m) {
-      <div [class]="m.kind === 'error' ? 'modal-error-text' : 'uf-note'" style="margin-top: 10px" [attr.role]="m.kind === 'error' ? 'alert' : 'status'">{{ m.text }}</div>
-    }
-    @if (!p.dm && !p.channel && !p.push) {
-      <div class="uf-note" style="margin-top: 12px" role="status">所有方式都關閉時，不會收到任何潛艇提醒。</div>
-    }
-    <app-notify-window />
-    <div class="uf-note" style="margin-top: 12px">每間工坊另可設定「整批提醒」與「預先提醒」，到總覽切到該工坊，按「工坊設定」。</div>
-    @if (vm.saveError(); as message) { <div class="modal-error-text" role="alert">{{ message }}</div> }
-  } @else if (vm.loadError()) {
-    <div class="up-empty">讀取失敗。<br /><button type="button" class="ghost-btn" style="margin-top: 12px; max-width: 160px" (click)="vm.load()">重試</button></div>
-  } @else {
-    <div class="up-empty">讀取中…</div>
-  }
-
-  <div class="modal-section-label">版本</div>
-  <div class="modal-toggle-row" style="margin-top: 0; flex-wrap: wrap; row-gap: 10px">
-    <div style="flex: 1 1 200px; min-width: 0">
-      <div style="font-size: 13px; font-weight: 600">Eranaut <span class="mono" data-testid="app-version">v{{ version }}</span></div>
-      <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">回報問題時請附上這個版本號</div>
-    </div>
-    @if (up.supported) {
-      <button type="button" class="ghost-btn" style="width: auto; padding: 8px 14px; margin-left: auto; display: inline-flex; align-items: center; gap: 6px" [disabled]="up.checking()" (click)="up.checkAndNotify()"><app-icon name="refresh" [size]="15" />{{ up.checking() ? '檢查中…' : '檢查更新' }}</button>
-    }
-  </div>
-  <div class="modal-toggle-row">
-    <div style="flex: 1; min-width: 0">
-      <div style="font-size: 13px; font-weight: 600">聲明與授權</div>
-      <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px; display: flex; gap: 12px; flex-wrap: wrap">
-        <a routerLink="/licenses" style="color: var(--accent)">資料授權</a>
-        <a routerLink="/privacy" style="color: var(--accent)">隱私權政策</a>
-        <a routerLink="/terms" style="color: var(--accent)">服務條款</a>
+      </section>
+      </div>
+      <div class="set-col">
+      <section class="set-sec" [class.open]="isOpen('display')" [class.static]="layout.isDesktop()">
+        <h2 class="set-sec-h">
+          <button type="button" class="set-sec-head" [attr.aria-expanded]="isOpen('display')" aria-controls="set-p-display" [attr.aria-disabled]="layout.isDesktop() ? 'true' : null" [attr.tabindex]="layout.isDesktop() ? -1 : null" (click)="toggle('display')">
+            <span class="set-sec-ic"><app-icon name="palette" [size]="19" /></span>
+            <span class="set-sec-tt">顯示</span>
+            <span class="set-sec-sm">{{ themeLabel() }} · {{ sizeLabel() }}</span>
+            <app-icon class="set-sec-chev" name="chevronDown" [size]="18" />
+          </button>
+        </h2>
+        <div class="set-sec-panel" id="set-p-display" [attr.inert]="isOpen('display') ? null : ''">
+          <div class="set-sec-inner"><div class="set-sec-body">
+              <div class="modal-toggle-row" style="display: block; margin-top: 0">
+                <div id="set-theme-label" class="set-title">主題</div>
+                <div class="set-desc">切換整體配色與外觀，立即套用；只影響這台裝置</div>
+                <div class="theme-opts" role="radiogroup" aria-labelledby="set-theme-label">
+                  @for (th of themes; track th.id) {
+                    <button type="button" class="theme-opt" role="radio" [class.active]="theme.theme() === th.id" [attr.aria-checked]="theme.theme() === th.id" (click)="theme.set(th.id)">
+                      <span class="theme-sw" aria-hidden="true">
+                        <i [style.background]="th.swatch[0]"></i><i [style.background]="th.swatch[1]"></i><i [style.background]="th.swatch[2]"></i>
+                      </span>
+                      <span class="theme-nm">{{ th.label }}</span>
+                    </button>
+                  }
+                </div>
+                <div class="set-hr"></div>
+                <div id="set-size-label" style="font-size: 13px; font-weight: 600">介面大小</div>
+                <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">放大文字與按鈕，立即套用；只影響這台裝置</div>
+                <div class="up-tabs" role="radiogroup" aria-labelledby="set-size-label" style="margin: 10px 0 0">
+                  @for (s of sizes; track s.value; let i = $index) {
+                    <button type="button" class="up-tab size-opt" role="radio" [class.active]="scale.size() === s.value" [attr.aria-checked]="scale.size() === s.value" (click)="scale.set(s.value)">
+                      <span class="size-aa" [style.font-size.px]="13 + i * 2">Aa</span>{{ s.label }}
+                    </button>
+                  }
+                </div>
+                <div class="set-hr"></div>
+                <div id="set-motion-label" style="font-size: 13px; font-weight: 600">動態效果</div>
+                <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">「精簡」會關掉按壓、展開、滑動等動畫，只換顏色；第一次依系統的「減少動態效果」決定，只影響這台裝置</div>
+                <div class="up-tabs" role="radiogroup" aria-labelledby="set-motion-label" style="margin: 10px 0 0">
+                  @for (m of motionModes; track m.value) {
+                    <button type="button" class="up-tab" role="radio" [class.active]="motion.mode() === m.value" [attr.aria-checked]="motion.mode() === m.value" (click)="motion.set(m.value)">{{ m.label }}</button>
+                  }
+                </div>
+              </div>
+          </div></div>
+        </div>
+      </section>
+      <section class="set-sec" [class.open]="isOpen('about')" [class.static]="layout.isDesktop()">
+        <h2 class="set-sec-h">
+          <button type="button" class="set-sec-head" [attr.aria-expanded]="isOpen('about')" aria-controls="set-p-about" [attr.aria-disabled]="layout.isDesktop() ? 'true' : null" [attr.tabindex]="layout.isDesktop() ? -1 : null" (click)="toggle('about')">
+            <span class="set-sec-ic"><app-icon name="info" [size]="19" /></span>
+            <span class="set-sec-tt">關於</span>
+            <span class="set-sec-sm">v{{ version }}</span>
+            <app-icon class="set-sec-chev" name="chevronDown" [size]="18" />
+          </button>
+        </h2>
+        <div class="set-sec-panel" id="set-p-about" [attr.inert]="isOpen('about') ? null : ''">
+          <div class="set-sec-inner"><div class="set-sec-body">
+              <div class="modal-toggle-row" style="margin-top: 0; flex-wrap: wrap; row-gap: 10px">
+                <div style="flex: 1 1 200px; min-width: 0">
+                  <div style="font-size: 13px; font-weight: 600">Eranaut <span class="mono" data-testid="app-version">v{{ version }}</span></div>
+                  <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px">回報問題時請附上這個版本號</div>
+                </div>
+                @if (up.supported) {
+                  <button type="button" class="ghost-btn" style="width: auto; padding: 8px 14px; margin-left: auto; display: inline-flex; align-items: center; gap: 6px" [disabled]="up.checking()" (click)="up.checkAndNotify()"><app-icon name="refresh" [size]="15" />{{ up.checking() ? '檢查中…' : '檢查更新' }}</button>
+                }
+              </div>
+              <div class="modal-toggle-row">
+                <div style="flex: 1; min-width: 0">
+                  <div style="font-size: 13px; font-weight: 600">聲明與授權</div>
+                  <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px; display: flex; gap: 12px; flex-wrap: wrap">
+                    <a routerLink="/licenses" style="color: var(--accent)">資料授權</a>
+                    <a routerLink="/privacy" style="color: var(--accent)">隱私權政策</a>
+                    <a routerLink="/terms" style="color: var(--accent)">服務條款</a>
+                  </div>
+                </div>
+              </div>
+          </div></div>
+        </div>
+      </section>
       </div>
     </div>
   </div>

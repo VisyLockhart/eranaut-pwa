@@ -345,6 +345,13 @@ html[data-theme='notebook'] {
   .theme-opt.active .theme-sw { transform: rotate(-2deg); }
   .theme-opt.active::before { @include tape(var(--mus-p), -3deg); width: 44px; margin-left: -22px; top: 0; }
   .theme-opt.active::after { content: ''; position: absolute; left: 0; right: 0; top: -2px; height: 100px; border: 2px solid var(--rose); border-radius: var(--blob); transform: rotate(2deg); pointer-events: none; }
+  .set-sec { overflow: visible; margin-top: 8px; border: var(--bw) solid var(--line); border-radius: var(--w1); }
+  .set-sec::before { @include tape(var(--mus-p), -3deg); left: 24px; margin-left: 0; top: -10px; }
+  .set-sec-head { padding-top: 16px; background: transparent; border-radius: var(--w1); }
+  .set-sec.static .set-sec-head { background: transparent; }
+  .set-sec.open .set-sec-head { border-bottom: var(--bw) dashed var(--line); border-radius: var(--w1) var(--w1) 0 0; }
+  .set-sec-ic { background: var(--sage-p); color: var(--accent); border: 1.5px dashed var(--accent); border-radius: var(--blob); }
+  .set-sec-tt { font-family: var(--font-hand); font-size: 22px; font-weight: 700; color: var(--accent); text-decoration: underline wavy var(--sage); text-decoration-thickness: 1.5px; text-underline-offset: 5px; }
 }
 
 /* iOS 主畫面 App 的狀態列是 black-translucent(執行中無法改):在最上方補一條苔綠安全區色帶(非 iOS 時 env() 為 0,不會出現) */

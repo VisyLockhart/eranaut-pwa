@@ -39,6 +39,37 @@ describe('SettingsPage', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(Array.from(el.querySelectorAll('a[href^="/"]')).map((a) => a.getAttribute('href'))).toEqual(['/licenses', '/privacy', '/terms']);
   });
+  it('手機:提醒預設展開、顯示與關於收合;點標題開合並記在這台裝置(D-349)', async () => {
+    localStorage.removeItem('eranaut.settings.open');
+    const fixture = await render();
+    const el = fixture.nativeElement as HTMLElement;
+    const heads = () => Array.from(el.querySelectorAll<HTMLButtonElement>('.set-sec-head'));
+    expect(heads().map((h) => h.getAttribute('aria-expanded'))).toEqual(['true', 'false', 'false']);
+    expect(el.querySelector('#set-p-display')?.hasAttribute('inert')).toBe(true);
+    heads()[1].click();
+    fixture.detectChanges();
+    expect(heads()[1].getAttribute('aria-expanded')).toBe('true');
+    expect(el.querySelector('#set-p-display')?.hasAttribute('inert')).toBe(false);
+    expect(JSON.parse(localStorage.getItem('eranaut.settings.open')!)).toEqual({ remind: true, display: true, about: false });
+    fixture.destroy();
+    const again = await render();
+    expect(Array.from((again.nativeElement as HTMLElement).querySelectorAll('.set-sec-head')).map((h) => h.getAttribute('aria-expanded'))).toEqual(['true', 'true', 'false']);
+    localStorage.removeItem('eranaut.settings.open');
+  });
+
+  it('桌機:三個區塊一律展開,點標題不收合', async () => {
+    localStorage.removeItem('eranaut.settings.open');
+    TestBed.inject(Layout).isDesktop.set(true);
+    const fixture = await render();
+    const el = fixture.nativeElement as HTMLElement;
+    const heads = Array.from(el.querySelectorAll<HTMLButtonElement>('.set-sec-head'));
+    expect(heads.map((h) => h.getAttribute('aria-expanded'))).toEqual(['true', 'true', 'true']);
+    heads[2].click();
+    fixture.detectChanges();
+    expect(heads[2].getAttribute('aria-expanded')).toBe('true');
+    expect(localStorage.getItem('eranaut.settings.open')).toBeNull();
+  });
+
   it('顯示目前版本號(關於)', async () => {
     const fixture = await render();
     http.expectOne('/api/notify-prefs').flush({ dm: true, channel: false });
@@ -48,13 +79,14 @@ describe('SettingsPage', () => {
     expect(el.querySelector('[data-testid="app-version"]')?.textContent?.trim()).toBe(`v${APP_VERSION}`);
   });
 
-  it('顯示帳號與兩個提醒開關,頻道有公開訊息警示', async () => {
+  it('顯示兩個提醒開關,頻道有公開訊息警示;不再有帳號區塊(D-349)', async () => {
     const fixture = await render();
     http.expectOne('/api/notify-prefs').flush({ dm: true, channel: false });
     await settle();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('小艇長');
+    expect(el.textContent).not.toContain('小艇長');
+    expect(el.textContent).not.toContain('登出');
     const boxes = el.querySelectorAll<HTMLInputElement>('.switch input');
     expect(boxes.length).toBe(2);
     expect(boxes[0].checked).toBe(true);

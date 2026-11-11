@@ -168,6 +168,12 @@ html[data-theme='light'] {
   .theme-opt { border-width: 3px; border-color: var(--line); box-shadow: none; }
   .theme-opt.active { background: var(--bg-elevated-2); box-shadow: 0 0 0 3px var(--accent), 0 0 0 6px var(--line); }
   .theme-sw i { border-radius: 0; box-shadow: 0 0 0 2px var(--line); }
+  .set-sec { border-width: 3px; border-color: var(--line); box-shadow: 4px 4px 0 0 var(--drop); }
+  .set-sec-head { background: var(--surface-raise); }
+  .set-sec.open .set-sec-head { border-bottom: 3px solid var(--line); }
+  .set-sec-ic { background: var(--bg-elevated); color: var(--line); border: 2px solid var(--line); box-shadow: 2px 2px 0 0 var(--line); }
+  .set-sec-tt { font-family: var(--font-cap); font-size: 15px; letter-spacing: 0.04em; }
+  .set-sec-sm { color: var(--text-dim); }
 }
 
 /* iOS 主畫面 App 的狀態列是 black-translucent(執行中無法改):淺色底配白色狀態列文字會看不見,
