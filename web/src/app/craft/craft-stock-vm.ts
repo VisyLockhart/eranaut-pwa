@@ -3,12 +3,12 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 import { LIMITS, type CraftStockDto, type CraftStockSpec } from '@eranaut/shared';
 import { Api } from '../core/api';
 import { Auth } from '../core/auth';
-import { readJson, writeJson } from '../core/storage';
+import { readJson, removeKey, writeJson } from '../core/storage';
 import { Toast } from '../core/toast';
 import { calculate } from './core/craft-calc';
 import { CRAFT_DATA } from './core/data';
 import { missing } from './craft-state';
-import { CRAFT_STOCKS_CACHE_KEY } from './craft-keys';
+import { CRAFT_STOCKS_CACHE_KEY, CRAFT_STOCK_ACTIVE_KEY } from './craft-keys';
 import { CRAFT_FEATURES } from './craft-features';
 import { CraftVm } from './craft-vm';
 import { canSaveSpec, isBlank, sameSpec, sanitizeStocks, selCount, selFromSpec, specFrom, stockCount, stockFromSpec } from './craft-stock-state';
@@ -34,7 +34,7 @@ export class CraftStockVm {
   readonly loaded = signal(false);
   readonly loadError = signal(false);
   readonly pending = signal(0);
-  /** 目前載入的那一組(只在記憶體;改了內容之後仍保留,用來問「更新」還是「另存」) */
+  /** 目前載入的那一組(改了內容之後仍保留,用來問「更新」還是「另存」)。id 記在這台裝置(`CRAFT_STOCK_ACTIVE_KEY`),重開 APP 後接回;配件與庫存本身另存在 `eranaut.craft.sel` / `.stock` */
   readonly activeId = signal<string | null>(null);
   /** 對話框:null = 關;save = 儲存、manage = 管理、replace = 載入前確認要換掉目前的內容 */
   readonly dialog = signal<'save' | 'manage' | 'replace' | null>(null);
@@ -65,6 +65,8 @@ export class CraftStockVm {
   });
 
   private started = false;
+  /** 啟動時從這台裝置讀到的 id,等清單載入後接回(伺服器清單確認後清掉) */
+  private restoreId: string | null = null;
   private readonly visibilityHandler = (): void => {
     if (document.visibilityState === 'visible') void this.refresh();
   };
@@ -79,10 +81,13 @@ export class CraftStockVm {
   start(): void {
     if (this.started || !this.enabled) return;
     this.started = true;
+    const storedActive = readJson<unknown>(CRAFT_STOCK_ACTIVE_KEY);
+    this.restoreId = typeof storedActive === 'string' ? storedActive : null;
     const cached = sanitizeStocks(readJson<unknown>(CRAFT_STOCKS_CACHE_KEY));
     if (cached.length > 0) {
       this.saved.set(cached);
       this.loaded.set(true);
+      this.applyRestore();
     }
     document.addEventListener('visibilitychange', this.visibilityHandler);
     void this.refresh();
@@ -104,6 +109,9 @@ export class CraftStockVm {
     if (!this.enabled) return;
     try {
       this.setSaved(sanitizeStocks(await this.api.craftStocks()));
+      this.applyRestore();
+      this.restoreId = null; // 伺服器清單已確認:記的那組還在就已接回,不在就不再嘗試
+      if (this.activeId() === null) removeKey(CRAFT_STOCK_ACTIVE_KEY);
       this.loaded.set(true);
       this.loadError.set(false);
     } catch {
@@ -130,7 +138,7 @@ export class CraftStockVm {
     c.pinKind.set(null);
     c.treeFor.set(null);
     c.patchView({ stockMode: true });
-    this.activeId.set(dto.id);
+    this.setActive(dto.id);
     if (dropped > 0) this.toast.show(`已略過 ${dropped} 個已不存在的庫存項目`, { tone: 'info' });
     return dropped;
   }
@@ -138,7 +146,7 @@ export class CraftStockVm {
   async saveCurrent(name: string): Promise<CraftStockDto> {
     const created = await this.write(() => this.api.createCraftStock({ name: name.trim(), spec: this.current() }));
     this.setSaved([...this.saved(), created]);
-    this.activeId.set(created.id);
+    this.setActive(created.id);
     return created;
   }
 
@@ -147,7 +155,7 @@ export class CraftStockVm {
     const old = this.saved().find((s) => s.id === id);
     const updated = await this.write(() => this.api.updateCraftStock(id, { name: (name ?? old?.name ?? '').trim(), spec: this.current() }));
     this.replace(updated);
-    this.activeId.set(updated.id);
+    this.setActive(updated.id);
     return updated;
   }
 
@@ -211,6 +219,19 @@ export class CraftStockVm {
     this.saved.set(list);
     writeJson(CRAFT_STOCKS_CACHE_KEY, list);
     const id = this.activeId();
-    if (id !== null && !list.some((s) => s.id === id)) this.activeId.set(null);
+    if (id !== null && !list.some((s) => s.id === id)) this.setActive(null);
+  }
+
+  /** 換目前這一組,並記在這台裝置(null = 清掉) */
+  private setActive(id: string | null): void {
+    this.activeId.set(id);
+    if (id === null) removeKey(CRAFT_STOCK_ACTIVE_KEY);
+    else writeJson(CRAFT_STOCK_ACTIVE_KEY, id);
+  }
+
+  /** 啟動後接回上次選的那一組(內容不動:配件與庫存本來就由本機記錄還原,不能被清單覆蓋) */
+  private applyRestore(): void {
+    const id = this.restoreId;
+    if (id !== null && this.activeId() === null && this.saved().some((s) => s.id === id)) this.activeId.set(id);
   }
 }

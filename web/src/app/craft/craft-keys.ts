@@ -5,3 +5,5 @@ export const CRAFT_KEY_STOCK = 'eranaut.craft.stock';
 export const CRAFT_STORAGE_KEYS = [CRAFT_KEY_SEL, CRAFT_KEY_VIEW, CRAFT_KEY_STOCK] as const;
 /** 庫存組清單的離線快照(不是正本);登出時清除,避免同一台裝置換帳號看到別人的清單。不屬於 CRAFT_STORAGE_KEYS(展示版沒有庫存組) */
 export const CRAFT_STOCKS_CACHE_KEY = 'eranaut.craft.stocks.cache';
+/** 目前選的是哪一組庫存組(只存 id,各裝置獨立;重開 APP 後接回,清單裡找不到就丟掉)。登出時清除 */
+export const CRAFT_STOCK_ACTIVE_KEY = 'eranaut.craft.stocks.active';

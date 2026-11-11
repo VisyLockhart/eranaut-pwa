@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import type { CraftStockDto } from '@eranaut/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Auth } from '../core/auth';
-import { CRAFT_STOCKS_CACHE_KEY } from './craft-keys';
+import { CRAFT_STOCKS_CACHE_KEY, CRAFT_STOCK_ACTIVE_KEY } from './craft-keys';
 import { CRAFT_FEATURES } from './craft-features';
 import { CraftStockVm } from './craft-stock-vm';
 import { CraftVm } from './craft-vm';
@@ -159,6 +159,51 @@ describe('CraftStockVm(庫存組,D-329、D-330)', () => {
     expect(craft.view().expandedFrames).toEqual([frameName('hull', 3)]);
     expect(sv.activeId()).toBe('a');
     expect(sv.modified()).toBe(false);
+  });
+
+  it('目前選的庫存組記在這台裝置:重開後接回,內容不被清單覆蓋', async () => {
+    await load([dto(), dto({ id: 'b', name: '備用' })]);
+    sv.load(sv.saved()[1]!);
+    expect(JSON.parse(localStorage.getItem(CRAFT_STOCK_ACTIVE_KEY)!)).toBe('b');
+    craft.setGrade('hull', 7);
+    const sel = craft.sel();
+    TestBed.tick(); // 讓本機記錄的 effect 寫入
+    // 重開 APP:記憶體清掉,localStorage 還在
+    setup();
+    await load([dto(), dto({ id: 'b', name: '備用' })]);
+    expect(sv.activeId()).toBe('b');
+    expect(sv.active()?.name).toBe('備用');
+    expect(craft.sel()).toEqual(sel);
+  });
+
+  it('重開後先用離線快照接回;伺服器清單已沒有那一組就丟掉並清除記錄', async () => {
+    localStorage.setItem(CRAFT_STOCKS_CACHE_KEY, JSON.stringify([dto({ id: 'b' })]));
+    localStorage.setItem(CRAFT_STOCK_ACTIVE_KEY, JSON.stringify('b'));
+    sv.start();
+    expect(sv.activeId()).toBe('b');
+    http.expectOne(U).flush([dto()]);
+    await tick();
+    expect(sv.activeId()).toBeNull();
+    expect(localStorage.getItem(CRAFT_STOCK_ACTIVE_KEY)).toBeNull();
+  });
+
+  it('沒有快照時,等伺服器清單回來才接回', async () => {
+    localStorage.setItem(CRAFT_STOCK_ACTIVE_KEY, JSON.stringify('a'));
+    sv.start();
+    expect(sv.activeId()).toBeNull();
+    http.expectOne(U).flush([dto()]);
+    await tick();
+    expect(sv.activeId()).toBe('a');
+  });
+
+  it('另存新組、刪除目前這組:記錄跟著更新', async () => {
+    await load([dto()]);
+    sv.load(sv.saved()[0]!);
+    expect(JSON.parse(localStorage.getItem(CRAFT_STOCK_ACTIVE_KEY)!)).toBe('a');
+    const p = sv.remove('a');
+    http.expectOne(`${U}/a`).flush(null);
+    await p;
+    expect(localStorage.getItem(CRAFT_STOCK_ACTIVE_KEY)).toBeNull();
   });
 
   it('load:資料集已沒有的庫存項目被略過', async () => {
