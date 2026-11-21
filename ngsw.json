@@ -1,0 +1,145 @@
+{
+  "configVersion": 1,
+  "timestamp": 1795271489771,
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/chunk-3kTkoyRR.js",
+        "/chunk-6YFN7iot.js",
+        "/chunk-BAaZsH-u.js",
+        "/chunk-B_oY9ISq.js",
+        "/chunk-BlPBJNPA.js",
+        "/chunk-Br8ucW6w.js",
+        "/chunk-C7YWuWkU.js",
+        "/chunk-CHEfu3W1.js",
+        "/chunk-CSl-Si_f.js",
+        "/chunk-CXCjlqir.js",
+        "/chunk-CbqDWekk.js",
+        "/chunk-DCKoARls.js",
+        "/chunk-DWGN-uLm.js",
+        "/chunk-Dw0hKhOk.js",
+        "/chunk-mXBXRHXp.js",
+        "/chunk-rBPjIwKM.js",
+        "/favicon.ico",
+        "/index.html",
+        "/main-EQLANAUR.js",
+        "/manifest.webmanifest",
+        "/styles-HLVHA6VT.css"
+      ],
+      "patterns": []
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/icons/apple-touch-icon.png",
+        "/icons/fav-dark.png",
+        "/icons/fav-light.png",
+        "/icons/fav-notebook.png",
+        "/icons/favicon-32.png",
+        "/icons/icon-192.png",
+        "/icons/icon-512.png",
+        "/icons/icon-maskable-512.png",
+        "/icons/logo-classic.svg",
+        "/icons/logo-dark.svg",
+        "/icons/logo-light.svg",
+        "/icons/logo-notebook.svg",
+        "/og/home.png",
+        "/og/intro.png",
+        "/og/route-2.png",
+        "/promo/bahamut/01-dual.jpg",
+        "/promo/bahamut/02-push.jpg",
+        "/promo/bahamut/03-workshops.jpg",
+        "/promo/bahamut/04-route-assist.jpg",
+        "/promo/bahamut/05-ocr.jpg",
+        "/promo/bahamut/06-craft.jpg",
+        "/promo/bahamut/07-route-sim.jpg",
+        "/promo/bahamut/08-themes.jpg",
+        "/promo/bahamut/09-reminders.jpg"
+      ],
+      "patterns": []
+    }
+  ],
+  "dataGroups": [],
+  "hashTable": {
+    "/chunk-3kTkoyRR.js": "5563bc7f8e82ce60d8a30141a6717ceb556d22e8",
+    "/chunk-6YFN7iot.js": "018fe0d37af53efaa3874e2922e2be86b9aa5288",
+    "/chunk-BAaZsH-u.js": "6faeb56a6b0ac82ac922c2c56a68f527aec0f7cb",
+    "/chunk-B_oY9ISq.js": "1566fefdad45eca7e527c145bc7c30be2da0d10e",
+    "/chunk-BlPBJNPA.js": "daae37e85a3d634b09716a0e97058fd9915db365",
+    "/chunk-Br8ucW6w.js": "df6a0f968e87f0e730227730964618b8cbb131b3",
+    "/chunk-C7YWuWkU.js": "73f603967cfbd1b84742d509281c4db06eecb810",
+    "/chunk-CHEfu3W1.js": "ff425ada8ae0262b80ab7e87d24299d159d0099b",
+    "/chunk-CSl-Si_f.js": "f05b9260ca54e16c3f5b928d7f012bcccd510bc5",
+    "/chunk-CXCjlqir.js": "726139cc487da44121127420da14806790bf5cd7",
+    "/chunk-CbqDWekk.js": "56e63dfb0dce2d3d91fe8928e432a430b4ee03c7",
+    "/chunk-DCKoARls.js": "6e97a60191283cb536031dcfe88be034a0c3f1cc",
+    "/chunk-DWGN-uLm.js": "68c3e901f9f4d6006807b63d78455e4d56b479a2",
+    "/chunk-Dw0hKhOk.js": "889f399bc2bb5dfe177199ecbf2f414e32848313",
+    "/chunk-mXBXRHXp.js": "2ed198587231f7838372fe57a07503745362a73f",
+    "/chunk-rBPjIwKM.js": "569d87adf8b221f669070923ee33732d7d8e1b77",
+    "/favicon.ico": "70e0a98786c4e0ffd7271b7fdfcb2e77f7b58d4e",
+    "/icons/apple-touch-icon.png": "7811cdbe334884840dc2cb404a673ff69c247a04",
+    "/icons/fav-dark.png": "2be16dcf9d5b54d17e237c6ba897a7127638064e",
+    "/icons/fav-light.png": "382f07c6585771d0aa552913573db89aaa3ae3f9",
+    "/icons/fav-notebook.png": "ba7b7f07e2b0ada49cb0bdbba5b1e33180d84b73",
+    "/icons/favicon-32.png": "fda1f1f72cf22d4a3e0534d45d76bf205499c1a7",
+    "/icons/icon-192.png": "8bd762edb18ef884606aeb21f1f7844b51056189",
+    "/icons/icon-512.png": "ca607618ed1fb0efa2c2a7784a240d6e75731341",
+    "/icons/icon-maskable-512.png": "dadc8ad9832f2744afac003ec7e7396a199e36c0",
+    "/icons/logo-classic.svg": "ea88748025fcb6674cb17aa6f29818610813e235",
+    "/icons/logo-dark.svg": "1c15c65b832bbadf342d5a5b943cb7995f007908",
+    "/icons/logo-light.svg": "0a6db5333a3830322a8dfdf31e0568eda5a6d87e",
+    "/icons/logo-notebook.svg": "9748beae8df0ce56afef9be8429f0908635667bf",
+    "/index.html": "bc2baa982d338fefa682c8ebbf1b7e67035a2239",
+    "/main-EQLANAUR.js": "1171daa5c68ceb0808092bf8f0d17ce9dd25e0e4",
+    "/manifest.webmanifest": "802f4b99c53466d132a62a203fdd060dc2b5ba99",
+    "/og/home.png": "a48312687ed99fab75692baa6e9e94f852efe907",
+    "/og/intro.png": "b0d23f50f63712383cfe38bfac841b7b0ff8bd7c",
+    "/og/route-2.png": "2d1315362e0e532503750f6357aa6d6bdabbfa94",
+    "/promo/bahamut/01-dual.jpg": "d289551cde0f1e6e86fa373ab2d68744a88b4dd8",
+    "/promo/bahamut/02-push.jpg": "33af72eefd51560b9480b885d114981b7e213959",
+    "/promo/bahamut/03-workshops.jpg": "d95fe35e3b9eea15baaad500716e00d7bdf35dca",
+    "/promo/bahamut/04-route-assist.jpg": "02dd43a3819885f224635f260b771cbb81b08439",
+    "/promo/bahamut/05-ocr.jpg": "08ffbd56ceb94f073b996b8d9182471adf676295",
+    "/promo/bahamut/06-craft.jpg": "56ad486541ad698f533a450fcb424d712581d9a7",
+    "/promo/bahamut/07-route-sim.jpg": "45e8252a5273b3c07577e072ba6240dee8bf0839",
+    "/promo/bahamut/08-themes.jpg": "024976858b89af7de76b5c0774164ddd57f486fd",
+    "/promo/bahamut/09-reminders.jpg": "67556673b873d9cd7f5d47cc53c2e8f10fb480e1",
+    "/styles-HLVHA6VT.css": "8db30b28742fa806830b08b4627b743f28f6d463"
+  },
+  "navigationUrls": [
+    {
+      "positive": true,
+      "regex": "^\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*\\.[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/api\\/.*$"
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}
