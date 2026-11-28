@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><!-- 賽博主題 logo(D-385 第 ① 階段暫定,第 ④ 階段可換) -->
+<path d="M8 8H200L248 56V248H56L8 200Z" fill="#07080d" stroke="#7fd3ff" stroke-width="8"/>
+<rect x="8" y="8" width="16" height="192" fill="#ff2a6d"/>
+<path d="M84 64H184M84 128H164M84 192H184M84 64V192" stroke="#e9f6ff" stroke-width="22" fill="none"/>
+<rect x="176" y="178" width="40" height="22" fill="#f9f002"/>
+<path d="M40 232H120" stroke="#7fd3ff" stroke-width="4" opacity=".6"/>
+</svg>
